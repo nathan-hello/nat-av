@@ -1,13 +1,6 @@
-import {
-  bindHttpToWs,
-  WebsocketHandler,
-  type WebSocketApp,
-  type WebSocketConnection,
-} from "./websocket";
-
+import { bindHttpToWs, WebsocketHandler, type WebSocketApp } from "./websocket";
 import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
-
 import { System } from "@av/system";
 import { bus } from "@av/bus";
 import { RPCHandler } from "@av/rpc/handler";
