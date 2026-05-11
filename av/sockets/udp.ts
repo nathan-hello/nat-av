@@ -107,17 +107,9 @@ export class Udp extends TypedEventTarget<UdpEvents> {
         socket.on("close", () => {
           void this.handleClose();
         });
-        socket.on("connect", () => {
+        socket.connect(this.config.port, this.config.addr, () => {
           this.handleDrain();
           resolve(socket);
-        });
-        socket.on("timeout", async () => {
-          this.emit("timeout", undefined);
-          await this.scheduleRetry();
-        });
-
-        socket.connect(this.config.port, this.config.addr, () => {
-          socket.setTimeout(10000);
         });
       });
     });

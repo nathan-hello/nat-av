@@ -1,16 +1,30 @@
-import { ExportResultCode, type ExportResult } from "@opentelemetry/core";
-import type { LogRecordExporter, ReadableLogRecord } from "@opentelemetry/sdk-logs";
-import pino from "pino";
+import { appendFileSync } from "node:fs";
+
+import type { Bus } from "../../bus";
 import type { WebSocketConnection } from "@av/websocket";
+import { type ReadableLogRecord, type BodyValue } from "./types";
+
+export type ExportResult = { code: 0 };
+
+export interface LogRecordExporter {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ): void;
+  shutdown(): Promise<void>;
+}
 
 export class MultiLogExporter implements LogRecordExporter {
   constructor(private exporters: (LogRecordExporter | null)[]) {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const exporter of this.exporters) {
       exporter?.export(logRecords, () => {});
     }
-    resultCallback({ code: ExportResultCode.SUCCESS });
+    resultCallback({ code: 0 });
   }
 
   async shutdown() {
@@ -30,7 +44,7 @@ export type LogEntry = {
     text: string;
   };
   name: string;
-  data: AnyValue;
+  data: BodyValue;
 };
 
 function toLogEntry(record: ReadableLogRecord): LogEntry {
@@ -45,9 +59,8 @@ function toLogEntry(record: ReadableLogRecord): LogEntry {
     }
   }
   return {
-    time:
-      record.hrTime ?
-        new Date(Number(record.hrTime[0]) * 1000).toISOString()
+    time: record.hrTime
+      ? new Date(Number(record.hrTime[0]) * 1000).toISOString()
       : new Date().toISOString().slice(11, 23),
     context: {
       spanId: record.spanContext?.spanId,
@@ -66,41 +79,49 @@ function toLogEntry(record: ReadableLogRecord): LogEntry {
 export class CustomExporter implements LogRecordExporter {
   constructor(private callback: (log: ReadableLogRecord) => void) {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       this.callback(record);
     }
-    resultCallback({ code: ExportResultCode.SUCCESS });
+    resultCallback({ code: 0 });
   }
 
   async shutdown() {}
 }
 
 export class PinoLogExporter implements LogRecordExporter {
-  private pinoLogger: ReturnType<typeof pino>;
-  constructor(file: string) {
-    this.pinoLogger = pino(pino.destination({ dest: file, sync: true }));
-  }
+  constructor(private file: string) {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       const level = this.mapSeverity(record.severityNumber);
       const spanContext = record.spanContext;
-      this.pinoLogger[level](
-        {
+      appendFileSync(
+        this.file,
+        JSON.stringify({
+          level,
           ...record.attributes,
           ...(spanContext && {
             trace_id: spanContext.traceId,
             span_id: spanContext.spanId,
           }),
-        },
-        typeof record.body === "string" ? record.body : JSON.stringify(record.body),
+          message:
+            typeof record.body === "string"
+              ? record.body
+              : JSON.stringify(record.body),
+        }) + "\n",
       );
     }
-    resultCallback({ code: ExportResultCode.SUCCESS });
+    resultCallback({ code: 0 });
   }
 
-  private mapSeverity(severity?: number): pino.Level {
+  private mapSeverity(severity?: number): string {
     if (!severity) return "info";
     if (severity <= 8) return "debug";
     if (severity <= 12) return "info";
@@ -112,9 +133,6 @@ export class PinoLogExporter implements LogRecordExporter {
     return Promise.resolve();
   }
 }
-
-import type { Bus } from "../../bus";
-import type { AnyValue } from "@opentelemetry/api-logs";
 
 /**
  * This is separate from the normal RPC Websocket class because
@@ -131,10 +149,14 @@ export class WebsocketExporter {
       let message: string;
       try {
         message = JSON.stringify(notification);
-      } catch (e) {
+      } catch {
         message = JSON.stringify({
           name: "UNABLE_TO_JSON_STRINGIFY_LOG",
-          context: { traceName: "SERVER_INTERNAL", traceId: undefined, spanId: undefined },
+          context: {
+            traceName: "SERVER_INTERNAL",
+            traceId: undefined,
+            spanId: undefined,
+          },
           time: new Date().toISOString().slice(11, 23),
           severity: { id: 50, text: "ERROR" },
         });

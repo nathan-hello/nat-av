@@ -14,8 +14,8 @@
     "jsxImportSource": "remix/ui",
     "noEmit": true,
     "paths": {
-      "@/*": ["app/*"],
-      "@av/*": ["av/*"]
+      "@/*": ["./app/*"],
+      "@av/*": ["./av/*"]
     }
   },
   "exclude": ["dist"]

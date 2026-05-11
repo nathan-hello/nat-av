@@ -1,7 +1,7 @@
-import type { ReadableLogRecord } from "@opentelemetry/sdk-logs";
+import type { ReadableLogRecord } from "./tools/telemetry/types";
 import { TypedEventTarget } from "./lib/eventtarget";
-import type Natav from "./index";
-import type { natav } from "..";
+import type Natav from "./natav";
+import type { natav } from "./index";
 
 export type SystemEvents<N extends Natav = natav> =
   | {

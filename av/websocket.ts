@@ -3,6 +3,25 @@ import type Natav from "@av/natav";
 import { RPCHandler } from "@av/rpc/handler";
 import { createRPCNotification, isRPCRequest } from "@av/rpc/utils";
 
+const decoder = new TextDecoder();
+
+export type WebSocketApp = {
+  ws(
+    path: string,
+    handlers: {
+      open(ws: unknown): void;
+      message(ws: unknown, message: ArrayBuffer, isBinary: boolean): void;
+      close(ws: unknown, code: number, message: ArrayBuffer): void;
+      error(ws: unknown): void;
+    },
+  ): void;
+};
+
+type WebSocketPeer = {
+  send(message: string): void;
+  close(code?: number, reason?: string): void;
+};
+
 export interface WebSocketConnection {
   readyState: number;
   send(message: string): void;
@@ -96,3 +115,64 @@ export class WebsocketHandler<N extends Natav = Natav> {
 
   WsErrorHandler = (_: Event, __: WebSocketConnection) => {};
 }
+
+function toWebSocketConnection(ws: WebSocketPeer): WebSocketConnection {
+  return {
+    readyState: 1,
+    send(message: string) {
+      ws.send(message);
+    },
+    close(code?: number, reason?: string) {
+      ws.close(code, reason);
+    },
+  };
+}
+
+export function bindHttpToWs(
+  app: WebSocketApp,
+  path: string,
+  handlers: Pick<WebsocketHandler, "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler">,
+) {
+  const connections = new WeakMap<object, WebSocketConnection>();
+
+  app.ws(path, {
+    open(ws) {
+      const connection = toWebSocketConnection(ws as WebSocketPeer);
+      connections.set(ws as object, connection);
+      handlers.WsOpenHandler(new Event("open"), connection);
+    },
+    message(ws, message, isBinary) {
+      const connection = connections.get(ws as object);
+      if (!connection) return;
+
+      handlers.WsMessageHandler(
+        new MessageEvent("message", {
+          data: isBinary ? message : decoder.decode(message),
+        }),
+        connection,
+      );
+    },
+    close(ws, code, message) {
+      const connection = connections.get(ws as object);
+      if (!connection) return;
+
+      connection.readyState = 3;
+      connections.delete(ws as object);
+
+      handlers.WsCloseHandler(
+        new CloseEvent("close", {
+          code,
+          reason: decoder.decode(message),
+        }),
+        connection,
+      );
+    },
+    error(ws) {
+      const connection = connections.get(ws as object);
+      if (!connection) return;
+
+      handlers.WsErrorHandler(new Event("error"), connection);
+    },
+  });
+}
+

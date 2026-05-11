@@ -64,10 +64,11 @@ export class RPCHandler<N extends Natav = natav> {
         default:
           // @ts-ignore-next-line
           tel.warn("RPC_METHOD_NOT_FOUND", { method: message.method });
-          // @ts-ignore-next-line
           return createRPCError(
+            // @ts-ignore-next-line
             message.id,
             RPCErrorCode.MethodNotFound,
+            // @ts-ignore-next-line
             message.method,
           );
       }

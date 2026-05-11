@@ -53,7 +53,7 @@ export default class Mediasite<const N extends string = string> extends Driver<N
   private TIMEOUT_MS = 5000;
   private rxBuf = "";
   private pending = new McipPending();
-  private pollTimer: Timer | null = null;
+  private pollTimer: NodeJS.Timeout | null = null;
 
   state: MediasiteState = {
     status: null,

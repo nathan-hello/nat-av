@@ -1,55 +1,47 @@
-import { trace, SpanStatusCode, type Span, context } from "@opentelemetry/api";
-import { SeverityNumber, type AnyValue } from "@opentelemetry/api-logs";
+import { SeverityNumber, SpanStatusCode, type AttributeValue, type Span } from "./types";
 import { getLoggerProvider } from "./sdk";
 import { RPCErrorData } from "../../rpc/types";
+import { createSpan, getActiveSpan, withSpan } from "./runtime";
 
 export type TelemetryLogSchema = {
-  info: [string, Record<string, AnyValue>];
-  debug: [string, Record<string, AnyValue>];
-  warn: [string, Record<string, AnyValue>];
-  error: [string, Record<string, AnyValue>];
+  info: [string, Record<string, AttributeValue>];
+  debug: [string, Record<string, AttributeValue>];
+  warn: [string, Record<string, AttributeValue>];
+  error: [string, Record<string, AttributeValue>];
 };
 
-// Define a standardized Result type
 export type TaskResult<R> =
   | { ok: true; data: R }
   | { ok: false; error: string; data?: RPCErrorData };
 
 export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
-  private tracer;
   private namespace: string;
 
   constructor(namespace: string) {
     this.namespace = namespace;
-    this.tracer = trace.getTracer(namespace);
   }
 
-  // Always get fresh logger from our provider
   private get logger() {
     return getLoggerProvider().getLogger(this.namespace);
   }
 
-  // Overloads remain the same, but return TaskResult
   task<R>(name: string, fn: (span: Span) => Promise<R>): Promise<TaskResult<R>>;
   task<R>(name: string, fn: (span: Span) => R): TaskResult<R>;
 
-  task<R>(
-    name: string,
-    fn: (span: Span) => R | Promise<R>,
-  ): TaskResult<R> | Promise<TaskResult<R>> {
-    return this.tracer.startActiveSpan(name, (span) => {
+  task<R>(name: string, fn: (span: Span) => R | Promise<R>): TaskResult<R> | Promise<TaskResult<R>> {
+    const span = createSpan(name, getActiveSpan()?.context);
+
+    return withSpan(span, () => {
       try {
         const result = fn(span);
 
         if (result instanceof Promise) {
           return result
             .then((data): TaskResult<R> => {
-              // sync success
               span.setStatus({ code: SpanStatusCode.OK });
               return { ok: true as const, data };
             })
             .catch((err): TaskResult<R> => {
-              // async failure
               const error = this.handleError(span, name, err);
               if (err instanceof RPCErrorData) {
                 return { ok: false as const, error: err.error.message, data: err };
@@ -62,12 +54,10 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
             .finally(() => span.end());
         }
 
-        // Sync Success
         span.setStatus({ code: SpanStatusCode.OK });
         span.end();
         return { ok: true as const, data: result };
       } catch (err) {
-        // Sync Failure
         const error = this.handleError(span, name, err);
         span.end();
         if (err instanceof RPCErrorData) {
@@ -108,18 +98,15 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     this.emit(body, SeverityNumber.ERROR, "ERROR", attr);
   }
 
-  private emit(
-    body: string,
-    severityNumber: SeverityNumber,
-    severityText: string,
-    attributes?: any,
-  ) {
+  private emit(body: string, severityNumber: SeverityNumber, severityText: string, attributes?: any) {
     this.logger.emit({
+      hrTime: [Math.floor(Date.now() / 1000), 0],
       body,
       severityNumber,
       severityText,
-      attributes,
-      context: context.active(),
+      attributes: attributes ?? {},
+      spanContext: getActiveSpan()?.context,
+      instrumentationScope: { name: this.namespace },
     });
   }
 }
