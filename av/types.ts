@@ -35,11 +35,12 @@ export interface DeviceSocket {
 
 export type NamesOf<C extends readonly Driver[]> = C[number]["name"];
 
-export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> =
-  Extract<C[number], { name: N }>;
+export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<
+  C[number],
+  { name: N }
+>;
 
-export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> =
-  DriverFor<C, N>["state"];
+export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["state"];
 
 export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   [M in keyof DriverFor<C, N>["api"]]: DriverFor<C, N>["api"][M] extends (
@@ -49,10 +50,9 @@ export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   : never;
 };
 
-export type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> =
-  DriverFor<C, N>["deps"];
+export type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["deps"];
 
-type IsAny<T> = 0 extends (1 & T) ? true : false;
+type IsAny<T> = 0 extends 1 & T ? true : false;
 
 export type DepNamesOf<C extends readonly Driver[], N extends NamesOf<C>> =
   IsAny<DepsOf<C, N>[number]> extends true ? never
@@ -66,9 +66,9 @@ export type DepFor<
 > = Extract<DepsOf<C, N>[number], { name: DN }>;
 
 type PromisifyApi<Api> = {
-  [M in keyof Api]: Api[M] extends (...args: infer Args) => infer R
-    ? (...args: Args) => Promise<Awaited<R>>
-    : never;
+  [M in keyof Api]: Api[M] extends (...args: infer Args) => infer R ?
+    (...args: Args) => Promise<Awaited<R>>
+  : never;
 };
 
 type DepNames<Deps extends readonly any[]> =

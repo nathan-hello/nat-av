@@ -28,7 +28,10 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
   task<R>(name: string, fn: (span: Span) => Promise<R>): Promise<TaskResult<R>>;
   task<R>(name: string, fn: (span: Span) => R): TaskResult<R>;
 
-  task<R>(name: string, fn: (span: Span) => R | Promise<R>): TaskResult<R> | Promise<TaskResult<R>> {
+  task<R>(
+    name: string,
+    fn: (span: Span) => R | Promise<R>,
+  ): TaskResult<R> | Promise<TaskResult<R>> {
     const span = createSpan(name, getActiveSpan()?.context);
 
     return withSpan(span, () => {
@@ -98,7 +101,12 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     this.emit(body, SeverityNumber.ERROR, "ERROR", attr);
   }
 
-  private emit(body: string, severityNumber: SeverityNumber, severityText: string, attributes?: any) {
+  private emit(
+    body: string,
+    severityNumber: SeverityNumber,
+    severityText: string,
+    attributes?: any,
+  ) {
     this.logger.emit({
       hrTime: [Math.floor(Date.now() / 1000), 0],
       body,

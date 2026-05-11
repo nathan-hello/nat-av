@@ -1,13 +1,13 @@
 // Delete this file and put your own home page in app/controllers/home.tsx
-import { css, type RemixNode } from 'remix/ui'
+import { css, type RemixNode } from "remix/ui";
 
-import { PromptButton } from './prompt-button.tsx'
-import { routes } from '../routes.ts'
+import { PromptButton } from "./prompt-button.tsx";
+import { routes } from "../routes.ts";
 
-const APP_DISPLAY_NAME = decodeURIComponent('Natav%20Remix')
+const APP_DISPLAY_NAME = decodeURIComponent("Natav%20Remix");
 
 const FONT_STACK =
-  "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+  "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
 
 export function HomePage() {
   return () => (
@@ -23,49 +23,49 @@ export function HomePage() {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
         />
-        <script type="module" src={routes.assets.href({ path: 'app/assets/entry.ts' })}></script>
+        <script type="module" src={routes.assets.href({ path: "app/assets/entry.ts" })}></script>
       </head>
       <body
         mix={css({
           // Light-mode design tokens (default).
-          '--surface-0': '#dee2e6',
-          '--surface-3': '#f0f4f7',
-          '--surface-4': '#f7fbff',
-          '--text-primary': '#313539',
-          '--text-tertiary': '#94989c',
-          '--brand-blue': '#2dacf9',
+          "--surface-0": "#dee2e6",
+          "--surface-3": "#f0f4f7",
+          "--surface-4": "#f7fbff",
+          "--text-primary": "#313539",
+          "--text-tertiary": "#94989c",
+          "--brand-blue": "#2dacf9",
           // Dark-mode overrides.
-          '@media (prefers-color-scheme: dark)': {
-            '--surface-0': '#1e2226',
-            '--surface-3': '#313539',
-            '--surface-4': '#363a3e',
-            '--text-primary': '#dee2e6',
-            '--text-tertiary': '#94989c',
+          "@media (prefers-color-scheme: dark)": {
+            "--surface-0": "#1e2226",
+            "--surface-3": "#313539",
+            "--surface-4": "#363a3e",
+            "--text-primary": "#dee2e6",
+            "--text-tertiary": "#94989c",
           },
-          '& *, & *::before, & *::after': { boxSizing: 'border-box' },
+          "& *, & *::before, & *::after": { boxSizing: "border-box" },
           margin: 0,
-          padding: '48px 24px',
-          minHeight: '100vh',
-          background: 'var(--surface-0)',
-          color: 'var(--text-primary)',
+          padding: "48px 24px",
+          minHeight: "100vh",
+          background: "var(--surface-0)",
+          color: "var(--text-primary)",
           fontFamily: FONT_STACK,
-          fontSize: '14px',
+          fontSize: "14px",
           lineHeight: 1.5,
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         })}
       >
         <main
           mix={css({
-            width: '100%',
-            maxWidth: '820px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '72px',
+            width: "100%",
+            maxWidth: "820px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "72px",
           })}
         >
           <Masthead />
@@ -74,7 +74,7 @@ export function HomePage() {
         </main>
       </body>
     </html>
-  )
+  );
 }
 
 function Masthead() {
@@ -82,31 +82,31 @@ function Masthead() {
     <section
       aria-label="Welcome"
       mix={css({
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '36px',
-        width: '100%',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "36px",
+        width: "100%",
       })}
     >
       <p
         mix={css({
           margin: 0,
           fontWeight: 700,
-          fontSize: '14px',
+          fontSize: "14px",
           lineHeight: 1.33,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: 'var(--text-primary)',
-          textAlign: 'center',
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "var(--text-primary)",
+          textAlign: "center",
         })}
       >
         Welcome to
       </p>
       <RemixWordmarkHero />
     </section>
-  )
+  );
 }
 
 function Columns() {
@@ -114,36 +114,36 @@ function Columns() {
     <section
       aria-label="Getting started"
       mix={css({
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'stretch',
-        justifyContent: 'center',
-        width: 'auto',
-        '@media (max-width: 720px)': {
-          flexDirection: 'column',
-          width: '100%',
+        display: "flex",
+        gap: "16px",
+        alignItems: "stretch",
+        justifyContent: "center",
+        width: "auto",
+        "@media (max-width: 720px)": {
+          flexDirection: "column",
+          width: "100%",
         },
       })}
     >
       <GetStartedCard />
       <CodingWithAiCard />
     </section>
-  )
+  );
 }
 
 function GetStartedCard() {
   return () => (
-    <div mix={css({ ...CARD_STYLES, flex: '0 0 auto' })}>
+    <div mix={css({ ...CARD_STYLES, flex: "0 0 auto" })}>
       <h2 mix={css(CARD_HEADER_STYLES)}>Get started</h2>
       <ul
         mix={css({
-          listStyle: 'none',
+          listStyle: "none",
           margin: 0,
           padding: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          width: '100%',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          width: "100%",
         })}
       >
         <li>
@@ -158,7 +158,7 @@ function GetStartedCard() {
         </li>
       </ul>
     </div>
-  )
+  );
 }
 
 function CodingWithAiCard() {
@@ -166,27 +166,27 @@ function CodingWithAiCard() {
     <div
       mix={css({
         ...CARD_STYLES,
-        width: '540px',
-        justifyContent: 'center',
-        '@media (max-width: 720px)': { width: '100%' },
+        width: "540px",
+        justifyContent: "center",
+        "@media (max-width: 720px)": { width: "100%" },
       })}
     >
       <h2 mix={css(CARD_HEADER_STYLES)}>Coding with AI?</h2>
       <div
         mix={css({
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
         })}
       >
         <p
           mix={css({
             margin: 0,
-            padding: '0 16px 16px',
-            fontSize: '14px',
+            padding: "0 16px 16px",
+            fontSize: "14px",
             lineHeight: 1.67,
-            color: 'var(--text-primary)',
+            color: "var(--text-primary)",
           })}
         >
           Navigate to this project folder using your preferred AI-powered tool, and try copying any
@@ -199,7 +199,7 @@ function CodingWithAiCard() {
         <PromptButton text="Add compression middleware" />
       </div>
     </div>
-  )
+  );
 }
 
 function CardLink() {
@@ -207,26 +207,26 @@ function CardLink() {
     <a
       href={href}
       mix={css({
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'center',
-        padding: '16px',
-        borderRadius: '12px',
-        color: 'var(--text-primary)',
-        textDecoration: 'none',
-        background: 'transparent',
-        transition: 'background-color 150ms ease, color 150ms ease',
-        '&:hover, &:focus-visible': {
-          background: 'var(--surface-4)',
-          color: 'var(--brand-blue)',
-          outline: 'none',
+        display: "flex",
+        gap: "16px",
+        alignItems: "center",
+        padding: "16px",
+        borderRadius: "12px",
+        color: "var(--text-primary)",
+        textDecoration: "none",
+        background: "transparent",
+        transition: "background-color 150ms ease, color 150ms ease",
+        "&:hover, &:focus-visible": {
+          background: "var(--surface-4)",
+          color: "var(--brand-blue)",
+          outline: "none",
         },
       })}
     >
       <IconSlot>{icon}</IconSlot>
-      <span mix={css({ fontSize: '14px', lineHeight: 1.5, whiteSpace: 'nowrap' })}>{label}</span>
+      <span mix={css({ fontSize: "14px", lineHeight: 1.5, whiteSpace: "nowrap" })}>{label}</span>
     </a>
-  )
+  );
 }
 
 function IconSlot() {
@@ -234,66 +234,66 @@ function IconSlot() {
     <span
       aria-hidden="true"
       mix={css({
-        flex: '0 0 24px',
-        width: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: rotated ? 'center' : 'flex-start',
-        '& svg': {
-          width: '20px',
-          height: '20px',
-          display: 'block',
-          ...(rotated ? { transform: 'rotate(180deg)' } : {}),
+        flex: "0 0 24px",
+        width: "24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: rotated ? "center" : "flex-start",
+        "& svg": {
+          width: "20px",
+          height: "20px",
+          display: "block",
+          ...(rotated ? { transform: "rotate(180deg)" } : {}),
         },
       })}
     >
       {children}
     </span>
-  )
+  );
 }
 
 function Footer() {
   return () => (
     <footer
       mix={css({
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "10px",
       })}
     >
       <div
         mix={css({
-          display: 'flex',
-          gap: '24px',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          gap: "24px",
+          alignItems: "center",
+          justifyContent: "center",
         })}
       >
         <FooterWordmark />
         <nav
           aria-label="Remix social links"
           mix={css({
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            color: 'var(--text-tertiary)',
-            '& a': {
-              width: '20px',
-              height: '20px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'inherit',
-              transition: 'color 150ms ease',
+            display: "flex",
+            gap: "16px",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            color: "var(--text-tertiary)",
+            "& a": {
+              width: "20px",
+              height: "20px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "inherit",
+              transition: "color 150ms ease",
             },
-            '& a:hover, & a:focus-visible': {
-              color: 'var(--text-primary)',
-              outline: 'none',
+            "& a:hover, & a:focus-visible": {
+              color: "var(--text-primary)",
+              outline: "none",
             },
-            '& svg': { width: '100%', height: '100%', display: 'block' },
+            "& svg": { width: "100%", height: "100%", display: "block" },
           })}
         >
           <a href="https://github.com/remix-run/remix" aria-label="GitHub">
@@ -312,49 +312,49 @@ function Footer() {
       </div>
       <div
         mix={css({
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
-          fontSize: '10px',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "12px",
+          fontSize: "10px",
           lineHeight: 1.6,
-          letterSpacing: '0.05em',
-          color: 'var(--text-tertiary)',
-          textAlign: 'center',
-          '& p': { margin: 0, whiteSpace: 'nowrap' },
+          letterSpacing: "0.05em",
+          color: "var(--text-tertiary)",
+          textAlign: "center",
+          "& p": { margin: 0, whiteSpace: "nowrap" },
         })}
       >
         <p>DOCS AND EXAMPLES LICENSED UNDER MIT</p>
         <p>&copy;2026 SHOPIFY, INC.</p>
       </div>
     </footer>
-  )
+  );
 }
 
 const CARD_STYLES = {
-  background: 'var(--surface-3)',
-  borderRadius: '20px',
-  padding: '32px 16px 16px',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '32px',
-} as const
+  background: "var(--surface-3)",
+  borderRadius: "20px",
+  padding: "32px 16px 16px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "32px",
+} as const;
 
 const CARD_HEADER_STYLES = {
   margin: 0,
-  width: '100%',
-  padding: '0 16px',
-  display: 'flex',
-  alignItems: 'flex-start',
-  fontSize: '14px',
+  width: "100%",
+  padding: "0 16px",
+  display: "flex",
+  alignItems: "flex-start",
+  fontSize: "14px",
   fontWeight: 700,
   lineHeight: 1.5,
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  color: 'var(--text-primary)',
-} as const
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  color: "var(--text-primary)",
+} as const;
 
 // ----- SVG icons -----
 // Inline so the page is fully self-contained with no external icon assets.
@@ -369,7 +369,7 @@ function AtomIcon() {
         stroke-linecap="round"
       />
     </svg>
-  )
+  );
 }
 
 function DiscordFaceIcon() {
@@ -381,7 +381,7 @@ function DiscordFaceIcon() {
         stroke-width="1.5"
       />
     </svg>
-  )
+  );
 }
 
 function GitHubIcon() {
@@ -394,7 +394,7 @@ function GitHubIcon() {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }
 
 function XIcon() {
@@ -405,7 +405,7 @@ function XIcon() {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }
 
 function YouTubeIcon() {
@@ -416,7 +416,7 @@ function YouTubeIcon() {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }
 
 function DiscordIcon() {
@@ -428,7 +428,7 @@ function DiscordIcon() {
         stroke-width="1.5"
       />
     </svg>
-  )
+  );
 }
 
 function FooterWordmark() {
@@ -439,12 +439,12 @@ function FooterWordmark() {
       role="img"
       aria-label="Remix"
       mix={css({
-        display: 'block',
-        height: '8px',
-        width: 'calc(8px * 163 / 16)',
-        color: 'var(--text-primary)',
+        display: "block",
+        height: "8px",
+        width: "calc(8px * 163 / 16)",
+        color: "var(--text-primary)",
         opacity: 0.55,
-        '& svg': { display: 'block', width: '100%', height: '100%' },
+        "& svg": { display: "block", width: "100%", height: "100%" },
       })}
     >
       <svg viewBox="0 0 163 16" fill="currentColor" aria-hidden="true">
@@ -455,7 +455,7 @@ function FooterWordmark() {
         <path d="M70.4294 0.124146L69.319 4.33313H48.6296L48.2175 5.9054H48.2233L48.2224 5.90833H68.8796L67.7692 10.1427H47.0856L47.0603 10.2726C46.8284 11.0727 47.8351 11.7177 49.3063 11.7179H67.3308L66.194 15.9269H43.1608C38.3069 15.9267 34.95 13.7581 35.6726 11.0988L37.2995 4.97864C37.3359 4.84353 37.384 4.71053 37.4392 4.57825L37.4372 4.57922L38.6042 0.124146H70.4294Z" />
       </svg>
     </span>
-  )
+  );
 }
 
 function RemixWordmarkHero() {
@@ -468,10 +468,10 @@ function RemixWordmarkHero() {
       aria-label="Remix"
       viewBox="0 0 820 73"
       mix={css({
-        width: '100%',
-        height: 'auto',
-        display: 'block',
-        color: 'var(--text-primary)',
+        width: "100%",
+        height: "auto",
+        display: "block",
+        color: "var(--text-primary)",
       })}
     >
       <path d="M53.1347 52.3526H37.3303L32.0532 72.1341H47.8519L53.1347 52.3526Z" fill="#FFDF5F" />
@@ -522,5 +522,5 @@ function RemixWordmarkHero() {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }

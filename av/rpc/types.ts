@@ -27,7 +27,7 @@ export type SystemRpcRequest<M extends ValidSystemMethods & string = ValidSystem
     id: string | number;
     method: "system";
     params: {
-      call: M,
+      call: M;
       args: SystemMethodParams[M] extends [] ? undefined : SystemMethodParams[M][0];
     };
   };

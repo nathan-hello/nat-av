@@ -7,20 +7,14 @@ import { type ReadableLogRecord, type BodyValue } from "./types";
 export type ExportResult = { code: 0 };
 
 export interface LogRecordExporter {
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ): void;
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void): void;
   shutdown(): Promise<void>;
 }
 
 export class MultiLogExporter implements LogRecordExporter {
   constructor(private exporters: (LogRecordExporter | null)[]) {}
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
     for (const exporter of this.exporters) {
       exporter?.export(logRecords, () => {});
     }
@@ -59,8 +53,9 @@ function toLogEntry(record: ReadableLogRecord): LogEntry {
     }
   }
   return {
-    time: record.hrTime
-      ? new Date(Number(record.hrTime[0]) * 1000).toISOString()
+    time:
+      record.hrTime ?
+        new Date(Number(record.hrTime[0]) * 1000).toISOString()
       : new Date().toISOString().slice(11, 23),
     context: {
       spanId: record.spanContext?.spanId,
@@ -79,10 +74,7 @@ function toLogEntry(record: ReadableLogRecord): LogEntry {
 export class CustomExporter implements LogRecordExporter {
   constructor(private callback: (log: ReadableLogRecord) => void) {}
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
     for (const record of logRecords) {
       this.callback(record);
     }
@@ -95,10 +87,7 @@ export class CustomExporter implements LogRecordExporter {
 export class PinoLogExporter implements LogRecordExporter {
   constructor(private file: string) {}
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
     for (const record of logRecords) {
       const level = this.mapSeverity(record.severityNumber);
       const spanContext = record.spanContext;
@@ -111,10 +100,7 @@ export class PinoLogExporter implements LogRecordExporter {
             trace_id: spanContext.traceId,
             span_id: spanContext.spanId,
           }),
-          message:
-            typeof record.body === "string"
-              ? record.body
-              : JSON.stringify(record.body),
+          message: typeof record.body === "string" ? record.body : JSON.stringify(record.body),
         }) + "\n",
       );
     }

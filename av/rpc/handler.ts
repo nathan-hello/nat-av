@@ -7,12 +7,7 @@ import {
   type NatavRPCRequest,
   RPCErrorData,
 } from "./types";
-import {
-  createRPCResponse,
-  createRPCError,
-  RPCErrorCode,
-  isRPCRequest,
-} from "@av/rpc/utils";
+import { createRPCResponse, createRPCError, RPCErrorCode, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/tools/telemetry";
 import type { natav } from "@av/index";
 
@@ -27,9 +22,7 @@ export class RPCHandler<N extends Natav = natav> {
     this.natav = args.natav;
   }
 
-  async handleRequest(
-    message: NatavRPCRequest,
-  ): Promise<RPCResponse | RPCError> {
+  async handleRequest(message: NatavRPCRequest): Promise<RPCResponse | RPCError> {
     const result = await tel.task("rpc:handle-request", async (span) => {
       tel.info("RPC_RECEIVED", { message: message as any });
 
@@ -83,11 +76,7 @@ export class RPCHandler<N extends Natav = natav> {
       id: (message as any)?.id,
     });
 
-    return createRPCError(
-      (message as any)?.id ?? null,
-      RPCErrorCode.InternalError,
-      result.error,
-    );
+    return createRPCError((message as any)?.id ?? null, RPCErrorCode.InternalError, result.error);
   }
 
   private async handleDeviceDepsRequest(
@@ -95,11 +84,7 @@ export class RPCHandler<N extends Natav = natav> {
   ) {
     const dev = this.natav.FindDriver(message.params.device);
     if (!dev) {
-      return createRPCError(
-        message.id,
-        RPCErrorCode.DeviceNotFound,
-        "Unknown device",
-      );
+      return createRPCError(message.id, RPCErrorCode.DeviceNotFound, "Unknown device");
     }
 
     return createRPCResponse(message.id, dev.deps);
@@ -118,8 +103,7 @@ export class RPCHandler<N extends Natav = natav> {
       if (
         !methodStr ||
         !(methodStr in this.system.api) ||
-        typeof this.system.api[methodStr as keyof typeof this.system.api] !==
-          "function"
+        typeof this.system.api[methodStr as keyof typeof this.system.api] !== "function"
       ) {
         tel.warn("SYSTEM_METHOD_MISSING", {
           method: message.method,
@@ -132,12 +116,8 @@ export class RPCHandler<N extends Natav = natav> {
         );
       }
 
-      const methodReal =
-        this.system.api[methodStr as keyof typeof this.system.api];
-      const args =
-        systemRequest.params?.args !== undefined
-          ? [systemRequest.params.args]
-          : [];
+      const methodReal = this.system.api[methodStr as keyof typeof this.system.api];
+      const args = systemRequest.params?.args !== undefined ? [systemRequest.params.args] : [];
 
       // Execute the method
       const result = await Reflect.apply(methodReal, this.system.api, args);
@@ -170,106 +150,87 @@ export class RPCHandler<N extends Natav = natav> {
     const argsArray = Array.isArray(args) ? args : [];
 
     // 1. Child Task for the specific device call
-    const result = await tel.task(
-      `device:${deviceName}.${methodName}`,
-      async (span) => {
-        // Metadata for quick filtering
-        span.setAttributes({
-          "device.name": deviceName,
-          "device.method": methodName,
-        });
+    const result = await tel.task(`device:${deviceName}.${methodName}`, async (span) => {
+      // Metadata for quick filtering
+      span.setAttributes({
+        "device.name": deviceName,
+        "device.method": methodName,
+      });
 
-        const device = this.natav.FindDriver(deviceName);
-        if (!device) {
-          tel.warn("DEVICE_NOT_FOUND", { device: deviceName });
-          return createRPCError(
-            message.id,
-            RPCErrorCode.DeviceNotFound,
-            `Device "${deviceName}" not found`,
-            { availableDevices: this.natav.GetAllDriverNames() },
-          );
-        }
+      const device = this.natav.FindDriver(deviceName);
+      if (!device) {
+        tel.warn("DEVICE_NOT_FOUND", { device: deviceName });
+        return createRPCError(
+          message.id,
+          RPCErrorCode.DeviceNotFound,
+          `Device "${deviceName}" not found`,
+          { availableDevices: this.natav.GetAllDriverNames() },
+        );
+      }
 
-        // Check if method exists on device API
-        if (
-          device.api &&
-          typeof device.api === "object" &&
-          (!(methodName in device.api) ||
-            typeof device.api[methodName as keyof typeof device.api] !==
-              "function")
-        ) {
-          tel.warn("DEVICE_METHOD_MISSING", {
-            device: deviceName,
-            method: methodName,
-          });
-          return createRPCError(
-            message.id,
-            RPCErrorCode.DeviceMethodNotFound,
-            `Method "${methodName}" not found on device "${deviceName}"`,
-            { availableMethods: Object.keys(device.api) },
-          );
-        }
-
-        tel.info("DEVICE_CALL_START", {
+      // Check if method exists on device API
+      if (
+        device.api &&
+        typeof device.api === "object" &&
+        (!(methodName in device.api) ||
+          typeof device.api[methodName as keyof typeof device.api] !== "function")
+      ) {
+        tel.warn("DEVICE_METHOD_MISSING", {
           device: deviceName,
           method: methodName,
-          args: argsArray,
         });
+        return createRPCError(
+          message.id,
+          RPCErrorCode.DeviceMethodNotFound,
+          `Method "${methodName}" not found on device "${deviceName}"`,
+          { availableMethods: Object.keys(device.api) },
+        );
+      }
 
-        const method = (device.api as any)[methodName];
-        let callResult: any;
+      tel.info("DEVICE_CALL_START", {
+        device: deviceName,
+        method: methodName,
+        args: argsArray,
+      });
 
-        try {
-          callResult = await method.apply(device.api, argsArray);
-        } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
+      const method = (device.api as any)[methodName];
+      let callResult: any;
 
-          tel.error("DEVICE_CALL_ERROR", {
-            device: deviceName,
-            method: methodName,
-            error: errorMsg,
-          });
+      try {
+        callResult = await method.apply(device.api, argsArray);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
 
-          return createRPCError(
-            message.id,
-            RPCErrorCode.InternalError,
-            `Device execution failed: ${deviceName}.${methodName}`,
-            { error: errorMsg },
-          );
-        }
-
-        tel.info("DEVICE_CALL_SUCCESS", {
+        tel.error("DEVICE_CALL_ERROR", {
           device: deviceName,
           method: methodName,
-          result: callResult,
+          error: errorMsg,
         });
 
-        // Check if the result is a device error that should be returned as RPC error
-        if (
-          callResult &&
-          typeof callResult === "object" &&
-          "error" in callResult
-        ) {
-          const { error } = callResult;
-          if (
-            error &&
-            typeof error === "object" &&
-            "code" in error &&
-            "message" in error
-          ) {
-            return createRPCError(
-              message.id,
-              error.code,
-              error.message,
-              error.data,
-            );
-          }
-        }
+        return createRPCError(
+          message.id,
+          RPCErrorCode.InternalError,
+          `Device execution failed: ${deviceName}.${methodName}`,
+          { error: errorMsg },
+        );
+      }
 
-        return createRPCResponse(message.id, callResult);
-      },
-    );
+      tel.info("DEVICE_CALL_SUCCESS", {
+        device: deviceName,
+        method: methodName,
+        result: callResult,
+      });
+
+      // Check if the result is a device error that should be returned as RPC error
+      if (callResult && typeof callResult === "object" && "error" in callResult) {
+        const { error } = callResult;
+        if (error && typeof error === "object" && "code" in error && "message" in error) {
+          return createRPCError(message.id, error.code, error.message, error.data);
+        }
+      }
+
+      return createRPCResponse(message.id, callResult);
+    });
 
     if (result.ok) {
       return result.data;

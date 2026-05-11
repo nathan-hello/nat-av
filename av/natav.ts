@@ -81,11 +81,7 @@ namespace Natav {
     Name extends Names<N>,
     DepName extends DepNames<N, Name>,
   > = Dep<N, Name, DepName>["state"];
-  export type DepApi<
-    N extends Natav,
-    Name extends Names<N>,
-    DepName extends DepNames<N, Name>,
-  > = {
+  export type DepApi<N extends Natav, Name extends Names<N>, DepName extends DepNames<N, Name>> = {
     [M in keyof Dep<N, Name, DepName>["api"]]: Dep<N, Name, DepName>["api"][M] extends (
       (...args: infer Args) => infer R
     ) ?

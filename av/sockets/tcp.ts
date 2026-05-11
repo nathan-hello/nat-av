@@ -138,7 +138,9 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
           await this.scheduleRetry();
         });
 
-        socket.on("data", (data) => this.handleData(Buffer.isBuffer(data) ? data : Buffer.from(data)));
+        socket.on("data", (data) =>
+          this.handleData(Buffer.isBuffer(data) ? data : Buffer.from(data)),
+        );
         socket.on("drain", () => this.handleDrain());
         socket.on("end", () => {
           this.tel.info("SOCKET_END");

@@ -131,7 +131,10 @@ function toWebSocketConnection(ws: WebSocketPeer): WebSocketConnection {
 export function bindHttpToWs(
   app: WebSocketApp,
   path: string,
-  handlers: Pick<WebsocketHandler, "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler">,
+  handlers: Pick<
+    WebsocketHandler,
+    "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
+  >,
 ) {
   const connections = new WeakMap<object, WebSocketConnection>();
 
@@ -175,4 +178,3 @@ export function bindHttpToWs(
     },
   });
 }
-

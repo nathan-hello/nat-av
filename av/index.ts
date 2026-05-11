@@ -1,4 +1,9 @@
-import { bindHttpToWs, WebsocketHandler, type WebSocketApp, type WebSocketConnection } from "./websocket";
+import {
+  bindHttpToWs,
+  WebsocketHandler,
+  type WebSocketApp,
+  type WebSocketConnection,
+} from "./websocket";
 
 import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
@@ -17,7 +22,6 @@ import {
 } from "@av/tools/telemetry/exporters";
 import { StartLogging } from "@av/tools/telemetry/sdk";
 import Natav from "@av/natav";
-
 
 if ((globalThis as any).__devices__) {
   await (globalThis as any).__devices__.End();

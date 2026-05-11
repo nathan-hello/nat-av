@@ -6,7 +6,9 @@ import type { Span, SpanContext, SpanStatusCode } from "./types";
 const spanStorage = new AsyncLocalStorage<Span>();
 
 function createId(bytes: number): string {
-  return randomUUID().replaceAll("-", "").slice(0, bytes * 2);
+  return randomUUID()
+    .replaceAll("-", "")
+    .slice(0, bytes * 2);
 }
 
 class RuntimeSpan implements Span {

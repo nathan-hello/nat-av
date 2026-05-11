@@ -1,11 +1,11 @@
-import type { RemixNode } from 'remix/ui'
+import type { RemixNode } from "remix/ui";
 
-import { routes } from '../routes.ts'
-import { Document } from './document.tsx'
+import { routes } from "../routes.ts";
+import { Document } from "./document.tsx";
 
 export interface LayoutProps {
-  children?: RemixNode
-  title?: string
+  children?: RemixNode;
+  title?: string;
 }
 
 export function Layout() {
@@ -18,5 +18,5 @@ export function Layout() {
       </header>
       <main>{children}</main>
     </Document>
-  )
+  );
 }

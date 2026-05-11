@@ -58,5 +58,4 @@ export class LayoutBuilder {
       regions: this.regions,
     };
   }
-
 }

@@ -24,6 +24,10 @@ export default class CiscoRoomOS<
   }
 }
 
-const asdf = new CiscoRoomOS({"name": "asdf", socket: "" as any, output: {type: "http", getSessionId: () => "asdf"}})
+const asdf = new CiscoRoomOS({
+  name: "asdf",
+  socket: "" as any,
+  output: { type: "http", getSessionId: () => "asdf" },
+});
 
-const fdsa = asdf.api.xCommand.Message.Send({num:123});
+const fdsa = asdf.api.xCommand.Message.Send({ num: 123 });

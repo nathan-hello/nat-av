@@ -1,6 +1,6 @@
-// NOTE(nate): These two are aliased differently so if in the future we want 
-// to restrict one or the other it's obvious what we are affecting. OTEL by 
-// default does not allow one-level-deep JSON object in an Attributes value 
+// NOTE(nate): These two are aliased differently so if in the future we want
+// to restrict one or the other it's obvious what we are affecting. OTEL by
+// default does not allow one-level-deep JSON object in an Attributes value
 // field, whereas body can be nested deeply.
 export type AttributeValue = any;
 export type BodyValue = any;
@@ -12,16 +12,14 @@ export const SeverityNumber = {
   ERROR: 17,
 } as const;
 
-export type SeverityNumber =
-  (typeof SeverityNumber)[keyof typeof SeverityNumber];
+export type SeverityNumber = (typeof SeverityNumber)[keyof typeof SeverityNumber];
 
 export const SpanStatusCode = {
   OK: 1,
   ERROR: 2,
 } as const;
 
-export type SpanStatusCode =
-  (typeof SpanStatusCode)[keyof typeof SpanStatusCode];
+export type SpanStatusCode = (typeof SpanStatusCode)[keyof typeof SpanStatusCode];
 
 export type SpanContext = {
   traceId: string;

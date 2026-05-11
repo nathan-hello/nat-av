@@ -13,7 +13,13 @@ export class Monitor {
   readonly offsetX: number;
   readonly offsetY: number;
 
-  constructor(config: { id: number; resX: number; resY: number; offsetX: number; offsetY: number }) {
+  constructor(config: {
+    id: number;
+    resX: number;
+    resY: number;
+    offsetX: number;
+    offsetY: number;
+  }) {
     this.id = config.id;
     this.resX = config.resX;
     this.resY = config.resY;
