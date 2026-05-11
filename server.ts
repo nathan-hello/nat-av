@@ -1,5 +1,6 @@
 import { serve } from 'remix/node-serve'
 
+import { attachNatav } from './av/index.ts'
 import { router } from './app/router.ts'
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100
@@ -17,6 +18,8 @@ const server = serve(
     port,
   },
 )
+
+await attachNatav(server.app)
 
 await server.ready
 console.log(`Server listening on http://localhost:${server.port}`)

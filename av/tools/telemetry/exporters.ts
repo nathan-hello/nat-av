@@ -1,6 +1,7 @@
 import { ExportResultCode, type ExportResult } from "@opentelemetry/core";
 import type { LogRecordExporter, ReadableLogRecord } from "@opentelemetry/sdk-logs";
 import pino from "pino";
+import type { WebSocketConnection } from "@av/websocket";
 
 export class MultiLogExporter implements LogRecordExporter {
   constructor(private exporters: (LogRecordExporter | null)[]) {}
@@ -113,7 +114,6 @@ export class PinoLogExporter implements LogRecordExporter {
 }
 
 import type { Bus } from "../../bus";
-import type { WSContext, WSMessageReceive } from "hono/ws";
 import type { AnyValue } from "@opentelemetry/api-logs";
 
 /**
@@ -122,7 +122,7 @@ import type { AnyValue } from "@opentelemetry/api-logs";
  * method. Doing so would cause an infinite loop.
  */
 export class WebsocketExporter {
-  private clients = new Set<WSContext>();
+  private clients = new Set<WebSocketConnection>();
   private bus: Bus;
   constructor(args: { bus: Bus }) {
     this.bus = args.bus;
@@ -147,13 +147,12 @@ export class WebsocketExporter {
       });
     });
   }
-  WsOpenHandler = (_: Event, ws: WSContext) => {
+  WsOpenHandler = (_: Event, ws: WebSocketConnection) => {
     this.clients.add(ws);
   };
-  WsCloseHandler = (_: CloseEvent, ws: WSContext) => {
+  WsCloseHandler = (_: CloseEvent, ws: WebSocketConnection) => {
     this.clients.delete(ws);
   };
-  WsMessageHandler = async (_: MessageEvent<WSMessageReceive>, __: WSContext) => {};
-  WsErrorHandler = (_: Event, __: WSContext) => {};
+  WsMessageHandler = async (_: MessageEvent, __: WebSocketConnection) => {};
+  WsErrorHandler = (_: Event, __: WebSocketConnection) => {};
 }
-

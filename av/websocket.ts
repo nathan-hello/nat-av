@@ -1,11 +1,23 @@
-import type { WSContext, WSMessageReceive } from "hono/ws";
 import { type EventName, type EventPayload, type Bus } from "./bus";
 import type Natav from "@av/natav";
 import { RPCHandler } from "@av/rpc/handler";
 import { createRPCNotification, isRPCRequest } from "@av/rpc/utils";
 
+export interface WebSocketConnection {
+  readyState: number;
+  send(message: string): void;
+  close(code?: number, reason?: string): void;
+}
+
+function readMessage(data: MessageEvent["data"]): string {
+  if (typeof data === "string") return data;
+  if (data instanceof ArrayBuffer) return new TextDecoder().decode(data);
+  if (ArrayBuffer.isView(data)) return new TextDecoder().decode(data);
+  return String(data);
+}
+
 export class WebsocketHandler<N extends Natav = Natav> {
-  private clients = new Set<WSContext>();
+  private clients = new Set<WebSocketConnection>();
   private rpc: RPCHandler<N>;
   private bus: Bus;
 
@@ -42,29 +54,26 @@ export class WebsocketHandler<N extends Natav = Natav> {
     });
   }
 
-  WsOpenHandler = (_: Event, ws: WSContext) => {
+  WsOpenHandler = (_: Event, ws: WebSocketConnection) => {
     this.clients.add(ws);
   };
 
-  WsCloseHandler = (_: CloseEvent, ws: WSContext) => {
+  WsCloseHandler = (_: CloseEvent, ws: WebSocketConnection) => {
     this.clients.delete(ws);
   };
 
-  WsMessageHandler = async (event: MessageEvent<WSMessageReceive>, ws: WSContext) => {
-    const data = event.data.toString();
+  WsMessageHandler = async (event: MessageEvent, ws: WebSocketConnection) => {
+    const data = readMessage(event.data);
     try {
       const message = JSON.parse(data);
 
-      // Check if this is an RPC request
       if (isRPCRequest(message)) {
         const response = await this.rpc.handleRequest(message);
 
-        const resp = JSON.stringify(response);
-        ws.send(resp);
+        ws.send(JSON.stringify(response));
         return;
       }
 
-      // TODO: huh?
       this.clients.forEach((client) => {
         if (client.readyState === 1) {
           client.send(data);
@@ -85,5 +94,5 @@ export class WebsocketHandler<N extends Natav = Natav> {
     }
   };
 
-  WsErrorHandler = (_: Event, __: WSContext) => {};
+  WsErrorHandler = (_: Event, __: WebSocketConnection) => {};
 }
