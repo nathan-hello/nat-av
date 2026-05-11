@@ -23,6 +23,7 @@ export function HomePage() {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
         />
+        <link rel="stylesheet" href={routes.assets.href({ path: "app/assets/tailwind.css" })} />
         <script type="module" src={routes.assets.href({ path: "app/assets/entry.ts" })}></script>
       </head>
       <body
