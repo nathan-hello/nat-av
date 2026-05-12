@@ -10,7 +10,7 @@ import DisplayManager from "@av/drivers/decoder/impl/display";
 import {
   CustomExporter,
   MultiLogExporter,
-  PinoLogExporter,
+  FileExporter,
   WebsocketExporter,
 } from "@av/tools/telemetry/exporters";
 import { StartLogging } from "@av/tools/telemetry/sdk";
@@ -24,7 +24,7 @@ const mock = false;
 
 StartLogging(
   new MultiLogExporter([
-    new PinoLogExporter("./logs/otel.log"),
+    new FileExporter("./logs/otel.log", true),
     new CustomExporter((record) => {
       bus.dispatch("natav:opentelemetry:entry", {
         type: "natav:opentelemetry:entry",

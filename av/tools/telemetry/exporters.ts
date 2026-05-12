@@ -1,8 +1,8 @@
-import { appendFileSync } from "node:fs";
-
 import type { Bus } from "../../bus";
 import type { WebSocketConnection } from "@av/websocket";
 import { type ReadableLogRecord, type BodyValue } from "./types";
+
+import fs from "node:fs";
 
 export type ExportResult = { code: 0 };
 
@@ -84,14 +84,21 @@ export class CustomExporter implements LogRecordExporter {
   async shutdown() {}
 }
 
-export class PinoLogExporter implements LogRecordExporter {
-  constructor(private file: string) {}
+export class FileExporter implements LogRecordExporter {
+  constructor(
+    private file: string,
+    createFile: boolean,
+  ) {
+    if (createFile) {
+      fs.writeFileSync(file, "", { flag: "a+" });
+    }
+  }
 
   export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
     for (const record of logRecords) {
       const level = this.mapSeverity(record.severityNumber);
       const spanContext = record.spanContext;
-      appendFileSync(
+      fs.appendFileSync(
         this.file,
         JSON.stringify({
           level,

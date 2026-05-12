@@ -1,3 +1,4 @@
 node_modules
 app/assets/tailwind.css
-logs
+logs/*
+!logs/*.gitkeep
