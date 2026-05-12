@@ -6,7 +6,6 @@
  * - Server → Client: Push notifications for device state updates
  */
 
-import type { natav } from "@av/index";
 import type { EventPayload } from "@av/bus";
 import type { System } from "@av/system";
 

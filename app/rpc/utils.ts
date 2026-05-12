@@ -1,5 +1,6 @@
 import type { RPCError, RPCNotification, NatavRPCRequest, RPCResponse } from "@av/rpc/types";
 
+// Error codes following JSON-RPC 2.0 spec
 export enum RPCErrorCode {
   ParseError = -32700,
   InvalidRequest = -32600,
@@ -15,11 +16,9 @@ export enum RPCErrorCode {
 // Type guard helpers
 export function isRPCRequest(msg: any): msg is NatavRPCRequest {
   return (
-    msg &&
-    msg.jsonrpc === "2.0" &&
-    msg.id !== undefined &&
-    msg.params &&
-    typeof msg.method === "string"
+    msg && msg.jsonrpc === "2.0" && msg.id !== undefined && typeof msg.method === "string"
+    // msg.params is optional
+    // msg.params !== undefined
   );
 }
 
@@ -39,7 +38,11 @@ export function isRPCError(msg: any): msg is RPCError {
 }
 
 export function isRPCNotification(msg: any): msg is RPCNotification {
-  return msg && msg.jsonrpc === "2.0" && msg.method === "notification" && msg.params !== undefined;
+  return (
+    msg && msg.jsonrpc === "2.0" && msg.method === "notification"
+    // msg.params is optional
+    // msg.params !== undefined
+  );
 }
 
 // Helper to create error responses

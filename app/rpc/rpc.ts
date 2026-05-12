@@ -1,4 +1,4 @@
-import { isRPCError, isRPCNotification, isRPCResponse } from "@av/client/types";
+import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
 import type { EventPayload } from "@av/bus";
 import type Natav from "@av/natav";
 import type { System } from "@av/system";

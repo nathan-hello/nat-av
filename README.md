@@ -20,8 +20,8 @@ A minimal Remix application starter with a home page and an auth page.
 ## Commands
 
 ```sh
-pnpm install
-pnpm run start
-pnpm test
-pnpm run typecheck
+npm install
+npm run start
+npm test
+npm run typecheck
 ```
