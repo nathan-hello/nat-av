@@ -25,10 +25,10 @@ const mock = false;
 StartLogging(
   new MultiLogExporter([
     new FileExporter("./logs/otel.log", true),
-    new CustomExporter((record) => {
+    new CustomExporter((event) => {
       bus.dispatch("natav:opentelemetry:entry", {
         type: "natav:opentelemetry:entry",
-        message: record,
+        message: event,
       });
     }),
   ]),

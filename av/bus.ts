@@ -14,10 +14,10 @@ export type SystemEvents<N extends Natav = natav> =
       name: Natav.Names<N>;
       data: Partial<Natav.State<N, any>>;
     }
-  | { type: "natav:device:connected"; name: string }
-  | { type: "natav:device:disconnected"; name: string }
-  | { type: "natav:device:error"; name: string; error?: Error | unknown }
-  | { type: "natav:opentelemetry:entry"; message: ReadableLogRecord }
+  | { type: "natav:device:connected"; name: Natav.Names<N> }
+  | { type: "natav:device:disconnected"; name: Natav.Names<N> }
+  | { type: "natav:device:error"; name: Natav.Names<N>; error?: Error | unknown }
+  | { type: "natav:opentelemetry:entry"; message: { record: ReadableLogRecord; asString: string } }
   | {
       type: "natav:automation:triggered";
       name: string;

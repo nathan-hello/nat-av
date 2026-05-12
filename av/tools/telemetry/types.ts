@@ -12,6 +12,14 @@ export const SeverityNumber = {
   ERROR: 17,
 } as const;
 
+export function SeverityToString(severity?: number): string {
+  if (!severity) return "info";
+  if (severity <= 8) return "debug";
+  if (severity <= 12) return "info";
+  if (severity <= 16) return "warn";
+  return "error";
+}
+
 export type SeverityNumber = (typeof SeverityNumber)[keyof typeof SeverityNumber];
 
 export const SpanStatusCode = {
@@ -27,6 +35,21 @@ export type SpanContext = {
   parentSpanId: string | undefined;
 };
 
+export type LogEntry = {
+  time: string;
+  context: {
+    spanId: string | undefined;
+    traceId: string | undefined;
+    traceName: string;
+  };
+  severity: {
+    id: number;
+    text: string;
+  };
+  name: string;
+  data: BodyValue;
+};
+
 export type ReadableLogRecord = {
   hrTime: [number, number];
   body: BodyValue;
@@ -36,6 +59,49 @@ export type ReadableLogRecord = {
   spanContext?: SpanContext;
   instrumentationScope: { name: string };
 };
+
+export function ReadableLogRecordStringify(record: ReadableLogRecord): string {
+  return JSON.stringify({
+    level: SeverityToString(record.severityNumber),
+    ...record.attributes,
+    ...(record.spanContext && {
+      trace_id: record.spanContext.traceId,
+      span_id: record.spanContext.spanId,
+    }),
+    message: typeof record.body === "string" ? record.body : JSON.stringify(record.body),
+  });
+}
+
+export function ReadableLogRecordToLogEntry(record: ReadableLogRecord): LogEntry {
+  let body: string;
+  if (typeof record.body === "string") {
+    body = record.body;
+  } else {
+    try {
+      body = JSON.stringify(record.body);
+    } catch {
+      body = "OTEL_ENTRY_BODY_WAS_NOT_STRING_AND_JSON_STRINGIFY_FAILED";
+    }
+  }
+  return {
+    time:
+      record.hrTime ?
+        new Date(Number(record.hrTime[0]) * 1000).toISOString()
+      : new Date().toISOString().slice(11, 23),
+    context: {
+      spanId: record.spanContext?.spanId,
+      traceId: record.spanContext?.traceId,
+      traceName: record.instrumentationScope.name,
+    },
+    severity: {
+      id: record.severityNumber?.valueOf() ?? -1,
+      text: record.severityText ?? "unknown-severity",
+    },
+    name: body,
+    data: record.attributes,
+  };
+}
+
 
 export type Logger = {
   emit(record: ReadableLogRecord): void;
