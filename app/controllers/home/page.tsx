@@ -1,14 +1,21 @@
 import { clientEntry, css, type Handle } from "remix/ui";
 import { ClientRpc } from "@av/rpc/client";
+import { Telemetry } from "@av/telemetry";
 
 export const HomePage = clientEntry(
   "/assets/app/controllers/home/page.tsx#HomePage",
   function HomePage(handle: Handle) {
-    let rpc: ClientRpc | null = null;
+    let rpc: ClientRpc;
     let connected = false;
+    let tel: Telemetry;
 
-    handle.queueTask((signal) => {
-      console.log("asdf");
+    handle.signal.addEventListener("abort", (event) => {
+      tel.error("ABORT", event);
+      rpc?.close();
+    });
+
+    handle.queueTask(() => {
+      tel = new Telemetry("homepage");
 
       rpc = new ClientRpc();
 
@@ -24,8 +31,6 @@ export const HomePage = clientEntry(
       rpc.on("change", handle.update);
 
       rpc.connect();
-
-      signal.addEventListener("abort", () => rpc?.close());
     });
 
     return () => {

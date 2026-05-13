@@ -145,10 +145,12 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     const id = this.requestIdCounter++;
     const argsArray = Array.isArray(args) ? args : [args];
 
+    this.tel.debug("device.call", { device, method, args, id });
+
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pendingRequests.delete(id);
-        reject(new Error(`RPC call timed out after ${this.timeout}ms`));
+        reject(new Error(`Device RPC call timed out after ${this.timeout}ms id ${id}`));
       }, this.timeout);
 
       this.pendingRequests.set(id, {
@@ -214,10 +216,12 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
 
     const id = this.requestIdCounter++;
 
+    this.tel.debug("system", { method, args, id });
+
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pendingRequests.delete(id);
-        reject(new Error(`RPC call timed out after ${this.timeout}ms`));
+        reject(new Error(`System RPC call timed out after ${this.timeout}ms id: ${id}`));
       }, this.timeout);
 
       this.pendingRequests.set(id, {
@@ -291,34 +295,34 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
       return;
     }
 
-    if (isRPCResponse(parsed)) {
+    if (isRPCResponse(parsed.data)) {
       this.tel.info("got-response", parsed.data);
-      const pending = this.pendingRequests.get(parsed.id);
+      const pending = this.pendingRequests.get(parsed.data.id);
       if (pending) {
         clearTimeout(pending.timeout);
-        this.pendingRequests.delete(parsed.id);
-        pending.resolve(parsed.result);
+        this.pendingRequests.delete(parsed.data.id);
+        pending.resolve(parsed.data.result);
       }
       return;
     }
 
-    if (isRPCError(parsed)) {
+    if (isRPCError(parsed.data)) {
       this.tel.info("got-error", parsed.data);
-      if (parsed.id === null) {
+      if (parsed.data.id === null) {
         return;
       }
 
-      const pending = this.pendingRequests.get(parsed.id);
+      const pending = this.pendingRequests.get(parsed.data.id);
       if (!pending) {
         return;
       }
 
       clearTimeout(pending.timeout);
-      this.pendingRequests.delete(parsed.id);
+      this.pendingRequests.delete(parsed.data.id);
 
-      const error = new Error(parsed.error.message);
-      (error as any).code = parsed.error.code;
-      (error as any).data = parsed.error.data;
+      const error = new Error(parsed.data.error.message);
+      (error as any).code = parsed.data.error.code;
+      (error as any).data = parsed.data.error.data;
       pending.reject(error);
     }
   }
