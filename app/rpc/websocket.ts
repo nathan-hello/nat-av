@@ -62,10 +62,6 @@ function toWebSocketUrl(url: string) {
     return url;
   }
 
-  if (typeof window === "undefined") {
-    throw new Error("WebSocket transport can only be created in the browser");
-  }
-
   let resolved = new URL(url, window.location.href);
   resolved.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return resolved.toString();
@@ -85,7 +81,16 @@ export class RemixWebsocket extends TypedEventTarget<WebsocketEvents> {
   }
 
   connect() {
-    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+    console.log("ClientWebsocket: connect");
+    if (!this.socket) {
+      console.log("ClientWebsocket: connect failed because socket is undefined");
+      return this;
+    }
+    if (this.socket.readyState !== WebSocket.CLOSED) {
+      console.log(
+        "ClientWebsocket: connect failed because readyState is not CLOSED: ",
+        this.socket.readyState,
+      );
       return this;
     }
 
@@ -117,39 +122,44 @@ export class RemixWebsocket extends TypedEventTarget<WebsocketEvents> {
 
   private openSocket() {
     let socket = new WebSocket(toWebSocketUrl(this.url));
+    console.log("ClientWebsocket.openSocket");
     this.socket = socket;
 
     socket.addEventListener("open", (event) => {
       this.retryCount = 0;
+      console.log("ClientWebsocket.openSocket: Event: Open");
       this.dispatchEvent(event);
     });
 
     socket.addEventListener("message", (event) => {
+      console.log("ClientWebsocket.openSocket: Event: Message");
       this.dispatchEvent(event as MessageEvent<string>);
     });
 
     socket.addEventListener("error", (event) => {
+      console.log("ClientWebsocket.openSocket: Event: Error", event);
       this.dispatchEvent(event);
     });
 
     socket.addEventListener("close", (event) => {
       this.dispatchEvent(event);
+      console.log("ClientWebsocket.openSocket: Event: Close", event);
 
       if (this.closedExplicitly || !this.options.reconnect) {
         return;
       }
 
-      this.reconnectTimer = setTimeout(() => {
-        this.retryCount += 1;
-        this.openSocket();
-      }, this.options.retryDelay * Math.min(this.retryCount + 1, 10));
+      this.reconnectTimer = setTimeout(
+        () => {
+          this.retryCount += 1;
+          console.log(
+            "ClientWebsocket.openSocket: Attempting Reconnect: Attempt ",
+            this.retryCount,
+          );
+          this.openSocket();
+        },
+        this.options.retryDelay * Math.min(this.retryCount + 1, 10),
+      );
     });
   }
-}
-
-export function createRemixWebsocket(url: string, options: TransportOptions = {}) {
-  return new RemixWebsocket(url, {
-    reconnect: options.reconnect ?? true,
-    retryDelay: options.retryDelay ?? 1000,
-  });
 }

@@ -1,4 +1,4 @@
-import { TypedEventTarget, createRemixWebsocket } from "./websocket";
+import { RemixWebsocket, TypedEventTarget } from "./websocket";
 
 export type DebugEntry = {
   time: string;
@@ -22,23 +22,16 @@ type DebugEvents = {
   entry: DebugEntry;
 };
 
-export type DebugClientOptions = {
-  url?: string;
-  reconnect?: boolean;
-  retryDelay?: number;
-  limit?: number;
-};
-
 export class DebugClient extends TypedEventTarget<DebugEvents> {
   private transport;
   private entries: DebugEntry[] = [];
   private connected = false;
 
-  constructor(options: DebugClientOptions = {}) {
+  constructor() {
     super();
-    this.transport = createRemixWebsocket(options.url ?? "/debugger", {
-      reconnect: options.reconnect,
-      retryDelay: options.retryDelay,
+    this.transport = new RemixWebsocket("/debug", {
+      reconnect: true,
+      retryDelay: 1000,
     });
 
     this.transport.on("open", () => {
@@ -103,8 +96,4 @@ export class DebugClient extends TypedEventTarget<DebugEvents> {
     this.entries = [entry, ...this.entries].slice(0, 500);
     this.dispatchEvent(new CustomEvent("entry", { detail: entry }));
   }
-}
-
-export function createDebugClient(options: DebugClientOptions = {}) {
-  return new DebugClient(options).connect();
 }

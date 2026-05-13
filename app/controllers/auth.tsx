@@ -1,8 +1,7 @@
 import type { BuildAction } from "remix/fetch-router";
-
-import type { routes } from "../routes.ts";
-import { Layout } from "../ui/layout.tsx";
-import { render } from "../utils/render.tsx";
+import type { routes } from "@/routes";
+import { Layout } from "@/ui/layout";
+import { render } from "@/utils/render";
 
 export const auth: BuildAction<"GET", typeof routes.auth> = {
   handler({ request }) {

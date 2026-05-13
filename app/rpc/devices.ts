@@ -3,7 +3,7 @@ import type { natav } from "@av/index";
 import type { System } from "@av/system";
 
 import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
-import { TypedEventTarget, createRemixWebsocket, RemixWebsocket } from "./websocket";
+import { TypedEventTarget, RemixWebsocket } from "./websocket";
 
 type SystemStateData = {
   connections: Record<string, { connected: boolean }>;
@@ -25,9 +25,10 @@ type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
 };
 
-export class RemixDeviceHandle<N extends Natav, Name extends Natav.Names<N>> extends TypedEventTarget<
-  DeviceEvents<N, Name>
-> {
+export class RemixDeviceHandle<
+  N extends Natav,
+  Name extends Natav.Names<N>,
+> extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
 
   constructor(
@@ -90,12 +91,6 @@ type RpcEvents = {
   change: { name?: string };
 };
 
-type RemixRpcOptions = {
-  url?: string;
-  reconnect?: boolean;
-  retryDelay?: number;
-};
-
 export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
   private transport: RemixWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
@@ -106,11 +101,11 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
   private deviceHandles = new Map<string, RemixDeviceHandle<N, any>>();
   private initialized = false;
 
-  constructor(options: RemixRpcOptions = {}) {
+  constructor() {
     super();
-    this.transport = createRemixWebsocket(options.url ?? "/ws", {
-      reconnect: options.reconnect,
-      retryDelay: options.retryDelay,
+    this.transport = new RemixWebsocket("/ws", {
+      reconnect: true,
+      retryDelay: 1000,
     });
 
     this.transport.on("open", () => {
@@ -325,8 +320,7 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
         const { name, data: state } = data.params;
         const currentState = this.deviceStates[name];
 
-        this.deviceStates[name] =
-          currentState ? { ...(currentState as object), ...state } : state;
+        this.deviceStates[name] = currentState ? { ...(currentState as object), ...state } : state;
 
         this.notifyDevice(name);
       }
@@ -384,8 +378,4 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
       handle.notify();
     }
   }
-}
-
-export function createRemixRpcClient(options: RemixRpcOptions = {}) {
-  return new RemixRpcClient(options).connect();
 }

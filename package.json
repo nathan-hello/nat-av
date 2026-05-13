@@ -9,6 +9,7 @@
     "build:css": "sh ./scripts/commands.sh build:css",
     "test": "sh ./scripts/commands.sh test",
     "typecheck": "sh ./scripts/commands.sh typecheck",
+    "tsc": "sh ./scripts/commands.sh typecheck",
     "generate": "tsx ./scripts/schema/main.ts './av/index.ts#natav'"
   },
   "engines": {

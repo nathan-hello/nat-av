@@ -1,641 +1,210 @@
-import { clientEntry, css, on, type Handle, type RemixNode } from "remix/ui";
-
-import { routes } from "../../routes.ts";
-import { createRemixRpcClient, type RemixRpcClient } from "../../rpc/devices.ts";
-
-type Template = {
-  type: "builtin";
-  id: number;
-  name: string;
-  dimensions: { rows: number; cols: number };
-  regions: Array<{ id: number; row: number; col: number; width: number; height: number }>;
-};
-type Window = {
-  id: number;
-  global: { resX: number; resY: number; offsetX: number; offsetY: number };
-  routes: Array<{ uri: string }>;
-};
-type Display = {
-  canvas: { width: number; height: number };
-  windows: Window[];
-  encoders: Array<{ name: string; uri: string }>;
-  template: { choices: Template[]; state: Template };
-};
-type Source = { id: string; name: string };
+import { clientEntry, css, type Handle } from "remix/ui";
+import { routes } from "@/routes";
+import { RemixRpcClient } from "@/rpc/devices";
 
 export const HomePage = clientEntry(
   "/assets/app/controllers/home/page.tsx#HomePage",
   function HomePage(handle: Handle) {
-    let rpc: RemixRpcClient | null = null;
+    console.log("asdf");
+    let rpc: RemixRpcClient = new RemixRpcClient();
     let connected = false;
-    let error: string | null = null;
-    let selectedSource: Source | null = null;
-    let selectedWindow: number | null = null;
-    let routeForm = {
-      windowId: 0,
-      uri: "udp://239.0.0.1:1234?pkt_size=1316",
-      resX: 1920,
-      resY: 1080,
-      offsetX: 0,
-      offsetY: 0,
-    };
-    let moveForm = { resX: 1920, resY: 1080, offsetX: 0, offsetY: 0 };
 
     handle.queueTask((signal) => {
-      rpc = createRemixRpcClient();
-      let update = () => handle.update();
+      rpc.connect();
+
       rpc.on("ready", () => {
         connected = true;
-        update();
+        handle.update();
       });
       rpc.on("disconnect", () => {
         connected = false;
-        update();
+        handle.update();
       });
-      rpc.on("change", update);
+      rpc.on("change", handle.update);
+
       signal.addEventListener("abort", () => rpc?.close());
     });
 
     return () => {
       let display = rpc?.device("video-wall");
-      let state = display?.state as Display | undefined;
-      let template = state?.template.state;
-
-      if (!state || !template) {
-        return <div mix={pageStyle}>Loading decoder state...</div>;
-      }
-
-      let canvasW = state.canvas.width;
-      let canvasH = state.canvas.height;
-      let scale = canvasW ? Math.min(1, 760 / canvasW) : 1;
-
-      let routeWindow = async () => {
-        if (!display) return;
-        try {
-          await display.api.route(routeForm.windowId, routeForm.uri, {
-            resX: routeForm.resX,
-            resY: routeForm.resY,
-            offsetX: routeForm.offsetX,
-            offsetY: routeForm.offsetY,
-          });
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
-
-      let moveWindow = async () => {
-        if (!display || selectedWindow === null) return;
-        try {
-          await display.api.move(selectedWindow, {
-            resX: moveForm.resX,
-            resY: moveForm.resY,
-            offsetX: moveForm.offsetX,
-            offsetY: moveForm.offsetY,
-          });
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
-
-      let destroyWindow = async (id: number | "all") => {
-        if (!display) return;
-        try {
-          await display.api.destroy(id);
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
-
-      let changeTemplate = async (next: Template) => {
-        if (!display) return;
-        try {
-          await display.api.changeTemplate(next);
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
-
-      let routeWindowWithSource = async (window: Window, source: Source) => {
-        if (!display) return;
-        try {
-          await display.api.route(window.id, source.id, window.global);
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
-
-      let routeRegionWithSource = async (region: Template["regions"][number], source: Source) => {
-        if (!display) return;
-        let unitW = canvasW / (template.dimensions.cols * 2);
-        let unitH = canvasH / (template.dimensions.rows * 2);
-        try {
-          await display.api.route(region.id, source.id, {
-            resX: region.width * unitW,
-            resY: region.height * unitH,
-            offsetX: region.col * unitW,
-            offsetY: canvasH - (region.row + region.height) * unitH,
-          });
-          error = null;
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e);
-        }
-        handle.update();
-      };
+      console.log("RpcClient: rpc.device(\"video-wall\"): ", display);
 
       return (
-        <html lang="en">
-          <head>
-            <meta charSet="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="color-scheme" content="dark" />
-            <title>Decoder Control</title>
-            <link rel="stylesheet" href={routes.assets.href({ path: "app/assets/tailwind.css" })} />
-            <script
-              type="module"
-              src={routes.assets.href({ path: "app/assets/entry.ts" })}
-            ></script>
-          </head>
-          <body mix={pageStyle}>
-            <div mix={wrapStyle}>
-              <header mix={headStyle}>
-                <div>
-                  <h1 mix={titleStyle}>Decoder Control</h1>
-                  <p>video-wall</p>
-                </div>
-                <div mix={rowStyle}>
-                  <span>{connected ? "RPC" : "RPC off"}</span>
-                  <a href={routes.debug.href()}>Debug</a>
-                </div>
-              </header>
-              {error ?
-                <div mix={errorStyle}>{error}</div>
-              : null}
-
-              <div mix={layoutStyle}>
-                <aside mix={sideStyle}>
-                  <Panel title="Route Window">
-                    <Field label="Window ID">
-                      <input
-                        type="number"
-                        value={routeForm.windowId}
-                        mix={[
-                          inputStyle,
-                          on("change", (e) => {
-                            routeForm.windowId =
-                              Number((e.currentTarget as HTMLInputElement).value) || 0;
-                          }),
-                        ]}
-                      />
-                    </Field>
-                    <Field label="URI">
-                      <input
-                        type="text"
-                        value={routeForm.uri}
-                        mix={[
-                          inputStyle,
-                          on("change", (e) => {
-                            routeForm.uri = (e.currentTarget as HTMLInputElement).value;
-                          }),
-                        ]}
-                      />
-                    </Field>
-                    <Grid4>
-                      <Field label="X">
-                        <input
-                          type="number"
-                          value={routeForm.offsetX}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              routeForm.offsetX =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="Y">
-                        <input
-                          type="number"
-                          value={routeForm.offsetY}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              routeForm.offsetY =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="W">
-                        <input
-                          type="number"
-                          value={routeForm.resX}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              routeForm.resX =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="H">
-                        <input
-                          type="number"
-                          value={routeForm.resY}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              routeForm.resY =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                    </Grid4>
-                    <Row>
-                      <button
-                        type="button"
-                        mix={[
-                          buttonStyle,
-                          on("click", () => {
-                            void routeWindow();
-                          }),
-                        ]}
-                      >
-                        Route
-                      </button>
-                      <button
-                        type="button"
-                        mix={[
-                          buttonStyle,
-                          on("click", () => {
-                            void destroyWindow(routeForm.windowId);
-                          }),
-                        ]}
-                      >
-                        Destroy
-                      </button>
-                    </Row>
-                  </Panel>
-
-                  <Panel title="Move Window">
-                    <Field label="Selected">
-                      <input
-                        type="number"
-                        value={selectedWindow ?? -1}
-                        mix={[
-                          inputStyle,
-                          on("change", (e) => {
-                            selectedWindow = Number((e.currentTarget as HTMLInputElement).value);
-                            if (selectedWindow < 0) selectedWindow = null;
-                          }),
-                        ]}
-                      />
-                    </Field>
-                    <Grid4>
-                      <Field label="X">
-                        <input
-                          type="number"
-                          value={moveForm.offsetX}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              moveForm.offsetX =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="Y">
-                        <input
-                          type="number"
-                          value={moveForm.offsetY}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              moveForm.offsetY =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="W">
-                        <input
-                          type="number"
-                          value={moveForm.resX}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              moveForm.resX =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="H">
-                        <input
-                          type="number"
-                          value={moveForm.resY}
-                          mix={[
-                            inputStyle,
-                            on("change", (e) => {
-                              moveForm.resY =
-                                Number((e.currentTarget as HTMLInputElement).value) || 0;
-                            }),
-                          ]}
-                        />
-                      </Field>
-                    </Grid4>
-                    <Row>
-                      <button
-                        type="button"
-                        mix={[
-                          buttonStyle,
-                          on("click", () => {
-                            void moveWindow();
-                          }),
-                        ]}
-                      >
-                        Move
-                      </button>
-                      <button
-                        type="button"
-                        mix={[
-                          buttonStyle,
-                          on("click", () => {
-                            void destroyWindow("all");
-                          }),
-                        ]}
-                      >
-                        Wipe
-                      </button>
-                      <button
-                        type="button"
-                        mix={[
-                          buttonStyle,
-                          on("click", () => {
-                            void display?.api.debug();
-                          }),
-                        ]}
-                      >
-                        Debug
-                      </button>
-                    </Row>
-                  </Panel>
-
-                  <Panel title="Templates">
-                    <Stack>
-                      {state.template.choices.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          mix={[
-                            templateStyle(template.id === t.id),
-                            on("click", () => {
-                              void changeTemplate(t);
-                            }),
-                          ]}
-                        >
-                          {t.name}
-                        </button>
-                      ))}
-                    </Stack>
-                  </Panel>
-                </aside>
-
-                <main mix={mainStyle}>
-                  <div mix={canvasInfoStyle}>
-                    {canvasW}x{canvasH}{" "}
-                    {selectedSource ? `source: ${selectedSource.name}` : "pick a source"}
-                  </div>
-                  <div
-                    mix={canvasStyle}
-                    style={{ width: canvasW * scale, height: canvasH * scale }}
-                  >
-                    {template.regions.map((region) => {
-                      let unitW = canvasW / (template.dimensions.cols * 2);
-                      let unitH = canvasH / (template.dimensions.rows * 2);
-                      let left = region.col * unitW,
-                        top = region.row * unitH,
-                        width = region.width * unitW,
-                        height = region.height * unitH;
-                      return (
-                        <button
-                          key={region.id + ":" + region.row + ":" + region.col}
-                          type="button"
-                          mix={[
-                            regionStyle,
-                            on("click", () => {
-                              if (selectedSource)
-                                void routeRegionWithSource(region, selectedSource);
-                            }),
-                          ]}
-                          style={{
-                            left: left * scale,
-                            top: top * scale,
-                            width: width * scale,
-                            height: height * scale,
-                          }}
-                        >
-                          R{region.id}
-                        </button>
-                      );
-                    })}
-                    {state.windows.map((window) => {
-                      let top = canvasH - window.global.offsetY - window.global.resY;
-                      let sourceName =
-                        state.encoders.find((e) => e.uri === window.routes[0]?.uri)?.name ??
-                        "Blank";
-                      return (
-                        <button
-                          key={window.id}
-                          type="button"
-                          mix={[
-                            windowStyle(selectedWindow === window.id),
-                            on("click", () => {
-                              if (selectedSource)
-                                void routeWindowWithSource(window, selectedSource);
-                              else {
-                                selectedWindow = window.id;
-                                moveForm = { ...window.global };
-                                void handle.update();
-                              }
-                            }),
-                          ]}
-                          style={{
-                            left: window.global.offsetX * scale,
-                            top: top * scale,
-                            width: window.global.resX * scale,
-                            height: window.global.resY * scale,
-                          }}
-                        >
-                          {sourceName}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <Panel title="Sources">
-                    <Row wrap>
-                      {state.encoders.map((encoder) => (
-                        <button
-                          key={encoder.uri}
-                          type="button"
-                          mix={[
-                            sourceStyle(selectedSource?.id === encoder.uri),
-                            on("click", () => {
-                              selectedSource =
-                                selectedSource?.id === encoder.uri ?
-                                  null
-                                : { id: encoder.uri, name: encoder.name };
-                              void handle.update();
-                            }),
-                          ]}
-                        >
-                          {encoder.name}
-                        </button>
-                      ))}
-                    </Row>
-                  </Panel>
-
-                  <Panel title="State">
-                    <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
-                  </Panel>
-                </main>
-              </div>
+        <main mix={shellStyle}>
+          <header mix={headerStyle}>
+            <div>
+              <p mix={eyebrowStyle}>Control surface</p>
+              <h1 mix={titleStyle}>Decoder Control</h1>
+              <p mix={subtitleStyle}>
+                Live router for the `video-wall` device. Route, move, template-switch, and wipe from
+                one page.
+              </p>
             </div>
-          </body>
-        </html>
+            <div mix={statusPillsStyle}>
+              <span mix={pillStyle(connected)}>
+                {connected ? "RPC Connected" : "RPC Disconnected"}
+              </span>
+              <a href={routes.debug.href()} mix={linkStyle}>
+                Debug
+              </a>
+            </div>
+          </header>
+        </main>
       );
     };
   },
 );
 
-function Panel(handle: Handle<{ title: string; children?: RemixNode }>) {
-  return () => (
-    <section mix={panelStyle}>
-      <h2 mix={panelTitleStyle}>{handle.props.title}</h2>
-      {handle.props.children}
-    </section>
-  );
-}
-function Field(handle: Handle<{ label: string; children?: RemixNode }>) {
-  return () => (
-    <label mix={fieldStyle}>
-      <span>{handle.props.label}</span>
-      {handle.props.children}
-    </label>
-  );
-}
-function Row(handle: Handle<{ children?: RemixNode; wrap?: boolean }>) {
-  return () => <div mix={handle.props.wrap ? rowWrapStyle : rowStyle}>{handle.props.children}</div>;
-}
-function Grid4(handle: Handle<{ children?: RemixNode }>) {
-  return () => <div mix={grid4Style}>{handle.props.children}</div>;
-}
-function Stack(handle: Handle<{ children?: RemixNode }>) {
-  return () => <div mix={stackStyle}>{handle.props.children}</div>;
-}
-
-const pageStyle = css({
+const bodyStyle = css({
   margin: 0,
   minHeight: "100vh",
   background: "#020617",
   color: "#e2e8f0",
   fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
 });
-const wrapStyle = css({ padding: "12px", display: "grid", gap: "12px" });
-const headStyle = css({
+
+const shellStyle = css({ padding: "24px", display: "grid", gap: "18px" });
+const headerStyle = css({
   display: "flex",
   justifyContent: "space-between",
   gap: "12px",
-  alignItems: "center",
   flexWrap: "wrap",
-});
-const titleStyle = css({ margin: 0, fontSize: "24px" });
-const rowStyle = css({ display: "flex", gap: "8px", alignItems: "center" });
-const rowWrapStyle = css({ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" });
-const layoutStyle = css({
-  display: "grid",
-  gridTemplateColumns: "300px 1fr",
-  gap: "12px",
   alignItems: "start",
-  "@media (max-width: 900px)": { gridTemplateColumns: "1fr" },
 });
-const sideStyle = css({ display: "grid", gap: "12px" });
-const mainStyle = css({ display: "grid", gap: "12px" });
-const panelStyle = css({
-  padding: "10px",
-  border: "1px solid #334155",
-  borderRadius: "10px",
-  background: "#0f172a",
+const eyebrowStyle = css({
+  margin: 0,
+  textTransform: "uppercase",
+  letterSpacing: "0.12em",
+  color: "#64748b",
+  fontSize: "11px",
+});
+const titleStyle = css({ margin: "4px 0 0", fontSize: "32px", lineHeight: 1.1 });
+const subtitleStyle = css({ margin: "10px 0 0", color: "#94a3b8", maxWidth: "72ch" });
+const statusPillsStyle = css({
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+});
+const linkStyle = css({ color: "#7dd3fc", textDecoration: "none" });
+const errorBannerStyle = css({
+  padding: "12px 14px",
+  borderRadius: "12px",
+  border: "1px solid #7f1d1d",
+  background: "#450a0a",
+  color: "#fca5a5",
+});
+const gridStyle = css({
   display: "grid",
-  gap: "8px",
+  gridTemplateColumns: "320px minmax(0, 1fr)",
+  gap: "18px",
+  alignItems: "start",
+  "@media (max-width: 1100px)": { gridTemplateColumns: "1fr" },
+});
+const sidebarStyle = css({ display: "grid", gap: "14px" });
+const contentStyle = css({ display: "grid", gap: "14px" });
+const panelStyle = css({
+  border: "1px solid #1e293b",
+  borderRadius: "16px",
+  background: "#0f172a",
+  padding: "14px",
 });
 const panelTitleStyle = css({
   margin: 0,
   fontSize: "12px",
   textTransform: "uppercase",
-  color: "#94a3b8",
   letterSpacing: "0.08em",
+  color: "#94a3b8",
+  marginBottom: "10px",
 });
-const fieldStyle = css({ display: "grid", gap: "4px" });
-const grid4Style = css({
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: "8px",
-});
+const fieldStyle = css({ display: "grid", gap: "6px" });
+const fieldLabelStyle = css({ fontSize: "11px", color: "#94a3b8" });
 const inputStyle = css({
   width: "100%",
-  padding: "8px",
-  borderRadius: "8px",
+  padding: "10px 12px",
+  borderRadius: "10px",
   border: "1px solid #334155",
   background: "#020617",
   color: "inherit",
 });
-const buttonStyle = css({
-  padding: "8px 10px",
-  borderRadius: "8px",
+const inlineGridStyle = css({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "10px",
+});
+const actionRowStyle = css({ display: "flex", gap: "10px", flexWrap: "wrap" });
+const primaryButtonStyle = css({
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: 0,
+  background: "#0ea5e9",
+  color: "#fff",
+  cursor: "pointer",
+});
+const secondaryButtonStyle = css({
+  padding: "10px 14px",
+  borderRadius: "10px",
   border: "1px solid #334155",
   background: "#020617",
   color: "inherit",
   cursor: "pointer",
 });
-const templateStyle = (active: boolean) =>
+const dangerButtonStyle = css({
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "1px solid #7f1d1d",
+  background: "#450a0a",
+  color: "#fecaca",
+  cursor: "pointer",
+});
+const templateListStyle = css({ display: "grid", gap: "8px" });
+const templateButtonStyle = (active: boolean) =>
   css({
-    padding: "8px 10px",
-    borderRadius: "8px",
+    padding: "10px 12px",
+    borderRadius: "10px",
     border: "1px solid " + (active ? "#38bdf8" : "#334155"),
     background: active ? "#0f172a" : "#020617",
     color: "inherit",
     textAlign: "left",
     cursor: "pointer",
   });
-const sourceStyle = (active: boolean) =>
+const sourcesStyle = css({ display: "grid", gap: "14px" });
+const sourceWrapStyle = css({ display: "flex", flexWrap: "wrap", gap: "8px" });
+const sourceStyle = (selected: boolean) =>
   css({
-    padding: "8px 10px",
+    padding: "10px 12px",
     borderRadius: "999px",
-    border: "1px solid " + (active ? "#38bdf8" : "#334155"),
-    background: active ? "#0f172a" : "#020617",
-    color: "inherit",
-    cursor: "pointer",
+    border: "1px solid " + (selected ? "#38bdf8" : "#334155"),
+    background: selected ? "#0f172a" : "#020617",
+    color: selected ? "#e0f2fe" : "#cbd5e1",
+    cursor: "grab",
   });
-const canvasInfoStyle = css({ fontSize: "12px", color: "#94a3b8" });
+const stateStyle = css({
+  margin: 0,
+  fontSize: "12px",
+  lineHeight: 1.6,
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  color: "#86efac",
+});
+const emptyStyle = css({
+  padding: "18px",
+  border: "1px dashed #334155",
+  borderRadius: "14px",
+  color: "#64748b",
+});
+const canvasShellStyle = css({ display: "grid", gap: "10px" });
+const canvasMetaStyle = css({
+  display: "flex",
+  gap: "12px",
+  flexWrap: "wrap",
+  fontSize: "12px",
+  color: "#94a3b8",
+});
 const canvasStyle = css({
   position: "relative",
-  border: "1px solid #334155",
-  borderRadius: "10px",
+  border: "2px solid #334155",
+  borderRadius: "16px",
   background: "#030712",
   overflow: "hidden",
 });
@@ -646,36 +215,32 @@ const regionStyle = css({
   color: "#64748b",
   fontSize: "11px",
   cursor: "copy",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 });
 const windowStyle = (active: boolean) =>
   css({
     position: "absolute",
     border: "1px solid " + (active ? "#38bdf8" : "#475569"),
-    background: active ? "rgba(14,165,233,0.15)" : "rgba(15,23,42,0.85)",
+    background: active ? "rgba(14, 165, 233, 0.15)" : "rgba(15, 23, 42, 0.85)",
     color: "#e2e8f0",
     fontSize: "11px",
     cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "hidden",
-    whiteSpace: "nowrap",
     textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   });
-const boxStyle = css({
-  margin: 0,
-  whiteSpace: "pre-wrap",
-  wordBreak: "break-word",
-  fontSize: "12px",
-});
-const emptyStyle = css({
-  padding: "12px",
-  border: "1px dashed #334155",
-  borderRadius: "10px",
-  color: "#64748b",
-});
-const errorStyle = css({
-  padding: "10px",
-  borderRadius: "10px",
-  border: "1px solid #7f1d1d",
-  background: "#450a0a",
-  color: "#fca5a5",
-});
-const stackStyle = css({ display: "grid", gap: "8px" });
+const pillStyle = (connected: boolean) =>
+  css({
+    padding: "8px 12px",
+    borderRadius: "999px",
+    background: connected ? "#14532d" : "#450a0a",
+    color: connected ? "#86efac" : "#fca5a5",
+    border: "1px solid " + (connected ? "#166534" : "#7f1d1d"),
+    fontSize: "12px",
+  });
+const inlineGrid = inlineGridStyle;
