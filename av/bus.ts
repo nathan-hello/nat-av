@@ -1,4 +1,4 @@
-import type { ReadableLogRecord } from "./tools/telemetry/types";
+import type { ReadableLogRecord } from "@av/telemetry/types";
 import { TypedEventTarget } from "./lib/eventtarget";
 import type Natav from "./natav";
 import type { natav } from "./index";

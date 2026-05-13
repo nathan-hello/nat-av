@@ -1,9 +1,8 @@
 import * as net from "node:net";
-
-import { TypedEventTarget } from "../lib/eventtarget";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
-import { Telemetry } from "../tools/telemetry";
-import { bufferHex } from "./hex";
+import { Telemetry } from "@av/telemetry";
+import { bufferHex } from "@av/sockets/hex";
 
 type TcpConfig = {
   addr: string;

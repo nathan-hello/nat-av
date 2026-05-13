@@ -8,7 +8,7 @@ import {
   RPCErrorData,
 } from "./types";
 import { createRPCResponse, createRPCError, RPCErrorCode, isRPCRequest } from "@av/rpc/utils";
-import { Telemetry } from "@av/tools/telemetry";
+import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";
 
 const tel = new Telemetry("server:rpc-handler");

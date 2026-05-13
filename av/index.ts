@@ -12,9 +12,9 @@ import {
   MultiLogExporter,
   FileExporter,
   WebsocketExporter,
-} from "@av/tools/telemetry/exporters";
+} from "@av/telemetry/exporters";
+import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
-import { StartLogging } from "@av/tools/telemetry/sdk";
 import Natav from "@av/natav";
 
 if ((globalThis as any).__devices__) {

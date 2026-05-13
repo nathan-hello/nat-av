@@ -1,6 +1,6 @@
 import { SeverityNumber, SpanStatusCode, type AttributeValue, type Span } from "./types";
 import { getLoggerProvider } from "./sdk";
-import { RPCErrorData } from "../../rpc/types";
+import { RPCErrorData } from "@av/rpc/types";
 import { createSpan, getActiveSpan, withSpan } from "./runtime";
 
 export type TelemetryLogSchema = {

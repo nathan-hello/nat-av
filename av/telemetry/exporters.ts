@@ -1,4 +1,4 @@
-import type { Bus } from "../../bus";
+import type { Bus } from "@av/bus";
 import type { WebSocketConnection } from "@av/websocket";
 import {
   type ReadableLogRecord,

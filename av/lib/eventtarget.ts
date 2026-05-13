@@ -1,4 +1,4 @@
-import { Telemetry } from "@av/tools/telemetry";
+import { Telemetry } from "@av/telemetry";
 
 const tel = new Telemetry("typed-event-emitter");
 

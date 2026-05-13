@@ -2,6 +2,7 @@ import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
 import type Natav from "@av/natav";
 import type { System } from "@av/system";
 import type { natav } from "@av/index";
+import type { NotificationListener, PendingRequest, SystemStateData } from "@/rpc/types";
 
 /**
  * RPC Client - manages all communication with the server

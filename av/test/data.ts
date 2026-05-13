@@ -2,8 +2,8 @@ import { Driver } from "../driver";
 import Natav from "../natav";
 import { Tcp } from "../sockets/tcp";
 import { SchemaGenerator } from "../schema/index.ts";
-import { CustomExporter, MultiLogExporter } from "../tools/telemetry/exporters";
-import { StartLogging } from "../tools/telemetry/sdk";
+import { CustomExporter, MultiLogExporter } from "@av/telemetry/exporters";
+import { StartLogging } from "@av/telemetry/sdk";
 
 StartLogging(new MultiLogExporter([new CustomExporter(() => {})]));
 

@@ -2,7 +2,7 @@ import * as dgram from "node:dgram";
 
 import { TypedEventTarget } from "../lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
-import { Telemetry } from "../tools/telemetry";
+import { Telemetry } from "@av/telemetry";
 import { bufferHex } from "./hex";
 
 type UdpConfig = {

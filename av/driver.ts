@@ -1,5 +1,5 @@
 import { ProtectedTypedEventTarget } from "./lib/eventtarget";
-import { Telemetry } from "./tools/telemetry";
+import { Telemetry } from "@av/telemetry";
 import { type Bus, bus } from "./bus";
 import type { DeviceSocket, DriverEvents } from "./types";
 
