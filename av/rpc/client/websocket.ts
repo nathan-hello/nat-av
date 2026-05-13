@@ -1,7 +1,7 @@
-import { TypedEventTarget } from "@/rpc/eventtarget";
-import type { TransportOptions } from "@/rpc/types";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { TransportOptions } from "@av/rpc/client/types";
 
-export class RemixWebsocket extends TypedEventTarget<WebSocketEventMap> {
+export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
   private socket: WebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private retryCount = 0;
@@ -22,21 +22,21 @@ export class RemixWebsocket extends TypedEventTarget<WebSocketEventMap> {
     socket.addEventListener("open", (event) => {
       this.retryCount = 0;
       console.log("ClientWebsocket.openSocket: Event: Open");
-      super.emit("open", event);
+      super.dispatch("open", event);
     });
 
     socket.addEventListener("message", (event) => {
-      super.emit("message", event);
+      super.dispatch("message", event);
     });
 
     socket.addEventListener("error", (event) => {
       console.log("ClientWebsocket.openSocket: Event: Error", event);
-      super.emit("error", event);
+      super.dispatch("error", event);
     });
 
     socket.addEventListener("close", (event) => {
       console.log("ClientWebsocket.openSocket: Event: Close", event);
-      super.emit("close", event);
+      super.dispatch("close", event);
       this.dispatchEvent(new CustomEvent("close", event));
 
       if (this.closedExplicitly || !this.options.reconnect) {

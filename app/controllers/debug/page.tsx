@@ -1,8 +1,8 @@
 import type { DriverSchema, MethodSchema, TypeSchema } from "@av/schema/types";
 import { clientEntry, css, on, type Handle, type SerializableProps } from "remix/ui";
 import { routes } from "@/routes";
-import { DebugClient } from "@/rpc/debug";
-import { RemixRpcClient } from "@/rpc/devices";
+import { ClientRpcDebug } from "@av/rpc/client/debug";
+import { ClientRpc } from "@av/rpc/client";
 
 type Tab = "state" | "api" | "events";
 
@@ -17,135 +17,130 @@ export type DebugSchema = SerializableProps & {
 
 type Props = SerializableProps & { schema: DebugSchema; initialDevice: string | null };
 
-export const DebugPage = clientEntry(
-  import.meta.url,
-  function DebugPage(handle: Handle<Props>) {
-    let rpc: RemixRpcClient | null = null;
-    let debug: DebugClient | null = null;
-    let selected = handle.props.initialDevice;
-    let tab: Tab = "state";
-    let connected = false;
-    let logsConnected = false;
+export const DebugPage = clientEntry(import.meta.url, function DebugPage(handle: Handle<Props>) {
+  let rpc: ClientRpc | null = null;
+  let debug: ClientRpcDebug | null = null;
+  let selected = handle.props.initialDevice;
+  let tab: Tab = "state";
+  let connected = false;
+  let logsConnected = false;
 
-    handle.queueTask((signal) => {
-      rpc = new RemixRpcClient();
-      debug = new DebugClient();
+  handle.queueTask((signal) => {
+    rpc = new ClientRpc();
+    debug = new ClientRpcDebug();
 
-      rpc.on("ready", () => {
-        connected = true;
-        handle.update();
-      });
-      rpc.on("close", () => {
-        connected = false;
-        handle.update();
-      });
-      rpc.on("change", handle.update);
-      debug.on("ready", () => {
-        logsConnected = true;
-        handle.update();
-      });
-      debug.on("close", () => {
-        logsConnected = false;
-        handle.update();
-      });
-      debug.on("entry", handle.update);
-      signal.addEventListener("abort", () => {
-        rpc?.close();
-        debug?.close();
-      });
-
-      rpc.connect();
-      debug.connect();
+    rpc.on("ready", () => {
+      connected = true;
+      handle.update();
+    });
+    rpc.on("close", () => {
+      connected = false;
+      handle.update();
+    });
+    rpc.on("change", handle.update);
+    debug.on("ready", () => {
+      logsConnected = true;
+      handle.update();
+    });
+    debug.on("close", () => {
+      logsConnected = false;
+      handle.update();
+    });
+    debug.on("entry", handle.update);
+    signal.addEventListener("abort", () => {
+      rpc?.close();
+      debug?.close();
     });
 
-    return () => {
-      let devices = Object.values(handle.props.schema.devices).sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
-      let selectedSchema = selected ? handle.props.schema.devices[selected] : undefined;
-      let selectedHandle = selected && rpc ? rpc.device(selected as any) : null;
-      let state = selectedHandle?.state ?? selectedSchema?.state;
+    rpc.connect();
+    debug.connect();
+  });
 
-      return (
-        <div mix={shellStyle}>
-              <aside mix={sidebarStyle}>
-                <div mix={rowStyle}>
-                  <strong>Debug</strong>
-                  <span>{connected ? "RPC" : "RPC off"}</span>
-                </div>
-                {devices.map((device) => (
+  return () => {
+    let devices = Object.values(handle.props.schema.devices).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    let selectedSchema = selected ? handle.props.schema.devices[selected] : undefined;
+    let selectedHandle = selected && rpc ? rpc.device(selected as any) : null;
+    let state = selectedHandle?.state ?? selectedSchema?.state;
+
+    return (
+      <div mix={shellStyle}>
+        <aside mix={sidebarStyle}>
+          <div mix={rowStyle}>
+            <strong>Debug</strong>
+            <span>{connected ? "RPC" : "RPC off"}</span>
+          </div>
+          {devices.map((device) => (
+            <button
+              key={device.name}
+              type="button"
+              mix={[
+                deviceButtonStyle(selected === device.name),
+                on("click", () => {
+                  selected = device.name;
+                  tab = "state";
+                  handle.update();
+                }),
+              ]}
+            >
+              <span>{device.name}</span>
+              <span>{rpc?.system.state.connections[device.name]?.connected ? "on" : "off"}</span>
+            </button>
+          ))}
+        </aside>
+
+        <main mix={mainStyle}>
+          <header mix={rowStyle}>
+            <div>
+              <h1 mix={titleStyle}>Natav debug console</h1>
+              <p mix={mutedStyle}>{logsConnected ? "logs connected" : "logs off"}</p>
+            </div>
+            <div mix={rowStyle}>
+              <a href={routes.home.href()}>Home</a>
+              <a href={routes.schema.href()}>Schema</a>
+            </div>
+          </header>
+
+          {selectedSchema ?
+            <>
+              <div mix={tabsStyle}>
+                {(["state", "api", "events"] as Tab[]).map((next) => (
                   <button
-                    key={device.name}
+                    key={next}
                     type="button"
                     mix={[
-                      deviceButtonStyle(selected === device.name),
+                      tabButtonStyle(tab === next),
                       on("click", () => {
-                        selected = device.name;
-                        tab = "state";
+                        tab = next;
                         handle.update();
                       }),
                     ]}
                   >
-                    <span>{device.name}</span>
-                    <span>
-                      {rpc?.system.state.connections[device.name]?.connected ? "on" : "off"}
-                    </span>
+                    {next}
                   </button>
                 ))}
-              </aside>
+              </div>
 
-              <main mix={mainStyle}>
-                <header mix={rowStyle}>
-                  <div>
-                    <h1 mix={titleStyle}>Natav debug console</h1>
-                    <p mix={mutedStyle}>{logsConnected ? "logs connected" : "logs off"}</p>
-                  </div>
-                  <div mix={rowStyle}>
-                    <a href={routes.home.href()}>Home</a>
-                    <a href={routes.schema.href()}>Schema</a>
-                  </div>
-                </header>
-
-                {selectedSchema ?
-                  <>
-                    <div mix={tabsStyle}>
-                      {(["state", "api", "events"] as Tab[]).map((next) => (
-                        <button
-                          key={next}
-                          type="button"
-                          mix={[
-                            tabButtonStyle(tab === next),
-                            on("click", () => {
-                              tab = next;
-                              handle.update();
-                            }),
-                          ]}
-                        >
-                          {next}
-                        </button>
-                      ))}
-                    </div>
-
-                    {tab === "state" ?
-                      <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
-                    : null}
-                    {tab === "api" ?
-                      <ApiTab schema={selectedSchema} deviceName={selectedSchema.name} rpc={rpc} />
-                    : null}
-                    {tab === "events" ?
-                      <EventsTab deviceName={selectedSchema.name} debug={debug} />
-                    : null}
-                  </>
-                : <div mix={emptyStyle}>Select a device</div>}
-              </main>
-        </div>
-      );
-    };
-  },
-);
+              {tab === "state" ?
+                <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
+              : null}
+              {tab === "api" ?
+                <ApiTab schema={selectedSchema} deviceName={selectedSchema.name} rpc={rpc} />
+              : null}
+              {tab === "events" ?
+                <EventsTab deviceName={selectedSchema.name} debug={debug} />
+              : null}
+            </>
+          : <div mix={emptyStyle}>Select a device</div>}
+        </main>
+      </div>
+    );
+  };
+});
 
 function ApiTab(
-  handle: Handle<{ schema: DriverSchema; deviceName: string; rpc: RemixRpcClient | null }>,
+  handle: Handle<{ schema: DriverSchema; deviceName: string; rpc: ClientRpc | null }>,
 ) {
   return () => {
     let methods = Object.entries(handle.props.schema.methods);
@@ -172,7 +167,7 @@ function Method(
     name: string;
     method: MethodSchema;
     deviceName: string;
-    rpc: RemixRpcClient | null;
+    rpc: ClientRpc | null;
   }>,
 ) {
   let argsText = "[]";
@@ -226,7 +221,7 @@ function Method(
   );
 }
 
-function EventsTab(handle: Handle<{ deviceName: string; debug: DebugClient | null }>) {
+function EventsTab(handle: Handle<{ deviceName: string; debug: ClientRpcDebug | null }>) {
   return () => {
     let logs =
       handle.props.debug?.logs.filter(

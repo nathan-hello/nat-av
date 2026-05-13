@@ -1,12 +1,12 @@
 import type Natav from "@av/natav";
-import type { System } from "../system";
+import type { System } from "@av/system";
 import {
   type RPCResponse,
   type RPCError,
   type SystemRpcRequest,
   type NatavRPCRequest,
   RPCErrorData,
-} from "./types";
+} from "@av/rpc/types";
 import { createRPCResponse, createRPCError, RPCErrorCode, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";

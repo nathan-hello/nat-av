@@ -32,7 +32,7 @@ export abstract class Driver<
         return;
       }
 
-      this.state = { ...this.state, payload };
+      this.state = { ...this.state, ...payload.data };
 
       this.dispatch("driver:state-updated", this.state);
     });

@@ -1,6 +1,6 @@
-import { type EventName, type EventPayload, type Bus } from "./bus";
+import { type EventName, type EventPayload, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
-import { RPCHandler } from "@av/rpc/handler";
+import { RPCHandler } from "@av/rpc/server";
 import { createRPCNotification, isRPCRequest } from "@av/rpc/utils";
 
 const decoder = new TextDecoder();

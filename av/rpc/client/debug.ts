@@ -1,15 +1,15 @@
-import { TypedEventTarget } from "@/rpc/eventtarget";
-import { RemixWebsocket } from "./websocket";
-import type { DebugEntry, DebugEvents } from "@/rpc/types";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import { ClientWebsocket } from "./websocket";
+import type { DebugEntry, DebugEvents } from "@av/rpc/client/types";
 
-export class DebugClient extends TypedEventTarget<DebugEvents> {
+export class ClientRpcDebug extends TypedEventTarget<DebugEvents> {
   private transport;
   private entries: DebugEntry[] = [];
   private connected = false;
 
   constructor() {
     super();
-    this.transport = new RemixWebsocket("/debug", {
+    this.transport = new ClientWebsocket("/debug", {
       reconnect: true,
       retryDelay: 1000,
     });

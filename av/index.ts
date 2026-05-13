@@ -1,18 +1,14 @@
-import { bindHttpToWs, WebsocketHandler, type WebSocketApp } from "./websocket";
+import { bindHttpToWs, WebsocketHandler, type WebSocketApp } from "@av/rpc/server/websocket";
 import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
 import { System } from "@av/system";
 import { bus } from "@av/bus";
-import { RPCHandler } from "@av/rpc/handler";
+import { RPCHandler } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/impl/display";
 
-import {
-  CustomExporter,
-  MultiLogExporter,
-  FileExporter,
-  WebsocketExporter,
-} from "@av/telemetry/exporters";
+import { CustomExporter, MultiLogExporter } from "@av/telemetry/exporters";
+import { FileExporter, WebsocketExporter } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
@@ -20,8 +16,6 @@ import Natav from "@av/natav";
 if ((globalThis as any).__devices__) {
   await (globalThis as any).__devices__.End();
 }
-
-const mock = false;
 
 StartLogging(
   new MultiLogExporter([

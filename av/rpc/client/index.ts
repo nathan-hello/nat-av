@@ -2,79 +2,25 @@ import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import type { System } from "@av/system";
 
-import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
-import { RemixWebsocket } from "./websocket";
-import { TypedEventTarget } from "@/rpc/eventtarget";
-import type { DeviceEvents, PendingRequest, RpcEvents, SystemStateData } from "@/rpc/types";
+import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
+import { ClientWebsocket } from "@av/rpc/client/websocket";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { PendingRequest, RpcEvents, SystemStateData } from "@av/rpc/client/types";
+import { ClientRpcDevice } from "@av/rpc/client/devices";
 
-export class RemixDeviceHandle<
-  N extends Natav,
-  Name extends Natav.Names<N>,
-> extends TypedEventTarget<DeviceEvents<N, Name>> {
-  private apiProxy: Natav.Handle<N, Name>["api"];
-
-  constructor(
-    private client: RemixRpcClient<N>,
-    public readonly name: Name,
-  ) {
-    super();
-
-    this.apiProxy = new Proxy(
-      {},
-      {
-        get: (_, methodName: string | symbol) => {
-          if (typeof methodName !== "string") {
-            return undefined;
-          }
-
-          return (...args: any[]) => this.client.call(this.name, methodName, args);
-        },
-      },
-    ) as Natav.Handle<N, Name>["api"];
-  }
-
-  get api() {
-    return this.apiProxy;
-  }
-
-  get state() {
-    return this.client.getDeviceState(this.name);
-  }
-
-  get connected() {
-    return this.client.getDeviceConnection(this.name);
-  }
-
-  dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
-    return this.client.device(depName);
-  }
-
-  refresh() {
-    return this.client.refreshDevice(this.name);
-  }
-
-  notify() {
-    super.emit("change", {
-      name: this.name,
-      state: this.state,
-      connected: this.connected,
-    });
-  }
-}
-
-export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
-  private transport: RemixWebsocket;
+export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
+  private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
   private requestIdCounter = 0;
   private timeout = 30000;
   private deviceStates: Partial<Record<string, unknown>> = {};
   private systemStateData: SystemStateData = { connections: {} };
-  private deviceHandles = new Map<string, RemixDeviceHandle<N, any>>();
+  private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private initialized = false;
 
   constructor() {
     super();
-    this.transport = new RemixWebsocket("/ws", {
+    this.transport = new ClientWebsocket("/ws", {
       reconnect: true,
       retryDelay: 1000,
     });
@@ -85,14 +31,14 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
 
     this.transport.on("close", (event) => {
       this.initialized = false;
-      super.emit("close", event);
+      super.dispatch("close", event);
       for (let handle of this.deviceHandles.values()) {
         handle.notify();
       }
     });
 
     this.transport.on("error", (event) => {
-      super.emit("error", event);
+      super.dispatch("error", event);
     });
 
     this.transport.on("message", (event) => {
@@ -136,10 +82,10 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
       this.deviceStates = { ...deviceStates };
       this.initialized = true;
 
-      this.emit("ready", true);
+      this.dispatch("ready", true);
       this.notifyAllDevices();
     } catch (error) {
-      this.emit("error", { reason: "init-promises-threw", error: error as Error });
+      this.dispatch("error", { reason: "init-promises-threw", error: error as Error });
       this.close();
 
       setTimeout(() => {
@@ -171,14 +117,14 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
     return this.systemStateData.connections[name as string]?.connected ?? false;
   }
 
-  device<Name extends Natav.Names<N>>(name: Name): RemixDeviceHandle<N, Name> {
+  device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
     let existing = this.deviceHandles.get(name as string);
     if (existing) {
-      return existing as RemixDeviceHandle<N, Name>;
+      return existing as ClientRpcDevice<N, Name>;
     }
 
-    let handle = new RemixDeviceHandle(this, name);
-    this.deviceHandles.set(name as string, handle as RemixDeviceHandle<N, any>);
+    let handle = new ClientRpcDevice(this, name);
+    this.deviceHandles.set(name as string, handle as ClientRpcDevice<N, any>);
     return handle;
   }
 

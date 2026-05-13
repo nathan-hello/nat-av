@@ -1,16 +1,16 @@
 import { clientEntry, css, type Handle } from "remix/ui";
-import { RemixRpcClient } from "@/rpc/devices";
+import { ClientRpc } from "@av/rpc/client";
 
 export const HomePage = clientEntry(
   "/assets/app/controllers/home/page.tsx#HomePage",
   function HomePage(handle: Handle) {
-    let rpc: RemixRpcClient | null = null;
+    let rpc: ClientRpc | null = null;
     let connected = false;
 
     handle.queueTask((signal) => {
       console.log("asdf");
 
-      rpc = new RemixRpcClient();
+      rpc = new ClientRpc();
 
       rpc.on("ready", () => {
         connected = true;
