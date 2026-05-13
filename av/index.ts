@@ -13,6 +13,7 @@ import {
   FileExporter,
   WebsocketExporter,
 } from "@av/tools/telemetry/exporters";
+import { SchemaGenerator } from "@av/schema";
 import { StartLogging } from "@av/tools/telemetry/sdk";
 import Natav from "@av/natav";
 
@@ -39,28 +40,14 @@ export const natav = new Natav([
     {
       decoder: new Decoder({
         name: "decoder-1",
-        socket:
-          mock ?
-            new Tcp({ addr: "127.0.0.1", port: 12333 })
-          : new Tcp({ addr: "decoder-0c7a1566cf92.local", port: 12345 }),
+        socket: new Tcp({ addr: "decoder-e8d8d1599092.local", port: 12345 }),
       }),
-      placement: [
-        { outputId: 1, resX: 2560, resY: 1440, canvasX: 0, canvasY: 0 },
-        { outputId: 0, resX: 2560, resY: 1440, canvasX: 2560, canvasY: 0 },
-      ],
-    },
-    {
-      decoder: new Decoder({
-        name: "decoder-2",
-        socket:
-          mock ?
-            new Tcp({ addr: "127.0.0.1", port: 12334 })
-          : new Tcp({ addr: "tv.local", port: 12345 }),
-      }),
-      placement: [{ outputId: 0, resX: 2560, resY: 1440, canvasX: 5120, canvasY: 0 }],
+      placement: [{ outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 }],
     },
   ]),
 ]);
+
+export const schema = new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" });
 
 export type natav = typeof natav;
 

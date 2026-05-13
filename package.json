@@ -8,7 +8,8 @@
     "dev:css": "sh ./scripts/commands.sh dev:css",
     "build:css": "sh ./scripts/commands.sh build:css",
     "test": "sh ./scripts/commands.sh test",
-    "typecheck": "sh ./scripts/commands.sh typecheck"
+    "typecheck": "sh ./scripts/commands.sh typecheck",
+    "generate": "tsx ./scripts/schema/main.ts './av/index.ts#natav'"
   },
   "engines": {
     "node": ">=24.3.0"

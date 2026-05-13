@@ -69,6 +69,7 @@ export function ReadableLogRecordStringify(record: ReadableLogRecord): string {
       span_id: record.spanContext.spanId,
     }),
     message: typeof record.body === "string" ? record.body : JSON.stringify(record.body),
+    attributes: record.attributes,
   });
 }
 
@@ -101,7 +102,6 @@ export function ReadableLogRecordToLogEntry(record: ReadableLogRecord): LogEntry
     data: record.attributes,
   };
 }
-
 
 export type Logger = {
   emit(record: ReadableLogRecord): void;
