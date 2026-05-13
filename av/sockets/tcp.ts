@@ -7,6 +7,7 @@ import { bufferHex } from "@av/sockets/hex";
 type TcpConfig = {
   addr: string;
   port: number;
+  keepAlive: boolean;
 };
 
 type TcpEvents = SocketEventMap & {
@@ -35,58 +36,13 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     this.tel.info("INITALIZE", this.config);
   }
 
-  private emit<EventName extends keyof TcpEvents>(
-    event: EventName,
-    payload: TcpEvents[EventName],
-  ): void {
-    this.dispatch(event, payload);
-  }
-
-  private async handleOpen(): Promise<void> {
-    this.tel.info("HANDLER_OPEN");
-    this.retrying = false;
-    if (this.retryTimeout) {
-      this.tel.info("HANDLER_OPEN_RESET_TIMEOUT");
-      clearTimeout(this.retryTimeout);
-      this.retryTimeout = undefined;
-    }
-    this.emit("connected", undefined);
-  }
-
-  private async handleClose(error?: Error): Promise<void> {
-    this.tel.info("HANDLER_CLOSE", { stopped: this.stopped });
-    this.socket = undefined;
-    this.emit("disconnected", { error: error?.message });
-    if (!this.stopped) {
-      await this.scheduleRetry();
-    }
-  }
-
-  private handleError(error: Error): void {
-    this.tel.info("HANDLER_ERROR");
-    this.emit("error", { error: error.message, code: error.name });
-  }
-
-  private async handleConnectError(error: Error): Promise<void> {
-    this.tel.info("HANDLER_CONNECT_ERROR");
-    this.emit("error", { error: error.message, code: error.name });
-    await this.scheduleRetry();
-  }
-
-  private handleData(data: Buffer): void {
-    this.tel.info("RECEIVED_DATA", { length: data.length });
-    this.emit("receive", data);
-  }
-
-  private handleDrain(): void {
-    this.tel.info("HANDLER_DRAIN");
-  }
-
   private async scheduleRetry(): Promise<void> {
-    if (this.retrying || this.stopped) return;
+    if (this.retrying || this.stopped || !this.config.keepAlive) {
+      return;
+    }
     this.retrying = true;
     this.tel.warn("RETRY_SCHEDULED");
-    this.emit("retryScheduled", { delay: RETRY_DELAY });
+    this.dispatch("retryScheduled", { delay: RETRY_DELAY });
     return new Promise((resolve) => {
       this.retryTimeout = setTimeout(async () => {
         this.retryTimeout = undefined;
@@ -111,7 +67,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     const flushed = this.socket.write(buffer);
 
     if (flushed) {
-      this.emit("transmit", { bytesWritten: buffer.length });
+      this.dispatch("transmit", { bytesWritten: buffer.length });
     }
 
     return buffer.length;
@@ -120,14 +76,26 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
   async start() {
     this.stopped = false;
     this.retrying = false;
+
     const result = await this.tel.task("CONNECTION_START", async (span) => {
       this.tel.info("CONNECTION_PARAMS", this.config);
       span.setAttributes({ addr: this.config.addr, port: this.config.port });
+
       return net.createConnection({ host: this.config.addr, port: this.config.port }, () => {
         this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
+
         setTimeout(() => {
-          void this.handleOpen();
+          this.tel.info("HANDLER_OPEN");
+          this.retrying = false;
+          if (this.retryTimeout) {
+            this.tel.info("HANDLER_OPEN_RESET_TIMEOUT");
+            clearTimeout(this.retryTimeout);
+            this.retryTimeout = undefined;
+          }
+
+          this.dispatch("connected", undefined);
         }, 1000);
+
       });
     });
 
@@ -137,24 +105,31 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     }
     this.socket = result.data;
 
-    this.socket.setTimeout(10000, async () => {
-      this.emit("timeout", undefined);
-      await this.scheduleRetry();
+    this.socket.on("data", (data) => {
+      this.tel.info("RECEIVED_DATA", { length: data.length });
+      this.dispatch("receive", Buffer.isBuffer(data) ? data : Buffer.from(data));
     });
 
-    this.socket.on("data", (data) => {
-      this.handleData(Buffer.isBuffer(data) ? data : Buffer.from(data));
+    this.socket.on("drain", () => {
+      this.tel.info("HANDLER_DRAIN");
     });
-    this.socket.on("drain", () => this.handleDrain());
+
     this.socket.on("end", () => {
       this.tel.info("SOCKET_END");
     });
-    this.socket.on("error", async (err) => {
-      this.handleError(err);
-      await this.handleConnectError(err);
+
+    this.socket.on("error", async (error) => {
+      this.tel.info("HANDLER_ERROR");
+      this.dispatch("error", { error: error.message, code: error.name });
     });
-    this.socket.on("close", (hadError) => {
-      void this.handleClose(hadError ? new Error("socket closed with error") : undefined);
+
+    this.socket.on("close", async (hadError) => {
+      this.tel.info("HANDLER_CLOSE", { stopped: this.stopped });
+      this.socket = undefined;
+      this.dispatch("disconnected", {
+        error: hadError ? "socket closed with error" : "socket closed with no error",
+      });
+      await this.scheduleRetry();
     });
   }
 
@@ -173,6 +148,6 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     this.socket.end();
     this.socket = undefined;
     this.tel.info("CONNECTION_ENDED_MANUALLY");
-    this.emit("disconnected", { error: undefined });
+    this.dispatch("disconnected", { error: undefined });
   }
 }
