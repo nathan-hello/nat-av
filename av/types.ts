@@ -29,7 +29,7 @@ export interface DeviceSocket {
     event: K,
     handler: (payload: SocketEventMap[K]) => void,
     options?: boolean | AddEventListenerOptions,
-  ): DeviceSocket;
+  ): () => void;
   name: string;
 }
 

@@ -1,37 +1,18 @@
 import { clientEntry, css, type Handle } from "remix/ui";
-import { ClientRpc } from "@av/rpc/client";
+import { getRpc } from "@/state";
 import { Telemetry } from "@av/telemetry";
+import type { ClientRpc } from "@av/rpc/client";
 
 export const HomePage = clientEntry(
   "/assets/app/controllers/home/page.tsx#HomePage",
   function HomePage(handle: Handle) {
-    let rpc: ClientRpc;
-    let connected = false;
-    let tel: Telemetry;
+    if (typeof window === "undefined") {
+      return () => <div></div>;
+    }
 
-    handle.signal.addEventListener("abort", (event) => {
-      tel.error("ABORT", event);
-      rpc?.close();
-    });
-
-    handle.queueTask(() => {
-      tel = new Telemetry("homepage");
-
-      rpc = new ClientRpc();
-
-      rpc.on("ready", () => {
-        connected = true;
-        console.log('RpcClient: rpc.device("video-wall"): ', rpc?.device("video-wall"));
-        handle.update();
-      });
-      rpc.on("close", () => {
-        connected = false;
-        handle.update();
-      });
-      rpc.on("change", handle.update);
-
-      rpc.connect();
-    });
+    let rpc: ClientRpc = getRpc(handle);
+    let connected = rpc.readyState === WebSocket.OPEN;
+    let tel = new Telemetry("homepage");
 
     return () => {
       return (

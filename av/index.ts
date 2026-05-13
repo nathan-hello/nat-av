@@ -7,8 +7,12 @@ import { RPCHandler } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/impl/display";
 
-import {  CustomExporter } from "@av/telemetry/exporters";
-import {  FileExporter, SimpleConsoleExporter, WebsocketExporter } from "@av/telemetry/server/exporters";
+import { CustomExporter } from "@av/telemetry/exporters";
+import {
+  FileExporter,
+  SimpleConsoleExporter,
+  WebsocketExporter,
+} from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
@@ -34,7 +38,7 @@ export const natav = new Natav([
     {
       decoder: new Decoder({
         name: "decoder-1",
-        socket: new Tcp({ addr: "decoder-e8d8d1599092.local", port: 12345 }),
+        socket: new Tcp({ addr: "decoder-e8d8d1599092.local", port: 12345, keepAlive: true }),
       }),
       placement: [{ outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 }],
     },

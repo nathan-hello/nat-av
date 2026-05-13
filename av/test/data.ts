@@ -60,7 +60,7 @@ export class TestShim<const N extends string = string> extends Driver<
 
 export const driver = new TestShim({
   name: "shim-1",
-  socket: new Tcp({ addr: "127.0.0.1", port: 12345 }),
+  socket: new Tcp({ addr: "127.0.0.1", port: 12345, keepAlive: true}),
 });
 
 export const natav = new Natav([driver]);

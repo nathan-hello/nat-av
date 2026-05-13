@@ -1,8 +1,9 @@
 import type { DriverSchema, MethodSchema, TypeSchema } from "@av/schema/types";
 import { clientEntry, css, on, type Handle, type SerializableProps } from "remix/ui";
 import { routes } from "@/routes";
-import { ClientRpcDebug } from "@av/rpc/client/debug";
-import { ClientRpc } from "@av/rpc/client";
+import { getDebugRpc, getRpc } from "@/state";
+import type { ClientRpcDebug } from "@av/rpc/client/debug";
+import type { ClientRpc } from "@av/rpc/client";
 
 type Tab = "state" | "api" | "events";
 
@@ -18,43 +19,12 @@ export type DebugSchema = SerializableProps & {
 type Props = SerializableProps & { schema: DebugSchema; initialDevice: string | null };
 
 export const DebugPage = clientEntry(import.meta.url, function DebugPage(handle: Handle<Props>) {
-  let rpc: ClientRpc | null = null;
-  let debug: ClientRpcDebug | null = null;
+  let rpc = getRpc(handle);
+  let debug: ClientRpcDebug = getDebugRpc(handle);
   let selected = handle.props.initialDevice;
   let tab: Tab = "state";
-  let connected = false;
-  let logsConnected = false;
-
-  handle.queueTask((signal) => {
-    rpc = new ClientRpc();
-    debug = new ClientRpcDebug();
-
-    rpc.on("ready", () => {
-      connected = true;
-      handle.update();
-    });
-    rpc.on("close", () => {
-      connected = false;
-      handle.update();
-    });
-    rpc.on("change", handle.update);
-    debug.on("ready", () => {
-      logsConnected = true;
-      handle.update();
-    });
-    debug.on("close", () => {
-      logsConnected = false;
-      handle.update();
-    });
-    debug.on("entry", handle.update);
-    signal.addEventListener("abort", () => {
-      rpc?.close();
-      debug?.close();
-    });
-
-    rpc.connect();
-    debug.connect();
-  });
+  let connected = rpc.readyState === WebSocket.OPEN;
+  let logsConnected = debug.isConnected;
 
   return () => {
     let devices = Object.values(handle.props.schema.devices).sort((a, b) =>
@@ -256,36 +226,6 @@ function EventsTab(handle: Handle<{ deviceName: string; debug: ClientRpcDebug | 
       </div>
     );
   };
-}
-
-function defaultValue(schema: TypeSchema): unknown {
-  if (schema.kind === "primitive")
-    return (
-      schema.type === "boolean" ? false
-      : schema.type === "number" || schema.type === "bigint" ? 0
-      : ""
-    );
-  if (schema.kind === "literal") return schema.value;
-  if (schema.kind === "array") return [];
-  if (schema.kind === "tuple") return schema.items.map(defaultValue);
-  if (schema.kind === "union") return defaultValue(schema.members[0]);
-  if (schema.kind === "object")
-    return Object.fromEntries(
-      Object.entries(schema.properties)
-        .filter(([, prop]) => prop.required)
-        .map(([key, prop]) => [key, defaultValue(prop.type)]),
-    );
-  return "";
-}
-
-function schemaLabel(schema: TypeSchema): string {
-  if (schema.kind === "primitive") return schema.type;
-  if (schema.kind === "literal") return JSON.stringify(schema.value);
-  if (schema.kind === "reference") return schema.name;
-  if (schema.kind === "object") return "{...}";
-  if (schema.kind === "array") return "[...]";
-  if (schema.kind === "tuple") return "(...)";
-  return "union";
 }
 
 const bodyStyle = css({

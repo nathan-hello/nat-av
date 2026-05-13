@@ -43,7 +43,7 @@ export class TypedEventTarget<
 
     this.offCallbacks.push(cleanup);
 
-    return this;
+    return cleanup;
   }
 
   end() {
@@ -124,7 +124,7 @@ export class ProtectedTypedEventTarget<
 
     this.offCallbacks.push(cleanup);
 
-    return this;
+    return cleanup;
   }
 
   protected end() {
