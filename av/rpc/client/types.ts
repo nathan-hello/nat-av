@@ -1,5 +1,6 @@
 import type Natav from "@av/natav";
 import type { EventPayload } from "@av/bus";
+import type { RPCError } from "@av/rpc/types";
 
 export type SystemStateData = {
   connections: Record<string, { connected: boolean }>;
@@ -24,7 +25,11 @@ export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
 export type RpcEvents = {
   ready: boolean;
   close: CloseEvent;
-  error: Event | { reason: "init-promises-threw"; error: Error };
+  error:
+    | { reason: "transport"; event: Event }
+    | { reason: "init-promises-threw"; error: Error }
+    | { reason: "json-parse-failed"; raw: string }
+    | { reason: "rpc-error"; error: RPCError };
   change: { name?: string };
 };
 
@@ -44,7 +49,7 @@ export type DebugEntry = {
 };
 
 export type DebugEvents = {
-  ready: void;
+  ready: boolean;
   close: CloseEvent;
   error: Event;
   entry: DebugEntry;
@@ -63,4 +68,3 @@ export type TransportOptions = {
 };
 
 export type EventMap = Record<string, any>;
-

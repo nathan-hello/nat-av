@@ -11,9 +11,9 @@ import { createRPCResponse, createRPCError, RPCErrorCode, isRPCRequest } from "@
 import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";
 
-const tel = new Telemetry("server:rpc-handler");
 
 export class RPCHandler<N extends Natav = natav> {
+  private tel = new Telemetry("RPCHandler");
   private system: System<N>;
   private natav: N;
 
@@ -23,11 +23,15 @@ export class RPCHandler<N extends Natav = natav> {
   }
 
   async handleRequest(message: NatavRPCRequest): Promise<RPCResponse | RPCError> {
-    const result = await tel.task("rpc:handle-request", async (span) => {
-      tel.info("RPC_RECEIVED", { message: message as any });
+    const result = await this.tel.task("rpc:handle-request", async (span) => {
+      this.tel.info("RPC_RECEIVED", {
+        jsonrpc: message.jsonrpc,
+        id: message.id,
+        method: message.method,
+      });
 
       if (!isRPCRequest(message)) {
-        tel.warn("RPC_MALFORMED", { raw: message });
+        this.tel.warn("RPC_MALFORMED", { raw: message });
         return createRPCError(
           (message as any).id ?? null,
           RPCErrorCode.InvalidRequest,
@@ -40,17 +44,17 @@ export class RPCHandler<N extends Natav = natav> {
         "rpc.method": message.method,
       });
 
-      tel.info("RPC_VALIDATED", { message: message as any });
+      this.tel.info("RPC_VALIDATED", { message: message as any });
 
       switch (message.method) {
         case "system":
-          tel.info("RPC_FORWARD_SYSTEM", { method: message.method });
+          this.tel.info("RPC_FORWARD_SYSTEM", { method: message.method });
           return this.handleSystemRequest(message);
         case "device.call":
-          tel.info("RPC_FORWARD_DEVICE", { method: message.method });
+          this.tel.info("RPC_FORWARD_DEVICE", { method: message.method });
           return this.handleDeviceRequest(message);
         case "device.dependents":
-          tel.info("RPC_FORWARD_DEVICE_DEPS", {
+          this.tel.info("RPC_FORWARD_DEVICE_DEPS", {
             device: message.params.device,
           });
           return this.handleDeviceDepsRequest(message);
@@ -71,7 +75,7 @@ export class RPCHandler<N extends Natav = natav> {
       return result.data;
     }
 
-    tel.error("RPC_INTERNAL_ERROR", {
+    this.tel.error("RPC_INTERNAL_ERROR", {
       error: result.error,
       id: (message as any)?.id,
     });
@@ -96,8 +100,8 @@ export class RPCHandler<N extends Natav = natav> {
     const systemRequest = message as SystemRpcRequest;
     const methodStr = message.params.call;
 
-    const result = await tel.task(`system:${methodStr}`, async () => {
-      tel.info("SYSTEM_EXEC_START", { method: methodStr, id: message.id });
+    const result = await this.tel.task(`system:${methodStr}`, async () => {
+      this.tel.info("SYSTEM_EXEC_START", { method: methodStr, id: message.id });
 
       // Check if method exists
       if (
@@ -105,7 +109,7 @@ export class RPCHandler<N extends Natav = natav> {
         !(methodStr in this.system.api) ||
         typeof this.system.api[methodStr as keyof typeof this.system.api] !== "function"
       ) {
-        tel.warn("SYSTEM_METHOD_MISSING", {
+        this.tel.warn("SYSTEM_METHOD_MISSING", {
           method: message.method,
           parsed: methodStr,
         });
@@ -122,7 +126,7 @@ export class RPCHandler<N extends Natav = natav> {
       // Execute the method
       const result = await Reflect.apply(methodReal, this.system.api, args);
 
-      tel.info("SYSTEM_EXEC_SUCCESS", { method: methodStr, result });
+      this.tel.info("SYSTEM_EXEC_SUCCESS", { method: methodStr, result });
       return createRPCResponse(message.id, result);
     });
 
@@ -150,7 +154,7 @@ export class RPCHandler<N extends Natav = natav> {
     const argsArray = Array.isArray(args) ? args : [];
 
     // 1. Child Task for the specific device call
-    const result = await tel.task(`device:${deviceName}.${methodName}`, async (span) => {
+    const result = await this.tel.task(`device:${deviceName}.${methodName}`, async (span) => {
       // Metadata for quick filtering
       span.setAttributes({
         "device.name": deviceName,
@@ -159,7 +163,7 @@ export class RPCHandler<N extends Natav = natav> {
 
       const device = this.natav.FindDriver(deviceName);
       if (!device) {
-        tel.warn("DEVICE_NOT_FOUND", { device: deviceName });
+        this.tel.warn("DEVICE_NOT_FOUND", { device: deviceName });
         return createRPCError(
           message.id,
           RPCErrorCode.DeviceNotFound,
@@ -175,7 +179,7 @@ export class RPCHandler<N extends Natav = natav> {
         (!(methodName in device.api) ||
           typeof device.api[methodName as keyof typeof device.api] !== "function")
       ) {
-        tel.warn("DEVICE_METHOD_MISSING", {
+        this.tel.warn("DEVICE_METHOD_MISSING", {
           device: deviceName,
           method: methodName,
         });
@@ -187,7 +191,7 @@ export class RPCHandler<N extends Natav = natav> {
         );
       }
 
-      tel.info("DEVICE_CALL_START", {
+      this.tel.info("DEVICE_CALL_START", {
         device: deviceName,
         method: methodName,
         args: argsArray,
@@ -201,7 +205,7 @@ export class RPCHandler<N extends Natav = natav> {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
 
-        tel.error("DEVICE_CALL_ERROR", {
+        this.tel.error("DEVICE_CALL_ERROR", {
           device: deviceName,
           method: methodName,
           error: errorMsg,
@@ -215,7 +219,7 @@ export class RPCHandler<N extends Natav = natav> {
         );
       }
 
-      tel.info("DEVICE_CALL_SUCCESS", {
+      this.tel.info("DEVICE_CALL_SUCCESS", {
         device: deviceName,
         method: methodName,
         result: callResult,

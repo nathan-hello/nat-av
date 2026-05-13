@@ -1,5 +1,5 @@
 import type { Logger, ReadableLogRecord } from "./types";
-import type { LogRecordExporter, MultiLogExporter } from "./exporters";
+import { type LogRecordExporter, MultiLogExporter } from "./exporters";
 
 class LoggerProvider {
   constructor(private exporter: LogRecordExporter | null) {}
@@ -22,6 +22,6 @@ export function getLoggerProvider(): LoggerProvider {
   return loggerProvider;
 }
 
-export function StartLogging(exporters: MultiLogExporter) {
-  loggerProvider = new LoggerProvider(exporters);
+export function StartLogging(exporters: LogRecordExporter[]) {
+  loggerProvider = new LoggerProvider(new MultiLogExporter(exporters));
 }

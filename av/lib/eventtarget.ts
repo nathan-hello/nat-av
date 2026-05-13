@@ -1,12 +1,13 @@
 import { Telemetry } from "@av/telemetry";
 
-const tel = new Telemetry("typed-event-emitter");
-
 export class TypedEventTarget<
   Events extends Record<string, any> = Record<string, any>,
 > extends EventTarget {
   private listeners: Map<string, Set<EventListener>> = new Map();
   private offCallbacks: (() => void)[] = [];
+  constructor(private _tet_tel = new Telemetry("typed-event-emitter")) {
+    super();
+  }
 
   on<K extends keyof Events>(
     type: K & string,
@@ -19,7 +20,7 @@ export class TypedEventTarget<
           handler(event.detail);
         } catch (err) {
           if (type !== "natav:opentelemetry:entry") {
-            tel.error(`LISTENER_ERROR:${type}`, {
+            this._tet_tel.error(`LISTENER_ERROR:${type}`, {
               error: err instanceof Error ? err.message : String(err),
             });
           }
@@ -82,6 +83,10 @@ export class ProtectedTypedEventTarget<
   private listeners: Map<string, Set<EventListener>> = new Map();
   private offCallbacks: (() => void)[] = [];
 
+  constructor(private _tet_tel = new Telemetry("typed-event-emitter")) {
+    super();
+  }
+
   on<K extends keyof Events>(
     type: K & string,
     handler: (payload: Events[K]) => void,
@@ -97,7 +102,7 @@ export class ProtectedTypedEventTarget<
         try {
           handler(event.detail);
         } catch (err) {
-          tel.error(`LISTENER_ERROR:${type}`, {
+          this._tet_tel.error(`LISTENER_ERROR:${type}`, {
             error: err instanceof Error ? err.message : String(err),
           });
         }

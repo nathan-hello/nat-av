@@ -7,8 +7,10 @@ import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { PendingRequest, RpcEvents, SystemStateData } from "@av/rpc/client/types";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
+import { Telemetry } from "@av/telemetry";
 
 export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
+  private tel = new Telemetry("ClientRpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
   private requestIdCounter = 0;
@@ -38,7 +40,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     });
 
     this.transport.on("error", (event) => {
-      super.dispatch("error", event);
+      super.dispatch("error", { reason: "transport", event });
     });
 
     this.transport.on("message", (event) => {
@@ -62,36 +64,45 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
 
   private async init() {
     if (this.initialized) {
-      console.log("RpcClient.init: init called even though this.initialized was true");
+      this.tel.error("init called even though this.initialized was true");
       return;
     }
 
-    console.log("RpcClient.init: waiting for this.waitForOpen");
+    this.tel.debug("waiting for this.waitForOpen");
     await this.waitForOpen();
-    console.log("RpcClient.init: this.waitForOpen resolved successfully");
+    this.tel.debug("this.waitForOpen resolved successfully");
 
-    try {
-      const [systemStateData, deviceStates] = await Promise.all([
+    const states = await this.tel.task("GET_INITIAL_STATE", async () => {
+      return await Promise.all([
         this.system.api.GetSystemState(),
         this.system.api.GetAllDeviceStates(),
       ]);
+    });
 
-      console.log("RpcClient.init: Promise.all resolved");
+    if (!states.ok || isRPCError(states.data)) {
+      if (!states.ok) {
+        this.dispatch("error", { reason: "init-promises-threw", error: new Error(states.error) });
+      }
+      if (isRPCError(states.data)) {
+        this.dispatch("error", { reason: "rpc-error", error: states.data });
+      }
 
-      this.systemStateData = systemStateData;
-      this.deviceStates = { ...deviceStates };
-      this.initialized = true;
-
-      this.dispatch("ready", true);
-      this.notifyAllDevices();
-    } catch (error) {
-      this.dispatch("error", { reason: "init-promises-threw", error: error as Error });
       this.close();
-
       setTimeout(() => {
         this.connect();
       }, 2000);
+      return;
     }
+
+    this.tel.info("successfully resolved promises");
+    const [system, devices] = states.data;
+
+    this.systemStateData = system;
+    this.deviceStates = { ...devices };
+    this.initialized = true;
+
+    this.dispatch("ready", true);
+    this.notifyAllDevices();
   }
 
   private async waitForOpen() {
@@ -146,24 +157,27 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
         timeout: timeoutId,
       });
 
-      try {
-        this.transport.send(
-          JSON.stringify({
-            jsonrpc: "2.0" as const,
-            id,
-            method: "device.call" as const,
-            params: {
-              device,
-              method,
-              args: argsArray,
-            },
-          }),
-        );
-      } catch (error) {
+      const str = this.tel.task("JSON_STRINGIFY", () => {
+        return JSON.stringify({
+          jsonrpc: "2.0" as const,
+          id,
+          method: "device.call" as const,
+          params: {
+            device,
+            method,
+            args: argsArray,
+          },
+        });
+      });
+
+      if (!str.ok) {
         clearTimeout(timeoutId);
         this.pendingRequests.delete(id);
-        reject(error);
+        reject(str.error);
+        return;
       }
+
+      this.transport.send(str.data);
     });
   }
 
@@ -212,38 +226,51 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
         timeout: timeoutId,
       });
 
-      try {
-        this.transport.send(
-          JSON.stringify({
-            jsonrpc: "2.0" as const,
-            id,
-            method: "system" as const,
-            params: {
-              call: method,
-              args: args.length > 0 ? { args: args[0] } : undefined,
-            },
-          }),
-        );
-      } catch (error) {
+      const str = this.tel.task("JSON_STRINGIFY", () => {
+        return JSON.stringify({
+          jsonrpc: "2.0" as const,
+          id,
+          method: "system" as const,
+          params: {
+            call: method,
+            args: args.length > 0 ? { args: args[0] } : undefined,
+          },
+        });
+      });
+
+      if (!str.ok) {
         clearTimeout(timeoutId);
         this.pendingRequests.delete(id);
-        reject(error);
+        reject(str.error);
+        return;
       }
+
+      this.transport.send(str.data);
     });
   }
 
   private onMessage(raw: string) {
-    let data: any;
-    try {
-      data = JSON.parse(raw);
-    } catch (error) {
-      this.dispatchEvent(new Event("error"));
+    const parsed = this.tel.task("JSON_PARSE", () => {
+      return JSON.parse(raw);
+    });
+    if (!parsed.ok) {
+      const err = {
+        time: new Date().toISOString().slice(11, 23),
+        context: { spanId: undefined, traceId: undefined, traceName: "CLIENT_INTERNAL" },
+        severity: { id: 50, text: "ERROR" },
+        name: "UNABLE_TO_JSON_PARSE_LOG",
+        data: raw,
+      };
+
+      this.tel.error("json-parse-failed", { raw, parsed, err });
+      this.dispatch("error", { reason: "json-parse-failed", raw });
       return;
     }
 
-    if (isRPCNotification(data)) {
-      if (data.params.type === "natav:state:update") {
-        const { name, data: state } = data.params;
+    if (isRPCNotification(parsed.data)) {
+      this.tel.info("got-notification", parsed.data);
+      if (parsed.data.params.type === "natav:state:update") {
+        const { name, data: state } = parsed.data.params;
         const currentState = this.deviceStates[name];
 
         this.deviceStates[name] = currentState ? { ...(currentState as object), ...state } : state;
@@ -251,52 +278,54 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
         this.notifyDevice(name);
       }
 
-      if (data.params.type === "natav:device:connected") {
-        this.systemStateData.connections[data.params.name] = { connected: true };
-        this.notifyDevice(data.params.name);
+      if (parsed.data.params.type === "natav:device:connected") {
+        this.systemStateData.connections[parsed.data.params.name] = { connected: true };
+        this.notifyDevice(parsed.data.params.name);
       }
 
-      if (data.params.type === "natav:device:disconnected") {
-        this.systemStateData.connections[data.params.name] = { connected: false };
-        this.notifyDevice(data.params.name);
+      if (parsed.data.params.type === "natav:device:disconnected") {
+        this.systemStateData.connections[parsed.data.params.name] = { connected: false };
+        this.notifyDevice(parsed.data.params.name);
       }
 
       return;
     }
 
-    if (isRPCResponse(data)) {
-      const pending = this.pendingRequests.get(data.id);
+    if (isRPCResponse(parsed)) {
+      this.tel.info("got-response", parsed.data);
+      const pending = this.pendingRequests.get(parsed.id);
       if (pending) {
         clearTimeout(pending.timeout);
-        this.pendingRequests.delete(data.id);
-        pending.resolve(data.result);
+        this.pendingRequests.delete(parsed.id);
+        pending.resolve(parsed.result);
       }
       return;
     }
 
-    if (isRPCError(data)) {
-      if (data.id === null) {
+    if (isRPCError(parsed)) {
+      this.tel.info("got-error", parsed.data);
+      if (parsed.id === null) {
         return;
       }
 
-      const pending = this.pendingRequests.get(data.id);
+      const pending = this.pendingRequests.get(parsed.id);
       if (!pending) {
         return;
       }
 
       clearTimeout(pending.timeout);
-      this.pendingRequests.delete(data.id);
+      this.pendingRequests.delete(parsed.id);
 
-      const error = new Error(data.error.message);
-      (error as any).code = data.error.code;
-      (error as any).data = data.error.data;
+      const error = new Error(parsed.error.message);
+      (error as any).code = parsed.error.code;
+      (error as any).data = parsed.error.data;
       pending.reject(error);
     }
   }
 
   private notifyDevice(name: string) {
     this.deviceHandles.get(name)?.notify();
-    this.dispatchEvent(new CustomEvent("change", { detail: { name } }));
+    this.dispatch("change", { name });
   }
 
   private notifyAllDevices() {

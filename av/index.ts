@@ -7,27 +7,27 @@ import { RPCHandler } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/impl/display";
 
-import { CustomExporter, MultiLogExporter } from "@av/telemetry/exporters";
-import { FileExporter, WebsocketExporter } from "@av/telemetry/server/exporters";
+import {  CustomExporter } from "@av/telemetry/exporters";
+import {  FileExporter, SimpleConsoleExporter, WebsocketExporter } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
+import { Telemetry } from "@av/telemetry";
 
 if ((globalThis as any).__devices__) {
   await (globalThis as any).__devices__.End();
 }
 
-StartLogging(
-  new MultiLogExporter([
-    new FileExporter("./logs/otel.log", true),
-    new CustomExporter((event) => {
-      bus.dispatch("natav:opentelemetry:entry", {
-        type: "natav:opentelemetry:entry",
-        message: event,
-      });
-    }),
-  ]),
-);
+StartLogging([
+  new FileExporter("./logs/otel.log", true),
+  new SimpleConsoleExporter(),
+  new CustomExporter((event) => {
+    bus.dispatch("natav:opentelemetry:entry", {
+      type: "natav:opentelemetry:entry",
+      message: event,
+    });
+  }),
+]);
 
 export const natav = new Natav([
   new DisplayManager("video-wall", [
@@ -51,10 +51,11 @@ new AutomationEngine({ bus, natav });
 const rpc = new RPCHandler({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc });
 const debug = new WebsocketExporter({ bus });
+const tel = new Telemetry("ServerWebsocket");
 
 export async function start(app: WebSocketApp) {
-  bindHttpToWs(app, "/ws", websocket);
-  bindHttpToWs(app, "/debugger", debug);
+  bindHttpToWs(app, "/ws", websocket, tel);
+  bindHttpToWs(app, "/debugger", debug, tel);
 
   await natav.Start();
   (globalThis as any).__devices__ = natav;

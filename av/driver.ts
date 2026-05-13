@@ -44,6 +44,6 @@ export abstract class Driver<
   ): void {
     super.dispatch(type, payload);
 
-    this.tel.info("EVENT_DISPATCHED", { type, payload });
+    this.tel.info("EVENT_DISPATCHED", { type });
   }
 }

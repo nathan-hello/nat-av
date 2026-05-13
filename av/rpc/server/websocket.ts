@@ -1,7 +1,8 @@
 import { type EventName, type EventPayload, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
 import { RPCHandler } from "@av/rpc/server";
-import { createRPCNotification, isRPCRequest } from "@av/rpc/utils";
+import { createRPCNotification, DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
+import type { Telemetry } from "@av/telemetry";
 
 const decoder = new TextDecoder();
 
@@ -135,6 +136,7 @@ export function bindHttpToWs(
     WebsocketHandler,
     "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
   >,
+  tel: Telemetry,
 ) {
   const connections = new WeakMap<object, WebSocketConnection>();
 
@@ -161,6 +163,12 @@ export function bindHttpToWs(
 
       connection.readyState = 3;
       connections.delete(ws as object);
+
+      tel.info("websocket closed", {
+        code,
+        meaning: DecodeWebsocketError(code),
+        reason: decoder.decode(message),
+      });
 
       handlers.WsCloseHandler(
         new CloseEvent("close", {

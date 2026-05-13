@@ -2,10 +2,10 @@ import { Driver } from "../driver";
 import Natav from "../natav";
 import { Tcp } from "../sockets/tcp";
 import { SchemaGenerator } from "../schema/index.ts";
-import { CustomExporter, MultiLogExporter } from "@av/telemetry/exporters";
+import { ConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 
-StartLogging(new MultiLogExporter([new CustomExporter(() => {})]));
+StartLogging([new ConsoleExporter()]);
 
 export type TestShimState = {
   connected: boolean;

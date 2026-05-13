@@ -105,7 +105,7 @@ export class Udp extends TypedEventTarget<UdpEvents> {
         });
         socket.on("message", (buf) => this.handleData(buf));
         socket.on("close", () => {
-          void this.handleClose();
+          this.handleClose();
         });
         socket.connect(this.config.port, this.config.addr, () => {
           this.handleDrain();

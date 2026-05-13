@@ -26,10 +26,12 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
   name: string;
 
   constructor(args: TcpConfig) {
-    super();
+    const name = `tcp-client-${args.addr}:${args.port}`;
+    const tel = new Telemetry(name);
+    super(tel);
     this.config = args;
-    this.name = `tcp-client-${this.config.addr}:${this.config.port}`;
-    this.tel = new Telemetry(this.name);
+    this.name = name;
+    this.tel = tel;
     this.tel.info("INITALIZE", this.config);
   }
 
@@ -48,8 +50,6 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
       clearTimeout(this.retryTimeout);
       this.retryTimeout = undefined;
     }
-    this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     this.emit("connected", undefined);
   }
 
@@ -74,7 +74,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
   }
 
   private handleData(data: Buffer): void {
-    this.tel.info("HANDLER_DATA");
+    this.tel.info("RECEIVED_DATA", { length: data.length });
     this.emit("receive", data);
   }
 
@@ -123,44 +123,39 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     const result = await this.tel.task("CONNECTION_START", async (span) => {
       this.tel.info("CONNECTION_PARAMS", this.config);
       span.setAttributes({ addr: this.config.addr, port: this.config.port });
-      return await new Promise<net.Socket>((resolve, reject) => {
-        const socket = net.createConnection(
-          { host: this.config.addr, port: this.config.port },
-          () => {
-            void this.handleOpen();
-            resolve(socket);
-          },
-        );
-
-        socket.setTimeout(10000, async () => {
-          this.emit("timeout", undefined);
-          await this.scheduleRetry();
-        });
-
-        socket.on("data", (data) =>
-          this.handleData(Buffer.isBuffer(data) ? data : Buffer.from(data)),
-        );
-        socket.on("drain", () => this.handleDrain());
-        socket.on("end", () => {
-          this.tel.info("SOCKET_END");
-        });
-        socket.on("error", (err) => {
-          this.handleError(err);
-          void this.handleConnectError(err);
-          reject(err);
-        });
-        socket.on("close", (hadError) => {
-          void this.handleClose(hadError ? new Error("socket closed with error") : undefined);
-        });
+      return net.createConnection({ host: this.config.addr, port: this.config.port }, () => {
+        this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
+        setTimeout(() => {
+          void this.handleOpen();
+        }, 1000);
       });
     });
 
-    if (result.ok) {
-      this.socket = result.data;
-    } else {
-      this.tel.warn("CONNECTION_START_FAILED");
+    if (!result.ok) {
       await this.scheduleRetry();
+      return;
     }
+    this.socket = result.data;
+
+    this.socket.setTimeout(10000, async () => {
+      this.emit("timeout", undefined);
+      await this.scheduleRetry();
+    });
+
+    this.socket.on("data", (data) => {
+      this.handleData(Buffer.isBuffer(data) ? data : Buffer.from(data));
+    });
+    this.socket.on("drain", () => this.handleDrain());
+    this.socket.on("end", () => {
+      this.tel.info("SOCKET_END");
+    });
+    this.socket.on("error", async (err) => {
+      this.handleError(err);
+      await this.handleConnectError(err);
+    });
+    this.socket.on("close", (hadError) => {
+      void this.handleClose(hadError ? new Error("socket closed with error") : undefined);
+    });
   }
 
   end(): void {

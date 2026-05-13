@@ -5,6 +5,7 @@ export const assets = createAssetServer({
   rootDir: process.cwd(),
   fileMap: {
     "app/*path": "app/*path",
+    "av/*path": "av/*path",
     "node_modules/*path": "node_modules/*path",
   },
   allow: [
@@ -13,6 +14,7 @@ export const assets = createAssetServer({
     "app/controllers/debug/**",
     "app/rpc/**",
     "app/ui/prompt-button.tsx",
+    "av/**",
     "node_modules/**",
   ],
   deny: ["app/**/*.server.*"],

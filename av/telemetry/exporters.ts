@@ -8,7 +8,7 @@ export interface LogRecordExporter {
 }
 
 export class MultiLogExporter implements LogRecordExporter {
-  constructor(private exporters: (LogRecordExporter | null)[]) {}
+  constructor(private exporters: LogRecordExporter[]) {}
 
   export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
     for (const exporter of this.exporters) {
@@ -52,6 +52,36 @@ export class ConsoleExporter implements LogRecordExporter {
           break;
         case SeverityNumber["ERROR"]:
           console.error(record);
+          break;
+        default:
+          console.log(record);
+          break;
+      }
+    }
+
+    resultCallback({ code: 0 });
+  }
+
+  async shutdown() {}
+}
+
+export class SimpleConsoleExporter implements LogRecordExporter {
+  constructor() {}
+
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+    for (const record of logRecords) {
+      switch (record.severityNumber) {
+        case SeverityNumber["DEBUG"]:
+          console.debug(record.instrumentationScope.name, record.body, record.attributes);
+          break;
+        case SeverityNumber["INFO"]:
+          console.info(record.instrumentationScope.name, record.body, record.attributes);
+          break;
+        case SeverityNumber["WARN"]:
+          console.warn(record.instrumentationScope.name, record.body, record.attributes);
+          break;
+        case SeverityNumber["ERROR"]:
+          console.error(record.instrumentationScope.name, record.body, record.attributes);
           break;
         default:
           console.log(record);

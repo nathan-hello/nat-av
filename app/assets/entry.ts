@@ -1,4 +1,8 @@
+import { SimpleConsoleExporter } from "@av/telemetry/exporters";
+import { StartLogging } from "@av/telemetry/sdk";
 import { run } from "remix/ui";
+
+StartLogging([new SimpleConsoleExporter()]);
 
 run({
   async loadModule(moduleUrl, exportName) {

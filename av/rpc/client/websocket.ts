@@ -1,7 +1,9 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { TransportOptions } from "@av/rpc/client/types";
+import { Telemetry } from "@av/telemetry";
 
 export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
+  private tel = new Telemetry("ClientWebsocket");
   private socket: WebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private retryCount = 0;
@@ -16,28 +18,28 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
 
   connect() {
     let socket = new WebSocket(toWebSocketUrl(this.url));
-    console.log("ClientWebsocket.openSocket");
+    this.tel.info("made new websocket", { url: this.url });
     this.socket = socket;
 
     socket.addEventListener("open", (event) => {
       this.retryCount = 0;
-      console.log("ClientWebsocket.openSocket: Event: Open");
+      this.tel.info("got event", { event: "open" });
       super.dispatch("open", event);
     });
 
     socket.addEventListener("message", (event) => {
+      this.tel.info("got event", { event: "message" });
       super.dispatch("message", event);
     });
 
     socket.addEventListener("error", (event) => {
-      console.log("ClientWebsocket.openSocket: Event: Error", event);
+      this.tel.info("got event", { event: "error", error: event });
       super.dispatch("error", event);
     });
 
     socket.addEventListener("close", (event) => {
-      console.log("ClientWebsocket.openSocket: Event: Close", event);
+      this.tel.info("got event", { event: "close", reason: event.reason, code: event.code });
       super.dispatch("close", event);
-      this.dispatchEvent(new CustomEvent("close", event));
 
       if (this.closedExplicitly || !this.options.reconnect) {
         return this;
@@ -46,10 +48,7 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
       this.reconnectTimer = setTimeout(
         () => {
           this.retryCount += 1;
-          console.log(
-            "ClientWebsocket.openSocket: Attempting Reconnect: Attempt ",
-            this.retryCount,
-          );
+          this.tel.error("reconnecting", { retryCount: this.retryCount });
           this.connect();
         },
         this.options.retryDelay * Math.min(this.retryCount + 1, 10),

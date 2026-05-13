@@ -68,7 +68,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
           continue;
         }
 
-        this.tel.info("PARSED_MESSAGE", { received: JSON.stringify(response) });
+        this.tel.info("PARSED_MESSAGE", { length: JSON.stringify(response).length });
 
         if (!("id" in response)) {
           this.tel.debug("got-jsonrpc-notification", { notification: response });

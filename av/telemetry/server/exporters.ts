@@ -3,6 +3,7 @@ import {
   type ReadableLogRecord,
   ReadableLogRecordStringify,
   ReadableLogRecordToLogEntry,
+  SeverityNumber,
 } from "@av/telemetry/types";
 import fs from "node:fs";
 
@@ -26,6 +27,40 @@ export class FileExporter implements LogRecordExporter {
   shutdown() {
     return Promise.resolve();
   }
+}
+
+const ANSI_RESET = "\u001b[0m";
+const ANSI_PURPLE = "\u001b[35m";
+
+export class SimpleConsoleExporter implements LogRecordExporter {
+  constructor() {}
+
+  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+    for (const record of logRecords) {
+      const scopeName = `${ANSI_PURPLE}${record.instrumentationScope.name}${ANSI_RESET}`;
+      switch (record.severityNumber) {
+        case SeverityNumber["DEBUG"]:
+          console.debug(scopeName, record.body, record.attributes);
+          break;
+        case SeverityNumber["INFO"]:
+          console.info(scopeName, record.body, record.attributes);
+          break;
+        case SeverityNumber["WARN"]:
+          console.warn(scopeName, record.body, record.attributes);
+          break;
+        case SeverityNumber["ERROR"]:
+          console.error(scopeName, record.body, record.attributes);
+          break;
+        default:
+          console.log(scopeName, record.body, record.attributes);
+          break;
+      }
+    }
+
+    resultCallback({ code: 0 });
+  }
+
+  async shutdown() {}
 }
 
 import type { Bus } from "@av/bus";
