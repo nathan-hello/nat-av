@@ -1,26 +1,6 @@
-import { RemixWebsocket, TypedEventTarget } from "./websocket";
-
-export type DebugEntry = {
-  time: string;
-  context: {
-    spanId: string | undefined;
-    traceId: string | undefined;
-    traceName: string;
-  };
-  severity: {
-    id: number;
-    text: string;
-  };
-  name: string;
-  data: any;
-};
-
-type DebugEvents = {
-  ready: void;
-  close: CloseEvent;
-  error: Event;
-  entry: DebugEntry;
-};
+import { TypedEventTarget } from "@/rpc/eventtarget";
+import { RemixWebsocket } from "./websocket";
+import type { DebugEntry, DebugEvents } from "@/rpc/types";
 
 export class DebugClient extends TypedEventTarget<DebugEvents> {
   private transport;

@@ -1,25 +1,7 @@
 import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
-import type { EventPayload } from "@av/bus";
 import type Natav from "@av/natav";
 import type { System } from "@av/system";
 import type { natav } from "@av/index";
-
-type PendingRequest = {
-  resolve: (result: any) => void;
-  reject: (error: Error) => void;
-  timeout: NodeJS.Timeout;
-};
-
-type NotificationListener = {
-  resolve: (notification: EventPayload) => void;
-  reject: (error: Error) => void;
-  timeout: NodeJS.Timeout | null;
-  filter?: (notification: EventPayload) => boolean;
-};
-
-type SystemStateData = {
-  connections: Record<string, { connected: boolean }>;
-};
 
 /**
  * RPC Client - manages all communication with the server

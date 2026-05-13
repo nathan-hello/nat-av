@@ -18,21 +18,24 @@ export type DebugSchema = SerializableProps & {
 type Props = SerializableProps & { schema: DebugSchema; initialDevice: string | null };
 
 export const DebugPage = clientEntry(
-  "/assets/app/controllers/debug/page.tsx#DebugPage",
+  import.meta.url,
   function DebugPage(handle: Handle<Props>) {
-    const rpc: RemixRpcClient = new RemixRpcClient().connect();
-    const debug: DebugClient = new DebugClient().connect();
+    let rpc: RemixRpcClient | null = null;
+    let debug: DebugClient | null = null;
     let selected = handle.props.initialDevice;
     let tab: Tab = "state";
     let connected = false;
     let logsConnected = false;
 
     handle.queueTask((signal) => {
+      rpc = new RemixRpcClient();
+      debug = new DebugClient();
+
       rpc.on("ready", () => {
         connected = true;
         handle.update();
       });
-      rpc.on("disconnect", () => {
+      rpc.on("close", () => {
         connected = false;
         handle.update();
       });
@@ -50,6 +53,9 @@ export const DebugPage = clientEntry(
         rpc?.close();
         debug?.close();
       });
+
+      rpc.connect();
+      debug.connect();
     });
 
     return () => {
@@ -61,20 +67,7 @@ export const DebugPage = clientEntry(
       let state = selectedHandle?.state ?? selectedSchema?.state;
 
       return (
-        <html lang="en">
-          <head>
-            <meta charSet="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="color-scheme" content="dark" />
-            <title>Debug</title>
-            <link rel="stylesheet" href={routes.assets.href({ path: "app/assets/tailwind.css" })} />
-            <script
-              type="module"
-              src={routes.assets.href({ path: "app/assets/entry.ts" })}
-            ></script>
-          </head>
-          <body mix={bodyStyle}>
-            <div mix={shellStyle}>
+        <div mix={shellStyle}>
               <aside mix={sidebarStyle}>
                 <div mix={rowStyle}>
                   <strong>Debug</strong>
@@ -145,9 +138,7 @@ export const DebugPage = clientEntry(
                   </>
                 : <div mix={emptyStyle}>Select a device</div>}
               </main>
-            </div>
-          </body>
-        </html>
+        </div>
       );
     };
   },

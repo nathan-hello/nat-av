@@ -3,27 +3,9 @@ import type { natav } from "@av/index";
 import type { System } from "@av/system";
 
 import { isRPCError, isRPCNotification, isRPCResponse } from "./utils";
-import { TypedEventTarget, RemixWebsocket } from "./websocket";
-
-type SystemStateData = {
-  connections: Record<string, { connected: boolean }>;
-};
-
-type PendingRequest = {
-  resolve: (result: any) => void;
-  reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
-};
-
-export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
-  name: Name;
-  state: Natav.State<N, Name> | undefined;
-  connected: boolean;
-};
-
-type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
-  change: DeviceChangeEvent<N, Name>;
-};
+import { RemixWebsocket } from "./websocket";
+import { TypedEventTarget } from "@/rpc/eventtarget";
+import type { DeviceEvents, PendingRequest, RpcEvents, SystemStateData } from "@/rpc/types";
 
 export class RemixDeviceHandle<
   N extends Natav,
@@ -72,24 +54,13 @@ export class RemixDeviceHandle<
   }
 
   notify() {
-    this.dispatchEvent(
-      new CustomEvent("change", {
-        detail: {
-          name: this.name,
-          state: this.state,
-          connected: this.connected,
-        },
-      }),
-    );
+    super.emit("change", {
+      name: this.name,
+      state: this.state,
+      connected: this.connected,
+    });
   }
 }
-
-type RpcEvents = {
-  ready: void;
-  disconnect: CloseEvent;
-  error: Event;
-  change: { name?: string };
-};
 
 export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
   private transport: RemixWebsocket;
@@ -114,14 +85,14 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
 
     this.transport.on("close", (event) => {
       this.initialized = false;
-      this.dispatchEvent(event);
+      super.emit("close", event);
       for (let handle of this.deviceHandles.values()) {
         handle.notify();
       }
     });
 
     this.transport.on("error", (event) => {
-      this.dispatchEvent(event);
+      super.emit("error", event);
     });
 
     this.transport.on("message", (event) => {
@@ -143,12 +114,15 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
     return this.transport.readyState;
   }
 
-  async init() {
+  private async init() {
     if (this.initialized) {
+      console.log("RpcClient.init: init called even though this.initialized was true");
       return;
     }
 
+    console.log("RpcClient.init: waiting for this.waitForOpen");
     await this.waitForOpen();
+    console.log("RpcClient.init: this.waitForOpen resolved successfully");
 
     try {
       const [systemStateData, deviceStates] = await Promise.all([
@@ -156,19 +130,25 @@ export class RemixRpcClient<N extends Natav = natav> extends TypedEventTarget<Rp
         this.system.api.GetAllDeviceStates(),
       ]);
 
+      console.log("RpcClient.init: Promise.all resolved");
+
       this.systemStateData = systemStateData;
       this.deviceStates = { ...deviceStates };
       this.initialized = true;
 
-      this.dispatchEvent(new Event("ready"));
+      this.emit("ready", true);
       this.notifyAllDevices();
     } catch (error) {
-      this.dispatchEvent(new Event("error"));
-      throw error;
+      this.emit("error", { reason: "init-promises-threw", error: error as Error });
+      this.close();
+
+      setTimeout(() => {
+        this.connect();
+      }, 2000);
     }
   }
 
-  async waitForOpen() {
+  private async waitForOpen() {
     if (this.transport.readyState === WebSocket.OPEN) {
       return;
     }

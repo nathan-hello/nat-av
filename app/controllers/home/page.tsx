@@ -1,34 +1,34 @@
 import { clientEntry, css, type Handle } from "remix/ui";
-import { routes } from "@/routes";
 import { RemixRpcClient } from "@/rpc/devices";
 
 export const HomePage = clientEntry(
   "/assets/app/controllers/home/page.tsx#HomePage",
   function HomePage(handle: Handle) {
-    console.log("asdf");
-    let rpc: RemixRpcClient = new RemixRpcClient();
+    let rpc: RemixRpcClient | null = null;
     let connected = false;
 
     handle.queueTask((signal) => {
-      rpc.connect();
+      console.log("asdf");
+
+      rpc = new RemixRpcClient();
 
       rpc.on("ready", () => {
         connected = true;
+        console.log('RpcClient: rpc.device("video-wall"): ', rpc?.device("video-wall"));
         handle.update();
       });
-      rpc.on("disconnect", () => {
+      rpc.on("close", () => {
         connected = false;
         handle.update();
       });
       rpc.on("change", handle.update);
 
+      rpc.connect();
+
       signal.addEventListener("abort", () => rpc?.close());
     });
 
     return () => {
-      let display = rpc?.device("video-wall");
-      console.log("RpcClient: rpc.device(\"video-wall\"): ", display);
-
       return (
         <main mix={shellStyle}>
           <header mix={headerStyle}>
@@ -44,7 +44,7 @@ export const HomePage = clientEntry(
               <span mix={pillStyle(connected)}>
                 {connected ? "RPC Connected" : "RPC Disconnected"}
               </span>
-              <a href={routes.debug.href()} mix={linkStyle}>
+              <a href={"/debug"} mix={linkStyle}>
                 Debug
               </a>
             </div>
@@ -54,14 +54,6 @@ export const HomePage = clientEntry(
     };
   },
 );
-
-const bodyStyle = css({
-  margin: 0,
-  minHeight: "100vh",
-  background: "#020617",
-  color: "#e2e8f0",
-  fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace",
-});
 
 const shellStyle = css({ padding: "24px", display: "grid", gap: "18px" });
 const headerStyle = css({
