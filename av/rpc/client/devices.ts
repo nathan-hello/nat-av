@@ -50,13 +50,10 @@ export class ClientRpcDevice<
 
     return {
       schema,
-      driverName: schema?.driverName,
       typeName: schema?.typeName,
       source: schema?.source,
-      deps: schema?.deps ?? [],
       methods: schema?.methods ?? {},
-      socket: schema?.socket ?? null,
-      state: schema?.state,
+      state: this.state,
       logs: this.client.getDeviceLogs(this.name),
       clearLogs: () => {
         this.client.clearLogs(this.name);

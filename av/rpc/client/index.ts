@@ -13,7 +13,7 @@ import type {
 } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
-import type { DriverSchema } from "@av/schema/types";
+import type { ApiSurfaceSchema } from "@av/schema/types";
 import { Telemetry } from "@av/telemetry";
 
 type SystemApi<N extends Natav> = {
@@ -30,7 +30,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
   private timeout = 30000;
   private deviceStates: Partial<Record<string, unknown>> = {};
   private systemStateData: SystemStateData = { connections: {} };
-  private bindings?: ClientRpcBindings<N>;
+  private bindings?: ClientRpcBindings;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private debugEntries: DebugEntry[] = [];
   private initialized = false;
@@ -80,7 +80,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
   }
 
   get devices() {
-    return this.bindings?.devices ?? ({} as ClientRpcBindings<N>["devices"]);
+    return this.bindings?.devices ?? {};
   }
 
   get logs() {
@@ -157,7 +157,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
   }
 
   getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
-    return this.devices[name as keyof typeof this.devices] as DriverSchema | undefined;
+    return this.devices[name as keyof typeof this.devices] as ApiSurfaceSchema | undefined;
   }
 
   getDeviceLogs<Name extends Natav.Names<N>>(name: Name) {

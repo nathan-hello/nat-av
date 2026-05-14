@@ -43,7 +43,12 @@ export const natav = new Natav([
 
 export type natav = typeof natav;
 
-export const schema = new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" });
+export const schema = new SchemaGenerator({
+  entryFile: new URL("./rpc/client/index.ts", import.meta.url),
+  exportName: "ClientRpc",
+});
+
+console.log(JSON.stringify(schema.toJSON()));
 
 const system = new System({
   bus,

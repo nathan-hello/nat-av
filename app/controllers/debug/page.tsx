@@ -1,14 +1,12 @@
-import type { DriverSchema, MethodSchema } from "@av/schema/types";
+import type { ApiSurfaceSchema, MethodSchema } from "@av/schema/types";
 import { css, on, type Handle } from "remix/ui";
 import { routes } from "@/routes";
 import { getRpc } from "@/state";
-import type { ClientRpc } from "@av/rpc/client";
 
 type Tab = "state" | "api" | "events";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
-  let selected: string | null = null;
   let tab: Tab = "state";
 
   return () => {
@@ -17,39 +15,11 @@ export function DebugPage(handle: Handle) {
       return <div mix={emptyStyle}>Waiting for schema</div>;
     }
 
-    let devices = Object.values(schema.devices).sort((a, b) => a.name.localeCompare(b.name));
-    selected ??= schema.roots[0] ?? devices[0]?.name ?? null;
-    let selectedSchema = selected ? schema.devices[selected as keyof typeof schema.devices] : undefined;
-    let selectedHandle = selected && rpc ? rpc.device(selected as any) : null;
-    let state = selectedHandle?.state;
+    let state = rpc.system.state;
     let avrpcConnected = rpc.readyState === WebSocket.OPEN;
 
     return (
       <div mix={shellStyle}>
-        <aside mix={sidebarStyle}>
-          <div mix={rowStyle}>
-            <strong>Debug</strong>
-            <span>{avrpcConnected ? "RPC" : "RPC off"}</span>
-          </div>
-          {devices.map((device) => (
-            <button
-              key={device.name}
-              type="button"
-              mix={[
-                deviceButtonStyle(selected === device.name),
-                on("click", () => {
-                  selected = device.name;
-                  tab = "state";
-                  handle.update();
-                }),
-              ]}
-            >
-              <span>{device.name}</span>
-              <span>{rpc?.system.state.connections[device.name]?.connected ? "on" : "off"}</span>
-            </button>
-          ))}
-        </aside>
-
         <main mix={mainStyle}>
           <header mix={rowStyle}>
             <div>
@@ -58,48 +28,35 @@ export function DebugPage(handle: Handle) {
             </div>
             <div mix={rowStyle}>
               <a href={routes.home.href()}>Home</a>
-              <a href={routes.schema.href()}>Schema</a>
             </div>
           </header>
 
-          {selectedSchema ?
-            <>
-              <div mix={tabsStyle}>
-                {(["state", "api", "events"] as Tab[]).map((next) => (
-                  <button
-                    key={next}
-                    type="button"
-                    mix={[
-                      tabButtonStyle(tab === next),
-                      on("click", () => {
-                        tab = next;
-                        handle.update();
-                      }),
-                    ]}
-                  >
-                    {next}
-                  </button>
-                ))}
-              </div>
-
-              {tab === "state" ?
-                <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
-              : null}
-              {tab === "api" ?
-                <ApiTab schema={selectedSchema} deviceName={selectedSchema.name} rpc={rpc} />
-              : null}
-              {tab === "events" ?
-                <EventsTab deviceName={selectedSchema.name} rpc={rpc} />
-              : null}
-            </>
-          : <div mix={emptyStyle}>Select a device</div>}
+          <div mix={tabsStyle}>
+            {(["state", "api"] as Exclude<Tab, "events">[]).map((next) => (
+              <button
+                key={next}
+                type="button"
+                mix={[
+                  tabButtonStyle(tab === next),
+                  on("click", () => {
+                    tab = next;
+                    handle.update();
+                  }),
+                ]}
+              >
+                {next}
+              </button>
+            ))}
+          </div>
+          {tab === "state" ? <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre> : null}
+          {tab === "api" ? <ApiTab schema={schema} /> : null}
         </main>
       </div>
     );
   };
 
   function ApiTab(
-    handle: Handle<{ schema: DriverSchema; deviceName: string; rpc: ClientRpc | null }>,
+    handle: Handle<{ schema: ApiSurfaceSchema }>,
   ) {
     return () => {
       let methods = Object.entries(handle.props.schema.methods);
@@ -112,8 +69,6 @@ export function DebugPage(handle: Handle) {
               key={name}
               name={name}
               method={method}
-              deviceName={handle.props.deviceName}
-              rpc={handle.props.rpc}
             />
           ))}
         </div>
@@ -125,8 +80,6 @@ export function DebugPage(handle: Handle) {
     handle: Handle<{
       name: string;
       method: MethodSchema;
-      deviceName: string;
-      rpc: ClientRpc | null;
     }>,
   ) {
     let argsText = "[]";
@@ -152,21 +105,8 @@ export function DebugPage(handle: Handle) {
           type="button"
           mix={[
             buttonStyle,
-            on("click", async () => {
-              if (!handle.props.rpc) return;
-              try {
-                result = JSON.stringify(
-                  await handle.props.rpc.call(
-                    handle.props.deviceName,
-                    handle.props.name,
-                    JSON.parse(argsText || "[]"),
-                  ),
-                  null,
-                  2,
-                );
-              } catch (error) {
-                result = error instanceof Error ? error.message : String(error);
-              }
+          on("click", async () => {
+              result = JSON.stringify(JSON.parse(argsText || "[]"), null, 2);
               handle.update();
             }),
           ]}
@@ -180,40 +120,6 @@ export function DebugPage(handle: Handle) {
     );
   }
 
-  function EventsTab(handle: Handle<{ deviceName: string; rpc: ClientRpc | null }>) {
-    return () => {
-      let device = handle.props.rpc?.device(handle.props.deviceName as any);
-      let logs = device?.debug.logs ?? [];
-      return (
-        <div mix={stackStyle}>
-          <div mix={rowStyle}>
-            <span>{logs.length} events</span>
-            {device ?
-               <button
-                 type="button"
-                 mix={[
-                   buttonStyle,
-                   on("click", () => {
-                      device.debug.clearLogs();
-                      handle.update();
-                    }),
-                  ]}
-                >
-                Clear
-              </button>
-            : null}
-          </div>
-          {logs.length ?
-            logs.map((log, i) => (
-              <pre key={i} mix={boxStyle}>
-                {JSON.stringify(log, null, 2)}
-              </pre>
-            ))
-          : <div mix={emptyStyle}>No events</div>}
-        </div>
-      );
-    };
-  }
 }
 
 const bodyStyle = css({

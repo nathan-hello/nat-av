@@ -1,6 +1,6 @@
 import type Natav from "@av/natav";
 import type { RPCError } from "@av/rpc/types";
-import type { DriverSchema, NatavJsonRpcBindings } from "@av/schema/types";
+import type { ApiSurfaceSchema } from "@av/schema/types";
 
 export type SystemStateData = {
   connections: Record<string, { connected: boolean }>;
@@ -22,17 +22,15 @@ export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
 };
 
-export type ClientRpcBindings<N extends Natav = Natav> = NatavJsonRpcBindings<N>;
+export type ClientRpcBindings = ApiSurfaceSchema & {
+};
 
 export type ClientRpcDeviceDebug = {
-  schema: DriverSchema | undefined;
-  driverName: string | undefined;
+  schema: ApiSurfaceSchema | undefined;
   typeName: string | undefined;
-  source: DriverSchema["source"] | undefined;
-  deps: string[];
-  methods: DriverSchema["methods"];
-  socket: DriverSchema["socket"] | null;
-  state: DriverSchema["state"] | undefined;
+  source: ApiSurfaceSchema["source"] | undefined;
+  methods: ApiSurfaceSchema["methods"];
+  state: unknown;
   logs: DebugEntry[];
   clearLogs(): void;
 };

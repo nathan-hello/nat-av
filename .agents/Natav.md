@@ -89,7 +89,7 @@ with `const tel = new Telemetry("<function or class name>");`
 
 ## av/test
 
-Ignore this directory. I will add the tests.
+Ignore this directory unless specified otherwise.
 
 ## av/automation.ts
 

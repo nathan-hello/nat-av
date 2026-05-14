@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { extractNatavSchema } from "./extract.ts";
-import { toJsonRpcBindings } from "./jsonrpc.ts";
+import { extractApiSurfaceSchema } from "./extract.ts";
 
 type SchemaGeneratorArgs = {
   entryFile: string | URL;
@@ -24,7 +23,7 @@ export class SchemaGenerator {
   }
 
   extract() {
-    return extractNatavSchema({
+    return extractApiSurfaceSchema({
       entry: this.entryFile,
       exportName: this.exportName,
       rootDir: this.rootDir,
@@ -33,7 +32,7 @@ export class SchemaGenerator {
   }
 
   toJSON() {
-    return toJsonRpcBindings(this.extract());
+    return this.extract();
   }
 
   render() {
