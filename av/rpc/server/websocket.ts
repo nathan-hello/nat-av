@@ -3,6 +3,7 @@ import type Natav from "@av/natav";
 import { RPCHandler } from "@av/rpc/server";
 import { createRPCNotification, DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import type { Telemetry } from "@av/telemetry";
+import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 
 const decoder = new TextDecoder();
 
@@ -59,12 +60,38 @@ export class WebsocketHandler<N extends Natav = Natav> {
     this.bus.on("natav:automation:triggered", (payload) => {
       this.BroadcastEvent("natav:automation:triggered", payload);
     });
+
+    this.bus.on("natav:opentelemetry:entry", (payload) => {
+      this.BroadcastLog(ReadableLogRecordToLogEntry(payload.message.record));
+    });
   }
 
   BroadcastEvent<E extends EventName>(_: E, payload: EventPayload<E>) {
     const notification = createRPCNotification(payload);
-    const message = JSON.stringify(notification);
+    this.broadcast(JSON.stringify(notification));
+  }
 
+  BroadcastLog(entry: unknown) {
+    let message: string;
+    try {
+      message = JSON.stringify(entry);
+    } catch {
+      message = JSON.stringify({
+        name: "UNABLE_TO_JSON_STRINGIFY_LOG",
+        context: {
+          traceName: "SERVER_INTERNAL",
+          traceId: undefined,
+          spanId: undefined,
+        },
+        time: new Date().toISOString().slice(11, 23),
+        severity: { id: 50, text: "ERROR" },
+      });
+    }
+
+    this.broadcast(message);
+  }
+
+  private broadcast(message: string) {
     this.clients.forEach((c) => {
       if (c.readyState !== 1) {
         return;

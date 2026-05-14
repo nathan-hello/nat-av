@@ -1,24 +1,27 @@
 import type { DriverSchema, MethodSchema } from "@av/schema/types";
-import { css, on, type Handle, type SerializableProps } from "remix/ui";
+import { css, on, type Handle } from "remix/ui";
 import { routes } from "@/routes";
-import { getDebugRpc, getRpc } from "@/state";
-import type { ClientRpcDebug } from "@av/rpc/client/debug";
+import { getRpc } from "@/state";
 import type { ClientRpc } from "@av/rpc/client";
 
 type Tab = "state" | "api" | "events";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
-  const debug = getDebugRpc(handle);
+  let selected: string | null = null;
+  let tab: Tab = "state";
 
-  return async () => {
-    let tab: Tab = "state" as Tab;
-    let schema = await rpc.system.api.GetSchema();
-    let devices = Object.values(schema).sort((a, b) => a.name.localeCompare(b.name));
-    let selectedSchema = selected ? schema.devices[selected] : undefined;
+  return () => {
+    let schema = rpc.schema;
+    if (!schema) {
+      return <div mix={emptyStyle}>Waiting for schema</div>;
+    }
+
+    let devices = Object.values(schema.devices).sort((a, b) => a.name.localeCompare(b.name));
+    selected ??= schema.roots[0] ?? devices[0]?.name ?? null;
+    let selectedSchema = selected ? schema.devices[selected as keyof typeof schema.devices] : undefined;
     let selectedHandle = selected && rpc ? rpc.device(selected as any) : null;
-    let state = selectedHandle?.state ?? selectedSchema?.state;
-    let debugConnected = debug.readyState === WebSocket.OPEN;
+    let state = selectedHandle?.state;
     let avrpcConnected = rpc.readyState === WebSocket.OPEN;
 
     return (
@@ -51,7 +54,7 @@ export function DebugPage(handle: Handle) {
           <header mix={rowStyle}>
             <div>
               <h1 mix={titleStyle}>Natav debug console</h1>
-              <p mix={mutedStyle}>{debugConnected ? "logs connected" : "logs off"}</p>
+              <p mix={mutedStyle}>{avrpcConnected ? "websocket connected" : "websocket off"}</p>
             </div>
             <div mix={rowStyle}>
               <a href={routes.home.href()}>Home</a>
@@ -86,7 +89,7 @@ export function DebugPage(handle: Handle) {
                 <ApiTab schema={selectedSchema} deviceName={selectedSchema.name} rpc={rpc} />
               : null}
               {tab === "events" ?
-                <EventsTab deviceName={selectedSchema.name} debug={debug} />
+                <EventsTab deviceName={selectedSchema.name} rpc={rpc} />
               : null}
             </>
           : <div mix={emptyStyle}>Select a device</div>}
@@ -177,27 +180,25 @@ export function DebugPage(handle: Handle) {
     );
   }
 
-  function EventsTab(handle: Handle<{ deviceName: string; debug: ClientRpcDebug | null }>) {
+  function EventsTab(handle: Handle<{ deviceName: string; rpc: ClientRpc | null }>) {
     return () => {
-      let logs =
-        handle.props.debug?.logs.filter(
-          (entry) => entry.context.traceName === handle.props.deviceName,
-        ) ?? [];
+      let device = handle.props.rpc?.device(handle.props.deviceName as any);
+      let logs = device?.debug.logs ?? [];
       return (
         <div mix={stackStyle}>
           <div mix={rowStyle}>
             <span>{logs.length} events</span>
-            {handle.props.debug ?
-              <button
-                type="button"
-                mix={[
-                  buttonStyle,
-                  on("click", () => {
-                    handle.props.debug?.clear();
-                    handle.update();
-                  }),
-                ]}
-              >
+            {device ?
+               <button
+                 type="button"
+                 mix={[
+                   buttonStyle,
+                   on("click", () => {
+                      device.debug.clearLogs();
+                      handle.update();
+                    }),
+                  ]}
+                >
                 Clear
               </button>
             : null}

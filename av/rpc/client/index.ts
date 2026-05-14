@@ -2,12 +2,25 @@ import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import type { System } from "@av/system";
 
-import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
-import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { PendingRequest, RpcEvents, SystemStateData } from "@av/rpc/client/types";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
+import type {
+  ClientRpcBindings,
+  DebugEntry,
+  PendingRequest,
+  RpcEvents,
+  SystemStateData,
+} from "@av/rpc/client/types";
+import { ClientWebsocket } from "@av/rpc/client/websocket";
+import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
+import type { DriverSchema } from "@av/schema/types";
 import { Telemetry } from "@av/telemetry";
+
+type SystemApi<N extends Natav> = {
+  [M in keyof System<N>["api"]]: System<N>["api"][M] extends (...args: infer Args) => infer R ?
+    (...args: Args) => Promise<Awaited<R>>
+  : never;
+};
 
 export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
   private tel = new Telemetry("ClientRpc");
@@ -17,7 +30,9 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
   private timeout = 30000;
   private deviceStates: Partial<Record<string, unknown>> = {};
   private systemStateData: SystemStateData = { connections: {} };
+  private bindings?: ClientRpcBindings<N>;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
+  private debugEntries: DebugEntry[] = [];
   private initialized = false;
 
   constructor() {
@@ -34,9 +49,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     this.transport.on("close", (event) => {
       this.initialized = false;
       super.dispatch("close", event);
-      for (let handle of this.deviceHandles.values()) {
-        handle.notify();
-      }
+      this.notifyAllDevices();
     });
 
     this.transport.on("error", (event) => {
@@ -62,6 +75,18 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     return this.transport.readyState;
   }
 
+  get schema() {
+    return this.bindings;
+  }
+
+  get devices() {
+    return this.bindings?.devices ?? ({} as ClientRpcBindings<N>["devices"]);
+  }
+
+  get logs() {
+    return this.debugEntries;
+  }
+
   private async init() {
     if (this.initialized) {
       this.tel.error("init called even though this.initialized was true");
@@ -72,19 +97,20 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     await this.waitForOpen();
     this.tel.debug("this.waitForOpen resolved successfully");
 
-    const states = await this.tel.task("GET_INITIAL_STATE", async () => {
+    const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
       return await Promise.all([
+        this.system.api.GetSchema(),
         this.system.api.GetSystemState(),
         this.system.api.GetAllDeviceStates(),
       ]);
     });
 
-    if (!states.ok || isRPCError(states.data)) {
-      if (!states.ok) {
-        this.dispatch("error", { reason: "init-promises-threw", error: new Error(states.error) });
+    if (!initial.ok || isRPCError(initial.data)) {
+      if (!initial.ok) {
+        this.dispatch("error", { reason: "init-promises-threw", error: new Error(initial.error) });
       }
-      if (isRPCError(states.data)) {
-        this.dispatch("error", { reason: "rpc-error", error: states.data });
+      if (isRPCError(initial.data)) {
+        this.dispatch("error", { reason: "rpc-error", error: initial.data });
       }
 
       this.close();
@@ -95,14 +121,16 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     }
 
     this.tel.info("successfully resolved promises");
-    const [system, devices] = states.data;
+    const [schema, system, devices] = initial.data;
 
+    this.bindings = schema;
     this.systemStateData = system;
     this.deviceStates = { ...devices };
     this.initialized = true;
 
     this.dispatch("ready", true);
     this.notifyAllDevices();
+    this.dispatch("change", {});
   }
 
   private async waitForOpen() {
@@ -128,13 +156,29 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     return this.systemStateData.connections[name as string]?.connected ?? false;
   }
 
+  getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
+    return this.devices[name as keyof typeof this.devices] as DriverSchema | undefined;
+  }
+
+  getDeviceLogs<Name extends Natav.Names<N>>(name: Name) {
+    return this.debugEntries.filter((entry) => entry.context.traceName === name);
+  }
+
+  clearLogs(name?: string) {
+    this.debugEntries = name ?
+      this.debugEntries.filter((entry) => entry.context.traceName !== name)
+    : [];
+
+    this.dispatch("change", name ? { name } : {});
+  }
+
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
-    let existing = this.deviceHandles.get(name as string);
+    const existing = this.deviceHandles.get(name as string);
     if (existing) {
       return existing as ClientRpcDevice<N, Name>;
     }
 
-    let handle = new ClientRpcDevice(this, name);
+    const handle = new ClientRpcDevice(this, name);
     this.deviceHandles.set(name as string, handle as ClientRpcDevice<N, any>);
     return handle;
   }
@@ -183,14 +227,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     });
   }
 
-  get system(): {
-    api: {
-      [M in keyof System<N>["api"]]: System<N>["api"][M] extends (...args: infer Args) => infer R ?
-        (...args: Args) => Promise<Awaited<R>>
-      : never;
-    };
-    state: SystemStateData;
-  } {
+  get system(): { api: SystemApi<N>; state: SystemStateData } {
     const api = new Proxy(
       {},
       {
@@ -202,11 +239,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
           return (...args: any[]) => this.callSystem(methodName, ...args);
         },
       },
-    ) as {
-      [M in keyof System<N>["api"]]: System<N>["api"][M] extends (...args: infer Args) => infer R ?
-        (...args: Args) => Promise<Awaited<R>>
-      : never;
-    };
+    ) as SystemApi<N>;
 
     return { api, state: this.systemStateData };
   }
@@ -258,15 +291,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
       return JSON.parse(raw);
     });
     if (!parsed.ok) {
-      const err = {
-        time: new Date().toISOString().slice(11, 23),
-        context: { spanId: undefined, traceId: undefined, traceName: "CLIENT_INTERNAL" },
-        severity: { id: 50, text: "ERROR" },
-        name: "UNABLE_TO_JSON_PARSE_LOG",
-        data: raw,
-      };
-
-      this.tel.error("json-parse-failed", { raw, parsed, err });
+      this.tel.error("json-parse-failed", { raw, parsed });
       this.dispatch("error", { reason: "json-parse-failed", raw });
       return;
     }
@@ -292,6 +317,11 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
         this.notifyDevice(parsed.data.params.name);
       }
 
+      return;
+    }
+
+    if (isDebugEntry(parsed.data)) {
+      this.pushDebugEntry(parsed.data);
       return;
     }
 
@@ -327,14 +357,34 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     }
   }
 
+  private pushDebugEntry(entry: DebugEntry) {
+    this.debugEntries = [entry, ...this.debugEntries].slice(0, 500);
+  }
+
   private notifyDevice(name: string) {
     this.deviceHandles.get(name)?.notify();
     this.dispatch("change", { name });
   }
 
   private notifyAllDevices() {
-    for (let handle of this.deviceHandles.values()) {
+    for (const handle of this.deviceHandles.values()) {
       handle.notify();
     }
   }
+}
+
+function isDebugEntry(value: unknown): value is DebugEntry {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const entry = value as Partial<DebugEntry>;
+  return (
+    typeof entry.time === "string" &&
+    typeof entry.name === "string" &&
+    !!entry.context &&
+    typeof entry.context === "object" &&
+    !!entry.severity &&
+    typeof entry.severity === "object"
+  );
 }

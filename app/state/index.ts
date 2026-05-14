@@ -1,9 +1,7 @@
 import { ClientRpc } from "@av/rpc/client";
-import { ClientRpcDebug } from "@av/rpc/client/debug";
 import type { Handle } from "remix/ui";
 
 let rpcClient: ClientRpc | null = null;
-let debugRpcClient: ClientRpcDebug | null = null;
 
 export function getRpc(handle: Handle<any, any>): ClientRpc {
   if (!rpcClient) {
@@ -28,29 +26,4 @@ export function getRpc(handle: Handle<any, any>): ClientRpc {
   }
 
   return rpcClient;
-}
-
-export function getDebugRpc(handle: Handle<any, any>): ClientRpcDebug {
-  if (!debugRpcClient) {
-    debugRpcClient = new ClientRpcDebug();
-    debugRpcClient.connect();
-
-    const offReady = debugRpcClient.on("ready", () => {
-      handle.update();
-    });
-
-    const offClose = debugRpcClient.on("close", () => {
-      handle.update();
-    });
-
-    const offChange = debugRpcClient.on("entry", handle.update);
-
-    handle.signal.addEventListener("abort", () => {
-      offReady();
-      offClose();
-      offChange();
-    });
-  }
-
-  return debugRpcClient;
 }

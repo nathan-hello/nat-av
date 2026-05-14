@@ -12,8 +12,8 @@ if (homeContainer) {
 }
 
 const debugContainer = document.getElementById("spa-debug");
-if (homeContainer) {
-  createRoot(homeContainer).render(<DebugPage />);
+if (debugContainer) {
+  createRoot(debugContainer).render(<DebugPage />);
 }
 
 run({

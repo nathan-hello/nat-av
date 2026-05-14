@@ -1,11 +1,11 @@
 import type Natav from "@av/natav";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { DeviceEvents } from "@av/rpc/client/types";
+import type { ClientRpcDeviceDebug, DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
 export class ClientRpcDevice<
   N extends Natav,
-  Name extends Natav.Names<N>,
+  Name extends Natav.Names<N> = Natav.Names<N>,
 > extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
 
@@ -41,6 +41,29 @@ export class ClientRpcDevice<
     return this.client.getDeviceConnection(this.name);
   }
 
+  get schema() {
+    return this.client.getDeviceSchema(this.name);
+  }
+
+  get debug(): ClientRpcDeviceDebug {
+    const schema = this.schema;
+
+    return {
+      schema,
+      driverName: schema?.driverName,
+      typeName: schema?.typeName,
+      source: schema?.source,
+      deps: schema?.deps ?? [],
+      methods: schema?.methods ?? {},
+      socket: schema?.socket ?? null,
+      state: schema?.state,
+      logs: this.client.getDeviceLogs(this.name),
+      clearLogs: () => {
+        this.client.clearLogs(this.name);
+      },
+    };
+  }
+
   dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
     return this.client.device(depName);
   }
@@ -57,4 +80,3 @@ export class ClientRpcDevice<
     });
   }
 }
-

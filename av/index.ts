@@ -8,11 +8,7 @@ import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/impl/display";
 
 import { CustomExporter } from "@av/telemetry/exporters";
-import {
-  FileExporter,
-  SimpleConsoleExporter,
-  WebsocketExporter,
-} from "@av/telemetry/server/exporters";
+import { FileExporter, SimpleConsoleExporter } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
@@ -47,21 +43,21 @@ export const natav = new Natav([
 
 export type natav = typeof natav;
 
+export const schema = new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" });
+
 const system = new System({
   bus,
   natav,
-  schema: new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" }).toJSON(),
+  schema: schema.toJSON(),
 });
 new AutomationEngine({ bus, natav });
 
 const rpc = new RPCHandler({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc });
-const debug = new WebsocketExporter({ bus });
 const tel = new Telemetry("ServerWebsocket");
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, tel);
-  bindHttpToWs(app, "/debugger", debug, tel);
 
   await natav.Start();
   (globalThis as any).__devices__ = natav;

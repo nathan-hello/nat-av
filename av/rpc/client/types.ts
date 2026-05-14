@@ -1,6 +1,6 @@
 import type Natav from "@av/natav";
-import type { EventPayload } from "@av/bus";
 import type { RPCError } from "@av/rpc/types";
+import type { DriverSchema, NatavJsonRpcBindings } from "@av/schema/types";
 
 export type SystemStateData = {
   connections: Record<string, { connected: boolean }>;
@@ -20,6 +20,21 @@ export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
 
 export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
+};
+
+export type ClientRpcBindings<N extends Natav = Natav> = NatavJsonRpcBindings<N>;
+
+export type ClientRpcDeviceDebug = {
+  schema: DriverSchema | undefined;
+  driverName: string | undefined;
+  typeName: string | undefined;
+  source: DriverSchema["source"] | undefined;
+  deps: string[];
+  methods: DriverSchema["methods"];
+  socket: DriverSchema["socket"] | null;
+  state: DriverSchema["state"] | undefined;
+  logs: DebugEntry[];
+  clearLogs(): void;
 };
 
 export type RpcEvents = {
@@ -48,23 +63,7 @@ export type DebugEntry = {
   data: any;
 };
 
-export type DebugEvents = {
-  ready: boolean;
-  close: CloseEvent;
-  error: Event;
-  entry: DebugEntry;
-};
-
-export type NotificationListener = {
-  resolve: (notification: EventPayload) => void;
-  reject: (error: Error) => void;
-  timeout: NodeJS.Timeout | null;
-  filter?: (notification: EventPayload) => boolean;
-};
-
 export type TransportOptions = {
   reconnect?: boolean;
   retryDelay?: number;
 };
-
-export type EventMap = Record<string, any>;
