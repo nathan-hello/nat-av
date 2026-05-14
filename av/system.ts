@@ -4,7 +4,7 @@ import type Natav from "./natav";
 import type { NatavJsonRpcBindings } from "@av/schema/types";
 
 export class System<N extends Natav = natav> {
-  private state: SystemState;
+  private state: Record<string, any>;
   private bus: Bus;
   private natav: N;
   private schema: NatavJsonRpcBindings<N>;
@@ -13,14 +13,14 @@ export class System<N extends Natav = natav> {
     this.schema = args.schema;
     this.bus = args.bus;
     this.natav = args.natav;
-    this.state = new SystemState({ bus: this.bus });
+    this.state = {};
   }
 
   api = {
     GetSchema: (): NatavJsonRpcBindings<N> => {
       return this.schema;
     },
-    GetSystemState: (): SystemStateData => {
+    GetSystemState: () => {
       return this.state.toJSON();
     },
 
@@ -36,32 +36,4 @@ export class System<N extends Natav = natav> {
       };
     },
   };
-}
-
-type SystemStateData = {
-  connections: Record<string, { connected: boolean }>;
-};
-
-class SystemState {
-  private connections: Record<string, { connected: boolean }> = {};
-  private bus: Bus;
-
-  constructor(args: { bus: Bus }) {
-    this.bus = args.bus;
-    this.bus.on("natav:device:connected", (payload) => {
-      this.connections[payload.name] = { connected: true };
-    });
-
-    this.bus.on("natav:device:disconnected", (payload) => {
-      this.connections[payload.name] = { connected: false };
-    });
-
-    this.bus.on("natav:state:update", () => {});
-  }
-
-  toJSON(): SystemStateData {
-    return {
-      connections: this.connections,
-    };
-  }
 }
