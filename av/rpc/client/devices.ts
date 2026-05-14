@@ -3,10 +3,9 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpcDeviceDebug, DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
-export class ClientRpcDevice<
-  N extends Natav,
-  Name extends Natav.Names<N>,
-> extends TypedEventTarget<DeviceEvents<N, Name>> {
+export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> extends TypedEventTarget<
+  DeviceEvents<N, Name>
+> {
   private apiProxy: Natav.Handle<N, Name>["api"];
 
   constructor(
@@ -34,15 +33,11 @@ export class ClientRpcDevice<
   }
 
   get state() {
-    return this.client.device(this.name).state;
-  }
-
-  get connected() {
-    return this.client.systemStateData.connections[this.name as string]?.connected ?? false;
+    return this.client.getDeviceState(this.name);
   }
 
   get schema() {
-    return this.client.schema.devices[this.name];
+    return this.client.getDeviceSchema(this.name);
   }
 
   get debug(): ClientRpcDeviceDebug {
@@ -54,11 +49,9 @@ export class ClientRpcDevice<
       source: schema?.source,
       methods: schema?.methods ?? {},
       state: this.state,
-      logs: this.client.debugEntries.filter((entry) => entry.context.traceName === this.name),
+      logs: this.client.debugEntries.filter((e) => e.name === this.name),
       clearLogs: () => {
-        this.client.debugEntries = this.client.debugEntries.filter(
-          (entry) => entry.context.traceName !== this.name,
-        );
+        this.client.debugEntries = this.client.debugEntries.filter((e) => e.name !== this.name);
       },
     };
   }
@@ -68,10 +61,13 @@ export class ClientRpcDevice<
   }
 
   notify() {
+    this.client.refreshDevice(this.name);
+  }
+
+  dispatchChange() {
     super.dispatch("change", {
       name: this.name,
       state: this.state,
-      connected: this.connected,
     });
   }
 }

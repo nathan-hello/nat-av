@@ -1,10 +1,7 @@
 import type Natav from "@av/natav";
 import type { RPCError } from "@av/rpc/types";
 import type { ApiSurfaceSchema } from "@av/schema/types";
-
-export type SystemStateData = {
-  connections: Record<string, { connected: boolean }>;
-};
+import type { SystemStateData } from "@av/system";
 
 export type PendingRequest = {
   resolve: (result: any) => void;
@@ -15,15 +12,15 @@ export type PendingRequest = {
 export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
   name: Name;
   state: Natav.State<N, Name> | undefined;
-  connected: boolean;
 };
 
 export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
 };
 
-export type ClientRpcBindings = ApiSurfaceSchema & {
-};
+export type ClientRpcSystemStateData = SystemStateData;
+
+export type ClientRpcBindings = ApiSurfaceSchema & {};
 
 export type ClientRpcDeviceDebug = {
   schema: ApiSurfaceSchema | undefined;

@@ -7,46 +7,20 @@
  */
 
 import type { EventPayload } from "@av/bus";
-import type { System } from "@av/system";
 
-// Create a type that maps each System method to its parameters
-type SystemMethodParams = {
-  [K in ValidSystemMethods]: System["api"][K] extends (...args: infer Args) => any ? Args : [];
-};
+export const RPCMethods = {
+  SystemApi: "system.api",
+  SystemState: "system.state",
+  DeviceCall: "device.call",
+  Notification: "notification",
+} as const;
 
-// Ensure all keys in System are functions - compile-time assertion
-type ValidSystemMethods = keyof System["api"];
-
-/**
- * System RPC request with method-specific parameter inference
- */
-export type SystemRpcRequest<M extends ValidSystemMethods & string = ValidSystemMethods & string> =
-  {
-    jsonrpc: "2.0";
-    id: string | number;
-    method: "system";
-    params: {
-      call: M;
-      args: SystemMethodParams[M] extends [] ? undefined : SystemMethodParams[M][0];
-    };
-  };
-
-/**
- * Device RPC request — loosely typed. Strong typing is recovered
- * on the frontend via utility types applied to the concrete Configs.
- */
-type DeviceApiRpcRequest = {
+export type NatavRPCRequest = {
   jsonrpc: "2.0";
   id: string | number;
-  method: "device.call";
-  params: {
-    device: string;
-    method: string;
-    args: any[];
-  };
+  method: string;
+  params?: any;
 };
-
-export type NatavRPCRequest = SystemRpcRequest | DeviceApiRpcRequest;
 
 export type RPCMessage = NatavRPCRequest | RPCResponse | RPCError | RPCNotification;
 
@@ -72,7 +46,7 @@ export class RPCErrorData {
 
 export interface RPCNotification<T = EventPayload> {
   jsonrpc: "2.0";
-  method: "notification";
+  method: typeof RPCMethods.Notification;
   params: T;
 }
 

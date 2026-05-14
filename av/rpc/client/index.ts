@@ -1,15 +1,22 @@
 import type Natav from "@av/natav";
 import type { natav } from "@av/index";
-import type { System } from "@av/system";
+import type { System, SystemStateData } from "@av/system";
+import type { ApiSurfaceSchema } from "@av/schema/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
+import {
+  createDeviceCallRequest,
+  createSystemApiRequest,
+  createSystemStateRequest,
+  parseRPCMessage,
+  serializeRPCMessage,
+} from "@av/rpc/protocol";
 import type {
   ClientRpcBindings,
   DebugEntry,
   PendingRequest,
   RpcEvents,
-  SystemStateData,
 } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
@@ -21,19 +28,49 @@ type SystemApi<N extends Natav> = {
   : never;
 };
 
+type ClientRpcSystem<N extends Natav> = {
+  api: SystemApi<N>;
+  readonly state: Promise<SystemStateData>;
+};
+
 export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarget<RpcEvents> {
   private tel = new Telemetry("ClientRpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
+  private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private requestIdCounter = 0;
   private timeout = 30000;
+  private systemApiProxy: SystemApi<N>;
+  private systemHandle: ClientRpcSystem<N>;
+
   public schema: ClientRpcBindings = {} as ClientRpcBindings;
+  public debugEntries: DebugEntry[] = [];
+  public deviceStates: Record<string, unknown> = {};
+  public systemStateData: SystemStateData = null;
 
   constructor() {
     super();
     this.transport = new ClientWebsocket("/ws", {
       reconnect: true,
       retryDelay: 1000,
+    });
+    this.systemApiProxy = new Proxy(
+      {},
+      {
+        get: (_, methodName: string | symbol) => {
+          if (typeof methodName !== "string") {
+            return undefined;
+          }
+
+          return (...args: any[]) => this.callSystem(methodName, ...args);
+        },
+      },
+    ) as SystemApi<N>;
+
+    this.systemHandle = { api: this.systemApiProxy } as ClientRpcSystem<N>;
+    Object.defineProperty(this.systemHandle, "state", {
+      enumerable: true,
+      get: () => this.getSystemState(),
     });
 
     this.transport.on("open", () => {
@@ -74,15 +111,12 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     this.tel.debug("this.waitForOpen resolved successfully");
 
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([this.system.api.GetSchema(), this.system.state]);
+      return await Promise.all([this.system.api.GetSchema(), this.getSystemState()]);
     });
 
-    if (!initial.ok || isRPCError(initial.data)) {
+    if (!initial.ok) {
       if (!initial.ok) {
         this.dispatch("error", { reason: "init-promises-threw", error: new Error(initial.error) });
-      }
-      if (isRPCError(initial.data)) {
-        this.dispatch("error", { reason: "rpc-error", error: initial.data });
       }
 
       this.close();
@@ -93,9 +127,10 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     }
 
     this.tel.info("successfully resolved promises");
-    const [schema] = initial.data;
+    const [schema, systemState] = initial.data;
 
     this.schema = schema;
+    this.applySystemState(systemState);
 
     this.dispatch("ready", true);
     this.notifyAllDevices();
@@ -111,116 +146,54 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   }
 
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
-    return new ClientRpcDevice(this, name);
+    const cached = this.deviceHandles.get(name);
+    if (cached) {
+      return cached as ClientRpcDevice<N, Name>;
+    }
+
+    const device = new ClientRpcDevice(this, name);
+    this.deviceHandles.set(name, device);
+    return device;
   }
 
-  async call(device: string, method: string, args: any) {
-    await this.waitForOpen();
-
-    const id = this.requestIdCounter++;
-    const argsArray = Array.isArray(args) ? args : [args];
-
-    this.tel.debug("device.call", { device, method, args, id });
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        this.pendingRequests.delete(id);
-        reject(new Error(`Device RPC call timed out after ${this.timeout}ms id ${id}`));
-      }, this.timeout);
-
-      this.pendingRequests.set(id, {
-        resolve,
-        reject,
-        timeout: timeoutId,
-      });
-
-      const str = this.tel.task("JSON_STRINGIFY", () => {
-        return JSON.stringify({
-          jsonrpc: "2.0" as const,
-          id,
-          method: "device.call" as const,
-          params: {
-            device,
-            method,
-            args: argsArray,
-          },
-        });
-      });
-
-      if (!str.ok) {
-        clearTimeout(timeoutId);
-        this.pendingRequests.delete(id);
-        reject(str.error);
-        return;
-      }
-
-      this.transport.send(str.data);
-    });
+  async call(device: string, method: string, args: any[] = []) {
+    this.tel.debug("device.call", { device, method, args });
+    return this.request(createDeviceCallRequest(this.nextRequestId(), device, method, args));
   }
 
-  get system(): { api: SystemApi<N>; state: SystemStateData } {
-    const api = new Proxy(
-      {},
-      {
-        get: (_, methodName: string | symbol) => {
-          if (typeof methodName !== "string") {
-            return undefined;
-          }
-
-          return (...args: any[]) => this.callSystem(methodName, ...args);
-        },
-      },
-    ) as SystemApi<N>;
-
-    return { api, state: this.system.state };
+  get system(): ClientRpcSystem<N> {
+    return this.systemHandle;
   }
 
   private async callSystem(method: string, ...args: any) {
-    await this.waitForOpen();
-
-    const id = this.requestIdCounter++;
-
+    const id = this.nextRequestId();
     this.tel.debug("system", { method, args, id });
+    return this.request(createSystemApiRequest(id, method, args));
+  }
 
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        this.pendingRequests.delete(id);
-        reject(new Error(`System RPC call timed out after ${this.timeout}ms id: ${id}`));
-      }, this.timeout);
+  async getSystemState(): Promise<SystemStateData> {
+    const state = await this.request<SystemStateData>(
+      createSystemStateRequest(this.nextRequestId()),
+    );
+    this.applySystemState(state);
+    return state;
+  }
 
-      this.pendingRequests.set(id, {
-        resolve,
-        reject,
-        timeout: timeoutId,
-      });
+  getDeviceState<Name extends Natav.Names<N>>(name: Name): Natav.State<N, Name> | undefined {
+    return this.deviceStates[name] as Natav.State<N, Name> | undefined;
+  }
 
-      const str = this.tel.task("JSON_STRINGIFY", () => {
-        return JSON.stringify({
-          jsonrpc: "2.0" as const,
-          id,
-          method: "system" as const,
-          params: {
-            call: method,
-            args: args.length > 0 ? { args: args[0] } : undefined,
-          },
-        });
-      });
+  getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
+    return this.schema.devices?.[name] as ApiSurfaceSchema | undefined;
+  }
 
-      if (!str.ok) {
-        clearTimeout(timeoutId);
-        this.pendingRequests.delete(id);
-        reject(str.error);
-        return;
-      }
-
-      this.transport.send(str.data);
-    });
+  refreshDevice<Name extends Natav.Names<N>>(name: Name) {
+    this.deviceHandles.get(name as string)?.dispatchChange();
+    this.dispatch("change", { name });
   }
 
   private onMessage(raw: string) {
-    const parsed = this.tel.task("JSON_PARSE", () => {
-      return JSON.parse(raw);
-    });
+    const parsed = this.tel.task("JSON_PARSE", () => parseRPCMessage(raw));
     if (!parsed.ok) {
       this.tel.error("json-parse-failed", { raw, parsed });
       this.dispatch("error", { reason: "json-parse-failed", raw });
@@ -232,20 +205,13 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       if (parsed.data.params.type === "natav:state:update") {
         const { name, data: state } = parsed.data.params;
         const currentState = this.deviceStates[name];
+        const nextState =
+          currentState && typeof currentState === "object" ?
+            { ...(currentState as object), ...state }
+          : state;
 
-        this.device(name).state = currentState ? { ...(currentState as object), ...state } : state;
-
-        this.notifyDevice(name);
-      }
-
-      if (parsed.data.params.type === "natav:device:connected") {
-        this.system.state.connections[parsed.data.params.name] = { connected: true };
-        this.notifyDevice(parsed.data.params.name);
-      }
-
-      if (parsed.data.params.type === "natav:device:disconnected") {
-        this.system.state.connections[parsed.data.params.name] = { connected: false };
-        this.notifyDevice(parsed.data.params.name);
+        this.deviceStates[name] = nextState;
+        this.refreshDevice(name);
       }
 
       return;
@@ -292,14 +258,55 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     this.debugEntries = [entry, ...this.debugEntries].slice(0, 500);
   }
 
-  private notifyDevice(name: string) {
-    this.deviceHandles.get(name)?.notify();
-    this.dispatch("change", { name });
+  private applySystemState(state: SystemStateData) {
+    this.systemStateData = state;
+  }
+
+  private nextRequestId() {
+    return this.requestIdCounter++;
+  }
+
+  private async request<T = any>(message: {
+    jsonrpc: "2.0";
+    id: string | number;
+    method: string;
+    params?: any;
+  }) {
+    await this.waitForOpen();
+
+    return new Promise<T>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this.pendingRequests.delete(message.id);
+        reject(new Error(`RPC call timed out after ${this.timeout}ms id ${message.id}`));
+      }, this.timeout);
+
+      this.pendingRequests.set(message.id, {
+        resolve,
+        reject,
+        timeout: timeoutId,
+      });
+
+      const str = this.tel.task("JSON_STRINGIFY", () => serializeRPCMessage(message));
+      if (!str.ok) {
+        clearTimeout(timeoutId);
+        this.pendingRequests.delete(message.id);
+        reject(new Error(str.error));
+        return;
+      }
+
+      try {
+        this.transport.send(str.data);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        this.pendingRequests.delete(message.id);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
   }
 
   private notifyAllDevices() {
     for (const handle of this.deviceHandles.values()) {
-      handle.notify();
+      handle.dispatchChange();
     }
   }
 }

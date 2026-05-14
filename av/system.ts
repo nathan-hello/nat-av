@@ -1,8 +1,9 @@
 import type { natav } from "@av/index";
 import { type Bus } from "./bus";
-import type { Driver } from "./driver";
 import type Natav from "./natav";
 import type { ApiSurfaceSchema } from "@av/schema/types";
+
+export type SystemStateData = null;
 
 export class System<N extends Natav = natav> {
   private bus: Bus;
@@ -16,15 +17,13 @@ export class System<N extends Natav = natav> {
   }
 
   api = {
-
     GetSchema: (): ApiSurfaceSchema => {
       return this.schema;
     },
   };
 
-  get state() {
-    return {
-      foo: "bar",
-    };
+  get state(): SystemStateData {
+    return null
   }
 }
+

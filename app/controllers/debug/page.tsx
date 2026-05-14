@@ -7,14 +7,61 @@ type Tab = "state" | "api" | "events";
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
   let tab: Tab = "state";
+  let state: unknown = null;
+  let stateStatus: "loading" | "ready" | "error" = "loading";
+  let stateError: string | null = null;
+  let stateToken = 0;
+
+  const loadState = async () => {
+    const token = ++stateToken;
+    stateStatus = "loading";
+    stateError = null;
+    await handle.update();
+
+    try {
+      const nextState = await rpc.system.state;
+      if (handle.signal.aborted || token !== stateToken) {
+        return;
+      }
+
+      state = nextState;
+      stateStatus = "ready";
+    } catch (error) {
+      if (handle.signal.aborted || token !== stateToken) {
+        return;
+      }
+
+      stateError = error instanceof Error ? error.message : String(error);
+      stateStatus = "error";
+    }
+
+    await handle.update();
+  };
+
+  const offReady = rpc.on("ready", () => {
+    if (tab === "state") {
+      void loadState();
+    }
+  });
+
+  const offChange = rpc.on("change", () => {
+    if (tab === "state") {
+      void loadState();
+    }
+  });
+
+  handle.signal.addEventListener("abort", () => {
+    offReady();
+    offChange();
+  });
+
+  void loadState();
 
   return () => {
     let schema = rpc.schema;
     if (!schema) {
       return <div mix={emptyStyle}>Waiting for schema</div>;
     }
-
-    let state = rpc.system.state;
 
     return (
       <div mix={shellStyle}>
@@ -38,6 +85,9 @@ export function DebugPage(handle: Handle) {
                   tabButtonStyle(tab === next),
                   on("click", () => {
                     tab = next;
+                    if (next === "state") {
+                      void loadState();
+                    }
                     handle.update();
                   }),
                 ]}
@@ -47,7 +97,11 @@ export function DebugPage(handle: Handle) {
             ))}
           </div>
           {tab === "state" ?
-            <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
+            stateStatus === "loading" ?
+              <div mix={emptyStyle}>Loading state</div>
+            : stateStatus === "error" ?
+              <div mix={emptyStyle}>{stateError}</div>
+            : <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
           : null}
           {tab === "api" ?
             <ApiTab schema={schema} />
