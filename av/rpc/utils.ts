@@ -1,4 +1,4 @@
-import type { RPCError, RPCNotification, NatavRPCRequest, RPCResponse } from "@av/rpc/types";
+import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 
 // Error codes following JSON-RPC 2.0 spec
 export enum RPCErrorCode {
@@ -14,7 +14,7 @@ export enum RPCErrorCode {
 }
 
 // Type guard helpers
-export function isRPCRequest(msg: any): msg is NatavRPCRequest {
+export function isRPCRequest(msg: any): msg is RPCRequest {
   return (
     msg && msg.jsonrpc === "2.0" && msg.id !== undefined && typeof msg.method === "string"
     // msg.params is optional
@@ -46,37 +46,6 @@ export function isRPCNotification(msg: any): msg is RPCNotification {
 }
 
 // Helper to create error responses
-export function createRPCError(
-  id: string | number | null,
-  code: RPCErrorCode,
-  message: string,
-  data?: any,
-): RPCError {
-  return {
-    jsonrpc: "2.0",
-    id,
-    error: { code, message, data },
-  };
-}
-
-// Helper to create success responses
-export function createRPCResponse<T>(id: string | number, result: T): RPCResponse<T> {
-  return {
-    jsonrpc: "2.0",
-    id,
-    result,
-  };
-}
-
-// Helper to create notifications
-export function createRPCNotification<T>(params: T): RPCNotification<T> {
-  return {
-    jsonrpc: "2.0",
-    method: "notification",
-    params,
-  };
-}
-
 export const WebsocketErrorCodes = {
   1000: { name: "Normal Closure", meaning: "Clean shutdown, both sides agreed" },
   1001: {

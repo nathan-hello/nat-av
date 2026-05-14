@@ -1,7 +1,8 @@
 import { type EventName, type EventPayload, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
+import { RPCNotification } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
-import { createRPCNotification, DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
+import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import type { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 
@@ -67,7 +68,7 @@ export class WebsocketHandler<N extends Natav = Natav> {
   }
 
   BroadcastEvent<E extends EventName>(_: E, payload: EventPayload<E>) {
-    const notification = createRPCNotification(payload);
+    const notification = new RPCNotification(payload);
     this.broadcast(JSON.stringify(notification));
   }
 

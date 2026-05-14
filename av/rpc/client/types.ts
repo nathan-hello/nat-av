@@ -1,7 +1,6 @@
 import type Natav from "@av/natav";
-import type { RPCError } from "@av/rpc/types";
+import type { RPCError } from "@av/rpc/protocol";
 import type { ApiSurfaceSchema } from "@av/schema/types";
-import type { SystemStateData } from "@av/system";
 
 export type PendingRequest = {
   resolve: (result: any) => void;
@@ -17,8 +16,6 @@ export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
 export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
 };
-
-export type ClientRpcSystemStateData = SystemStateData;
 
 export type ClientRpcBindings = ApiSurfaceSchema & {};
 
