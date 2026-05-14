@@ -45,7 +45,7 @@ type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 export default class DisplayManager<
   const N extends string = string,
   const C extends readonly DecoderConfig<any>[] = readonly DecoderConfig[],
-> extends Driver<N, DecodersFromConfigs<C>> {
+> extends Driver<N, { [K in keyof C]: C[K]["decoder"] }> {
   private configs: C;
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];

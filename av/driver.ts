@@ -2,10 +2,20 @@ import { ProtectedTypedEventTarget } from "./lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { type Bus, bus } from "./bus";
 import type { DeviceSocket, DriverEvents } from "./types";
+import type {} from "@av/driver";
+
+type AnyDriver = Driver<
+  string,
+  readonly AnyDriver[],
+  string,
+  unknown,
+  unknown,
+  Partial<DeviceSocket> | undefined
+>;
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends readonly any[] = readonly any[],
+  Deps extends readonly AnyDriver[] = readonly AnyDriver[],
   DriverName extends string = any,
   Api = any,
   State = any,
