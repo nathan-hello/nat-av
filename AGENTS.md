@@ -1,14 +1,12 @@
-# Natav Remix Agent Guide
-
-This app was scaffolded with `remix new`. Use these conventions when continuing
-to build it out.
+# Remix Agent Guide
 
 ## Commands
 `npm install` `npm run start` `npm test` `npm run typecheck`
 
-## Building Features
+## Building Remix Features
 
-Refer to ./agents/skills/remix/SKILL.md
+Refer to ./agents/skills/remix/SKILL.md for all changes in the
+app/ folder. 
 
 ## Route Ownership
 
@@ -30,3 +28,6 @@ Refer to ./agents/skills/remix/SKILL.md
   reassigned, obviously.
 
 
+# Natav Library
+The `./av/` directory is a vendored library called `nat-av`. Refer to
+`.agents/Natav.md` for more information.
