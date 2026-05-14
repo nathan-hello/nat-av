@@ -6,16 +6,18 @@ import type {} from "@av/driver";
 
 type AnyDriver = Driver<
   string,
-  readonly AnyDriver[],
+  Record<string, AnyDriver>,
   string,
   unknown,
   unknown,
   Partial<DeviceSocket> | undefined
 >;
 
+type DependencyInput = readonly AnyDriver[] | readonly { driver: AnyDriver }[];
+
 export abstract class Driver<
   Name extends string = string,
-  Deps extends readonly AnyDriver[] = readonly AnyDriver[],
+  Deps extends Record<string, AnyDriver> = {},
   DriverName extends string = any,
   Api = any,
   State = any,
@@ -24,7 +26,7 @@ export abstract class Driver<
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
-  public deps: Deps = [] as unknown as Deps;
+  public deps: Deps = {} as Deps;
   public name: Name;
   public _drivername: DriverName;
   protected tel: Telemetry;
@@ -46,6 +48,27 @@ export abstract class Driver<
 
       this.dispatch("driver:state-updated", this.state);
     });
+  }
+
+  setDependencies(v: DependencyInput) {
+
+    function unwrapDriver(v: DependencyInput[number]): AnyDriver {
+      return "driver" in v ? v.driver : v;
+    }
+
+    if (v.length === 0) {
+      return;
+    }
+
+    for (const d of v) {
+      const unwrapped = unwrapDriver(d);
+      // @ts-ignore-next-line
+      this.deps[unwrapped.name] = unwrapped;
+    }
+  }
+
+  dep<N extends keyof Deps & string>(name: N): Deps[N] {
+    return this.deps[name];
   }
 
   protected dispatch<K extends keyof DriverEvents<State>>(

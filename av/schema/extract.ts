@@ -41,10 +41,11 @@ export function extractApiSurfaceSchema(args: ExtractApiSurfaceArgs): ApiSurface
   return {
     version: 1,
     entry: { filePath: entryPath, exportName: args.exportName },
-    typeName: getTypeName(type, exported),
-    source,
+    typeName: getTypeName(type, exported) ?? "unknown",
+    source: source ?? {},
     properties: extractProperties(type, exported),
     methods: extractMethods(type, exported),
+    devices: {},
   };
 }
 

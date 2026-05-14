@@ -33,12 +33,22 @@ export interface DeviceSocket {
   name: string;
 }
 
-export type NamesOf<C extends readonly Driver[]> = C[number]["name"];
+type IsAny<T> = 0 extends 1 & T ? true : false;
 
-export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<
-  C[number],
-  { name: N }
->;
+type DepMapOf<D extends Driver> = D["deps"];
+
+type DepUnion<Deps> =
+  IsAny<Deps> extends true ? never
+  : Deps extends Record<string, infer Dep> ? Dep
+  : never;
+
+type DriverTree<D> = D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>> : never;
+
+type DriversOf<C extends readonly Driver[]> = DriverTree<C[number]>;
+
+export type NamesOf<C extends readonly Driver[]> = DriversOf<C>["name"];
+
+export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<DriversOf<C>, { name: N }>;
 
 export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["state"];
 
@@ -52,18 +62,15 @@ export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
 
 export type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["deps"];
 
-type IsAny<T> = 0 extends 1 & T ? true : false;
-
 export type DepNamesOf<C extends readonly Driver[], N extends NamesOf<C>> =
-  IsAny<DepsOf<C, N>[number]> extends true ? never
-  : DepsOf<C, N>[number] extends Driver<infer DepName> ? DepName
-  : never;
+  IsAny<DepsOf<C, N>> extends true ? never
+  : keyof DepsOf<C, N> & string;
 
 export type DepFor<
   C extends readonly Driver[],
   N extends NamesOf<C>,
   DN extends DepNamesOf<C, N>,
-> = Extract<DepsOf<C, N>[number], { name: DN }>;
+> = Extract<DepsOf<C, N>[DN], Driver>;
 
 type PromisifyApi<Api> = {
   [M in keyof Api]: Api[M] extends (...args: infer Args) => infer R ?
@@ -71,20 +78,17 @@ type PromisifyApi<Api> = {
   : never;
 };
 
-type DepNames<Deps extends readonly any[]> =
-  IsAny<Deps[number]> extends true ? never
-  : Deps[number] extends Driver<infer N> ? N
-  : never;
+type DepNames<Deps> = IsAny<Deps> extends true ? never : keyof Deps & string;
 
 export type DriverHandle<D extends Driver<any, any>> = {
   api: PromisifyApi<D["api"]>;
   state: D["state"];
 } & DriverDepMixin<D["deps"]>;
 
-type DriverDepMixin<Deps extends readonly any[]> =
+type DriverDepMixin<Deps> =
   [DepNames<Deps>] extends [never] ? {}
   : {
       dep: <DN extends DepNames<Deps>>(
         depName: DN,
-      ) => DriverHandle<Extract<Deps[number], { name: DN }>>;
+      ) => DriverHandle<Extract<Deps[DN], Driver>>;
     };

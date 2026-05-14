@@ -1,14 +1,11 @@
 import { css, type Handle } from "remix/ui";
 import { getRpc } from "@/state";
-import { Telemetry } from "@av/telemetry";
 import type { ClientRpc } from "@av/rpc/client";
 
 export function HomePage(handle: Handle) {
   let rpc: ClientRpc = getRpc(handle);
-  let tel = new Telemetry("homepage");
 
   return () => {
-    let connected = rpc.readyState === WebSocket.OPEN;
     return (
       <main mix={shellStyle}>
         <header mix={headerStyle}>
@@ -20,10 +17,9 @@ export function HomePage(handle: Handle) {
               one page.
             </p>
           </div>
-          <code>asdf: {JSON.stringify(rpc.readyState)}</code>
           <div mix={statusPillsStyle}>
-            <span mix={pillStyle(connected)}>
-              {connected ? "RPC Connected" : "RPC Disconnected"}
+            <span mix={pillStyle(rpc.isOnline)}>
+              {rpc.isOnline ? "RPC Connected" : "RPC Disconnected"}
             </span>
             <a href={"/debug"} mix={linkStyle}>
               Debug

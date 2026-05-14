@@ -3,7 +3,7 @@ import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
 import { System } from "@av/system";
 import { bus } from "@av/bus";
-import { RPCHandler } from "@av/rpc/server";
+import { RPCServer } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/impl/display";
 
@@ -32,7 +32,7 @@ StartLogging([
 export const natav = new Natav([
   new DisplayManager("video-wall", [
     {
-      decoder: new Decoder({
+      driver: new Decoder({
         name: "decoder-1",
         socket: new Tcp({ addr: "decoder-e8d8d1599092.local", port: 12345, keepAlive: true }),
       }),
@@ -57,7 +57,7 @@ const system = new System({
 });
 new AutomationEngine({ bus, natav });
 
-const rpc = new RPCHandler({ system, natav });
+const rpc = new RPCServer({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc });
 const tel = new Telemetry("ServerWebsocket");
 

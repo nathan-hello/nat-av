@@ -2,7 +2,7 @@ import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import type { System } from "@av/system";
 
-import { TypedEventTarget } from "@av/lib/eventtarget";
+import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import type {
   ClientRpcBindings,
@@ -13,7 +13,6 @@ import type {
 } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { isRPCError, isRPCNotification, isRPCResponse } from "@av/rpc/utils";
-import type { ApiSurfaceSchema } from "@av/schema/types";
 import { Telemetry } from "@av/telemetry";
 
 type SystemApi<N extends Natav> = {
@@ -22,18 +21,13 @@ type SystemApi<N extends Natav> = {
   : never;
 };
 
-export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEvents> {
+export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarget<RpcEvents> {
   private tel = new Telemetry("ClientRpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
   private requestIdCounter = 0;
   private timeout = 30000;
-  private deviceStates: Partial<Record<string, unknown>> = {};
-  private systemStateData: SystemStateData = { connections: {} };
-  private bindings?: ClientRpcBindings;
-  private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
-  private debugEntries: DebugEntry[] = [];
-  private initialized = false;
+  public schema: ClientRpcBindings = {} as ClientRpcBindings;
 
   constructor() {
     super();
@@ -47,7 +41,6 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     });
 
     this.transport.on("close", (event) => {
-      this.initialized = false;
       super.dispatch("close", event);
       this.notifyAllDevices();
     });
@@ -71,38 +64,17 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     return this;
   }
 
-  get readyState() {
-    return this.transport.readyState;
-  }
-
-  get schema() {
-    return this.bindings;
-  }
-
-  get devices() {
-    return this.bindings?.devices ?? {};
-  }
-
-  get logs() {
-    return this.debugEntries;
+  get isOnline() {
+    return this.transport.readyState === WebSocket.OPEN;
   }
 
   private async init() {
-    if (this.initialized) {
-      this.tel.error("init called even though this.initialized was true");
-      return;
-    }
-
     this.tel.debug("waiting for this.waitForOpen");
     await this.waitForOpen();
     this.tel.debug("this.waitForOpen resolved successfully");
 
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([
-        this.system.api.GetSchema(),
-        this.system.api.GetSystemState(),
-        this.system.api.GetAllDeviceStates(),
-      ]);
+      return await Promise.all([this.system.api.GetSchema(), this.system.state]);
     });
 
     if (!initial.ok || isRPCError(initial.data)) {
@@ -121,12 +93,9 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     }
 
     this.tel.info("successfully resolved promises");
-    const [schema, system, devices] = initial.data;
+    const [schema] = initial.data;
 
-    this.bindings = schema;
-    this.systemStateData = system;
-    this.deviceStates = { ...devices };
-    this.initialized = true;
+    this.schema = schema;
 
     this.dispatch("ready", true);
     this.notifyAllDevices();
@@ -141,46 +110,8 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
     await this.transport.once("open");
   }
 
-  async refreshDevice(name: Natav.Names<N>) {
-    const state = await this.system.api.GetDeviceState(name);
-    this.deviceStates[name] = state;
-    this.notifyDevice(name);
-    return state;
-  }
-
-  getDeviceState<Name extends Natav.Names<N>>(name: Name) {
-    return this.deviceStates[name as string] as Natav.State<N, Name> | undefined;
-  }
-
-  getDeviceConnection<Name extends Natav.Names<N>>(name: Name) {
-    return this.systemStateData.connections[name as string]?.connected ?? false;
-  }
-
-  getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
-    return this.devices[name as keyof typeof this.devices] as ApiSurfaceSchema | undefined;
-  }
-
-  getDeviceLogs<Name extends Natav.Names<N>>(name: Name) {
-    return this.debugEntries.filter((entry) => entry.context.traceName === name);
-  }
-
-  clearLogs(name?: string) {
-    this.debugEntries = name ?
-      this.debugEntries.filter((entry) => entry.context.traceName !== name)
-    : [];
-
-    this.dispatch("change", name ? { name } : {});
-  }
-
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
-    const existing = this.deviceHandles.get(name as string);
-    if (existing) {
-      return existing as ClientRpcDevice<N, Name>;
-    }
-
-    const handle = new ClientRpcDevice(this, name);
-    this.deviceHandles.set(name as string, handle as ClientRpcDevice<N, any>);
-    return handle;
+    return new ClientRpcDevice(this, name);
   }
 
   async call(device: string, method: string, args: any) {
@@ -241,7 +172,7 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
       },
     ) as SystemApi<N>;
 
-    return { api, state: this.systemStateData };
+    return { api, state: this.system.state };
   }
 
   private async callSystem(method: string, ...args: any) {
@@ -302,18 +233,18 @@ export class ClientRpc<N extends Natav = natav> extends TypedEventTarget<RpcEven
         const { name, data: state } = parsed.data.params;
         const currentState = this.deviceStates[name];
 
-        this.deviceStates[name] = currentState ? { ...(currentState as object), ...state } : state;
+        this.device(name).state = currentState ? { ...(currentState as object), ...state } : state;
 
         this.notifyDevice(name);
       }
 
       if (parsed.data.params.type === "natav:device:connected") {
-        this.systemStateData.connections[parsed.data.params.name] = { connected: true };
+        this.system.state.connections[parsed.data.params.name] = { connected: true };
         this.notifyDevice(parsed.data.params.name);
       }
 
       if (parsed.data.params.type === "natav:device:disconnected") {
-        this.systemStateData.connections[parsed.data.params.name] = { connected: false };
+        this.system.state.connections[parsed.data.params.name] = { connected: false };
         this.notifyDevice(parsed.data.params.name);
       }
 

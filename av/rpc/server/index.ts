@@ -12,7 +12,7 @@ import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";
 
 
-export class RPCHandler<N extends Natav = natav> {
+export class RPCServer<N extends Natav = natav> {
   private tel = new Telemetry("RPCHandler");
   private system: System<N>;
   private natav: N;
@@ -53,11 +53,6 @@ export class RPCHandler<N extends Natav = natav> {
         case "device.call":
           this.tel.info("RPC_FORWARD_DEVICE", { method: message.method });
           return this.handleDeviceRequest(message);
-        case "device.dependents":
-          this.tel.info("RPC_FORWARD_DEVICE_DEPS", {
-            device: message.params.device,
-          });
-          return this.handleDeviceDepsRequest(message);
         default:
           // @ts-ignore-next-line
           tel.warn("RPC_METHOD_NOT_FOUND", { method: message.method });
@@ -81,17 +76,6 @@ export class RPCHandler<N extends Natav = natav> {
     });
 
     return createRPCError((message as any)?.id ?? null, RPCErrorCode.InternalError, result.error);
-  }
-
-  private async handleDeviceDepsRequest(
-    message: NatavRPCRequest & { method: "device.dependents" },
-  ) {
-    const dev = this.natav.FindDriver(message.params.device);
-    if (!dev) {
-      return createRPCError(message.id, RPCErrorCode.DeviceNotFound, "Unknown device");
-    }
-
-    return createRPCResponse(message.id, dev.deps);
   }
 
   private async handleSystemRequest(

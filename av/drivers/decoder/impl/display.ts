@@ -31,21 +31,21 @@ export type OutputPlacement = {
   canvasY: number;
 };
 
-export type DecoderConfig<D extends Decoder = Decoder> = {
-  decoder: D;
+export type DecoderConfig = {
+  driver: Decoder & { name: string };
   placement: readonly OutputPlacement[];
 };
 
-type DecodersFromConfigs<C extends readonly DecoderConfig<any>[]> = {
-  [K in keyof C]: C[K]["decoder"];
+type DecodersFromConfigs<C extends readonly DecoderConfig[]> = {
+  [D in C[number]["driver"] as D["name"]]: D;
 };
 
 type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 
 export default class DisplayManager<
   const N extends string = string,
-  const C extends readonly DecoderConfig<any>[] = readonly DecoderConfig[],
-> extends Driver<N, { [K in keyof C]: C[K]["decoder"] }> {
+  const C extends readonly DecoderConfig[] = readonly DecoderConfig[],
+> extends Driver<N, DecodersFromConfigs<C>> {
   private configs: C;
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];
@@ -54,10 +54,10 @@ export default class DisplayManager<
 
   socket = {
     start: () => {
-      this.configs.forEach((c) => c.decoder.socket.start());
+      this.configs.forEach((c) => c.driver.socket.start());
     },
     end: () => {
-      this.configs.forEach((c) => c.decoder.socket.end());
+      this.configs.forEach((c) => c.driver.socket.end());
     },
   };
 
@@ -72,7 +72,7 @@ export default class DisplayManager<
     this.computeCanvasDimensions();
     this.checkOverlaps();
     this.subscribeToDecoders();
-    this.deps = this.configs.map((c) => c.decoder) as unknown as DecodersFromConfigs<C>;
+    this.setDependencies(this.configs);
   }
 
   get state() {
@@ -80,7 +80,7 @@ export default class DisplayManager<
       canvas: { width: this.canvasWidth, height: this.canvasHeight },
       windows: this.lwindows,
       encoders: config.encoders,
-      decoders: this.configs.map((c) => c.decoder.state),
+      decoders: this.configs.map((c) => c.driver.state),
       template: {
         choices: BUILTIN_TEMPLATES,
         state: this.template,
@@ -143,7 +143,7 @@ export default class DisplayManager<
       // Send routes to each decoder
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
-          const decoder = this.configs[decoderIdx].decoder;
+          const decoder = this.configs[decoderIdx].driver;
           return Promise.all(routes.map((route) => decoder.api.route({ video: route })));
         }),
       );
@@ -178,7 +178,7 @@ export default class DisplayManager<
       // Send move commands to each decoder
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
-          const decoder = this.configs[decoderIdx].decoder;
+          const decoder = this.configs[decoderIdx].driver;
           return Promise.all(routes.map((route) => decoder.api.moveAbsolute(route)));
         }),
       );
@@ -186,12 +186,12 @@ export default class DisplayManager<
       return results;
     },
     debug: (b?: boolean) => {
-      return Promise.all(this.configs.map((c) => c.decoder.api.debug(b)));
+      return Promise.all(this.configs.map((c) => c.driver.api.debug(b)));
     },
 
     destroy: async (windowId: number | "all") => {
       if (windowId === "all") {
-        return Promise.all(this.configs.map((c) => c.decoder.api.unroute("all")));
+        return Promise.all(this.configs.map((c) => c.driver.api.unroute("all")));
       }
       const existing = this.lwindows.find((w) => w.id === windowId);
       if (!existing) return;
@@ -215,7 +215,7 @@ export default class DisplayManager<
       // Send destroy commands to each decoder
       const results = await Promise.all(
         Array.from(destroyByDecoder.entries()).map(([decoderIdx, items]) => {
-          const decoder = this.configs[decoderIdx].decoder;
+          const decoder = this.configs[decoderIdx].driver;
           return decoder.api.unroute({ video: items, audio: [] });
         }),
       );
@@ -225,8 +225,8 @@ export default class DisplayManager<
   };
 
   private subscribeToDecoders(): void {
-    for (const { decoder } of this.configs) {
-      decoder.on("driver:state-updated", () => {
+    for (const { driver } of this.configs) {
+      driver.on("driver:state-updated", () => {
         this.rebuildWindows();
         this.dispatch("driver:state-updated", this.state);
       });
@@ -234,7 +234,7 @@ export default class DisplayManager<
   }
 
   private rebuildWindows(): void {
-    const routesByDecoder = this.configs.map((c) => c.decoder.state.routes.video);
+    const routesByDecoder = this.configs.map((c) => c.driver.state.routes.video);
     this.lwindows = this.videoRoutesToWindows(routesByDecoder);
   }
 

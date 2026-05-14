@@ -5,7 +5,7 @@ import type { ClientRpc } from "@av/rpc/client";
 
 export class ClientRpcDevice<
   N extends Natav,
-  Name extends Natav.Names<N> = Natav.Names<N>,
+  Name extends Natav.Names<N>,
 > extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
 
@@ -34,15 +34,15 @@ export class ClientRpcDevice<
   }
 
   get state() {
-    return this.client.getDeviceState(this.name);
+    return this.client.device(this.name).state;
   }
 
   get connected() {
-    return this.client.getDeviceConnection(this.name);
+    return this.client.systemStateData.connections[this.name as string]?.connected ?? false;
   }
 
   get schema() {
-    return this.client.getDeviceSchema(this.name);
+    return this.client.schema.devices[this.name];
   }
 
   get debug(): ClientRpcDeviceDebug {
@@ -54,19 +54,17 @@ export class ClientRpcDevice<
       source: schema?.source,
       methods: schema?.methods ?? {},
       state: this.state,
-      logs: this.client.getDeviceLogs(this.name),
+      logs: this.client.debugEntries.filter((entry) => entry.context.traceName === this.name),
       clearLogs: () => {
-        this.client.clearLogs(this.name);
+        this.client.debugEntries = this.client.debugEntries.filter(
+          (entry) => entry.context.traceName !== this.name,
+        );
       },
     };
   }
 
   dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
     return this.client.device(depName);
-  }
-
-  refresh() {
-    return this.client.refreshDevice(this.name);
   }
 
   notify() {

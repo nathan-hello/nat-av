@@ -1,6 +1,6 @@
 import { type EventName, type EventPayload, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
-import { RPCHandler } from "@av/rpc/server";
+import { RPCServer } from "@av/rpc/server";
 import { createRPCNotification, DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import type { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
@@ -39,10 +39,10 @@ function readMessage(data: MessageEvent["data"]): string {
 
 export class WebsocketHandler<N extends Natav = Natav> {
   private clients = new Set<WebSocketConnection>();
-  private rpc: RPCHandler<N>;
+  private rpc: RPCServer<N>;
   private bus: Bus;
 
-  constructor(args: { bus: Bus; rpc: RPCHandler<N> }) {
+  constructor(args: { bus: Bus; rpc: RPCServer<N> }) {
     this.bus = args.bus;
     this.rpc = args.rpc;
     this.bus.on("natav:state:update", (payload) => {

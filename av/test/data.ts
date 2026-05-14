@@ -19,7 +19,7 @@ export type TestShimApi = {
 
 export class TestShim<const N extends string = string> extends Driver<
   N,
-  [],
+  {},
   "test-shim",
   TestShimApi,
   TestShimState,

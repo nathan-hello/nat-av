@@ -46,14 +46,7 @@ type DeviceApiRpcRequest = {
   };
 };
 
-type DeviceDepsRpcRequest = {
-  jsonrpc: "2.0";
-  id: string | number;
-  method: "device.dependents";
-  params: { device: string };
-};
-
-export type NatavRPCRequest = SystemRpcRequest | DeviceDepsRpcRequest | DeviceApiRpcRequest;
+export type NatavRPCRequest = SystemRpcRequest | DeviceApiRpcRequest;
 
 export type RPCMessage = NatavRPCRequest | RPCResponse | RPCError | RPCNotification;
 

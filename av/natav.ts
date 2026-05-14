@@ -20,15 +20,16 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
 
   private all(): Driver[] {
     const collect = (drivers: readonly Driver[]): Driver[] =>
-      drivers.flatMap((d) => [d, ...collect(d.deps as readonly Driver[])]);
+      drivers.flatMap((d) => [d, ...collect(Object.values(d.deps) as readonly Driver[])]);
+
     return collect(this.configs);
   }
 
-  GetDriver<N extends Configs[number]["name"]>(name: N) {
-    return this.configs.find((d) => d.name === name) as Extract<Configs[number], { name: N }>;
+  GetDriver<N extends NamesOf<Configs>>(name: N) {
+    return this.FindDriver(name) as DriverFor<Configs, N>;
   }
 
-  GetDriverState<N extends Configs[number]["name"]>(name: N) {
+  GetDriverState<N extends NamesOf<Configs>>(name: N) {
     return this.GetDriver(name).state;
   }
 

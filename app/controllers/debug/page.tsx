@@ -1,6 +1,5 @@
 import type { ApiSurfaceSchema, MethodSchema } from "@av/schema/types";
 import { css, on, type Handle } from "remix/ui";
-import { routes } from "@/routes";
 import { getRpc } from "@/state";
 
 type Tab = "state" | "api" | "events";
@@ -16,7 +15,6 @@ export function DebugPage(handle: Handle) {
     }
 
     let state = rpc.system.state;
-    let avrpcConnected = rpc.readyState === WebSocket.OPEN;
 
     return (
       <div mix={shellStyle}>
@@ -24,10 +22,10 @@ export function DebugPage(handle: Handle) {
           <header mix={rowStyle}>
             <div>
               <h1 mix={titleStyle}>Natav debug console</h1>
-              <p mix={mutedStyle}>{avrpcConnected ? "websocket connected" : "websocket off"}</p>
+              <p mix={mutedStyle}>{rpc.isOnline ? "websocket connected" : "websocket off"}</p>
             </div>
             <div mix={rowStyle}>
-              <a href={routes.home.href()}>Home</a>
+              <a href={"/"}>Home</a>
             </div>
           </header>
 
@@ -48,16 +46,18 @@ export function DebugPage(handle: Handle) {
               </button>
             ))}
           </div>
-          {tab === "state" ? <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre> : null}
-          {tab === "api" ? <ApiTab schema={schema} /> : null}
+          {tab === "state" ?
+            <pre mix={boxStyle}>{JSON.stringify(state, null, 2)}</pre>
+          : null}
+          {tab === "api" ?
+            <ApiTab schema={schema} />
+          : null}
         </main>
       </div>
     );
   };
 
-  function ApiTab(
-    handle: Handle<{ schema: ApiSurfaceSchema }>,
-  ) {
+  function ApiTab(handle: Handle<{ schema: ApiSurfaceSchema }>) {
     return () => {
       let methods = Object.entries(handle.props.schema.methods);
       if (!methods.length) return <div mix={emptyStyle}>No API methods</div>;
@@ -65,11 +65,7 @@ export function DebugPage(handle: Handle) {
       return (
         <div mix={stackStyle}>
           {methods.map(([name, method]) => (
-            <Method
-              key={name}
-              name={name}
-              method={method}
-            />
+            <Method key={name} name={name} method={method} />
           ))}
         </div>
       );
@@ -105,7 +101,7 @@ export function DebugPage(handle: Handle) {
           type="button"
           mix={[
             buttonStyle,
-          on("click", async () => {
+            on("click", async () => {
               result = JSON.stringify(JSON.parse(argsText || "[]"), null, 2);
               handle.update();
             }),
@@ -119,7 +115,6 @@ export function DebugPage(handle: Handle) {
       </section>
     );
   }
-
 }
 
 const bodyStyle = css({
