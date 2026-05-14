@@ -1,19 +1,25 @@
 import type { natav } from "@av/index";
 import { type Bus } from "./bus";
 import type Natav from "./natav";
+import type { NatavJsonRpcBindings } from "@av/schema/types";
 
 export class System<N extends Natav = natav> {
   private state: SystemState;
   private bus: Bus;
   private natav: N;
+  private schema: NatavJsonRpcBindings<N>;
 
-  constructor(args: { bus: Bus; natav: N }) {
+  constructor(args: { bus: Bus; natav: N; schema: NatavJsonRpcBindings<N> }) {
+    this.schema = args.schema;
     this.bus = args.bus;
     this.natav = args.natav;
     this.state = new SystemState({ bus: this.bus });
   }
 
   api = {
+    GetSchema: (): NatavJsonRpcBindings<N> => {
+      return this.schema;
+    },
     GetSystemState: (): SystemStateData => {
       return this.state.toJSON();
     },

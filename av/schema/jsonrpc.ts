@@ -1,6 +1,6 @@
-import type { NatavSchema } from "./types.ts";
+import type { NatavJsonRpcBindings, NatavSchema } from "./types.ts";
 
-export function toJsonRpcBindings(schema: NatavSchema) {
+export function toJsonRpcBindings<T extends NatavSchema>(schema: T): NatavJsonRpcBindings {
   return {
     version: 1,
     format: "natav-jsonrpc-bindings",
@@ -40,7 +40,7 @@ export function toJsonRpcBindings(schema: NatavSchema) {
       },
     },
     devices: schema.devices,
-  };
+  } as NatavJsonRpcBindings;
 }
 
 export function printJsonRpcBindings(schema: NatavSchema) {

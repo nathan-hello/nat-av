@@ -10,6 +10,7 @@ export const assets = createAssetServer({
   },
   allow: [
     "app/assets/**",
+    "app/state/**",
     "app/controllers/home/**",
     "app/controllers/debug/**",
     "app/rpc/**",

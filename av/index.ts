@@ -45,11 +45,13 @@ export const natav = new Natav([
   ]),
 ]);
 
-export const schema = new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" });
-
 export type natav = typeof natav;
 
-const system = new System({ bus, natav });
+const system = new System({
+  bus,
+  natav,
+  schema: new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" }).toJSON(),
+});
 new AutomationEngine({ bus, natav });
 
 const rpc = new RPCHandler({ system, natav });

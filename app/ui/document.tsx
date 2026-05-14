@@ -20,7 +20,7 @@ export function Document() {
       </head>
       <body>
         {children}
-        <script type="module" src={routes.assets.href({ path: "app/assets/entry.ts" })}></script>
+        <script type="module" src={routes.assets.href({ path: "app/assets/entry.tsx" })}></script>
       </body>
     </html>
   );

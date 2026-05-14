@@ -1,8 +1,20 @@
 import { SimpleConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
-import { run } from "remix/ui";
+import { createRoot, run } from "remix/ui";
+import { HomePage } from "@/controllers/home/page";
+import { DebugPage } from "@/controllers/debug/page";
 
 StartLogging([new SimpleConsoleExporter()]);
+
+const homeContainer = document.getElementById("spa-home");
+if (homeContainer) {
+  createRoot(homeContainer).render(<HomePage />);
+}
+
+const debugContainer = document.getElementById("spa-debug");
+if (homeContainer) {
+  createRoot(homeContainer).render(<DebugPage />);
+}
 
 run({
   async loadModule(moduleUrl, exportName) {

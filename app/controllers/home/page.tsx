@@ -1,45 +1,39 @@
-import { clientEntry, css, type Handle } from "remix/ui";
+import { css, type Handle } from "remix/ui";
 import { getRpc } from "@/state";
 import { Telemetry } from "@av/telemetry";
 import type { ClientRpc } from "@av/rpc/client";
 
-export const HomePage = clientEntry(
-  "/assets/app/controllers/home/page.tsx#HomePage",
-  function HomePage(handle: Handle) {
-    if (typeof window === "undefined") {
-      return () => <div></div>;
-    }
+export function HomePage(handle: Handle) {
+  let rpc: ClientRpc = getRpc(handle);
+  let tel = new Telemetry("homepage");
 
-    let rpc: ClientRpc = getRpc(handle);
+  return () => {
     let connected = rpc.readyState === WebSocket.OPEN;
-    let tel = new Telemetry("homepage");
-
-    return () => {
-      return (
-        <main mix={shellStyle}>
-          <header mix={headerStyle}>
-            <div>
-              <p mix={eyebrowStyle}>Control surface</p>
-              <h1 mix={titleStyle}>Decoder Control</h1>
-              <p mix={subtitleStyle}>
-                Live router for the `video-wall` device. Route, move, template-switch, and wipe from
-                one page.
-              </p>
-            </div>
-            <div mix={statusPillsStyle}>
-              <span mix={pillStyle(connected)}>
-                {connected ? "RPC Connected" : "RPC Disconnected"}
-              </span>
-              <a href={"/debug"} mix={linkStyle}>
-                Debug
-              </a>
-            </div>
-          </header>
-        </main>
-      );
-    };
-  },
-);
+    return (
+      <main mix={shellStyle}>
+        <header mix={headerStyle}>
+          <div>
+            <p mix={eyebrowStyle}>Control surface</p>
+            <h1 mix={titleStyle}>Decoder Control</h1>
+            <p mix={subtitleStyle}>
+              Live router for the `video-wall` device. Route, move, template-switch, and wipe from
+              one page.
+            </p>
+          </div>
+          <code>asdf: {JSON.stringify(rpc.readyState)}</code>
+          <div mix={statusPillsStyle}>
+            <span mix={pillStyle(connected)}>
+              {connected ? "RPC Connected" : "RPC Disconnected"}
+            </span>
+            <a href={"/debug"} mix={linkStyle}>
+              Debug
+            </a>
+          </div>
+        </header>
+      </main>
+    );
+  };
+}
 
 const shellStyle = css({ padding: "24px", display: "grid", gap: "18px" });
 const headerStyle = css({

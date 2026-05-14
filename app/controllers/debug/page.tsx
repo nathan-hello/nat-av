@@ -1,5 +1,5 @@
-import type { DriverSchema, MethodSchema, TypeSchema } from "@av/schema/types";
-import { clientEntry, css, on, type Handle, type SerializableProps } from "remix/ui";
+import type { DriverSchema, MethodSchema } from "@av/schema/types";
+import { css, on, type Handle, type SerializableProps } from "remix/ui";
 import { routes } from "@/routes";
 import { getDebugRpc, getRpc } from "@/state";
 import type { ClientRpcDebug } from "@av/rpc/client/debug";
@@ -7,39 +7,26 @@ import type { ClientRpc } from "@av/rpc/client";
 
 type Tab = "state" | "api" | "events";
 
-export type DebugSchema = SerializableProps & {
-  version: 1;
-  format: string;
-  entry: { filePath: string; exportName: string };
-  roots: string[];
-  transport: unknown;
-  devices: Record<string, DriverSchema>;
-};
+export function DebugPage(handle: Handle) {
+  const rpc = getRpc(handle);
+  const debug = getDebugRpc(handle);
 
-type Props = SerializableProps & { schema: DebugSchema; initialDevice: string | null };
-
-export const DebugPage = clientEntry(import.meta.url, function DebugPage(handle: Handle<Props>) {
-  let rpc = getRpc(handle);
-  let debug: ClientRpcDebug = getDebugRpc(handle);
-  let selected = handle.props.initialDevice;
-  let tab: Tab = "state";
-  let connected = rpc.readyState === WebSocket.OPEN;
-  let logsConnected = debug.isConnected;
-
-  return () => {
-    let devices = Object.values(handle.props.schema.devices).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-    let selectedSchema = selected ? handle.props.schema.devices[selected] : undefined;
+  return async () => {
+    let tab: Tab = "state" as Tab;
+    let schema = await rpc.system.api.GetSchema();
+    let devices = Object.values(schema).sort((a, b) => a.name.localeCompare(b.name));
+    let selectedSchema = selected ? schema.devices[selected] : undefined;
     let selectedHandle = selected && rpc ? rpc.device(selected as any) : null;
     let state = selectedHandle?.state ?? selectedSchema?.state;
+    let debugConnected = debug.readyState === WebSocket.OPEN;
+    let avrpcConnected = rpc.readyState === WebSocket.OPEN;
 
     return (
       <div mix={shellStyle}>
         <aside mix={sidebarStyle}>
           <div mix={rowStyle}>
             <strong>Debug</strong>
-            <span>{connected ? "RPC" : "RPC off"}</span>
+            <span>{avrpcConnected ? "RPC" : "RPC off"}</span>
           </div>
           {devices.map((device) => (
             <button
@@ -64,7 +51,7 @@ export const DebugPage = clientEntry(import.meta.url, function DebugPage(handle:
           <header mix={rowStyle}>
             <div>
               <h1 mix={titleStyle}>Natav debug console</h1>
-              <p mix={mutedStyle}>{logsConnected ? "logs connected" : "logs off"}</p>
+              <p mix={mutedStyle}>{debugConnected ? "logs connected" : "logs off"}</p>
             </div>
             <div mix={rowStyle}>
               <a href={routes.home.href()}>Home</a>
@@ -107,125 +94,125 @@ export const DebugPage = clientEntry(import.meta.url, function DebugPage(handle:
       </div>
     );
   };
-});
 
-function ApiTab(
-  handle: Handle<{ schema: DriverSchema; deviceName: string; rpc: ClientRpc | null }>,
-) {
-  return () => {
-    let methods = Object.entries(handle.props.schema.methods);
-    if (!methods.length) return <div mix={emptyStyle}>No API methods</div>;
+  function ApiTab(
+    handle: Handle<{ schema: DriverSchema; deviceName: string; rpc: ClientRpc | null }>,
+  ) {
+    return () => {
+      let methods = Object.entries(handle.props.schema.methods);
+      if (!methods.length) return <div mix={emptyStyle}>No API methods</div>;
 
-    return (
-      <div mix={stackStyle}>
-        {methods.map(([name, method]) => (
-          <Method
-            key={name}
-            name={name}
-            method={method}
-            deviceName={handle.props.deviceName}
-            rpc={handle.props.rpc}
-          />
-        ))}
-      </div>
-    );
-  };
-}
-
-function Method(
-  handle: Handle<{
-    name: string;
-    method: MethodSchema;
-    deviceName: string;
-    rpc: ClientRpc | null;
-  }>,
-) {
-  let argsText = "[]";
-  let result: string | null = null;
-
-  return () => (
-    <section mix={cardStyle}>
-      <div mix={rowStyle}>
-        <strong>{handle.props.name}</strong>
-        <span>{handle.props.method.params.map((p) => p.name).join(", ") || "no params"}</span>
-      </div>
-      <textarea
-        mix={[
-          inputStyle,
-          on("change", (event) => {
-            argsText = (event.currentTarget as HTMLTextAreaElement).value;
-          }),
-        ]}
-        rows={3}
-        value={argsText}
-      />
-      <button
-        type="button"
-        mix={[
-          buttonStyle,
-          on("click", async () => {
-            if (!handle.props.rpc) return;
-            try {
-              result = JSON.stringify(
-                await handle.props.rpc.call(
-                  handle.props.deviceName,
-                  handle.props.name,
-                  JSON.parse(argsText || "[]"),
-                ),
-                null,
-                2,
-              );
-            } catch (error) {
-              result = error instanceof Error ? error.message : String(error);
-            }
-            handle.update();
-          }),
-        ]}
-      >
-        Call
-      </button>
-      {result ?
-        <pre mix={boxStyle}>{result}</pre>
-      : null}
-    </section>
-  );
-}
-
-function EventsTab(handle: Handle<{ deviceName: string; debug: ClientRpcDebug | null }>) {
-  return () => {
-    let logs =
-      handle.props.debug?.logs.filter(
-        (entry) => entry.context.traceName === handle.props.deviceName,
-      ) ?? [];
-    return (
-      <div mix={stackStyle}>
-        <div mix={rowStyle}>
-          <span>{logs.length} events</span>
-          {handle.props.debug ?
-            <button
-              type="button"
-              mix={[
-                buttonStyle,
-                on("click", () => {
-                  handle.props.debug?.clear();
-                  handle.update();
-                }),
-              ]}
-            >
-              Clear
-            </button>
-          : null}
+      return (
+        <div mix={stackStyle}>
+          {methods.map(([name, method]) => (
+            <Method
+              key={name}
+              name={name}
+              method={method}
+              deviceName={handle.props.deviceName}
+              rpc={handle.props.rpc}
+            />
+          ))}
         </div>
-        {logs.length ?
-          logs.map((log, i) => (
-            <pre key={i} mix={boxStyle}>
-              {JSON.stringify(log, null, 2)}
-            </pre>
-          ))
-        : <div mix={emptyStyle}>No events</div>}
-      </div>
+      );
+    };
+  }
+
+  function Method(
+    handle: Handle<{
+      name: string;
+      method: MethodSchema;
+      deviceName: string;
+      rpc: ClientRpc | null;
+    }>,
+  ) {
+    let argsText = "[]";
+    let result: string | null = null;
+
+    return () => (
+      <section mix={cardStyle}>
+        <div mix={rowStyle}>
+          <strong>{handle.props.name}</strong>
+          <span>{handle.props.method.params.map((p) => p.name).join(", ") || "no params"}</span>
+        </div>
+        <textarea
+          mix={[
+            inputStyle,
+            on("change", (event) => {
+              argsText = (event.currentTarget as HTMLTextAreaElement).value;
+            }),
+          ]}
+          rows={3}
+          value={argsText}
+        />
+        <button
+          type="button"
+          mix={[
+            buttonStyle,
+            on("click", async () => {
+              if (!handle.props.rpc) return;
+              try {
+                result = JSON.stringify(
+                  await handle.props.rpc.call(
+                    handle.props.deviceName,
+                    handle.props.name,
+                    JSON.parse(argsText || "[]"),
+                  ),
+                  null,
+                  2,
+                );
+              } catch (error) {
+                result = error instanceof Error ? error.message : String(error);
+              }
+              handle.update();
+            }),
+          ]}
+        >
+          Call
+        </button>
+        {result ?
+          <pre mix={boxStyle}>{result}</pre>
+        : null}
+      </section>
     );
-  };
+  }
+
+  function EventsTab(handle: Handle<{ deviceName: string; debug: ClientRpcDebug | null }>) {
+    return () => {
+      let logs =
+        handle.props.debug?.logs.filter(
+          (entry) => entry.context.traceName === handle.props.deviceName,
+        ) ?? [];
+      return (
+        <div mix={stackStyle}>
+          <div mix={rowStyle}>
+            <span>{logs.length} events</span>
+            {handle.props.debug ?
+              <button
+                type="button"
+                mix={[
+                  buttonStyle,
+                  on("click", () => {
+                    handle.props.debug?.clear();
+                    handle.update();
+                  }),
+                ]}
+              >
+                Clear
+              </button>
+            : null}
+          </div>
+          {logs.length ?
+            logs.map((log, i) => (
+              <pre key={i} mix={boxStyle}>
+                {JSON.stringify(log, null, 2)}
+              </pre>
+            ))
+          : <div mix={emptyStyle}>No events</div>}
+        </div>
+      );
+    };
+  }
 }
 
 const bodyStyle = css({
