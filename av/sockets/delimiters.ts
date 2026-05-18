@@ -1,5 +1,9 @@
 export type DataDelimiter<T = any> = (buffer: Buffer) => T | null;
 export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<ReturnType<T>>;
+export type StreamDelimiter<Request = any, Message = Request> = {
+  format: (value: Request) => Buffer;
+  push: (chunk: Buffer) => Message[];
+};
 
 export const Delimiters = {
   byteDelimtied: (delimiter: number): DataDelimiter<Buffer[]> => {
@@ -64,6 +68,40 @@ export const Delimiters = {
       }
     };
   },
-};
 
+  lengthPrefixedJson: <Request = unknown, Message = Request>(): StreamDelimiter<Request, Message> => {
+    let rxBuf = Buffer.alloc(0);
+
+    return {
+      format: (value) => {
+        const payload = Buffer.from(JSON.stringify(value), "utf8");
+        const buf = Buffer.alloc(4 + payload.length);
+
+        buf.writeUInt32BE(payload.length, 0);
+        payload.copy(buf, 4);
+
+        return buf;
+      },
+
+      push: (chunk) => {
+        rxBuf = Buffer.concat([rxBuf, chunk]);
+        const messages: Message[] = [];
+
+        while (true) {
+          const payload = Delimiters.lengthPrefixed32BE(rxBuf);
+          if (payload === null) {
+            return messages;
+          }
+
+          rxBuf = rxBuf.subarray(4 + payload.length);
+
+          const parsed = Delimiters.json<Message>()(payload);
+          if (parsed !== null) {
+            messages.push(parsed);
+          }
+        }
+      },
+    };
+  },
+};
 

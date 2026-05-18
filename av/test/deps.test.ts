@@ -11,8 +11,6 @@ class Leaf<const N extends string> extends Driver<
   "leaf",
   {},
   { online: boolean },
-  // TODO: this is because Driver not no longer allows for undefined sockets
-  // @ts-ignore-next-line
   undefined
 > {
   state = { online: true };
@@ -26,8 +24,6 @@ class Leaf<const N extends string> extends Driver<
 
 class Parent<const N extends string, const D extends Record<string, Leaf<string>>> extends Driver<
   N,
-  // TODO: this is because Driver not no longer allows for undefined sockets
-  // @ts-ignore-next-line
   D,
   "parent",
   {},
@@ -46,8 +42,6 @@ class Parent<const N extends string, const D extends Record<string, Leaf<string>
 
 const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child } as const);
-// TODO: this is because Driver not no longer allows for undefined sockets
-// @ts-ignore-next-line
 const graph = new Natav([parent] as const);
 
 describe("driver deps", () => {
