@@ -307,12 +307,11 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
         return;
       }
 
-      try {
-        this.transport.send(str.data);
-      } catch (error) {
+      const send = this.tel.task("WS_SEND", () => this.transport.send(str.data));
+      if (!send.ok) {
         clearTimeout(timeoutId);
         this.pendingRequests.delete(message.id);
-        reject(error instanceof Error ? error : new Error(String(error)));
+        reject(send.error);
       }
     });
   }

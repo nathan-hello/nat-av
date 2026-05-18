@@ -10,7 +10,7 @@ type AnyDriver = Driver<
   string,
   unknown,
   unknown,
-  Partial<DeviceSocket> | undefined
+  Partial<DeviceSocket>
 >;
 
 type DependencyInput = readonly AnyDriver[] | readonly { driver: AnyDriver }[];
@@ -21,7 +21,7 @@ export abstract class Driver<
   DriverName extends string = any,
   Api = any,
   State = any,
-  Socket extends Partial<DeviceSocket> | undefined = any,
+  Socket extends Partial<DeviceSocket> = Partial<DeviceSocket>,
 > extends ProtectedTypedEventTarget<DriverEvents<State>> {
   public abstract state: State;
   public abstract api: Api;

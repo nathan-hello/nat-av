@@ -38,7 +38,7 @@ export const Delimiters = {
     };
   },
 
-  lengthPrefixed: (buffer: Buffer) => {
+  lengthPrefixed32BE: (buffer: Buffer) => {
     if (buffer.length < 4) return null; // Need at least 4 bytes for length
 
     const length = buffer.readUInt32BE(0);
@@ -65,3 +65,5 @@ export const Delimiters = {
     };
   },
 };
+
+

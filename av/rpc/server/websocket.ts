@@ -77,23 +77,15 @@ export class WebsocketHandler<N extends Natav = Natav> {
   }
 
   BroadcastLog(entry: unknown) {
-    let message: string;
-    try {
-      message = JSON.stringify(entry);
-    } catch {
-      message = JSON.stringify({
-        name: "UNABLE_TO_JSON_STRINGIFY_LOG",
-        context: {
-          traceName: "SERVER_INTERNAL",
-          traceId: undefined,
-          spanId: undefined,
-        },
-        time: new Date().toISOString().slice(11, 23),
-        severity: { id: 50, text: "ERROR" },
-      });
+    let message = this.tel.task("LOG_STRINGIFY", () => {
+      return JSON.stringify(entry);
+    });
+
+    if (!message.ok) {
+      return;
     }
 
-    this.broadcast(message);
+    this.broadcast(message.data);
   }
 
   private broadcast(message: string) {
