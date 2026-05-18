@@ -27,7 +27,7 @@ export class Udp extends TypedEventTarget<UdpEvents> {
   constructor(args: UdpConfig) {
     super();
     this.config = args;
-    this.tel = new Telemetry(`udp-client-${this.config.addr}:${this.config.port}`);
+    this.tel = new Telemetry(`UdpClient::${this.config.addr}:${this.config.port}`);
     this.tel.info("INITALIZE", this.config);
   }
 

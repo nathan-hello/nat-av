@@ -5,7 +5,7 @@ export class TypedEventTarget<
 > extends EventTarget {
   private listeners: Map<string, Set<EventListener>> = new Map();
   private offCallbacks: (() => void)[] = [];
-  constructor(private _tet_tel = new Telemetry("typed-event-emitter")) {
+  constructor(private _tet_tel = new Telemetry("EventEmitter")) {
     super();
   }
 
@@ -83,7 +83,7 @@ export class ProtectedTypedEventTarget<
   private listeners: Map<string, Set<EventListener>> = new Map();
   private offCallbacks: (() => void)[] = [];
 
-  constructor(private _tet_tel = new Telemetry("typed-event-emitter")) {
+  constructor(private _tet_tel = new Telemetry("EventEmitter")) {
     super();
   }
 

@@ -10,7 +10,7 @@ import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
 
 export class RPCServer<N extends Natav = natav> {
-  private tel = new Telemetry("RPCServer");
+  private tel = new Telemetry("Rpc");
   private router: RPCRequestRouter;
 
   constructor(args: { system: System<N>; natav: N }) {

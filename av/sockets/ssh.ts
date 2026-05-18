@@ -33,7 +33,7 @@
 //   constructor(args: SshConfig) {
 //     super();
 //     this.config = args;
-//     this.tel = new Telemetry(`ssh-client-${this.config.addr}:${this.config.port}`);
+//     this.tel = new Telemetry(`SshClient::${this.config.addr}:${this.config.port}`);
 //     this.tel.info("INITALIZE", { addr: args.addr, port: args.port, username: args.username });
 //   }
 //

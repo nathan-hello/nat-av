@@ -37,7 +37,7 @@ type DeviceStateMap<N extends Natav> = Partial<{
 }>;
 
 export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarget<RpcEvents> {
-  private tel = new Telemetry("ClientRpc");
+  private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();

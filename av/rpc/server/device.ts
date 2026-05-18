@@ -7,7 +7,7 @@ import { RPCErrorCodes } from "@av/rpc/protocol";
 
 export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandler {
   prefix = "device.";
-  private tel = new Telemetry("DeviceRpcRouter");
+  private tel = new Telemetry("Rpc::Router::Device");
 
   constructor(private natav: N) {}
 

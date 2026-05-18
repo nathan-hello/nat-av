@@ -36,7 +36,7 @@ export abstract class Driver<
     super();
     this.name = name;
     this._drivername = driverName;
-    this.tel = new Telemetry(`${this._drivername}:${this.name}`);
+    this.tel = new Telemetry(`Driver::${this.name}`);
     this.bus = bus;
 
     this.bus.on("natav:state:override", (payload) => {

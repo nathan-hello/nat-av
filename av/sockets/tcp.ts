@@ -27,7 +27,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
   name: string;
 
   constructor(args: TcpConfig) {
-    const name = `tcp-client-${args.addr}:${args.port}`;
+    const name = `TcpClient::${args.addr}:${args.port}`;
     const tel = new Telemetry(name);
     super(tel);
     this.config = args;

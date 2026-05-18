@@ -59,7 +59,7 @@ new AutomationEngine({ bus, natav });
 
 const rpc = new RPCServer({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc });
-const tel = new Telemetry("ServerWebsocket");
+const tel = new Telemetry("Server::Websocket");
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, tel);
