@@ -1,12 +1,16 @@
 import { Delimiters } from "@av/sockets/delimiters";
+import { RequestManager } from "@av/requests";
 import type { DeviceSocket } from "@av/types";
 import {
   type AudioRoute,
+  type DebugToggle,
   type DecoderMap,
   type DecoderNotification,
   type DecoderRequest,
   type DecoderResponse,
+  type FetchContextRequest,
   type FetchContextResponse,
+  type FetchRoutesRequest,
   type FetchRoutesResponse,
   type MoveWindowArgs,
   type RouteDestroyRequest,
@@ -14,20 +18,15 @@ import {
   type VideoRoute,
   type VideoRouteMinArgs,
   type DecoderRoutes,
-  type JsonRpcId,
 } from "./types";
 import { Driver } from "@av/driver";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RPCErrorData } from "@av/rpc/protocol";
 
-class Pending extends TypedEventTarget<{ [x: JsonRpcId]: DecoderResponse }> {
-  public requests = new Map<string | number, DecoderRequest>();
-}
+type DecoderMessage = DecoderResponse | DecoderNotification;
 
 export default class Decoder<const N extends string = string> extends Driver<N> {
   private TIMEOUT_TIME_MS = 10000;
   private highestId = 0;
-  private rxBuf = Buffer.alloc(0);
   private routes: DecoderRoutes = {
     audio: [],
     video: [],
@@ -37,86 +36,44 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
 
   mock = undefined;
   socket: DeviceSocket;
-
-  private pending = new Pending();
+  private requests: RequestManager<DecoderRequest, DecoderMessage>;
 
   constructor({ name, socket }: { name: N; socket: DeviceSocket }) {
     super({ name, driverName: "natalie-decoder" });
     this.socket = socket;
 
+    this.requests = new RequestManager<DecoderRequest, DecoderMessage>({
+      tel: this.tel,
+      socket,
+      delimiter: this.createDelimiter(),
+      timeoutMs: this.TIMEOUT_TIME_MS,
+      matchResponse: (request, message) => "id" in message && message.id === request.id,
+    });
+
+    this.requests.on("message", (message) => {
+      if ("id" in message) {
+        this.tel.error("response-no-id", { response: message });
+        return;
+      }
+
+      this.tel.debug("got-jsonrpc-notification", { notification: message });
+    });
+
+    this.requests.on("error", ({ phase, error, request, message }) => {
+      this.tel.error("REQUEST_MANAGER_ERROR", { phase, error, request, message });
+    });
+
+    this.requests.on("write-error", ({ request, error }) => {
+      this.tel.error("REQUEST_WRITE_ERROR", { request, error });
+    });
+
+    this.requests.on("timeout", ({ request }) => {
+      this.tel.error("REQUEST_TIMEOUT", { request });
+    });
+
     socket.on("connected", async () => {
       await this.api.fetchContext();
       await this.api.fetchRoutes();
-    });
-
-    socket.on("receive", (chunk) => {
-      this.tel.info("RECEIVE_HANDLER_CALLED", { chunkLength: chunk.length });
-      this.rxBuf = Buffer.concat([this.rxBuf, chunk]);
-
-      while (true) {
-        if (this.rxBuf.length < 4) return;
-
-        const len = this.rxBuf.readUInt32BE(0);
-        if (this.rxBuf.length < 4 + len) return;
-
-        const payload = this.rxBuf.subarray(4, 4 + len);
-        this.rxBuf = this.rxBuf.subarray(4 + len);
-
-        const response = Delimiters.json<DecoderResponse | DecoderNotification>()(payload);
-        if (response === null) {
-          this.tel.error("BAD_JSON_FRAME", { payload: payload.toString("utf8") });
-          continue;
-        }
-
-        this.tel.info("PARSED_MESSAGE", { length: JSON.stringify(response).length });
-
-        if (!("id" in response)) {
-          this.tel.debug("got-jsonrpc-notification", { notification: response });
-          return;
-        }
-
-        const request = this.pending.requests.get(response.id);
-        if (!request) {
-          this.tel.error("response-no-id", { response: response });
-          throw new RPCErrorData({
-            code: 500,
-            message: "response-no-id",
-            data: { response, pending: this.pending.requests.keys() },
-          });
-        }
-
-        this.pending.requests.delete(response.id);
-        this.pending.dispatch(response.id, response);
-
-        if (typeof response.result === "number" && response.result !== 0) {
-          this.tel.error("error-from-device", { request, response });
-        }
-        let result;
-
-        switch (request.method) {
-          case "fetch_routes":
-            result = this.processFetchRoutes(response as FetchRoutesResponse, this.routes);
-            this.dispatch("driver:state-updated", { routes: result.data });
-            return;
-          case "fetch_context":
-            this.context = (response as FetchContextResponse).result;
-            this.dispatch("driver:state-updated", { context: this.context });
-            return;
-          case "route":
-            result = this.processRoute(request, this.routes);
-            this.dispatch("driver:state-updated", { routes: result.data });
-            return;
-          case "route_destroy":
-            result = this.processRouteDestroy(request, this.routes);
-            this.dispatch("driver:state-updated", { routes: result.data });
-            return;
-          case "debug_toggle":
-            this.debug = !this.debug;
-            result = response;
-            this.dispatch("driver:state-updated", { debug: this.debug });
-            return;
-        }
-      }
     });
   }
 
@@ -129,36 +86,56 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
   }
 
   private async request<T extends DecoderRequest>(req: T): Promise<DecoderMap[T["method"]]["res"]> {
-    const result = await this.tel.task("REQUEST", async () => {
-      this.pending.requests.set(req.id, req);
+    const result = await this.requests.request<DecoderMap[T["method"]]["res"]>(req);
+    if (!result.ok) {
+      throw new RPCErrorData({ code: 400, message: result.error });
+    }
 
-      const payload = JSON.stringify(req);
-      const len = Buffer.byteLength(payload, "utf8");
-      const buf = Buffer.alloc(4 + len);
+    const response = result.data;
 
-      buf.writeUint32BE(len, 0);
-      buf.write(payload, 4);
+    if (typeof response.result === "number" && response.result !== 0) {
+      this.tel.error("error-from-device", { request: req, response });
+    }
 
-      this.socket.write(buf);
+    switch (req.method) {
+      case "fetch_routes": {
+        const next = this.processFetchRoutes(response as FetchRoutesResponse, this.routes);
+        this.dispatch("driver:state-updated", { routes: next.data });
+        break;
+      }
+      case "fetch_context":
+        this.context = (response as FetchContextResponse).result;
+        this.dispatch("driver:state-updated", { context: this.context });
+        break;
+      case "route": {
+        const next = this.processRoute(req, this.routes);
+        this.dispatch("driver:state-updated", { routes: next.data });
+        break;
+      }
+      case "route_destroy": {
+        const next = this.processRouteDestroy(req, this.routes);
+        this.dispatch("driver:state-updated", { routes: next.data });
+        break;
+      }
+      case "debug_toggle":
+        this.debug = !this.debug;
+        this.dispatch("driver:state-updated", { debug: this.debug });
+        break;
+    }
 
-      return this.pending.once(req.id.toString(), {
-        signal: AbortSignal.timeout(this.TIMEOUT_TIME_MS),
-      });
-    });
-
-    if (result.ok) return result.data;
-    throw new RPCErrorData({ code: 400, message: result.error });
+    return response;
   }
 
   api = {
     debug: (b?: boolean) => {
       if (b === undefined || this.debug !== b) {
-        return this.request({
+        const request: DebugToggle = {
           jsonrpc: "2.0",
           method: "debug_toggle",
           params: [],
           id: this.highestId++,
-        });
+        };
+        return this.request(request);
       }
       return { jsonrpc: "2.0", result: 0, id: -1 } as const;
     },
@@ -193,12 +170,14 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
         };
       }
 
-      return this.request({
+      const request: RouteRequest = {
         jsonrpc: "2.0",
         method: "route",
         params,
         id: this.highestId++,
-      });
+      };
+
+      return this.request(request);
     },
 
     moveRelative: (v: MoveWindowArgs) => {
@@ -244,42 +223,96 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
           data: this.context,
         });
       }
-      return this.request({
+      const request: FetchContextRequest = {
         jsonrpc: "2.0",
         method: "fetch_context",
         params: [],
         id: this.highestId++,
-      });
+      };
+
+      return this.request(request);
     },
 
     fetchRoutes: () => {
-      return this.request({
+      const request: FetchRoutesRequest = {
         jsonrpc: "2.0",
         method: "fetch_routes",
         params: [],
         id: this.highestId++,
-      });
+      };
+
+      return this.request(request);
     },
 
     unroute: (
       r: { video: { output: number; window: number }[]; audio: { output: number }[] } | "all",
     ) => {
       if (r === "all") {
-        return this.request({
+        const request: RouteDestroyRequest = {
           jsonrpc: "2.0",
           method: "route_destroy",
           params: { video: this.routes.video.flat(), audio: this.routes.audio },
           id: this.highestId++,
-        });
+        };
+
+        return this.request(request);
       }
-      return this.request({
+      const request: RouteDestroyRequest = {
         jsonrpc: "2.0",
         method: "route_destroy",
         params: r,
         id: this.highestId++,
-      });
+      };
+
+      return this.request(request);
     },
   };
+
+  private createDelimiter() {
+    let rxBuf = Buffer.alloc(0);
+
+    return {
+      format: (value: DecoderRequest) => {
+        const payload = JSON.stringify(value);
+        const len = Buffer.byteLength(payload, "utf8");
+        const buf = Buffer.alloc(4 + len);
+
+        buf.writeUInt32BE(len, 0);
+        buf.write(payload, 4);
+
+        return buf;
+      },
+
+      push: (chunk: Buffer) => {
+        this.tel.info("RECEIVE_HANDLER_CALLED", { chunkLength: chunk.length });
+        rxBuf = Buffer.concat([rxBuf, chunk]);
+        const messages: DecoderMessage[] = [];
+
+        while (true) {
+          if (rxBuf.length < 4) {
+            return messages;
+          }
+
+          const len = rxBuf.readUInt32BE(0);
+          if (rxBuf.length < 4 + len) {
+            return messages;
+          }
+
+          const payload = rxBuf.subarray(4, 4 + len);
+          rxBuf = rxBuf.subarray(4 + len);
+
+          const response = Delimiters.json<DecoderMessage>()(payload);
+          if (response === null) {
+            this.tel.error("BAD_JSON_FRAME", { payload: payload.toString("utf8") });
+            continue;
+          }
+
+          this.tel.info("PARSED_MESSAGE", { length: JSON.stringify(response).length });
+          messages.push(response);
+        }
+      },
+    };
+  }
 
   processFetchRoutes(response: FetchRoutesResponse, routes: DecoderRoutes) {
     response.result.video.forEach((v) => {
