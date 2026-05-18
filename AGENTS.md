@@ -1,12 +1,13 @@
 # Remix Agent Guide
 
 ## Commands
+
 `npm install` `npm run start` `npm test` `npm run typecheck`
 
 ## Building Remix Features
 
 Refer to ./agents/skills/remix/SKILL.md for all changes in the
-app/ folder. 
+app/ folder.
 
 ## Route Ownership
 
@@ -27,7 +28,7 @@ app/ folder.
   variables, you should prefer `const` instead unles the variable will be
   reassigned, obviously.
 
-
 # Natav Library
+
 The `./av/` directory is a vendored library called `nat-av`. Refer to
 `.agents/Natav.md` for more information.

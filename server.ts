@@ -13,7 +13,7 @@ const server = serve(
     try {
       return await router.fetch(request);
     } catch (error) {
-      tel.error("unknown error in router.fetch", {error: error});
+      tel.error("unknown error in router.fetch", { error: error });
       return new Response("Internal Server Error", { status: 500 });
     }
   },

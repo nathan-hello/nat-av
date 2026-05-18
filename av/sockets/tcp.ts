@@ -95,7 +95,6 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
 
           this.dispatch("connected", undefined);
         }, 1000);
-
       });
     });
 

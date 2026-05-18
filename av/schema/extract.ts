@@ -2,7 +2,14 @@ import path from "node:path";
 
 import { Node, Project, type Node as MorphNode, type Symbol, type Type } from "ts-morph";
 
-import type { ApiSurfaceSchema, MethodSchema, ParameterSchema, PropertySchema, SourceSchema, TypeSchema } from "./types.ts";
+import type {
+  ApiSurfaceSchema,
+  MethodSchema,
+  ParameterSchema,
+  PropertySchema,
+  SourceSchema,
+  TypeSchema,
+} from "./types.ts";
 
 type ExtractApiSurfaceArgs = {
   entry: string;
@@ -59,7 +66,10 @@ function extractProperties(type: Type, location: MorphNode): Record<string, Prop
     properties[name] = {
       readonly: isReadonlySymbol(property),
       required: !property.isOptional(),
-      type: resolveType(property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType, location),
+      type: resolveType(
+        property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType,
+        location,
+      ),
     };
   }
   return properties;
@@ -93,7 +103,10 @@ function extractMethod(type: Type, location: MorphNode): MethodSchema {
       name: parameter.getName(),
       required,
       ...(defaultValue !== undefined ? { defaultValue } : {}),
-      type: resolveType(required ? parameterType : stripUndefinedFromUnion(parameterType), location),
+      type: resolveType(
+        required ? parameterType : stripUndefinedFromUnion(parameterType),
+        location,
+      ),
     };
   });
   return { params, returns: resolveType(normalizeType(signature.getReturnType()), location) };
@@ -102,11 +115,14 @@ function extractMethod(type: Type, location: MorphNode): MethodSchema {
 function resolveType(type: Type, location: MorphNode, seen: Set<string> = new Set()): TypeSchema {
   const resolved = normalizeType(type);
   const typeId = getTypeId(resolved, location);
-  if (seen.has(typeId)) return { kind: "reference", name: getTypeName(resolved, location) ?? typeId };
+  if (seen.has(typeId))
+    return { kind: "reference", name: getTypeName(resolved, location) ?? typeId };
   if (resolved.isNull()) return { kind: "primitive", type: "null" };
   if (resolved.isUndefined()) return { kind: "primitive", type: "undefined" };
-  if (resolved.isStringLiteral()) return { kind: "literal", value: resolved.getLiteralValue() as string };
-  if (resolved.isNumberLiteral()) return { kind: "literal", value: resolved.getLiteralValue() as number };
+  if (resolved.isStringLiteral())
+    return { kind: "literal", value: resolved.getLiteralValue() as string };
+  if (resolved.isNumberLiteral())
+    return { kind: "literal", value: resolved.getLiteralValue() as number };
   if (resolved.isBooleanLiteral()) return { kind: "literal", value: resolved.getText() === "true" };
   if (resolved.isString()) return { kind: "primitive", type: "string" };
   if (resolved.isNumber()) return { kind: "primitive", type: "number" };
@@ -114,13 +130,32 @@ function resolveType(type: Type, location: MorphNode, seen: Set<string> = new Se
   if (resolved.isBigInt()) return { kind: "primitive", type: "bigint" };
   const typeName = getTypeName(resolved, location);
   if (resolved.isUnion()) {
-    const members = resolved.getUnionTypes().filter((member) => !member.isUndefined()).map((member) => resolveType(normalizeType(member), location, new Set(seen)));
-    if (members.length === 2 && members.every((m) => m.kind === "literal" && typeof m.value === "boolean")) return { kind: "primitive", type: "boolean" };
+    const members = resolved
+      .getUnionTypes()
+      .filter((member) => !member.isUndefined())
+      .map((member) => resolveType(normalizeType(member), location, new Set(seen)));
+    if (
+      members.length === 2 &&
+      members.every((m) => m.kind === "literal" && typeof m.value === "boolean")
+    )
+      return { kind: "primitive", type: "boolean" };
     return { kind: "union", members };
   }
-  if (resolved.isTuple()) return { kind: "tuple", items: resolved.getTupleElements().map((item) => resolveType(item, location, new Set(seen))) };
-  if (resolved.isArray()) return { kind: "array", items: resolved.getArrayElementType() ? resolveType(resolved.getArrayElementType()!, location, new Set(seen)) : { kind: "unknown" } };
-  if (resolved.getCallSignatures().length > 0) return { kind: "reference", name: typeName ?? "Function" };
+  if (resolved.isTuple())
+    return {
+      kind: "tuple",
+      items: resolved.getTupleElements().map((item) => resolveType(item, location, new Set(seen))),
+    };
+  if (resolved.isArray())
+    return {
+      kind: "array",
+      items:
+        resolved.getArrayElementType() ?
+          resolveType(resolved.getArrayElementType()!, location, new Set(seen))
+        : { kind: "unknown" },
+    };
+  if (resolved.getCallSignatures().length > 0)
+    return { kind: "reference", name: typeName ?? "Function" };
   if (resolved.isObject()) {
     seen.add(typeId);
     const properties: Record<string, PropertySchema> = {};
@@ -129,9 +164,22 @@ function resolveType(type: Type, location: MorphNode, seen: Set<string> = new Se
       if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
       const propertyType = property.getTypeAtLocation(location);
       if (propertyType.getCallSignatures().length > 0) continue;
-      properties[name] = { readonly: isReadonlySymbol(property), required: !property.isOptional(), type: resolveType(property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType, location, new Set(seen)) };
+      properties[name] = {
+        readonly: isReadonlySymbol(property),
+        required: !property.isOptional(),
+        type: resolveType(
+          property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType,
+          location,
+          new Set(seen),
+        ),
+      };
     }
-    if (Object.keys(properties).length > 0) return { kind: "object", ...(typeName && typeName !== "__type" ? { name: typeName } : {}), properties };
+    if (Object.keys(properties).length > 0)
+      return {
+        kind: "object",
+        ...(typeName && typeName !== "__type" ? { name: typeName } : {}),
+        properties,
+      };
   }
   if (typeName) return { kind: "reference", name: typeName };
   return { kind: "unknown" };
@@ -144,7 +192,7 @@ function normalizeType(type: Type): Type {
 
 function unwrapPromise(type: Type): Type {
   const symbolName = type.getSymbol()?.getName() ?? type.getAliasSymbol()?.getName();
-  return symbolName === "Promise" ? type.getTypeArguments()[0] ?? type : type;
+  return symbolName === "Promise" ? (type.getTypeArguments()[0] ?? type) : type;
 }
 
 function unwrapUndefined(type: Type): Type {
@@ -167,7 +215,14 @@ function getTypeName(type: Type, location: MorphNode): string | undefined {
 
 function sanitizeTypeText(text: string): string | undefined {
   const normalized = text.replace(/import\([^)]*\)\./g, "").trim();
-  if (!normalized || normalized.startsWith("{") || normalized.startsWith("(") || normalized.includes("=>") || normalized.startsWith("readonly {")) return undefined;
+  if (
+    !normalized ||
+    normalized.startsWith("{") ||
+    normalized.startsWith("(") ||
+    normalized.includes("=>") ||
+    normalized.startsWith("readonly {")
+  )
+    return undefined;
   return normalized;
 }
 
@@ -189,7 +244,8 @@ function getSourceFromSymbol(symbol: Symbol): SourceSchema | undefined {
 
 function isReadonlySymbol(symbol: Symbol): boolean {
   return symbol.getDeclarations().some((declaration) => {
-    if (Node.isPropertyDeclaration(declaration) || Node.isPropertySignature(declaration)) return declaration.isReadonly();
+    if (Node.isPropertyDeclaration(declaration) || Node.isPropertySignature(declaration))
+      return declaration.isReadonly();
     if (Node.isParameterDeclaration(declaration)) return declaration.isReadonly();
     return false;
   });
@@ -199,7 +255,12 @@ function isPublicSymbol(symbol: Symbol): boolean {
   const declarations = symbol.getDeclarations();
   if (declarations.length === 0) return true;
   return declarations.every((declaration) => {
-    if (Node.isPropertyDeclaration(declaration) || Node.isMethodDeclaration(declaration) || Node.isGetAccessorDeclaration(declaration) || Node.isSetAccessorDeclaration(declaration)) {
+    if (
+      Node.isPropertyDeclaration(declaration) ||
+      Node.isMethodDeclaration(declaration) ||
+      Node.isGetAccessorDeclaration(declaration) ||
+      Node.isSetAccessorDeclaration(declaration)
+    ) {
       const scope = declaration.getScope();
       return scope === undefined || scope === "public";
     }

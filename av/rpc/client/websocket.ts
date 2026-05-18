@@ -28,7 +28,7 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
     });
 
     socket.addEventListener("message", (event) => {
-      this.tel.info("got event", { event: "message", data: event.data});
+      this.tel.info("got event", { event: "message", data: event.data });
       super.dispatch("message", event);
     });
 

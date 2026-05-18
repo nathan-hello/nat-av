@@ -5,12 +5,7 @@ import type { ApiSurfaceSchema } from "@av/schema/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
-import {
-  RPCNotification,
-  RPCRequest,
-  RPCError,
-  RPCResponse,
-} from "@av/rpc/protocol";
+import { RPCNotification, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type {
   ClientRpcBindings,
   DebugEntry,
@@ -161,7 +156,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
-    return this.request(new RPCRequest(this.nextRequestId(), "device.call", { device, method, args }));
+    return this.request(
+      new RPCRequest(this.nextRequestId(), "device.call", { device, method, args }),
+    );
   }
 
   get system(): ClientRpcSystem<N> {
@@ -175,7 +172,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   }
 
   async getSystemState(): Promise<SystemStateData> {
-    const state = await this.request<SystemStateData>(new RPCRequest(this.nextRequestId(), "system.state"));
+    const state = await this.request<SystemStateData>(
+      new RPCRequest(this.nextRequestId(), "system.state"),
+    );
     this.applySystemState(state);
     return state;
   }

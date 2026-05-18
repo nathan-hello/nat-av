@@ -12,7 +12,10 @@ export class RPCRequestRouter {
   async handle(message: RPCRequest): Promise<RPCResponse | RPCError> {
     const handler = this.handlers.find((candidate) => message.method.startsWith(candidate.prefix));
     if (!handler) {
-      return new RPCError(message.id, { code: RPCErrorCodes.MethodNotFound, message: message.method });
+      return new RPCError(message.id, {
+        code: RPCErrorCodes.MethodNotFound,
+        message: message.method,
+      });
     }
 
     return handler.handle(message);

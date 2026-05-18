@@ -19,14 +19,20 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       case RPCMethods.SystemApi:
         return this.handleApiCall(message);
       default:
-        return new RPCError(message.id, { code: RPCErrorCodes.MethodNotFound, message: message.method });
+        return new RPCError(message.id, {
+          code: RPCErrorCodes.MethodNotFound,
+          message: message.method,
+        });
     }
   }
 
   private async handleApiCall(message: RPCRequest): Promise<RPCResponse | RPCError> {
     const params = message.systemApiParams();
     if (!params) {
-      return new RPCError(message.id, { code: RPCErrorCodes.InvalidParams, message: "Invalid system api params" });
+      return new RPCError(message.id, {
+        code: RPCErrorCodes.InvalidParams,
+        message: "Invalid system api params",
+      });
     }
 
     const result = await this.tel.task(`system:${params.method}`, async () => {

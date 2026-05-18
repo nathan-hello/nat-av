@@ -5,7 +5,14 @@ import { Driver } from "../driver";
 import Natav from "../natav";
 import { ClientRpcDevice } from "../rpc/client/devices";
 
-class Leaf<const N extends string> extends Driver<N, {}, "leaf", {}, { online: boolean }, undefined> {
+class Leaf<const N extends string> extends Driver<
+  N,
+  {},
+  "leaf",
+  {},
+  { online: boolean },
+  undefined
+> {
   state = { online: true };
   api = {};
   socket = undefined;
@@ -15,10 +22,14 @@ class Leaf<const N extends string> extends Driver<N, {}, "leaf", {}, { online: b
   }
 }
 
-class Parent<
-  const N extends string,
-  const D extends Record<string, Leaf<string>>,
-> extends Driver<N, D, "parent", {}, { ready: boolean }, undefined> {
+class Parent<const N extends string, const D extends Record<string, Leaf<string>>> extends Driver<
+  N,
+  D,
+  "parent",
+  {},
+  { ready: boolean },
+  undefined
+> {
   state = { ready: true };
   api = {};
   socket = undefined;

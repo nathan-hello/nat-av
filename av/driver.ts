@@ -51,7 +51,6 @@ export abstract class Driver<
   }
 
   setDependencies(v: DependencyInput) {
-
     function unwrapDriver(v: DependencyInput[number]): AnyDriver {
       return "driver" in v ? v.driver : v;
     }

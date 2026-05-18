@@ -42,13 +42,17 @@ type DepUnion<Deps> =
   : Deps extends Record<string, infer Dep> ? Dep
   : never;
 
-type DriverTree<D> = D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>> : never;
+type DriverTree<D> =
+  D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>> : never;
 
 type DriversOf<C extends readonly Driver[]> = DriverTree<C[number]>;
 
 export type NamesOf<C extends readonly Driver[]> = DriversOf<C>["name"];
 
-export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<DriversOf<C>, { name: N }>;
+export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<
+  DriversOf<C>,
+  { name: N }
+>;
 
 export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["state"];
 
@@ -63,8 +67,7 @@ export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
 export type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["deps"];
 
 export type DepNamesOf<C extends readonly Driver[], N extends NamesOf<C>> =
-  IsAny<DepsOf<C, N>> extends true ? never
-  : keyof DepsOf<C, N> & string;
+  IsAny<DepsOf<C, N>> extends true ? never : keyof DepsOf<C, N> & string;
 
 export type DepFor<
   C extends readonly Driver[],
@@ -88,7 +91,5 @@ export type DriverHandle<D extends Driver<any, any>> = {
 type DriverDepMixin<Deps> =
   [DepNames<Deps>] extends [never] ? {}
   : {
-      dep: <DN extends DepNames<Deps>>(
-        depName: DN,
-      ) => DriverHandle<Extract<Deps[DN], Driver>>;
+      dep: <DN extends DepNames<Deps>>(depName: DN) => DriverHandle<Extract<Deps[DN], Driver>>;
     };

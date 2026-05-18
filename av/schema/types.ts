@@ -1,10 +1,4 @@
-export type PrimitiveType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "bigint"
-  | "null"
-  | "undefined";
+export type PrimitiveType = "string" | "number" | "boolean" | "bigint" | "null" | "undefined";
 
 export type TypeSchema =
   | { kind: "primitive"; type: PrimitiveType }

@@ -185,5 +185,9 @@ export const RPCErrors = {
   JsonParse: (id?: RpcId, data?: any) =>
     new RPCError(id ?? null, { message: "JSON Parse Error", code: RPCErrorCodes.ParseError, data }),
   RequestInvalid: (id?: RpcId, data?: any) =>
-    new RPCError(id ?? null, { message: "Not a JSONRPC Request", code: RPCErrorCodes.InternalError, data }),
+    new RPCError(id ?? null, {
+      message: "Not a JSONRPC Request",
+      code: RPCErrorCodes.InternalError,
+      data,
+    }),
 };
