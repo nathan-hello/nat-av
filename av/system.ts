@@ -17,13 +17,12 @@ export class System<N extends Natav = natav> {
   }
 
   api = {
-    GetSchema: (): ApiSurfaceSchema => {
+    GetSchema: () => {
       return this.schema;
     },
   };
 
   get state(): SystemStateData {
-    return null
+    return null;
   }
 }
-

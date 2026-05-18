@@ -4,7 +4,7 @@ import { RPCMethods, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol"
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
-import { RPCErrorCode } from "@av/rpc/utils";
+import { RPCErrorCodes } from "@av/rpc/protocol";
 
 export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandler {
   prefix = "system.";
@@ -19,21 +19,21 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       case RPCMethods.SystemApi:
         return this.handleApiCall(message);
       default:
-        return new RPCError(message.id, { code: RPCErrorCode.MethodNotFound, message: message.method });
+        return new RPCError(message.id, { code: RPCErrorCodes.MethodNotFound, message: message.method });
     }
   }
 
   private async handleApiCall(message: RPCRequest): Promise<RPCResponse | RPCError> {
     const params = message.systemApiParams();
     if (!params) {
-      return new RPCError(message.id, { code: RPCErrorCode.InvalidParams, message: "Invalid system api params" });
+      return new RPCError(message.id, { code: RPCErrorCodes.InvalidParams, message: "Invalid system api params" });
     }
 
     const result = await this.tel.task(`system:${params.method}`, async () => {
       const method = this.system.api[params.method as keyof typeof this.system.api];
       if (typeof method !== "function") {
         return new RPCError(message.id, {
-          code: RPCErrorCode.MethodNotFound,
+          code: RPCErrorCodes.MethodNotFound,
           message: `Unknown system API method: \"${params.method}\"`,
         });
       }
@@ -50,6 +50,6 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       return new RPCError(message.id, result.data.error);
     }
 
-    return new RPCError(message.id, { code: RPCErrorCode.InternalError, message: result.error });
+    return new RPCError(message.id, { code: RPCErrorCodes.InternalError, message: result.error });
   }
 }

@@ -1,9 +1,9 @@
 import { type EventName, type EventPayload, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
-import { RPCNotification } from "@av/rpc/protocol";
+import { RPCErrors, RPCNotification } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
-import type { Telemetry } from "@av/telemetry";
+import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 
 const decoder = new TextDecoder();
@@ -32,9 +32,12 @@ export interface WebSocketConnection {
 }
 
 function readMessage(data: MessageEvent["data"]): string {
-  if (typeof data === "string") return data;
-  if (data instanceof ArrayBuffer) return new TextDecoder().decode(data);
-  if (ArrayBuffer.isView(data)) return new TextDecoder().decode(data);
+  if (typeof data === "string") {
+    return data;
+  }
+  if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
   return String(data);
 }
 
@@ -42,6 +45,7 @@ export class WebsocketHandler<N extends Natav = Natav> {
   private clients = new Set<WebSocketConnection>();
   private rpc: RPCServer<N>;
   private bus: Bus;
+  private tel = new Telemetry("Server::WS");
 
   constructor(args: { bus: Bus; rpc: RPCServer<N> }) {
     this.bus = args.bus;
@@ -111,35 +115,27 @@ export class WebsocketHandler<N extends Natav = Natav> {
   };
 
   WsMessageHandler = async (event: MessageEvent, ws: WebSocketConnection) => {
-    const data = readMessage(event.data);
-    try {
-      const message = JSON.parse(data);
+    const message = this.tel.task("WS_MSG_JSON_PARSE", () => {
+      return JSON.parse(readMessage(event.data));
+    });
 
-      if (isRPCRequest(message)) {
-        const response = await this.rpc.handleRequest(message);
-
-        ws.send(JSON.stringify(response));
-        return;
-      }
-
-      this.clients.forEach((client) => {
-        if (client.readyState === 1) {
-          client.send(data);
-        }
-      });
-    } catch (error) {
-      ws.send(
-        JSON.stringify({
-          jsonrpc: "2.0",
-          id: null,
-          error: {
-            code: -32700,
-            message: "Parse error",
-            data: error instanceof Error ? error.message : String(error),
-          },
-        }),
-      );
+    if (!message.ok) {
+      ws.send(JSON.stringify(RPCErrors.JsonParse()));
     }
+
+    const req = isRPCRequest(message.data);
+
+    if (!req) {
+      ws.send(
+        JSON.stringify(
+          RPCErrors.RequestInvalid("id" in message.data ? message.data.id : null, message.data),
+        ),
+      );
+      return;
+    }
+    const response = await this.rpc.handleRequest(req);
+
+    ws.send(JSON.stringify(response));
   };
 
   WsErrorHandler = (_: Event, __: WebSocketConnection) => {};

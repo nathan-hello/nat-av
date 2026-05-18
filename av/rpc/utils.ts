@@ -1,25 +1,17 @@
 import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 
-// Error codes following JSON-RPC 2.0 spec
-export enum RPCErrorCode {
-  ParseError = -32700,
-  InvalidRequest = -32600,
-  MethodNotFound = -32601,
-  InvalidParams = -32602,
-  InternalError = -32603,
-  // Custom application errors
-  DeviceNotFound = -32001,
-  DeviceMethodNotFound = -32002,
-  DeviceCallFailed = -32003,
-}
-
-// Type guard helpers
-export function isRPCRequest(msg: any): msg is RPCRequest {
-  return (
-    msg && msg.jsonrpc === "2.0" && msg.id !== undefined && typeof msg.method === "string"
+export function isRPCRequest(msg: any): RPCRequest | undefined {
+  if (
+    msg &&
+    msg.jsonrpc === "2.0" &&
+    msg.id !== undefined &&
+    typeof msg.method === "string"
     // msg.params is optional
     // msg.params !== undefined
-  );
+  ) {
+    return new RPCRequest(msg.id, msg.method, msg.params);
+  }
+  return;
 }
 
 export function isRPCResponse(msg: any): msg is RPCResponse {

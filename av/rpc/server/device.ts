@@ -3,7 +3,7 @@ import type Natav from "@av/natav";
 import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import { Telemetry } from "@av/telemetry";
-import { RPCErrorCode } from "@av/rpc/utils";
+import { RPCErrorCodes } from "@av/rpc/protocol";
 
 export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandler {
   prefix = "device.";
@@ -15,7 +15,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
     const params = message.deviceCallParams();
     if (!params) {
       return new RPCError(message.id, {
-        code: RPCErrorCode.InvalidParams,
+        code: RPCErrorCodes.InvalidParams,
         message: "Invalid device call params",
       });
     }
@@ -29,7 +29,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       const device = this.natav.FindDriver(params.device);
       if (!device) {
         return new RPCError(message.id, {
-          code: RPCErrorCode.DeviceNotFound,
+          code: RPCErrorCodes.DeviceNotFound,
           message: `Device \"${params.device}\" not found`,
           data: { availableDevices: this.natav.GetAllDriverNames() },
         });
@@ -38,7 +38,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       const method = (device.api as Record<string, unknown> | undefined)?.[params.method];
       if (typeof method !== "function") {
         return new RPCError(message.id, {
-          code: RPCErrorCode.DeviceMethodNotFound,
+          code: RPCErrorCodes.DeviceMethodNotFound,
           message: `Method \"${params.method}\" not found on device \"${params.device}\"`,
           data: { availableMethods: Object.keys(device.api ?? {}) },
         });
@@ -46,7 +46,8 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
 
       const callResult = await Reflect.apply(method, device.api, params.args);
       if (callResult && typeof callResult === "object" && "error" in callResult) {
-        const error = (callResult as { error?: { code?: number; message?: string; data?: any } }).error;
+        const error = (callResult as { error?: { code?: number; message?: string; data?: any } })
+          .error;
         if (error && typeof error.code === "number" && typeof error.message === "string") {
           return new RPCError(message.id, {
             code: error.code,
@@ -67,6 +68,6 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       return new RPCError(message.id, result.data.error);
     }
 
-    return new RPCError(message.id, { code: RPCErrorCode.InternalError, message: result.error });
+    return new RPCError(message.id, { code: RPCErrorCodes.InternalError, message: result.error });
   }
 }

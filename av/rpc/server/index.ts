@@ -1,7 +1,7 @@
 import type Natav from "@av/natav";
 import type { System } from "@av/system";
 import { RPCResponse, RPCError, RPCRequest } from "@av/rpc/protocol";
-import { RPCErrorCode, isRPCRequest } from "@av/rpc/utils";
+import { RPCErrorCodes } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";
 
@@ -21,27 +21,19 @@ export class RPCServer<N extends Natav = natav> {
   }
 
   async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
-    const result = await this.tel.task("rpc:handle-request", async (span) => {
+    const result = await this.tel.task("server-rpc:handle-request", async (span) => {
       this.tel.info("RPC_RECEIVED", {
         jsonrpc: message.jsonrpc,
         id: message.id,
         method: message.method,
       });
 
-      if (!isRPCRequest(message)) {
-        this.tel.warn("RPC_MALFORMED", { raw: message });
-        return new RPCError((message as any).id ?? null, {
-          code: RPCErrorCode.InvalidRequest,
-          message: "Invalid RPC request format",
-        });
-      }
-
       span.setAttributes({
         "rpc.id": message.id,
         "rpc.method": message.method,
       });
 
-      this.tel.info("RPC_VALIDATED", { message: message as any });
+      this.tel.info("RPC_VALIDATED", { message });
       return this.router.handle(message);
     });
 
@@ -54,8 +46,8 @@ export class RPCServer<N extends Natav = natav> {
       id: (message as any)?.id,
     });
 
-    return new RPCError((message as any)?.id ?? null, {
-      code: RPCErrorCode.InternalError,
+    return new RPCError(message?.id ?? null, {
+      code: RPCErrorCodes.InternalError,
       message: result.error,
     });
   }

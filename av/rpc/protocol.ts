@@ -1,4 +1,17 @@
-type RPCRequestId = string | number;
+type RpcId = string | number;
+
+// Error codes following JSON-RPC 2.0 spec
+export const RPCErrorCodes = {
+  ParseError: -32700,
+  InvalidRequest: -32600,
+  MethodNotFound: -32601,
+  InvalidParams: -32602,
+  InternalError: -32603,
+  // Custom application errors
+  DeviceNotFound: -32001,
+  DeviceMethodNotFound: -32002,
+  DeviceCallFailed: -32003,
+} as const;
 
 export const RPCMethods = {
   SystemApi: "system.api",
@@ -11,7 +24,7 @@ export class RPCRequest {
   jsonrpc = "2.0" as const;
 
   constructor(
-    public id: RPCRequestId,
+    public id: RpcId,
     public method: string,
     public params?: unknown,
   ) {}
@@ -51,7 +64,7 @@ export class RPCResponse<T = any> {
   jsonrpc = "2.0" as const;
 
   constructor(
-    public id: RPCRequestId,
+    public id: RpcId,
     public result: T,
   ) {}
 
@@ -65,7 +78,7 @@ export class RPCResponse<T = any> {
       return null;
     }
 
-    return new RPCResponse(candidate.id as RPCRequestId, candidate.result);
+    return new RPCResponse(candidate.id as RpcId, candidate.result);
   }
 }
 
@@ -73,7 +86,7 @@ export class RPCError {
   jsonrpc = "2.0" as const;
 
   constructor(
-    public id: RPCRequestId | null,
+    public id: RpcId | null,
     public error: { code: number; message: string; data?: any },
   ) {}
 
@@ -88,7 +101,9 @@ export class RPCError {
       error?: unknown;
     };
 
-    const error = candidate.error as { code?: unknown; message?: unknown; data?: unknown } | undefined;
+    const error = candidate.error as
+      | { code?: unknown; message?: unknown; data?: unknown }
+      | undefined;
     if (
       candidate.jsonrpc !== "2.0" ||
       candidate.id === undefined ||
@@ -99,7 +114,7 @@ export class RPCError {
       return null;
     }
 
-    return new RPCError(candidate.id as RPCRequestId, {
+    return new RPCError(candidate.id as RpcId, {
       code: error.code,
       message: error.message,
       data: error.data,
@@ -165,3 +180,10 @@ export class RPCNotification<T = any> {
 }
 
 export type RPCMessage = RPCRequest | RPCResponse | RPCError | RPCNotification;
+
+export const RPCErrors = {
+  JsonParse: (id?: RpcId, data?: any) =>
+    new RPCError(id ?? null, { message: "JSON Parse Error", code: RPCErrorCodes.ParseError, data }),
+  RequestInvalid: (id?: RpcId, data?: any) =>
+    new RPCError(id ?? null, { message: "Not a JSONRPC Request", code: RPCErrorCodes.InternalError, data }),
+};
