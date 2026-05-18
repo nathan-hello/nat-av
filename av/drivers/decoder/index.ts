@@ -16,9 +16,9 @@ import {
   type DecoderRoutes,
   type JsonRpcId,
 } from "./types";
-import { Driver } from "../../driver";
-import { TypedEventTarget } from "../../lib/eventtarget";
-import { RPCErrorData } from "../../rpc/protocol";
+import { Driver } from "@av/driver";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import { RPCErrorData } from "@av/rpc/protocol";
 
 class Pending extends TypedEventTarget<{ [x: JsonRpcId]: DecoderResponse }> {
   public requests = new Map<string | number, DecoderRequest>();

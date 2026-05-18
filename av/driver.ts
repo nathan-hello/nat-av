@@ -1,8 +1,7 @@
-import { ProtectedTypedEventTarget } from "./lib/eventtarget";
+import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import { type Bus, bus } from "./bus";
-import type { DeviceSocket, DriverEvents } from "./types";
-import type {} from "@av/driver";
+import { type Bus, bus } from "@av/bus";
+import type { DeviceSocket, DriverEvents } from "@av/types";
 
 type AnyDriver = Driver<
   string,
