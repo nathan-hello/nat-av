@@ -3,18 +3,12 @@ import { RequestManager } from "@av/requests";
 import type { DeviceSocket } from "@av/types";
 import {
   type AudioRoute,
-  type DebugToggle,
   type DecoderMap,
   type DecoderNotification,
   type DecoderRequest,
   type DecoderResponse,
-  type FetchContextRequest,
   type FetchContextResponse,
-  type FetchRoutesRequest,
-  type FetchRoutesResponse,
   type MoveWindowArgs,
-  type RouteDestroyRequest,
-  type RouteRequest,
   type VideoRoute,
   type VideoRouteMinArgs,
   type DecoderRoutes,
@@ -63,22 +57,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     this.requests.on("message", (message) => {
       if (!("id" in message)) {
         this.tel.debug("got-jsonrpc-notification", { notification: message });
-        return;
       }
-
-      this.tel.warn("unexpected-response", { response: message });
-    });
-
-    this.requests.on("error", ({ phase, error, request, message }) => {
-      this.tel.error("REQUEST_MANAGER_ERROR", { phase, error, request, message });
-    });
-
-    this.requests.on("write-error", ({ request, error }) => {
-      this.tel.error("REQUEST_WRITE_ERROR", { request, error });
-    });
-
-    this.requests.on("timeout", ({ request }) => {
-      this.tel.error("REQUEST_TIMEOUT", { request });
     });
 
     socket.on("connected", async () => {
@@ -95,8 +74,19 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     };
   }
 
-  private async request<T extends DecoderRequest>(req: T): Promise<DecoderMap[T["method"]]["res"]> {
-    const result = await this.requests.request<DecoderMap[T["method"]]["res"]>(req);
+  private async request<Method extends keyof DecoderMap>(
+    method: Method,
+    params: DecoderMap[Method]["req"]["params"],
+  ): Promise<DecoderMap[Method]["res"]> {
+    const req = {
+      jsonrpc: "2.0",
+      method,
+      params,
+      id: this.highestId++,
+      // Typescript doesn't know that "method" and "params" are connected
+    } as DecoderMap[Method]["req"];
+
+    const result = await this.requests.request<DecoderMap[Method]["res"]>(req);
     if (!result.ok) {
       throw new RPCErrorData({ code: 400, message: result.error });
     }
@@ -109,53 +99,22 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
 
     this.tel.debug("RESPONSE", { text: JSON.stringify(response) });
 
-    switch (req.method) {
-      case "fetch_routes": {
-        const next = this.processFetchRoutes(response as FetchRoutesResponse);
-        this.routes = next.data;
-        this.dispatch("driver:state-updated", { routes: next.data });
-        break;
-      }
-      case "fetch_context":
-        this.context = (response as FetchContextResponse).result;
-        this.dispatch("driver:state-updated", { context: this.context });
-        break;
-      case "route": {
-        const next = this.processRoute(req, this.routes);
-        this.routes = next.data;
-        this.dispatch("driver:state-updated", { routes: next.data });
-        break;
-      }
-      case "route_destroy": {
-        const next = this.processRouteDestroy(req, this.routes);
-        this.routes = next.data;
-        this.dispatch("driver:state-updated", { routes: next.data });
-        break;
-      }
-      case "debug_toggle":
-        this.debug = !this.debug;
-        this.dispatch("driver:state-updated", { debug: this.debug });
-        break;
-    }
-
     return response;
   }
 
   api = {
-    debug: (b?: boolean) => {
+    debug: async (b?: boolean) => {
       if (b === undefined || this.debug !== b) {
-        const request: DebugToggle = {
-          jsonrpc: "2.0",
-          method: "debug_toggle",
-          params: [],
-          id: this.highestId++,
-        };
-        return this.request(request);
+        const response = await this.request("debug_toggle", []);
+        this.debug = !this.debug;
+        this.dispatch("driver:state-updated", { debug: this.debug });
+        return response;
       }
       return { jsonrpc: "2.0", result: 0, id: -1 } as const;
     },
-    route: (r: { video?: VideoRouteMinArgs; audio?: AudioRoute }) => {
+    route: async (r: { video?: VideoRouteMinArgs; audio?: AudioRoute }) => {
       let params: { video: VideoRoute[]; audio: AudioRoute[] } = { audio: [], video: [] };
+      let next: DecoderRoutes | undefined;
       if (r.video !== undefined) {
         const output = this.context?.video?.find((v) => v.output === r.video?.output);
         if (!output) {
@@ -185,17 +144,33 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
         };
       }
 
-      const request: RouteRequest = {
-        jsonrpc: "2.0",
-        method: "route",
-        params,
-        id: this.highestId++,
+      next = {
+        audio: this.routes.audio.slice(),
+        video: this.routes.video.slice(),
       };
 
-      return this.request(request);
+      if (params.video[0] !== undefined) {
+        const v = params.video[0];
+        if (next.video[v.output] === undefined) {
+          next.video[v.output] = [];
+        } else {
+          next.video[v.output] = next.video[v.output].slice();
+        }
+        next.video[v.output][v.window] = v;
+      }
+
+      if (params.audio[0] !== undefined) {
+        const a = params.audio[0];
+        next.audio[a.output] = a;
+      }
+
+      const response = await this.request("route", params);
+      this.routes = next;
+      this.dispatch("driver:state-updated", { routes: next });
+      return response;
     },
 
-    moveRelative: (v: MoveWindowArgs) => {
+    moveRelative: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
         throw new RPCErrorData({
@@ -218,7 +193,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       return this.api.route({ video: n });
     },
 
-    moveAbsolute: (v: MoveWindowArgs) => {
+    moveAbsolute: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
         throw new RPCErrorData({
@@ -230,7 +205,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       return this.api.route({ video: { ...current, ...v, uri: current.uri } });
     },
 
-    fetchContext: () => {
+    fetchContext: async () => {
       if (this.mock === null) {
         throw new RPCErrorData({
           code: 401,
@@ -238,105 +213,66 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
           data: this.context,
         });
       }
-      const request: FetchContextRequest = {
-        jsonrpc: "2.0",
-        method: "fetch_context",
-        params: [],
-        id: this.highestId++,
-      };
-
-      return this.request(request);
+      const response = await this.request("fetch_context", []);
+      this.context = response.result;
+      this.dispatch("driver:state-updated", { context: this.context });
+      return response;
     },
 
-    fetchRoutes: () => {
-      const request: FetchRoutesRequest = {
-        jsonrpc: "2.0",
-        method: "fetch_routes",
-        params: [],
-        id: this.highestId++,
+    fetchRoutes: async () => {
+      const response = await this.request("fetch_routes", []);
+      const routes: DecoderRoutes = {
+        audio: [],
+        video: [],
       };
 
-      return this.request(request);
+      response.result.video.forEach((v) => {
+        if (routes.video[v.output] === undefined) {
+          routes.video[v.output] = [];
+        }
+        routes.video[v.output][v.window] = v;
+      });
+
+      response.result.audio.forEach((v) => {
+        routes.audio[v.output] = v;
+      });
+
+      this.routes = routes;
+      this.dispatch("driver:state-updated", { routes });
+      return response;
     },
 
-    unroute: (
+    unroute: async (
       r: { video: { output: number; window: number }[]; audio: { output: number }[] } | "all",
     ) => {
       if (r === "all") {
-        const request: RouteDestroyRequest = {
-          jsonrpc: "2.0",
-          method: "route_destroy",
-          params: { video: this.routes.video.flat(), audio: this.routes.audio },
-          id: this.highestId++,
-        };
-
-        return this.request(request);
+        const response = await this.request("route_destroy", {
+          video: this.routes.video.flat(),
+          audio: this.routes.audio,
+        });
+        this.routes = { audio: [], video: [] };
+        this.dispatch("driver:state-updated", { routes: this.routes });
+        return response;
       }
-      const request: RouteDestroyRequest = {
-        jsonrpc: "2.0",
-        method: "route_destroy",
-        params: r,
-        id: this.highestId++,
+      const response = await this.request("route_destroy", r);
+      const next: DecoderRoutes = {
+        audio: this.routes.audio.slice(),
+        video: this.routes.video.slice(),
       };
 
-      return this.request(request);
+      r.video.forEach((v) => {
+        if (next.video[v.output] !== undefined) {
+          next.video[v.output] = next.video[v.output].slice();
+          delete next.video[v.output][v.window];
+        }
+      });
+      r.audio.forEach((v) => {
+        delete next.audio[v.output];
+      });
+
+      this.routes = next;
+      this.dispatch("driver:state-updated", { routes: next });
+      return response;
     },
   };
-
-  processFetchRoutes(response: FetchRoutesResponse) {
-    const routes: DecoderRoutes = {
-      audio: [],
-      video: [],
-    };
-
-    response.result.video.forEach((v) => {
-      if (routes.video[v.output] === undefined) {
-        routes.video[v.output] = [];
-      }
-      routes.video[v.output][v.window] = v;
-    });
-
-    response.result.audio.forEach((v) => {
-      routes.audio[v.output] = v;
-    });
-    return { type: "state", data: routes } as const;
-  }
-
-  processRoute(req: RouteRequest, routes: DecoderRoutes) {
-    const next: DecoderRoutes = {
-      audio: routes.audio.slice(),
-      video: routes.video.slice(),
-    };
-
-    req.params.video?.forEach((v) => {
-      if (next.video[v.output] === undefined) {
-        next.video[v.output] = [];
-      } else {
-        next.video[v.output] = next.video[v.output].slice();
-      }
-      next.video[v.output][v.window] = v;
-    });
-    req.params.audio?.forEach((v) => {
-      next.audio[v.output] = v;
-    });
-    return { type: "state", data: next } as const;
-  }
-
-  processRouteDestroy(request: RouteDestroyRequest, routes: DecoderRoutes) {
-    const next: DecoderRoutes = {
-      audio: routes.audio.slice(),
-      video: routes.video.slice(),
-    };
-
-    request.params.video?.forEach((v) => {
-      if (next.video[v.output] !== undefined) {
-        next.video[v.output] = next.video[v.output].slice();
-        delete next.video[v.output][v.window];
-      }
-    });
-    request.params.audio?.forEach((v) => {
-      delete next.audio[v.output];
-    });
-    return { type: "state", data: next } as const;
-  }
 }
