@@ -48,8 +48,6 @@ export const schema = new SchemaGenerator({
   exportName: "ClientRpc",
 });
 
-console.log(JSON.stringify(schema.toJSON()));
-
 const system = new System({
   bus,
   natav,

@@ -42,12 +42,20 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     super({ name, driverName: "natalie-decoder" });
     this.socket = socket;
 
+    const { delimiter, formatter } = Delimiters.lengthPrefixedJson<DecoderRequest, DecoderMessage>(
+      this.tel,
+    );
+
     this.requests = new RequestManager<DecoderRequest, DecoderMessage>({
       tel: this.tel,
       socket,
-      delimiter: this.createDelimiter(),
+      formatter,
+      delimiter,
       timeoutMs: this.TIMEOUT_TIME_MS,
-      matchResponse: (request, message) => "id" in message && message.id === request.id,
+      responseStrategy: {
+        strategy: "match",
+        matchFn: (request, message) => "id" in message && message.id === request.id,
+      },
     });
 
     this.requests.on("message", (message) => {
@@ -267,52 +275,6 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       return this.request(request);
     },
   };
-
-  private createDelimiter() {
-    let rxBuf = Buffer.alloc(0);
-
-    return {
-      format: (value: DecoderRequest) => {
-        const payload = JSON.stringify(value);
-        const len = Buffer.byteLength(payload, "utf8");
-        const buf = Buffer.alloc(4 + len);
-
-        buf.writeUInt32BE(len, 0);
-        buf.write(payload, 4);
-
-        return buf;
-      },
-
-      push: (chunk: Buffer) => {
-        this.tel.info("RECEIVE_HANDLER_CALLED", { chunkLength: chunk.length });
-        rxBuf = Buffer.concat([rxBuf, chunk]);
-        const messages: DecoderMessage[] = [];
-
-        while (true) {
-          if (rxBuf.length < 4) {
-            return messages;
-          }
-
-          const len = rxBuf.readUInt32BE(0);
-          if (rxBuf.length < 4 + len) {
-            return messages;
-          }
-
-          const payload = rxBuf.subarray(4, 4 + len);
-          rxBuf = rxBuf.subarray(4 + len);
-
-          const response = Delimiters.json<DecoderMessage>()(payload);
-          if (response === null) {
-            this.tel.error("BAD_JSON_FRAME", { payload: payload.toString("utf8") });
-            continue;
-          }
-
-          this.tel.info("PARSED_MESSAGE", { length: JSON.stringify(response).length });
-          messages.push(response);
-        }
-      },
-    };
-  }
 
   processFetchRoutes(response: FetchRoutesResponse, routes: DecoderRoutes) {
     response.result.video.forEach((v) => {

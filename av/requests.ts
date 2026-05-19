@@ -1,11 +1,14 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { StreamDelimiter } from "@av/sockets/delimiters";
+import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
 import type { DeviceSocket } from "@av/types";
 
 type RequestSocket = Pick<DeviceSocket, "on" | "write">;
 
 type RequestMatcher<Request, Message> = (request: Request, message: Message) => boolean;
+type ResponseStrategy<Request, Message> =
+  | { strategy: "match"; matchFn: RequestMatcher<Request, Message> }
+  | { strategy: "blocking-queue" };
 
 type PendingRequest<Request, Message> = {
   request: Request;
@@ -31,9 +34,10 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
 > {
   private readonly tel: Telemetry;
   private readonly socket: RequestSocket;
-  private readonly delimiter: StreamDelimiter<Request, Message>;
+  private readonly delimiter: DataDelimiter<Message>;
+  private readonly formatter?: DataFormatter<Request>;
   private readonly timeoutMs: number;
-  private readonly matchResponse?: RequestMatcher<Request, Message>;
+  private readonly responseStrategy?: ResponseStrategy<Request, Message>;
   private readonly pending: PendingRequest<Request, Message>[] = [];
   private readonly offReceive: () => void;
   private ended = false;
@@ -41,27 +45,37 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
   constructor({
     tel,
     socket,
+    formatter,
     delimiter,
     timeoutMs = 10000,
-    matchResponse,
+    responseStrategy,
   }: {
     tel: Telemetry;
     socket: RequestSocket;
-    delimiter: StreamDelimiter<Request, Message>;
+    delimiter: DataDelimiter<Message>;
+    formatter?: DataFormatter<Request>;
     timeoutMs?: number;
-    matchResponse?: RequestMatcher<Request, Message>;
+    responseStrategy?: ResponseStrategy<Request, Message>;
   }) {
     super();
     this.tel = tel;
     this.socket = socket;
+    this.formatter = formatter;
     this.delimiter = delimiter;
     this.timeoutMs = timeoutMs;
-    this.matchResponse = matchResponse;
+    this.responseStrategy = responseStrategy;
 
     this.offReceive = this.socket.on("receive", (chunk) => {
-      const messages = this.tel.task("REQUESTS_RECEIVE", () => this.delimiter.push(chunk));
+      const messages = this.tel.task("DELIMITER", () => {
+        return this.delimiter(chunk);
+      });
+
       if (!messages.ok) {
         this.dispatch("error", { phase: "receive", error: messages.error });
+        return;
+      }
+
+      if (!messages.data) {
         return;
       }
 
@@ -97,7 +111,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
       this.pending.push(entry);
 
       const enqueue = this.tel.task("REQUESTS_ENQUEUE", () => {
-        if (this.matchResponse) {
+        if (this.responseStrategy?.strategy === "match") {
           this.sendPending(entry);
           return;
         }
@@ -122,7 +136,13 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     }
 
     return Promise.resolve(
-      this.tel.task("REQUESTS_SEND_UNTRACKED", async () => this.socket.write(this.delimiter.format(request))),
+      this.tel.task("REQUESTS_SEND_UNTRACKED", async () => {
+        if (this.formatter) {
+          return this.socket.write(this.formatter(request));
+        }
+        // TODO: there should be other ways to turn request into a string/buffer without a formatFn
+        return this.socket.write(String(request));
+      }),
     );
   }
 
@@ -145,7 +165,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
   }
 
   private flush() {
-    if (this.matchResponse) {
+    if (this.responseStrategy?.strategy === "match") {
       return;
     }
 
@@ -157,32 +177,41 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     this.sendPending(next);
   }
 
-  private sendPending(entry: PendingRequest<Request, Message>) {
+  private async sendPending(entry: PendingRequest<Request, Message>) {
     entry.sent = true;
 
-    void Promise.resolve(
-      this.tel.task("REQUESTS_SEND", async () => this.socket.write(this.delimiter.format(entry.request))),
-    ).then((result) => {
-      if (result.ok) {
-        return;
+    const result = await this.tel.task("REQUESTS_SEND", async () => {
+      if (this.formatter) {
+        return this.socket.write(this.formatter(entry.request));
       }
-
-      if (entry.timeout !== undefined) {
-        clearTimeout(entry.timeout);
-      }
-
-      this.removePending(entry);
-      entry.resolve(result);
-      this.dispatch("write-error", { request: entry.request, error: result.error });
-      this.flush();
+      // TODO: there should be other ways to turn request into a string/buffer without a formatFn
+      return this.socket.write(String(entry.request));
     });
+    if (result.ok) {
+      return;
+    }
+
+    if (entry.timeout !== undefined) {
+      clearTimeout(entry.timeout);
+    }
+
+    this.removePending(entry);
+    entry.resolve(result);
+    this.dispatch("write-error", { request: entry.request, error: result.error });
+    this.flush();
   }
 
   private resolvePending(message: Message) {
     const match = this.tel.task("REQUESTS_MATCH", () => {
-      return this.matchResponse ?
-          this.pending.findIndex((entry) => this.matchResponse!(entry.request, message))
-        : this.pending.findIndex((entry) => entry.sent);
+      const strategy = this.responseStrategy;
+      switch (strategy?.strategy) {
+        case "match":
+          return this.pending.findIndex((entry) => strategy.matchFn(entry.request, message));
+        case "blocking-queue":
+          return this.pending.findIndex((entry) => entry.sent);
+        default:
+          return this.pending.findIndex((entry) => entry.sent);
+      }
     });
 
     if (!match.ok) {

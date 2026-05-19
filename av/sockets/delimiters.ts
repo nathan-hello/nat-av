@@ -1,12 +1,11 @@
-export type DataDelimiter<T = any> = (buffer: Buffer) => T | null;
+import type { Telemetry } from "@av/telemetry";
+
+export type DataDelimiter<T = any> = (buffer: Buffer) => T[] | null;
 export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<ReturnType<T>>;
-export type StreamDelimiter<Request = any, Message = Request> = {
-  format: (value: Request) => Buffer;
-  push: (chunk: Buffer) => Message[];
-};
+export type DataFormatter<T> = (value: T) => Buffer;
 
 export const Delimiters = {
-  byteDelimtied: (delimiter: number): DataDelimiter<Buffer[]> => {
+  byteDelimtied: (delimiter: number): DataDelimiter<Buffer> => {
     return (buffer: Buffer) => {
       const results: Buffer[] = [];
       let start = 0;
@@ -29,7 +28,7 @@ export const Delimiters = {
     };
   },
 
-  characterDelimted: (delimiter: string): DataDelimiter<string[]> => {
+  characterDelimted: (delimiter: string): DataDelimiter<string> => {
     return (buffer: Buffer) => {
       const data = buffer.toString("utf8");
       const lines = data.split(delimiter);
@@ -53,27 +52,30 @@ export const Delimiters = {
 
   fixedSize: (size: number): DataDelimiter<Buffer> => {
     return (buffer: Buffer) => {
-      if (buffer.length >= size) {
-        return buffer.subarray(0, size);
-      }
-      return null;
-    };
-  },
-  json: <T = object>(): DataDelimiter<T> => {
-    return (buffer) => {
-      try {
-        return JSON.parse(buffer.toString("utf8"));
-      } catch {
+      if (buffer.length < size) {
         return null;
       }
+
+      const results: Buffer[] = [];
+      for (let i = 0; i > buffer.length; i += size) {
+        results.push(buffer.subarray(i, size + size));
+      }
+      return results;
     };
   },
 
-  lengthPrefixedJson: <Request = unknown, Message = Request>(): StreamDelimiter<Request, Message> => {
+  lengthPrefixedJson: <Tx, Rx>(
+    tel: Telemetry,
+  ): {
+    formatter: DataFormatter<Tx>;
+    delimiter: DataDelimiter<Rx>;
+  } => {
+    // TODO: this buffer basically exists forever. could
+    // be the cause of memory leaks in the future.
     let rxBuf = Buffer.alloc(0);
 
     return {
-      format: (value) => {
+      formatter: (value) => {
         const payload = Buffer.from(JSON.stringify(value), "utf8");
         const buf = Buffer.alloc(4 + payload.length);
 
@@ -83,25 +85,32 @@ export const Delimiters = {
         return buf;
       },
 
-      push: (chunk) => {
+      delimiter: (chunk) => {
+        const results: Rx[] = [];
+
         rxBuf = Buffer.concat([rxBuf, chunk]);
-        const messages: Message[] = [];
 
         while (true) {
           const payload = Delimiters.lengthPrefixed32BE(rxBuf);
           if (payload === null) {
-            return messages;
+            return results;
           }
 
           rxBuf = rxBuf.subarray(4 + payload.length);
 
-          const parsed = Delimiters.json<Message>()(payload);
+          const parsed = tel.task("JSON_PARSE", () => {
+            return JSON.parse(payload.toString("utf8"));
+          });
+
+          if (!parsed.ok) {
+            return null;
+          }
+
           if (parsed !== null) {
-            messages.push(parsed);
+            results.push(parsed.data);
           }
         }
       },
     };
   },
 };
-
