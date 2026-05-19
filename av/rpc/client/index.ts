@@ -76,12 +76,12 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     });
 
     this.transport.on("close", (event) => {
-      super.dispatch("close", event);
+      this.dispatch("close", event);
       this.notifyAllDevices();
     });
 
     this.transport.on("error", (event) => {
-      super.dispatch("error", { reason: "transport", event });
+      this.dispatch("error", { reason: "transport", event });
     });
 
     this.transport.on("message", (event) => {

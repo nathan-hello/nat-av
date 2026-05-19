@@ -2,11 +2,16 @@ import { ClientRpc } from "@av/rpc/client";
 import type { Handle } from "remix/ui";
 
 let rpcClient: ClientRpc | null = null;
+const subscriptions = new WeakMap<Handle<any, any>, () => void>();
 
 export function getRpc(handle: Handle<any, any>): ClientRpc {
   if (!rpcClient) {
     rpcClient = new ClientRpc();
     rpcClient.connect();
+  }
+
+  if (subscriptions.has(handle)) {
+    return rpcClient;
   }
 
   const offReady = rpcClient.on("ready", async () => {
@@ -21,11 +26,15 @@ export function getRpc(handle: Handle<any, any>): ClientRpc {
     await handle.update();
   });
 
-  handle.signal.addEventListener("abort", () => {
+  const cleanup = () => {
     offReady();
     offClose();
     offChange();
-  });
+    subscriptions.delete(handle);
+  };
+
+  subscriptions.set(handle, cleanup);
+  handle.signal.addEventListener("abort", cleanup, { once: true });
 
   return rpcClient;
 }

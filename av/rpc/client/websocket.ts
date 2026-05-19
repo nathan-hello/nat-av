@@ -24,22 +24,22 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
     socket.addEventListener("open", (event) => {
       this.retryCount = 0;
       this.tel.info("got event", { event: "open" });
-      super.dispatch("open", event);
+      this.dispatch("open", event);
     });
 
     socket.addEventListener("message", (event) => {
       this.tel.info("got event", { event: "message", data: event.data });
-      super.dispatch("message", event);
+      this.dispatch("message", event);
     });
 
     socket.addEventListener("error", (event) => {
       this.tel.info("got event", { event: "error", error: event });
-      super.dispatch("error", event);
+      this.dispatch("error", event);
     });
 
     socket.addEventListener("close", (event) => {
       this.tel.info("got event", { event: "close", reason: event.reason, code: event.code });
-      super.dispatch("close", event);
+      this.dispatch("close", event);
 
       if (this.closedExplicitly || !this.options.reconnect) {
         return this;

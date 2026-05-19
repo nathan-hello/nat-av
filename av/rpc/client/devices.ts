@@ -65,7 +65,7 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
   }
 
   dispatchChange() {
-    super.dispatch("change", {
+    this.dispatch("change", {
       name: this.name,
       state: this.state,
     });

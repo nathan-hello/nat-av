@@ -5,6 +5,8 @@ import type { ClientRpc } from "@av/rpc/client";
 export function HomePage(handle: Handle) {
   let rpc: ClientRpc = getRpc(handle);
 
+  const asdf = rpc.device("video-wall").api.route(1, "", { offsetY: 0, offsetX: 0, resX: 0, resY: 0 });
+
   return () => {
     return (
       <main mix={shellStyle}>
