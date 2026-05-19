@@ -10,37 +10,52 @@ interface WallProps {
 }
 
 type RouteFormState = {
-  windowId: number;
+  dwindowId: number;
   uri: string;
+  audioOutput: string;
   resX: number;
   resY: number;
   offsetX: number;
   offsetY: number;
 };
 
+type InteractionMode = "free" | "snap";
+
 export function Wall(handle: Handle<WallProps>) {
   const display = handle.props.rpc.device(handle.props.deviceName);
 
+  let mode: InteractionMode = "free";
   let selectedSource: SourceSelectDetail | null = null;
   let selectedWindowId: number | null = null;
   let form: RouteFormState = {
-    windowId: 0,
+    dwindowId: 0,
     uri: "",
+    audioOutput: "",
     resX: 0,
     resY: 0,
     offsetX: 0,
     offsetY: 0,
   };
 
-  function loadWindow(window: LogicalWindow) {
-    selectedWindowId = window.id;
+  function getAudioOutputKey(output: { decoderIndex: number; output: number }) {
+    return `${output.decoderIndex}:${output.output}`;
+  }
+
+  function parseAudioOutputKey(value: string) {
+    const [decoderIndex, output] = value.split(":").map((part) => Number.parseInt(part, 10));
+    return Number.isFinite(decoderIndex) && Number.isFinite(output) ? { decoderIndex, output } : null;
+  }
+
+  function loadWindow(dwindow: LogicalWindow, source?: SourceSelectDetail | null) {
+    selectedWindowId = dwindow.id;
     form = {
-      windowId: window.id,
-      uri: window.routes[0]?.uri ?? form.uri,
-      resX: window.global.resX,
-      resY: window.global.resY,
-      offsetX: window.global.offsetX,
-      offsetY: window.global.offsetY,
+      dwindowId: dwindow.id,
+      uri: source?.id ?? dwindow.routes[0]?.uri ?? form.uri,
+      audioOutput: form.audioOutput,
+      resX: dwindow.global.resX,
+      resY: dwindow.global.resY,
+      offsetX: dwindow.global.offsetX,
+      offsetY: dwindow.global.offsetY,
     };
   }
 
@@ -53,79 +68,207 @@ export function Wall(handle: Handle<WallProps>) {
 
   return () => {
     const state = display.state;
-    if (!state) {
-      return (
-        <section mix={emptyStyle}>
-          Waiting for decoder state: {JSON.stringify(display.state)}
-        </section>
-      );
+
+    if (state && form.resX === 0 && form.resY === 0 && state.windows[0]) {
+      loadWindow(state.windows[0], selectedSource);
     }
 
-    const canRouteFromSelection = !!selectedSource;
+    if (state && !form.uri && state.encoders[0]) {
+      selectedSource = selectedSource ?? {
+        id: state.encoders[0].uri,
+        name: state.encoders[0].name,
+      };
+      form = { ...form, uri: selectedSource.id };
+    }
+
+    if (state && !form.audioOutput && state.audioOutputs[0]) {
+      form = { ...form, audioOutput: getAudioOutputKey(state.audioOutputs[0]) };
+    }
+
+    const movePending = display.isPending("move");
+    const routePending = display.isPending("route");
+    const changeTemplatePending = display.isPending("changeTemplate");
+    const destroyPending = display.isPending("destroy");
+    const debugPending = display.isPending("debug");
+    const audioOutputs = state ? state.audioOutputs : [];
+    const scale = state ? Math.min(1, 1280 / state.canvas.width) : 0.7;
 
     return (
       <section mix={layoutStyle}>
+        <div mix={canvasColumnStyle}>
+          <section mix={panelStyle}>
+            <div mix={toolbarStyle}>
+              <div>
+                <h2 mix={titleStyle}>Canvas</h2>
+                <p mix={mutedStyle}>
+                  {mode === "free" ?
+                    "Drag windows freely. A move RPC is sent as the pointer moves."
+                  : "Drag a source onto a region or existing window to snap-route it."}
+                </p>
+              </div>
+              <div mix={modeToggleStyle}>
+                {(["free", "snap"] as InteractionMode[]).map((nextMode) => (
+                  <button
+                    key={nextMode}
+                    type="button"
+                    mix={[
+                      toggleButtonStyle,
+                      on("click", () => {
+                        mode = nextMode;
+                        handle.update();
+                      }),
+                    ]}
+                    style={{
+                      background: mode === nextMode ? "#fff" : undefined,
+                      color: mode === nextMode ? "#000" : undefined,
+                    }}
+                  >
+                    {nextMode === "free" ? "Free drag" : "Snap route"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {state ?
+              <>
+                <div mix={statusRowStyle}>
+                  <span mix={statusPillStyle}>mode: {mode}</span>
+                  <span mix={statusPillStyle}>{movePending ? "move pending" : "move idle"}</span>
+                  <span mix={statusPillStyle}>{routePending ? "route pending" : "route idle"}</span>
+                </div>
+                <div mix={canvasViewportStyle}>
+                  <Decoder
+                    canvas={state.canvas}
+                    windows={state.windows}
+                    template={state.template.state}
+                    encoders={state.encoders}
+                    scale={scale}
+                    mode={mode}
+                    movePending={movePending}
+                    routePending={routePending}
+                    selectedWindowId={selectedWindowId}
+                    onRegionSelect={(region, global) => {
+                      selectedWindowId = region.id;
+                      form = {
+                        dwindowId: region.id,
+                        uri: selectedSource?.id ?? form.uri,
+                        audioOutput: form.audioOutput,
+                        resX: global.resX,
+                        resY: global.resY,
+                        offsetX: global.offsetX,
+                        offsetY: global.offsetY,
+                      };
+
+                      if (selectedSource && !routePending) {
+                        void display.api.route(region.id, selectedSource.id, global);
+                      }
+
+                      handle.update();
+                    }}
+                    onWindowSelect={(dwindow) => {
+                      loadWindow(dwindow, selectedSource);
+
+                      if (selectedSource && !routePending) {
+                        void display.api.route(dwindow.id, selectedSource.id, dwindow.global);
+                      }
+
+                      handle.update();
+                    }}
+                    onWindowMove={(dwindow, global) => {
+                      loadWindow({ ...dwindow, global }, selectedSource);
+                      void display.api.move(dwindow.id, global);
+                      handle.update();
+                    }}
+                    onWindowMoveEnd={(dwindow, global) => {
+                      loadWindow({ ...dwindow, global }, selectedSource);
+                      void display.api.move(dwindow.id, global);
+                      handle.update();
+                    }}
+                    onSourceDropToRegion={(region, global, source) => {
+                        selectedSource = source;
+                        selectedWindowId = region.id;
+                        form = {
+                          dwindowId: region.id,
+                          uri: source.id,
+                          audioOutput: form.audioOutput,
+                          resX: global.resX,
+                          resY: global.resY,
+                          offsetX: global.offsetX,
+                          offsetY: global.offsetY,
+                        };
+                        void display.api.route(region.id, source.id, global);
+                        handle.update();
+                      }}
+                    onSourceDropToWindow={(dwindow, source) => {
+                      selectedSource = source;
+                      loadWindow(dwindow, source);
+                      void display.api.route(dwindow.id, source.id, dwindow.global);
+                      handle.update();
+                    }}
+                  />
+                </div>
+              </>
+            : <div mix={emptyStyle}>Waiting for live decoder state...</div>}
+          </section>
+
+          <section mix={panelStyle}>
+            <div mix={toolbarStyle}>
+              <h2 mix={titleStyle}>Sources</h2>
+              <p mix={mutedStyle}>Selected: {selectedSource?.name ?? "none"}</p>
+            </div>
+            {state ?
+              <div mix={sourceListStyle}>
+                {state.encoders.map((source) => (
+                  <Source
+                    key={source.uri}
+                    id={source.uri}
+                    name={source.name}
+                    selected={selectedSource?.id === source.uri}
+                    onSelect={(detail) => {
+                      selectedSource = selectedSource?.id === detail.id ? null : detail;
+                      form = { ...form, uri: selectedSource?.id ?? "" };
+                      handle.update();
+                    }}
+                  />
+                ))}
+              </div>
+            : <p mix={mutedStyle}>No source list yet.</p>}
+          </section>
+        </div>
+
         <aside mix={sidebarStyle}>
           <section mix={panelStyle}>
-            <h2 mix={titleStyle}>Sources</h2>
-            <div mix={listStyle}>
-              {state.encoders.map((source) => (
-                <Source
-                  key={source.uri}
-                  id={source.uri}
-                  name={source.name}
-                  selected={selectedSource?.id === source.uri}
-                  onSelect={(detail) => {
-                    selectedSource = selectedSource?.id === detail.id ? null : detail;
-                    form = { ...form, uri: detail.id };
-                    handle.update();
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section mix={panelStyle}>
-            <h2 mix={titleStyle}>Templates</h2>
-            <div mix={listStyle}>
-              {state.template.choices.map((template) => (
-                <button
-                  key={template.id}
-                  type="button"
-                  disabled={display.isPending("changeTemplate")}
+            <h2 mix={titleStyle}>Route</h2>
+            <div mix={fieldListStyle}>
+              <label mix={fieldStyle}>
+                <span>Audio Output</span>
+                <select
+                  value={form.audioOutput}
                   mix={[
-                    buttonStyle,
-                    on("click", () => {
-                      void display.api.changeTemplate(template);
+                    inputStyle,
+                    on("change", (event) => {
+                      form = { ...form, audioOutput: event.currentTarget.value };
+                      handle.update();
                     }),
                   ]}
-                  style={{
-                    borderColor: state.template.state.id === template.id ? "#38bdf8" : undefined,
-                  }}
                 >
-                  {(
-                    display.isPending("changeTemplate") &&
-                    template.id === display.state?.template.state.id
-                  ) ?
-                    "Switching..."
-                  : template.name}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section mix={panelStyle}>
-            <h2 mix={titleStyle}>Window</h2>
-            <div mix={fieldListStyle}>
+                  <option value="">Select an audio output</option>
+                  {audioOutputs.map((output) => (
+                    <option key={getAudioOutputKey(output)} value={getAudioOutputKey(output)}>
+                      {`decoder ${output.decoderIndex} output ${output.output}${output.type ? ` (${output.type})` : ""}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label mix={fieldStyle}>
                 <span>Window ID</span>
                 <input
                   type="number"
-                  value={String(form.windowId)}
+                  value={String(form.dwindowId)}
                   mix={[
                     inputStyle,
                     on("input", (event) => {
-                      updateNumberField("windowId", event.currentTarget.value);
+                      updateNumberField("dwindowId", event.currentTarget.value);
                       handle.update();
                     }),
                   ]}
@@ -204,48 +347,108 @@ export function Wall(handle: Handle<WallProps>) {
                 </label>
               </div>
             </div>
-            <div mix={actionsStyle}>
+
+            <div mix={buttonRowStyle}>
               <button
                 type="button"
-                disabled={display.isPending("route") || !form.uri}
-                mix={[
-                  buttonStyle,
-                  primaryButtonStyle,
-                  on("click", () => {
-                    void display.api.route(form.windowId, form.uri, getGlobal(form));
-                  }),
-                ]}
-              >
-                {display.isPending("route") ? "Routing..." : "Route"}
-              </button>
-              <button
-                type="button"
-                disabled={display.isPending("move")}
+                disabled={routePending || !form.uri}
                 mix={[
                   buttonStyle,
                   on("click", () => {
-                    void display.api.move(form.windowId, getGlobal(form));
+                    void display.api.route(form.dwindowId, form.uri, getGlobal(form));
                   }),
                 ]}
               >
-                {display.isPending("move") ? "Moving..." : "Move"}
+                {routePending ? "Routing..." : "Route"}
               </button>
               <button
                 type="button"
-                disabled={display.isPending("destroy")}
+                disabled={!form.uri || !form.audioOutput}
                 mix={[
                   buttonStyle,
-                  dangerButtonStyle,
                   on("click", () => {
-                    void display.api.destroy(form.windowId);
+                    const selected = parseAudioOutputKey(form.audioOutput);
+                    if (!selected || !form.uri) return;
+                    void display.api.routeAudio(form.uri, selected);
                   }),
                 ]}
               >
-                {display.isPending("destroy") ? "Destroying..." : "Destroy"}
+                Route audio
               </button>
               <button
                 type="button"
-                disabled={display.isPending("debug")}
+                disabled={movePending}
+                mix={[
+                  buttonStyle,
+                  on("click", () => {
+                    void display.api.move(form.dwindowId, getGlobal(form));
+                  }),
+                ]}
+              >
+                {movePending ? "Moving..." : "Move"}
+              </button>
+              <button
+                type="button"
+                disabled={destroyPending}
+                mix={[
+                  buttonStyle,
+                  on("click", () => {
+                    void display.api.destroy(form.dwindowId);
+                  }),
+                ]}
+              >
+                {destroyPending ? "Destroying..." : "Destroy"}
+              </button>
+              <button
+                type="button"
+                disabled={destroyPending}
+                mix={[
+                  buttonStyle,
+                  on("click", () => {
+                    void display.api.destroy("all");
+                  }),
+                ]}
+              >
+                {destroyPending ? "Wiping..." : "Wipe"}
+              </button>
+            </div>
+          </section>
+
+          <section mix={panelStyle}>
+            <h2 mix={titleStyle}>Templates</h2>
+            {state ?
+              <div mix={templateListStyle}>
+                {state.template.choices.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    disabled={changeTemplatePending}
+                    mix={[
+                      buttonStyle,
+                      on("click", () => {
+                        void display.api.changeTemplate(template);
+                      }),
+                    ]}
+                    style={{
+                      background: state.template.state.id === template.id ? "#fff" : undefined,
+                      color: state.template.state.id === template.id ? "#000" : undefined,
+                    }}
+                  >
+                    {changeTemplatePending && state.template.state.id === template.id ?
+                      "Switching..."
+                    : template.name}
+                  </button>
+                ))}
+              </div>
+            : <p mix={mutedStyle}>Waiting for templates...</p>}
+          </section>
+
+          <section mix={panelStyle}>
+            <div mix={toolbarStyle}>
+              <h2 mix={titleStyle}>Debug</h2>
+              <button
+                type="button"
+                disabled={debugPending}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -253,72 +456,14 @@ export function Wall(handle: Handle<WallProps>) {
                   }),
                 ]}
               >
-                {display.isPending("debug") ? "Debugging..." : "Debug"}
-              </button>
-              <button
-                type="button"
-                disabled={display.isPending("destroy")}
-                mix={[
-                  buttonStyle,
-                  dangerButtonStyle,
-                  on("click", () => {
-                    void display.api.destroy("all");
-                  }),
-                ]}
-              >
-                {display.isPending("destroy") ? "Wiping..." : "Wipe"}
+                {debugPending ? "Running..." : "Toggle debug"}
               </button>
             </div>
+            {state ?
+              <pre mix={stateStyle}>{JSON.stringify(state, null, 2)}</pre>
+            : <div mix={emptyStyle}>No state yet.</div>}
           </section>
         </aside>
-
-        <div mix={contentStyle}>
-          <section mix={panelStyle}>
-            <h2 mix={titleStyle}>Canvas</h2>
-            <p mix={metaStyle}>
-              Click a source, then click a region to route into it. Click a window to load it into
-              the form.
-            </p>
-            <Decoder
-              canvas={state.canvas}
-              windows={state.windows}
-              template={state.template.state}
-              encoders={state.encoders}
-              selectedWindowId={selectedWindowId}
-              onRegionSelect={(region, global) => {
-                selectedWindowId = region.id;
-                form = {
-                  ...form,
-                  windowId: region.id,
-                  resX: global.resX,
-                  resY: global.resY,
-                  offsetX: global.offsetX,
-                  offsetY: global.offsetY,
-                };
-
-                if (selectedSource) {
-                  form = { ...form, uri: selectedSource.id };
-                  void display.api.route(region.id, selectedSource.id, global);
-                }
-
-                handle.update();
-              }}
-              onWindowSelect={(window) => {
-                loadWindow(window);
-                handle.update();
-              }}
-            />
-            <p mix={metaStyle}>
-              Selected source: {selectedSource?.name ?? "none"}
-              {canRouteFromSelection ? ` (${selectedSource?.id})` : ""}
-            </p>
-          </section>
-
-          <section mix={panelStyle}>
-            <h2 mix={titleStyle}>State</h2>
-            <pre mix={stateStyle}>{JSON.stringify(state, null, 2)}</pre>
-          </section>
-        </div>
       </section>
     );
   };
@@ -336,25 +481,56 @@ function getGlobal(form: RouteFormState) {
 const layoutStyle = css({
   display: "grid",
   gap: "16px",
-  gridTemplateColumns: "320px minmax(0, 1fr)",
+  gridTemplateColumns: "minmax(0, 1fr) 320px",
   alignItems: "start",
-  "@media (max-width: 1000px)": {
+  "@media (max-width: 1200px)": {
     gridTemplateColumns: "1fr",
   },
 });
 
+const canvasColumnStyle = css({ display: "grid", gap: "16px" });
 const sidebarStyle = css({ display: "grid", gap: "16px" });
-const contentStyle = css({ display: "grid", gap: "16px" });
 const panelStyle = css({
+  background: "#fff",
+  border: "1px solid #d4d4d4",
+  color: "#000",
   display: "grid",
   gap: "12px",
-  border: "1px solid #1e293b",
-  borderRadius: "16px",
-  background: "#0f172a",
   padding: "16px",
 });
-const titleStyle = css({ margin: 0, fontSize: "14px" });
-const listStyle = css({ display: "grid", gap: "8px" });
+const toolbarStyle = css({
+  display: "flex",
+  gap: "12px",
+  justifyContent: "space-between",
+  alignItems: "start",
+  flexWrap: "wrap",
+});
+const titleStyle = css({ margin: 0, fontSize: "15px" });
+const mutedStyle = css({ margin: "4px 0 0", color: "#666", fontSize: "12px" });
+const modeToggleStyle = css({ display: "flex", gap: "8px", flexWrap: "wrap" });
+const toggleButtonStyle = css({
+  appearance: "none",
+  background: "#fff",
+  border: "1px solid #c0c0c0",
+  color: "#000",
+  cursor: "pointer",
+  font: "inherit",
+  padding: "8px 12px",
+});
+const statusRowStyle = css({ display: "flex", gap: "8px", flexWrap: "wrap" });
+const statusPillStyle = css({
+  border: "1px solid #d0d0d0",
+  color: "#444",
+  fontSize: "12px",
+  padding: "6px 10px",
+});
+const canvasViewportStyle = css({
+  overflow: "auto",
+  border: "1px solid #d4d4d4",
+  background: "#fafafa",
+  padding: "12px",
+});
+const sourceListStyle = css({ display: "flex", gap: "8px", flexWrap: "wrap" });
 const fieldListStyle = css({ display: "grid", gap: "10px" });
 const fieldStyle = css({ display: "grid", gap: "4px", fontSize: "12px" });
 const gridStyle = css({
@@ -364,39 +540,35 @@ const gridStyle = css({
 });
 const inputStyle = css({
   width: "100%",
-  border: "1px solid #334155",
-  borderRadius: "10px",
-  background: "#020617",
-  color: "#e2e8f0",
+  appearance: "none",
+  background: "#fff",
+  border: "1px solid #c0c0c0",
+  color: "#000",
   font: "inherit",
   padding: "10px 12px",
 });
-const actionsStyle = css({ display: "flex", gap: "8px", flexWrap: "wrap" });
+const buttonRowStyle = css({ display: "flex", gap: "8px", flexWrap: "wrap" });
 const buttonStyle = css({
   appearance: "none",
-  border: "1px solid #334155",
-  borderRadius: "10px",
-  background: "#020617",
-  color: "#e2e8f0",
+  background: "#fff",
+  border: "1px solid #c0c0c0",
+  color: "#000",
   cursor: "pointer",
   font: "inherit",
   padding: "10px 12px",
-  "&:disabled": { cursor: "not-allowed", opacity: 0.65 },
+  "&:disabled": { cursor: "not-allowed", opacity: 0.55 },
 });
-const primaryButtonStyle = css({ background: "#0f766e", borderColor: "#14b8a6" });
-const dangerButtonStyle = css({ background: "#450a0a", borderColor: "#7f1d1d" });
-const metaStyle = css({ margin: 0, color: "#94a3b8", fontSize: "12px" });
+const templateListStyle = css({ display: "grid", gap: "8px" });
 const stateStyle = css({
   margin: 0,
-  color: "#86efac",
+  color: "#000",
   fontSize: "12px",
   lineHeight: 1.5,
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
 });
 const emptyStyle = css({
-  border: "1px dashed #334155",
-  borderRadius: "16px",
-  color: "#94a3b8",
+  border: "1px dashed #c0c0c0",
+  color: "#666",
   padding: "18px",
 });

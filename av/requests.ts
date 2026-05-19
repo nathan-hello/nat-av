@@ -7,8 +7,13 @@ type RequestSocket = Pick<DeviceSocket, "on" | "write">;
 
 type RequestMatcher<Request, Message> = (request: Request, message: Message) => boolean;
 type ResponseStrategy<Request, Message> =
-  | { strategy: "match"; matchFn: RequestMatcher<Request, Message> }
-  | { strategy: "blocking-queue" };
+  | {
+      strategy: "match";
+      matchFn: RequestMatcher<Request, Message>;
+      maxInFlight?: number;
+      minGapMs?: number;
+    }
+  | { strategy: "blocking-queue"; minGapMs?: number };
 
 type PendingRequest<Request, Message> = {
   request: Request;
@@ -40,6 +45,8 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
   private readonly responseStrategy?: ResponseStrategy<Request, Message>;
   private readonly pending: PendingRequest<Request, Message>[] = [];
   private readonly offReceive: () => void;
+  private flushTimer: ReturnType<typeof setTimeout> | undefined;
+  private nextSendAt = 0;
   private ended = false;
 
   constructor({
@@ -111,11 +118,6 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
       this.pending.push(entry);
 
       const enqueue = this.tel.task("REQUESTS_ENQUEUE", () => {
-        if (this.responseStrategy?.strategy === "match") {
-          this.sendPending(entry);
-          return;
-        }
-
         this.flush();
       });
 
@@ -153,6 +155,10 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
 
     this.ended = true;
     this.offReceive();
+    if (this.flushTimer !== undefined) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = undefined;
+    }
 
     for (const entry of this.pending.splice(0)) {
       if (entry.timeout !== undefined) {
@@ -165,16 +171,42 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
   }
 
   private flush() {
-    if (this.responseStrategy?.strategy === "match") {
+    if (this.ended) {
       return;
     }
 
-    const next = this.pending[0];
-    if (!next || next.sent) {
-      return;
+    if (this.flushTimer !== undefined) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = undefined;
     }
 
-    this.sendPending(next);
+    const maxInFlight = this.getMaxInFlight();
+    const minGapMs = this.getMinGapMs();
+
+    while (true) {
+      const next = this.pending.find((entry) => !entry.sent);
+      if (!next) {
+        return;
+      }
+
+      if (this.getInFlightCount() >= maxInFlight) {
+        return;
+      }
+
+      const waitMs = this.nextSendAt - Date.now();
+      if (waitMs > 0) {
+        this.scheduleFlush(waitMs);
+        return;
+      }
+
+      this.sendPending(next);
+      this.nextSendAt = Date.now() + minGapMs;
+
+      if (minGapMs > 0) {
+        this.scheduleFlush(minGapMs);
+        return;
+      }
+    }
   }
 
   private async sendPending(entry: PendingRequest<Request, Message>) {
@@ -237,5 +269,35 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     if (index !== -1) {
       this.pending.splice(index, 1);
     }
+  }
+
+  private scheduleFlush(delayMs: number) {
+    if (this.flushTimer !== undefined) {
+      clearTimeout(this.flushTimer);
+    }
+
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = undefined;
+      this.flush();
+    }, delayMs);
+  }
+
+  private getInFlightCount() {
+    return this.pending.filter((entry) => entry.sent).length;
+  }
+
+  private getMaxInFlight() {
+    const strategy = this.responseStrategy;
+    switch (strategy?.strategy) {
+      case "match":
+        return strategy.maxInFlight ?? Number.POSITIVE_INFINITY;
+      case "blocking-queue":
+      default:
+        return 1;
+    }
+  }
+
+  private getMinGapMs() {
+    return this.responseStrategy?.minGapMs ?? 0;
   }
 }

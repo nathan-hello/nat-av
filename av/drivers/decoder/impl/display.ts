@@ -36,6 +36,21 @@ export type DecoderConfig = {
   placement: readonly OutputPlacement[];
 };
 
+export type AudioOutputPlacement = {
+  decoderIndex: number;
+  output: number;
+  type: string;
+};
+
+export type DisplayState = {
+  canvas: { width: number; height: number };
+  audioOutputs: AudioOutputPlacement[];
+  windows: LogicalWindow[];
+  encoders: typeof config.encoders;
+  decoders: Array<DecoderConfig["driver"]["state"]>;
+  template: { choices: typeof BUILTIN_TEMPLATES; state: GridTemplate };
+};
+
 type DecodersFromConfigs<C extends readonly DecoderConfig[]> = {
   [D in C[number]["driver"] as D["name"]]: D;
 };
@@ -75,9 +90,16 @@ export default class DisplayManager<
     this.setDependencies(this.configs);
   }
 
-  get state() {
+  get state(): DisplayState {
     return {
       canvas: { width: this.canvasWidth, height: this.canvasHeight },
+      audioOutputs: this.configs.flatMap((config, decoderIndex) =>
+        config.driver.state.context?.audio.map((output) => ({
+          decoderIndex,
+          output: output.output,
+          type: output.type,
+        })) ?? [],
+      ),
       windows: this.lwindows,
       encoders: config.encoders,
       decoders: this.configs.map((c) => c.driver.state),
@@ -90,18 +112,18 @@ export default class DisplayManager<
 
   api = {
     changeTemplate: async (t: GridTemplate) => {
-      const GRID_COLS_PER_MONITOR = 2;
-      const GRID_ROWS_PER_MONITOR = 2;
-
-      const gridCols = t.dimensions.cols * GRID_COLS_PER_MONITOR;
-      const gridRows = t.dimensions.rows * GRID_ROWS_PER_MONITOR;
+      const gridCols = t.dimensions.cols;
+      const gridRows = t.dimensions.rows;
       const gridUnitWidth = this.canvasWidth / gridCols;
       const gridUnitHeight = this.canvasHeight / gridRows;
 
       // Move existing windows to their new positions based on new template regions
       const movePromises = this.lwindows.map(async (window) => {
         const region = t.regions.find((r) => r.id === window.id);
-        if (!region) return;
+        if (!region) {
+          await this.api.destroy(window.id);
+          return
+        };
 
         const resX = region.width * gridUnitWidth;
         const resY = region.height * gridUnitHeight;
@@ -149,6 +171,18 @@ export default class DisplayManager<
       );
 
       return results;
+    },
+
+    routeAudio: async (uri: string, output: { decoderIndex: number; output: number }) => {
+      const decoder = this.configs[output.decoderIndex]?.driver;
+      if (!decoder) return;
+
+      return decoder.api.route({
+        audio: {
+          output: output.output,
+          uri,
+        },
+      });
     },
 
     move: async (

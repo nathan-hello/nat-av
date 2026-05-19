@@ -76,7 +76,10 @@ export class Udp extends TypedEventTarget<UdpEvents> {
     }
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    this.tel.info("SEND_DATA", { bufferHex: bufferHex(buffer), bufferString: buffer.toString() });
+    this.tel.info("SEND_DATA", {
+      // bufferHex: bufferHex(buffer),
+      bufferString: buffer.toString(),
+    });
 
     this.socket.send(buffer, (error) => {
       if (error) {

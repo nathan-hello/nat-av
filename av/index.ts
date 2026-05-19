@@ -19,7 +19,7 @@ if ((globalThis as any).__devices__) {
 }
 
 StartLogging([
-  new FileExporter("./logs/otel.log", true),
+  new FileExporter("./logs/natav.jsonl", true),
   new SimpleConsoleExporter(),
   new CustomExporter((event) => {
     bus.dispatch("natav:opentelemetry:entry", {
@@ -57,10 +57,9 @@ new AutomationEngine({ bus, natav });
 
 const rpc = new RPCServer({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc, natav });
-const tel = new Telemetry("Server::Websocket");
 
 export async function start(app: WebSocketApp) {
-  bindHttpToWs(app, "/ws", websocket, tel);
+  bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
 
   await natav.Start();
   (globalThis as any).__devices__ = natav;

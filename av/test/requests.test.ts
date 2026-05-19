@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { RequestManager } from "../requests";
 import { Telemetry } from "../telemetry";
@@ -102,6 +103,55 @@ describe("requests", () => {
 
     assert.deepEqual(await second, { ok: true, data: { id: 2, result: "two" } });
     assert.deepEqual(await first, { ok: true, data: { id: 1, result: "one" } });
+  });
+
+  it("paces matched requests without dropping queued work", async () => {
+    const socket = new FakeSocket();
+    const requests = new RequestManager<
+      { id: number; command: string },
+      { id: number; result: string }
+    >({
+      tel: new Telemetry("Test::Requests::MatchedPaced"),
+      socket,
+      delimiter: (buffer) => {
+        const newline = Delimiters.characterDelimted("\n")(buffer);
+        if (!newline) {
+          return null;
+        }
+        const msgs: { id: number; result: string }[] = [];
+        for (const line of newline) {
+          msgs.push(JSON.parse(line));
+        }
+        return msgs;
+      },
+      formatter: (message) => Buffer.from(`${JSON.stringify(message)}\n`, "utf8"),
+      timeoutMs: 1000,
+      responseStrategy: {
+        strategy: "match",
+        matchFn: (request, response) => request.id === response.id,
+        maxInFlight: 1,
+        minGapMs: 20,
+      },
+    });
+
+    const first = requests.request({ id: 1, command: "first" });
+    const second = requests.request({ id: 2, command: "second" });
+
+    assert.equal(socket.writes.length, 1);
+    assert.match(socket.writes[0]!.toString("utf8"), /"id":1/);
+
+    socket.receive(`${JSON.stringify({ id: 1, result: "one" })}\n`);
+    assert.deepEqual(await first, { ok: true, data: { id: 1, result: "one" } });
+
+    assert.equal(socket.writes.length, 1);
+
+    await delay(25);
+
+    assert.equal(socket.writes.length, 2);
+    assert.match(socket.writes[1]!.toString("utf8"), /"id":2/);
+
+    socket.receive(`${JSON.stringify({ id: 2, result: "two" })}\n`);
+    assert.deepEqual(await second, { ok: true, data: { id: 2, result: "two" } });
   });
 
   it("blocks later requests until earlier responses arrive in blocking queue mode", async () => {

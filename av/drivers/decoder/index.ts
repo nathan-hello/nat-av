@@ -55,16 +55,18 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       responseStrategy: {
         strategy: "match",
         matchFn: (request, message) => "id" in message && message.id === request.id,
+        maxInFlight: 5,
+        minGapMs: 10,
       },
     });
 
     this.requests.on("message", (message) => {
-      if ("id" in message) {
-        this.tel.error("response-no-id", { response: message });
+      if (!("id" in message)) {
+        this.tel.debug("got-jsonrpc-notification", { notification: message });
         return;
       }
 
-      this.tel.debug("got-jsonrpc-notification", { notification: message });
+      this.tel.warn("unexpected-response", { response: message });
     });
 
     this.requests.on("error", ({ phase, error, request, message }) => {
@@ -105,9 +107,12 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       this.tel.error("error-from-device", { request: req, response });
     }
 
+    this.tel.debug("RESPONSE", { text: JSON.stringify(response) });
+
     switch (req.method) {
       case "fetch_routes": {
-        const next = this.processFetchRoutes(response as FetchRoutesResponse, this.routes);
+        const next = this.processFetchRoutes(response as FetchRoutesResponse);
+        this.routes = next.data;
         this.dispatch("driver:state-updated", { routes: next.data });
         break;
       }
@@ -117,11 +122,13 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
         break;
       case "route": {
         const next = this.processRoute(req, this.routes);
+        this.routes = next.data;
         this.dispatch("driver:state-updated", { routes: next.data });
         break;
       }
       case "route_destroy": {
         const next = this.processRouteDestroy(req, this.routes);
+        this.routes = next.data;
         this.dispatch("driver:state-updated", { routes: next.data });
         break;
       }
@@ -276,7 +283,12 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     },
   };
 
-  processFetchRoutes(response: FetchRoutesResponse, routes: DecoderRoutes) {
+  processFetchRoutes(response: FetchRoutesResponse) {
+    const routes: DecoderRoutes = {
+      audio: [],
+      video: [],
+    };
+
     response.result.video.forEach((v) => {
       if (routes.video[v.output] === undefined) {
         routes.video[v.output] = [];
@@ -291,25 +303,40 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
   }
 
   processRoute(req: RouteRequest, routes: DecoderRoutes) {
+    const next: DecoderRoutes = {
+      audio: routes.audio.slice(),
+      video: routes.video.slice(),
+    };
+
     req.params.video?.forEach((v) => {
-      if (routes.video[v.output] === undefined) {
-        routes.video[v.output] = [];
+      if (next.video[v.output] === undefined) {
+        next.video[v.output] = [];
+      } else {
+        next.video[v.output] = next.video[v.output].slice();
       }
-      routes.video[v.output][v.window] = v;
+      next.video[v.output][v.window] = v;
     });
     req.params.audio?.forEach((v) => {
-      routes.audio[v.output] = v;
+      next.audio[v.output] = v;
     });
-    return { type: "state", data: routes } as const;
+    return { type: "state", data: next } as const;
   }
 
   processRouteDestroy(request: RouteDestroyRequest, routes: DecoderRoutes) {
+    const next: DecoderRoutes = {
+      audio: routes.audio.slice(),
+      video: routes.video.slice(),
+    };
+
     request.params.video?.forEach((v) => {
-      routes.video[v.output]?.splice(v.window, 1);
+      if (next.video[v.output] !== undefined) {
+        next.video[v.output] = next.video[v.output].slice();
+        delete next.video[v.output][v.window];
+      }
     });
     request.params.audio?.forEach((v) => {
-      routes.audio?.splice(v.output, 1);
+      delete next.audio[v.output];
     });
-    return { type: "state", data: routes } as const;
+    return { type: "state", data: next } as const;
   }
 }
