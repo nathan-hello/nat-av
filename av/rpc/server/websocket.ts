@@ -45,11 +45,13 @@ export class WebsocketHandler<N extends Natav = Natav> {
   private clients = new Set<WebSocketConnection>();
   private rpc: RPCServer<N>;
   private bus: Bus;
+  private natav: N;
   private tel = new Telemetry("Server::WS");
 
-  constructor(args: { bus: Bus; rpc: RPCServer<N> }) {
+  constructor(args: { bus: Bus; rpc: RPCServer<N>; natav: N }) {
     this.bus = args.bus;
     this.rpc = args.rpc;
+    this.natav = args.natav;
     this.bus.on("natav:state:update", (payload) => {
       this.BroadcastEvent("natav:state:update", payload);
     });
@@ -100,6 +102,7 @@ export class WebsocketHandler<N extends Natav = Natav> {
 
   WsOpenHandler = (_: Event, ws: WebSocketConnection) => {
     this.clients.add(ws);
+    this.pushInitialDeviceStates(ws);
   };
 
   WsCloseHandler = (_: CloseEvent, ws: WebSocketConnection) => {
@@ -131,6 +134,18 @@ export class WebsocketHandler<N extends Natav = Natav> {
   };
 
   WsErrorHandler = (_: Event, __: WebSocketConnection) => {};
+
+  private pushInitialDeviceStates(ws: WebSocketConnection) {
+    for (const name of this.natav.GetAllDriverNames()) {
+      let notification = new RPCNotification({
+        type: "natav:state:update",
+        name,
+        data: this.natav.GetDriverState(name),
+      });
+
+      ws.send(JSON.stringify(notification));
+    }
+  }
 }
 
 function toWebSocketConnection(ws: WebSocketPeer): WebSocketConnection {

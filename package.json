@@ -16,7 +16,9 @@
     "node": ">=24.3.0"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "remix": "^3.0.0-beta.0",
+    "tailwind-merge": "^3.6.0",
     "ts-morph": "^28.0.0",
     "tsx": "latest"
   },

@@ -56,7 +56,7 @@ const system = new System({
 new AutomationEngine({ bus, natav });
 
 const rpc = new RPCServer({ system, natav });
-const websocket = new WebsocketHandler({ bus, rpc });
+const websocket = new WebsocketHandler({ bus, rpc, natav });
 const tel = new Telemetry("Server::Websocket");
 
 export async function start(app: WebSocketApp) {

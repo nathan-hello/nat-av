@@ -56,6 +56,14 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
     };
   }
 
+  isPending(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
+    return this.client.isDevicePending(this.name, method);
+  }
+
+  pendingCount(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
+    return this.client.getDevicePendingCount(this.name, method);
+  }
+
   dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
     return this.client.device(depName);
   }

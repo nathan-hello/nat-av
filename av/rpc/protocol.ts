@@ -122,8 +122,11 @@ export class RPCError {
   }
 }
 
-export class RPCErrorData {
-  constructor(public error: { code: number; message: string; data?: any }) {}
+export class RPCErrorData extends Error {
+  constructor(public error: { code: number; message: string; data?: any }) {
+    super(error.message);
+    this.name = "RPCErrorData";
+  }
 }
 
 export class RPCNotification<T = any> {

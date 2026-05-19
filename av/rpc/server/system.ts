@@ -45,7 +45,7 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       }
 
       const value = await Reflect.apply(method, this.system.api, params.args);
-      return new RPCResponse(message.id, value);
+      return new RPCResponse(message.id, value === undefined ? null : value);
     });
 
     if (result.ok) {

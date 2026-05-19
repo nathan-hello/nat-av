@@ -57,7 +57,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
         }
       }
 
-      return new RPCResponse(message.id, callResult);
+      return new RPCResponse(message.id, callResult === undefined ? null : callResult);
     });
 
     if (result.ok) {
