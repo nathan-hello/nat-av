@@ -62,9 +62,9 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     }
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    this.tel.info("WRITE_DATA", { 
+    this.tel.info("WRITE_DATA", {
       // bufferHex: bufferHex(buffer),
-      bufferString: buffer.toString() 
+      bufferString: buffer.toString(),
     });
 
     const flushed = this.socket.write(buffer);
@@ -109,6 +109,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
 
     this.socket.on("data", (data) => {
       this.tel.info("RECEIVED_DATA", { length: data.length });
+      this.tel.debug("RECIEVED_DATA_TEXT", { text: data.toString("utf8") });
       this.dispatch("receive", Buffer.isBuffer(data) ? data : Buffer.from(data));
     });
 

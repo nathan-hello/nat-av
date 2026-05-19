@@ -174,11 +174,6 @@ export function Wall(handle: Handle<WallProps>) {
 
                       handle.update();
                     }}
-                    onWindowMove={(dwindow, global) => {
-                      loadWindow({ ...dwindow, global }, selectedSource);
-                      void display.api.move(dwindow.id, global);
-                      handle.update();
-                    }}
                     onWindowMoveEnd={(dwindow, global) => {
                       loadWindow({ ...dwindow, global }, selectedSource);
                       void display.api.move(dwindow.id, global);

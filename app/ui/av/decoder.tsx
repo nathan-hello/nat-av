@@ -22,7 +22,6 @@ type DroppedSource = {
 
 type DragState = {
   windowId: number;
-  moved: boolean;
   preview: CanvasGlobal;
 };
 
@@ -74,17 +73,9 @@ export function Decoder(handle: Handle<DecoderProps>) {
     const startY = event.clientY;
     const startGlobal = twindow.global;
 
-    dragState = {
-      windowId: twindow.id,
-      moved: false,
-      preview: { ...startGlobal },
-    };
-
-    handle.update();
-
-    const move = (moveEvent: PointerEvent) => {
-      const deltaX = (moveEvent.clientX - startX) / scale;
-      const deltaY = (moveEvent.clientY - startY) / scale;
+    function getPreview(clientX: number, clientY: number) {
+      const deltaX = (clientX - startX) / scale;
+      const deltaY = (clientY - startY) / scale;
       const nextOffsetX = clamp(
         Math.round(startGlobal.offsetX + deltaX),
         0,
@@ -96,30 +87,41 @@ export function Decoder(handle: Handle<DecoderProps>) {
         handle.props.canvas.height - startGlobal.resY,
       );
 
+      return {
+        resX: startGlobal.resX,
+        resY: startGlobal.resY,
+        offsetX: nextOffsetX,
+        offsetY: cssTopToDecoderY(nextCssTop, startGlobal.resY, handle.props.canvas.height),
+      } satisfies CanvasGlobal;
+    }
+
+    dragState = {
+      windowId: twindow.id,
+      preview: { ...startGlobal },
+    };
+
+    handle.update();
+
+    const move = (moveEvent: PointerEvent) => {
       dragState = {
         windowId: twindow.id,
-        moved: true,
-        preview: {
-          resX: startGlobal.resX,
-          resY: startGlobal.resY,
-          offsetX: nextOffsetX,
-          offsetY: cssTopToDecoderY(nextCssTop, startGlobal.resY, handle.props.canvas.height),
-        },
+        preview: getPreview(moveEvent.clientX, moveEvent.clientY),
       };
+
       handle.props.onWindowMove?.(twindow, dragState.preview);
       handle.update();
     };
 
-    const finish = () => {
-      const next = dragState;
+    const finish = (finishEvent: PointerEvent) => {
+      const finalPreview = getPreview(finishEvent.clientX, finishEvent.clientY);
       dragState = null;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", finish);
 
-      if (next?.moved) {
+      if (finishEvent.type === "pointerup") {
         suppressClickWindowId = twindow.id;
-        handle.props.onWindowMoveEnd?.(twindow, next.preview);
+        handle.props.onWindowMoveEnd?.(twindow, finalPreview);
       }
 
       handle.update();
