@@ -2,7 +2,6 @@ import * as net from "node:net";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
 import { Telemetry } from "@av/telemetry";
-import { bufferHex } from "@av/sockets/hex";
 
 type TcpConfig = {
   addr: string;
@@ -62,9 +61,16 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     }
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+      this.tel.debug("WROTE_DATA", {
+        debugger_ui: "socket-rx",
+        hex: data.toString("hex"),
+        text: data.toString("utf8"),
+      });
     this.tel.info("WRITE_DATA", {
-      // bufferHex: bufferHex(buffer),
-      bufferString: buffer.toString(),
+      debugger_ui: "socket-tx",
+      bufferHex: buffer.toString("hex"),
+      bufferString: buffer.toString("utf8"),
     });
 
     const flushed = this.socket.write(buffer);
@@ -109,7 +115,11 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
 
     this.socket.on("data", (data) => {
       this.tel.info("RECEIVED_DATA", { length: data.length });
-      this.tel.debug("RECIEVED_DATA_TEXT", { text: data.toString("utf8") });
+      this.tel.debug("RECIEVED_DATA_TEXT", {
+        debugger_ui: "socket-rx",
+        hex: data.toString("hex"),
+        text: data.toString("utf8"),
+      });
       this.dispatch("receive", Buffer.isBuffer(data) ? data : Buffer.from(data));
     });
 

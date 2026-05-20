@@ -3,7 +3,6 @@ import * as dgram from "node:dgram";
 import { TypedEventTarget } from "../lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
 import { Telemetry } from "@av/telemetry";
-import { bufferHex } from "./hex";
 
 type UdpConfig = {
   addr: string;
@@ -77,8 +76,9 @@ export class Udp extends TypedEventTarget<UdpEvents> {
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
     this.tel.info("SEND_DATA", {
-      // bufferHex: bufferHex(buffer),
-      bufferString: buffer.toString(),
+      debugger_ui: "socket-tx",
+      bufferHex: buffer.toString("hex"),
+      bufferString: buffer.toString("utf8"),
     });
 
     this.socket.send(buffer, (error) => {

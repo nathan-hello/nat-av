@@ -3,7 +3,6 @@
 // import { TypedEventTarget } from "../lib/eventtarget";
 // import type { SocketEventMap } from "@av/types";
 // import { Telemetry } from "../tools/telemetry";
-// import { bufferHex } from "./hex";
 //
 // type SshConfig = {
 //   addr: string;
@@ -110,7 +109,7 @@
 //     }
 //
 //     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-//     this.tel.info("WRITE_DATA", { bufferHex: bufferHex(buffer), bufferString: buffer.toString() });
+//     this.tel.info("WRITE_DATA", { bufferString: buffer.toString() });
 //
 //     const flushed = this.channel.write(buffer);
 //     this.emit("transmit", { bytesWritten: buffer.length });
