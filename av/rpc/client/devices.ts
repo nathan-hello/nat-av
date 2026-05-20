@@ -1,6 +1,6 @@
 import type Natav from "@av/natav";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { ClientRpcDeviceDebug, DeviceEvents } from "@av/rpc/client/types";
+import type { DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
 export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> extends TypedEventTarget<
@@ -25,7 +25,7 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
           return (...args: any[]) => this.client.call(this.name, methodName, args);
         },
       },
-    // TSAS:
+      // TSAS:
     ) as Natav.Handle<N, Name>["api"];
   }
 
@@ -35,26 +35,6 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
 
   get state() {
     return this.client.getDeviceState(this.name);
-  }
-
-  get schema() {
-    return this.client.getDeviceSchema(this.name);
-  }
-
-  get debug(): ClientRpcDeviceDebug {
-    const schema = this.schema;
-
-      return {
-        schema,
-        typeName: schema?.typeName,
-        source: schema?.source,
-        methods: schema?.methods ?? {},
-        state: this.state,
-        logs: this.client.debug.getEntriesForDevice(this.name),
-        clearLogs: () => {
-          this.client.debug.clearEntriesForDevice(this.name);
-        },
-      };
   }
 
   isPending(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {

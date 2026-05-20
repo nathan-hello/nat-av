@@ -1,4 +1,4 @@
-import type { Bus } from "@av/bus";
+import { bus, type Bus } from "@av/bus";
 import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import {
@@ -10,10 +10,19 @@ import {
   type DebugSocketWriteResult,
   type SocketDebugEncoding,
 } from "@av/rpc/debug/types";
-import { RPCError, RPCErrorCodes, RPCNotification, type RPCRequest, RPCResponse, RPCErrors } from "@av/rpc/protocol";
+import {
+  RPCError,
+  RPCErrorCodes,
+  RPCNotification,
+  type RPCRequest,
+  RPCResponse,
+  RPCErrors,
+} from "@av/rpc/protocol";
 import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
+import type { ApiSurfaceSchema } from "@av/schema/types";
+import type { System } from "@av/system";
 
 const decoder = new TextDecoder();
 
@@ -53,18 +62,21 @@ function readMessage(data: MessageEvent["data"]): string {
 export class RpcDebugServer<N extends Natav = natav> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
+  schema: ApiSurfaceSchema;
+  private system: System;
 
-  constructor(
-    private args: { bus: Bus; natav: N },
-  ) {
-    this.args.bus.on("natav:opentelemetry:entry", (payload) => {
+  constructor(private args: { natav: N; system: System; schema: ApiSurfaceSchema }) {
+    this.schema = args.schema;
+    this.system = args.system;
+
+    bus.on("natav:opentelemetry:entry", (payload) => {
       this.broadcastNotification({
         type: "debug:log",
         entry: ReadableLogRecordToLogEntry(payload.message.record),
       });
     });
 
-    this.args.bus.on("natav:debug:socket", (payload) => {
+    bus.on("natav:debug:socket", (payload) => {
       for (const message of this.resolveSocketMessages(payload.message)) {
         this.broadcastNotification({
           type: "debug:socket:message",
@@ -121,7 +133,9 @@ export class RpcDebugServer<N extends Natav = natav> {
     }
   }
 
-  private async handleSocketWrite(message: RPCRequest): Promise<RPCResponse<DebugSocketWriteResult> | RPCError> {
+  private async handleSocketWrite(
+    message: RPCRequest,
+  ): Promise<RPCResponse<DebugSocketWriteResult> | RPCError> {
     if (!message.params || typeof message.params !== "object") {
       return new RPCError(message.id, {
         code: RPCErrorCodes.InvalidParams,
@@ -160,7 +174,9 @@ export class RpcDebugServer<N extends Natav = natav> {
     }
 
     try {
-      const bytesWritten = await device.socket.write(Buffer.from(params.text, encoding as SocketDebugEncoding));
+      const bytesWritten = await device.socket.write(
+        Buffer.from(params.text, encoding as SocketDebugEncoding),
+      );
       return new RPCResponse(message.id, { bytesWritten });
     } catch (error) {
       return new RPCError(message.id, {
@@ -227,7 +243,10 @@ function toWebSocketConnection(ws: WebSocketPeer): DebugWebSocketConnection {
 export function bindDebugHttpToWs(
   app: WebSocketApp,
   path: string,
-  handlers: Pick<RpcDebugServer, "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler">,
+  handlers: Pick<
+    RpcDebugServer,
+    "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
+  >,
   tel: Telemetry,
 ) {
   const connections = new WeakMap<object, DebugWebSocketConnection>();

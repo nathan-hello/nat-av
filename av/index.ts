@@ -60,8 +60,9 @@ const system = new System({ natav });
 new AutomationEngine({ natav });
 
 const rpc = new RPCServer({ system, natav });
+const debug = new RpcDebugServer({ system, natav, schema: schema.toJSON() });
+
 const websocket = new WebsocketHandler({ rpc, natav });
-const debug = new RpcDebugServer({ bus, natav });
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
