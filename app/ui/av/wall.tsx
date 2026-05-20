@@ -107,6 +107,7 @@ export function Wall(handle: Handle<WallProps>) {
                 </p>
               </div>
               <div mix={modeToggleStyle}>
+                // TSAS:
                 {(["free", "snap"] as InteractionMode[]).map((nextMode) => (
                   <button
                     key={nextMode}

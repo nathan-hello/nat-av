@@ -14,7 +14,9 @@ import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
 import { Telemetry } from "@av/telemetry";
 
+// TSAS:
 if ((globalThis as any).__devices__) {
+  // TSAS:
   await (globalThis as any).__devices__.End();
 }
 
@@ -62,5 +64,6 @@ export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
 
   await natav.Start();
+  // TSAS:
   (globalThis as any).__devices__ = natav;
 }

@@ -25,6 +25,7 @@ export abstract class Driver<
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
+  // TSAS:
   public deps: Deps = {} as Deps;
   public name: Name;
   public _drivername: DriverName;

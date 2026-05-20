@@ -76,6 +76,7 @@ export const WebsocketErrorCodes = {
 
 export function DecodeWebsocketError(code: number): string {
   if (code in WebsocketErrorCodes) {
+    // TSAS:
     return WebsocketErrorCodes[code as keyof typeof WebsocketErrorCodes].meaning;
   }
   return "Unknown Close Code";

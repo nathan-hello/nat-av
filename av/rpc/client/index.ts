@@ -46,6 +46,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   private systemApiProxy: SystemApi<N>;
   private systemHandle: ClientRpcSystem<N>;
 
+  // TSAS:
   public schema: ClientRpcBindings = {} as ClientRpcBindings;
   public debugEntries: DebugEntry[] = [];
   public deviceStates: DeviceStateMap<N> = {};
@@ -68,12 +69,14 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
           return (...args: any[]) => this.callSystem(methodName, ...args);
         },
       },
+    // TSAS:
     ) as SystemApi<N>;
 
     this.systemHandle = {
       api: this.systemApiProxy,
       isPending: (method) => this.isSystemPending(method),
       pendingCount: (method) => this.getSystemPendingCount(method),
+    // TSAS:
     } as ClientRpcSystem<N>;
     Object.defineProperty(this.systemHandle, "state", {
       enumerable: true,
@@ -156,6 +159,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
     const cached = this.deviceHandles.get(name);
     if (cached) {
+      // TSAS:
       return cached as ClientRpcDevice<N, Name>;
     }
 
@@ -191,10 +195,12 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   }
 
   getDeviceState<Name extends Natav.Names<N>>(name: Name): Natav.State<N, Name> | undefined {
+    // TSAS:
     return this.deviceStates[name] as Natav.State<N, Name> | undefined;
   }
 
   getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
+    // TSAS:
     return this.schema.devices?.[name] as ApiSurfaceSchema | undefined;
   }
 
@@ -221,6 +227,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   }
 
   refreshDevice<Name extends Natav.Names<N>>(name: Name) {
+    // TSAS:
     this.deviceHandles.get(name as string)?.dispatchChange();
     this.dispatch("change", { name });
   }
@@ -236,6 +243,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     if (isRPCNotification(parsed.data)) {
       this.tel.info("got-notification", parsed.data);
 
+      // TSAS:
       const params = parsed.data.params as {
         type?: unknown;
         name?: unknown;
@@ -244,9 +252,12 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
       if (params.type === "natav:state:update" && typeof params.name === "string") {
         this.mergeDeviceState(
+          // TSAS:
           params.name as Natav.Names<N>,
+          // TSAS:
           (params.data ?? {}) as Partial<Natav.State<N, Natav.Names<N>>>,
         );
+        // TSAS:
         this.refreshDevice(params.name as Natav.Names<N>);
       }
 
@@ -281,7 +292,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       }
 
       const error = new Error(rpcError.error.message);
+      // TSAS:
       (error as any).code = rpcError.error.code;
+      // TSAS:
       (error as any).data = rpcError.error.data;
       this.rejectPendingRequest(rpcError.id, error);
     }
@@ -302,9 +315,11 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     const currentState = this.deviceStates[name];
     const nextState =
       currentState && typeof currentState === "object" ?
+        // TSAS:
         { ...(currentState as object), ...patch }
       : patch;
 
+    // TSAS:
     this.deviceStates[name] = nextState as Natav.State<N, Name>;
   }
 
@@ -423,6 +438,7 @@ function isDebugEntry(value: unknown): value is DebugEntry {
     return false;
   }
 
+  // TSAS:
   const entry = value as Partial<DebugEntry>;
   return (
     typeof entry.time === "string" &&

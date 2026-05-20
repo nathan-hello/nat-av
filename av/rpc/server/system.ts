@@ -36,6 +36,7 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
     }
 
     const result = await this.tel.task(`system:${params.method}`, async () => {
+      // TSAS:
       const method = this.system.api[params.method as keyof typeof this.system.api];
       if (typeof method !== "function") {
         return new RPCError(message.id, {

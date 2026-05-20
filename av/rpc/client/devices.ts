@@ -25,6 +25,7 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
           return (...args: any[]) => this.client.call(this.name, methodName, args);
         },
       },
+    // TSAS:
     ) as Natav.Handle<N, Name>["api"];
   }
 

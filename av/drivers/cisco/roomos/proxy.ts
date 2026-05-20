@@ -20,6 +20,7 @@ export function createProxy<T extends keyof TMapToX, C extends TOutput>(
   path: string[] = [root],
 ): MapToProxyReturn<TMapToX[T], TMapReturn<C["type"]>> {
   // We use Function as the target so the 'apply' trap is valid
+  // TSAS:
   const target = (() => {}) as any;
 
   return new Proxy(target, {

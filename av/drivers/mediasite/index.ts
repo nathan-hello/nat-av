@@ -135,6 +135,7 @@ export default class Mediasite<const N extends string = string> extends Driver<N
   private processResponse(command: string, params: string) {
     switch (command) {
       case "STATUS":
+        // TSAS:
         this.state.status = params as MediasiteStatus;
         this.dispatch("driver:state-updated", { status: this.state.status });
         break;

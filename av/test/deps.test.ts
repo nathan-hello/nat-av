@@ -70,6 +70,7 @@ describe("driver deps", () => {
       refreshDevice() {},
     };
 
+    // TSAS:
     const device = new ClientRpcDevice<typeof graph, "parent-1">(client as any, "parent-1");
 
     assert.deepEqual(device.dep("child-1"), { name: "child-1" });

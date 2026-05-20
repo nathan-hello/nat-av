@@ -43,6 +43,7 @@ export class RPCServer<N extends Natav = natav> {
 
     this.tel.error("RPC_INTERNAL_ERROR", {
       error: result.error,
+      // TSAS:
       id: (message as any)?.id,
     });
 

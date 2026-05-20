@@ -35,6 +35,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
         });
       }
 
+      // TSAS:
       const method = (device.api as Record<string, unknown> | undefined)?.[params.method];
       if (typeof method !== "function") {
         return new RPCError(message.id, {
@@ -46,6 +47,7 @@ export class DeviceRpcRouter<N extends Natav = natav> implements RPCRequestHandl
 
       const callResult = await Reflect.apply(method, device.api, params.args);
       if (callResult && typeof callResult === "object" && "error" in callResult) {
+        // TSAS:
         const error = (callResult as { error?: { code?: number; message?: string; data?: any } })
           .error;
         if (error && typeof error.code === "number" && typeof error.message === "string") {

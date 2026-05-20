@@ -20,12 +20,14 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
 
   private all(): Driver[] {
     const collect = (drivers: readonly Driver[]): Driver[] =>
+      // TSAS:
       drivers.flatMap((d) => [d, ...collect(Object.values(d.deps) as readonly Driver[])]);
 
     return collect(this.configs);
   }
 
   GetDriver<N extends NamesOf<Configs>>(name: N) {
+    // TSAS:
     return this.FindDriver(name) as DriverFor<Configs, N>;
   }
 
@@ -46,6 +48,7 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
       d.on("driver:state-updated", (data) =>
         bus.dispatch("natav:state:update", {
           type: "natav:state:update",
+          // TSAS:
           name: d.name as "video-wall",
           data: data,
         }),

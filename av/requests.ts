@@ -104,6 +104,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     return new Promise<TaskResult<Response>>((resolve) => {
       const entry: PendingRequest<Request, Message> = {
         request,
+        // TSAS:
         resolve: resolve as (result: TaskResult<Message>) => void,
         sent: false,
       };

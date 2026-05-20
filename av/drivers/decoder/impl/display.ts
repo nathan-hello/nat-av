@@ -52,7 +52,10 @@ export type DisplayState = {
 };
 
 type DecodersFromConfigs<C extends readonly DecoderConfig[]> = {
-  [D in C[number]["driver"] as D["name"]]: D;
+  [K in C[number]["driver"]["name"]]: Extract<
+    C[number]["driver"],
+    { name: K }
+  >;
 };
 
 type LogicalOutput = { decoderIndex: number; output: OutputPlacement };

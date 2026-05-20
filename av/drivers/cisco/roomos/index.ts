@@ -26,6 +26,7 @@ export default class CiscoRoomOS<
 
 const asdf = new CiscoRoomOS({
   name: "asdf",
+  // TSAS:
   socket: "" as any,
   output: { type: "http", getSessionId: () => "asdf" },
 });

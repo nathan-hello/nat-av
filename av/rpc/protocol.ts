@@ -34,6 +34,7 @@ export class RPCRequest {
       return null;
     }
 
+    // TSAS:
     const { method, args } = this.params as { method?: unknown; args?: unknown };
     if (typeof method !== "string") {
       return null;
@@ -47,6 +48,7 @@ export class RPCRequest {
       return null;
     }
 
+    // TSAS:
     const params = this.params as { device?: unknown; method?: unknown; args?: unknown };
     if (typeof params.device !== "string" || typeof params.method !== "string") {
       return null;
@@ -73,11 +75,13 @@ export class RPCResponse<T = any> {
       return null;
     }
 
+    // TSAS:
     const candidate = message as { jsonrpc?: unknown; id?: unknown; result?: unknown };
     if (candidate.jsonrpc !== "2.0" || candidate.id === undefined || !("result" in candidate)) {
       return null;
     }
 
+    // TSAS:
     return new RPCResponse(candidate.id as RpcId, candidate.result);
   }
 }
@@ -95,6 +99,7 @@ export class RPCError {
       return null;
     }
 
+    // TSAS:
     const candidate = message as {
       jsonrpc?: unknown;
       id?: unknown;
@@ -114,6 +119,7 @@ export class RPCError {
       return null;
     }
 
+    // TSAS:
     return new RPCError(candidate.id as RpcId, {
       code: error.code,
       message: error.message,
@@ -142,6 +148,7 @@ export class RPCNotification<T = any> {
       return null;
     }
 
+    // TSAS:
     const candidate = value as {
       jsonrpc?: unknown;
       method?: unknown;
@@ -172,6 +179,7 @@ export class RPCNotification<T = any> {
       return false;
     }
 
+    // TSAS:
     const candidate = value as {
       jsonrpc?: unknown;
       method?: unknown;

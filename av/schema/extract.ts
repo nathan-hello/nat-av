@@ -120,8 +120,10 @@ function resolveType(type: Type, location: MorphNode, seen: Set<string> = new Se
   if (resolved.isNull()) return { kind: "primitive", type: "null" };
   if (resolved.isUndefined()) return { kind: "primitive", type: "undefined" };
   if (resolved.isStringLiteral())
+    // TSAS:
     return { kind: "literal", value: resolved.getLiteralValue() as string };
-  if (resolved.isNumberLiteral())
+    if (resolved.isNumberLiteral())
+    // TSAS:
     return { kind: "literal", value: resolved.getLiteralValue() as number };
   if (resolved.isBooleanLiteral()) return { kind: "literal", value: resolved.getText() === "true" };
   if (resolved.isString()) return { kind: "primitive", type: "string" };

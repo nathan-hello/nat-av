@@ -77,6 +77,7 @@ export function DebugPage(handle: Handle) {
           </header>
 
           <div mix={tabsStyle}>
+            // TSAS:
             {(["state", "api"] as Exclude<Tab, "events">[]).map((next) => (
               <button
                 key={next}
@@ -145,6 +146,7 @@ export function DebugPage(handle: Handle) {
           mix={[
             inputStyle,
             on("change", (event) => {
+              // TSAS:
               argsText = (event.currentTarget as HTMLTextAreaElement).value;
             }),
           ]}

@@ -173,11 +173,14 @@ export function bindHttpToWs(
 
   app.ws(path, {
     open(ws) {
+      // TSAS:
       const connection = toWebSocketConnection(ws as WebSocketPeer);
+      // TSAS:
       connections.set(ws as object, connection);
       handlers.WsOpenHandler(new Event("open"), connection);
     },
     message(ws, message, isBinary) {
+      // TSAS:
       const connection = connections.get(ws as object);
       if (!connection) return;
 
@@ -189,10 +192,12 @@ export function bindHttpToWs(
       );
     },
     close(ws, code, message) {
+      // TSAS:
       const connection = connections.get(ws as object);
       if (!connection) return;
 
       connection.readyState = 3;
+      // TSAS:
       connections.delete(ws as object);
 
       tel.info("websocket closed", {
@@ -210,6 +215,7 @@ export function bindHttpToWs(
       );
     },
     error(ws) {
+      // TSAS:
       const connection = connections.get(ws as object);
       if (!connection) return;
 
