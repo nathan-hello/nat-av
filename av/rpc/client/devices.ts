@@ -44,17 +44,17 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
   get debug(): ClientRpcDeviceDebug {
     const schema = this.schema;
 
-    return {
-      schema,
-      typeName: schema?.typeName,
-      source: schema?.source,
-      methods: schema?.methods ?? {},
-      state: this.state,
-      logs: this.client.debugEntries.filter((e) => e.name === this.name),
-      clearLogs: () => {
-        this.client.debugEntries = this.client.debugEntries.filter((e) => e.name !== this.name);
-      },
-    };
+      return {
+        schema,
+        typeName: schema?.typeName,
+        source: schema?.source,
+        methods: schema?.methods ?? {},
+        state: this.state,
+        logs: this.client.debug.getEntriesForDevice(this.name),
+        clearLogs: () => {
+          this.client.debug.clearEntriesForDevice(this.name);
+        },
+      };
   }
 
   isPending(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {

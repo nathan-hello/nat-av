@@ -4,7 +4,6 @@ import { RPCErrors, RPCNotification } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
-import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 
 const decoder = new TextDecoder();
 
@@ -67,27 +66,11 @@ export class WebsocketHandler<N extends Natav = Natav> {
     this.bus.on("natav:automation:triggered", (payload) => {
       this.BroadcastEvent("natav:automation:triggered", payload);
     });
-
-    this.bus.on("natav:opentelemetry:entry", (payload) => {
-      this.BroadcastLog(ReadableLogRecordToLogEntry(payload.message.record));
-    });
   }
 
   BroadcastEvent<E extends EventName>(_: E, payload: EventPayload<E>) {
     const notification = new RPCNotification(payload);
     this.broadcast(JSON.stringify(notification));
-  }
-
-  BroadcastLog(entry: unknown) {
-    let message = this.tel.task("LOG_STRINGIFY", () => {
-      return JSON.stringify(entry);
-    });
-
-    if (!message.ok) {
-      return;
-    }
-
-    this.broadcast(message.data);
   }
 
   private broadcast(message: string) {

@@ -1,4 +1,5 @@
 import type { ReadableLogRecord } from "@av/telemetry/types";
+import type { DebugSocketEvent } from "@av/rpc/debug/types";
 import { TypedEventTarget } from "./lib/eventtarget";
 import type Natav from "./natav";
 import type { natav } from "./index";
@@ -17,6 +18,7 @@ export type SystemEvents<N extends Natav = natav> =
   | { type: "natav:device:connected"; name: Natav.Names<N> }
   | { type: "natav:device:disconnected"; name: Natav.Names<N> }
   | { type: "natav:device:error"; name: Natav.Names<N>; error?: Error | unknown }
+  | { type: "natav:debug:socket"; message: DebugSocketEvent }
   | { type: "natav:opentelemetry:entry"; message: { record: ReadableLogRecord; asString: string } }
   | {
       type: "natav:automation:triggered";

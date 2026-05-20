@@ -1,4 +1,5 @@
 import { bus } from "./bus";
+import type { DebugDeviceNode } from "@av/rpc/debug/types";
 import { type Driver } from "./driver";
 import type {
   NamesOf,
@@ -41,6 +42,29 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
 
   GetAllDriverNames(): string[] {
     return this.all().map((d) => d.name);
+  }
+
+  GetDebugTree(): DebugDeviceNode[] {
+    const toNode = (driver: Driver): DebugDeviceNode => {
+      const socket = driver.socket;
+      const canWrite = typeof socket?.write === "function";
+      const canReceive = typeof socket?.on === "function";
+
+      return {
+        name: driver.name,
+        driverName: driver._drivername,
+        children: Object.values(driver.deps as Record<string, Driver>).map((child) => toNode(child)),
+        ...(typeof socket?.name === "string" ? {
+          socket: {
+            traceName: socket.name,
+            canWrite,
+            canReceive,
+          },
+        } : {}),
+      };
+    };
+
+    return this.configs.map((driver) => toNode(driver));
   }
 
   async Start() {

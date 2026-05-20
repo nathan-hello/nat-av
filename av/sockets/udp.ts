@@ -1,5 +1,6 @@
 import * as dgram from "node:dgram";
 
+import { bus } from "@av/bus";
 import { TypedEventTarget } from "../lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
 import { Telemetry } from "@av/telemetry";
@@ -39,6 +40,18 @@ export class Udp extends TypedEventTarget<UdpEvents> {
 
   private handleData(buf: Buffer): void {
     this.tel.info("HANDLER_DATA");
+    bus.dispatch("natav:debug:socket", {
+      type: "natav:debug:socket",
+      message: {
+        traceName: `UdpClient::${this.config.addr}:${this.config.port}`,
+        direction: "rx",
+        time: new Date().toISOString(),
+        encoding: "utf8",
+        text: buf.toString("utf8"),
+        hex: buf.toString("hex"),
+        length: buf.length,
+      },
+    });
     this.emit("receive", buf);
   }
 
@@ -76,9 +89,20 @@ export class Udp extends TypedEventTarget<UdpEvents> {
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
     this.tel.info("SEND_DATA", {
-      debugger_ui: "socket-tx",
       bufferHex: buffer.toString("hex"),
       bufferString: buffer.toString("utf8"),
+    });
+    bus.dispatch("natav:debug:socket", {
+      type: "natav:debug:socket",
+      message: {
+        traceName: `UdpClient::${this.config.addr}:${this.config.port}`,
+        direction: "tx",
+        time: new Date().toISOString(),
+        encoding: "utf8",
+        text: buffer.toString("utf8"),
+        hex: buffer.toString("hex"),
+        length: buffer.length,
+      },
     });
 
     this.socket.send(buffer, (error) => {

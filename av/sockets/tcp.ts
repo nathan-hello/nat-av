@@ -1,4 +1,5 @@
 import * as net from "node:net";
+import { bus } from "@av/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { SocketEventMap } from "@av/types";
 import { Telemetry } from "@av/telemetry";
@@ -62,15 +63,22 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
 
-      this.tel.debug("WROTE_DATA", {
-        debugger_ui: "socket-rx",
-        hex: data.toString("hex"),
-        text: data.toString("utf8"),
-      });
     this.tel.info("WRITE_DATA", {
-      debugger_ui: "socket-tx",
       bufferHex: buffer.toString("hex"),
       bufferString: buffer.toString("utf8"),
+    });
+
+    bus.dispatch("natav:debug:socket", {
+      type: "natav:debug:socket",
+      message: {
+        traceName: this.name,
+        direction: "tx",
+        time: new Date().toISOString(),
+        encoding: "utf8",
+        text: buffer.toString("utf8"),
+        hex: buffer.toString("hex"),
+        length: buffer.length,
+      },
     });
 
     const flushed = this.socket.write(buffer);
@@ -114,11 +122,22 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     this.socket = result.data;
 
     this.socket.on("data", (data) => {
-      this.tel.info("RECEIVED_DATA", { length: data.length });
-      this.tel.debug("RECIEVED_DATA_TEXT", {
-        debugger_ui: "socket-rx",
+      this.tel.info("RECIEVED_DATA", {
         hex: data.toString("hex"),
         text: data.toString("utf8"),
+        length: data.length
+      });
+      bus.dispatch("natav:debug:socket", {
+        type: "natav:debug:socket",
+        message: {
+          traceName: this.name,
+          direction: "rx",
+          time: new Date().toISOString(),
+          encoding: "utf8",
+          text: data.toString("utf8"),
+          hex: data.toString("hex"),
+          length: data.length,
+        },
       });
       this.dispatch("receive", Buffer.isBuffer(data) ? data : Buffer.from(data));
     });

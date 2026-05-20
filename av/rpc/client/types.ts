@@ -1,4 +1,5 @@
 import type Natav from "@av/natav";
+import type { DebugEntry } from "@av/rpc/debug/types";
 import type { RPCError } from "@av/rpc/protocol";
 import type { ApiSurfaceSchema } from "@av/schema/types";
 
@@ -39,21 +40,6 @@ export type RpcEvents = {
     | { reason: "json-parse-failed"; raw: string }
     | { reason: "rpc-error"; error: RPCError };
   change: { name?: string };
-};
-
-export type DebugEntry = {
-  time: string;
-  context: {
-    spanId: string | undefined;
-    traceId: string | undefined;
-    traceName: string;
-  };
-  severity: {
-    id: number;
-    text: string;
-  };
-  name: string;
-  data: any;
 };
 
 export type TransportOptions = {

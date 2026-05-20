@@ -26,10 +26,25 @@ export function getRpc(handle: Handle<any, any>): ClientRpc {
     await handle.update();
   });
 
+  const offDebugReady = rpcClient.debug.on("ready", async () => {
+    await handle.update();
+  });
+
+  const offDebugClose = rpcClient.debug.on("close", async () => {
+    await handle.update();
+  });
+
+  const offDebugChange = rpcClient.debug.on("change", async () => {
+    await handle.update();
+  });
+
   const cleanup = () => {
     offReady();
     offClose();
     offChange();
+    offDebugReady();
+    offDebugClose();
+    offDebugChange();
     subscriptions.delete(handle);
   };
 

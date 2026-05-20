@@ -14,6 +14,7 @@ export const assets = createAssetServer({
     "app/controllers/home/**",
     "app/controllers/debug/**",
     "app/rpc/**",
+    "app/spa/**",
     "app/ui/**",
     "av/**",
     "node_modules/**",

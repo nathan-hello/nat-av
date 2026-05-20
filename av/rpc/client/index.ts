@@ -4,11 +4,11 @@ import type { System, SystemStateData } from "@av/system";
 import type { ApiSurfaceSchema } from "@av/schema/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
+import { RpcDebugClient } from "@av/rpc/debug/client";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { RPCNotification, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type {
   ClientRpcBindings,
-  DebugEntry,
   PendingRequest,
   RpcEvents,
 } from "@av/rpc/client/types";
@@ -48,9 +48,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
   // TSAS:
   public schema: ClientRpcBindings = {} as ClientRpcBindings;
-  public debugEntries: DebugEntry[] = [];
   public deviceStates: DeviceStateMap<N> = {};
   public systemStateData: SystemStateData = null;
+  public debug: RpcDebugClient;
 
   constructor() {
     super();
@@ -58,6 +58,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       reconnect: true,
       retryDelay: 1000,
     });
+    this.debug = new RpcDebugClient(this);
     this.systemApiProxy = new Proxy(
       {},
       {
@@ -106,11 +107,13 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
   connect() {
     this.transport.connect();
+    this.debug.connect();
     return this;
   }
 
   close(code?: number, reason?: string) {
     this.transport.close(code, reason);
+    this.debug.close(code, reason);
     return this;
   }
 
@@ -264,11 +267,6 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       return;
     }
 
-    if (isDebugEntry(parsed.data)) {
-      this.pushDebugEntry(parsed.data);
-      return;
-    }
-
     const response = RPCResponse.parse(parsed.data);
     if (response) {
       this.tel.info("got-response", response);
@@ -298,10 +296,6 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       (error as any).data = rpcError.error.data;
       this.rejectPendingRequest(rpcError.id, error);
     }
-  }
-
-  private pushDebugEntry(entry: DebugEntry) {
-    this.debugEntries = [entry, ...this.debugEntries].slice(0, 500);
   }
 
   private applySystemState(state: SystemStateData) {
@@ -431,21 +425,4 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       handle.dispatchChange();
     }
   }
-}
-
-function isDebugEntry(value: unknown): value is DebugEntry {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  // TSAS:
-  const entry = value as Partial<DebugEntry>;
-  return (
-    typeof entry.time === "string" &&
-    typeof entry.name === "string" &&
-    !!entry.context &&
-    typeof entry.context === "object" &&
-    !!entry.severity &&
-    typeof entry.severity === "object"
-  );
 }

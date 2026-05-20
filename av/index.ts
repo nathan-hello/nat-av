@@ -1,4 +1,5 @@
 import { bindHttpToWs, WebsocketHandler, type WebSocketApp } from "@av/rpc/server/websocket";
+import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
 import { System } from "@av/system";
@@ -59,9 +60,11 @@ new AutomationEngine({ bus, natav });
 
 const rpc = new RPCServer({ system, natav });
 const websocket = new WebsocketHandler({ bus, rpc, natav });
+const debug = new RpcDebugServer({ bus, natav });
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
+  bindDebugHttpToWs(app, "/debug/ws", debug, new Telemetry("Server::DebugWebsocket"));
 
   await natav.Start();
   // TSAS:
