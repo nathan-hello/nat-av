@@ -36,7 +36,9 @@ while IFS= read -r -d '' file; do
       if [[ "$prev_line" == *"// TSAS:"* ]]; then
         ((annotated++))
       else
-        echo "  MISSING: ${file#./}:$line_num"
+        echo "MISSING: ${file#./}:$line_num"
+        echo "  $line"
+        echo
       fi
     fi
     prev_line="$line"
