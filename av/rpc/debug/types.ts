@@ -15,7 +15,7 @@ export type DebugDeviceNode = {
 
 export type DebugSocketMessage = {
   device: string;
-  direction: "rx" | "tx";
+  direction: "rx" | "tx" | "rx-delimited";
   time: string;
   traceName: string;
   encoding: SocketDebugEncoding;
@@ -26,7 +26,7 @@ export type DebugSocketMessage = {
 
 export type DebugSocketEvent = {
   traceName: string;
-  direction: "rx" | "tx";
+  direction: "rx" | "tx" | "rx-delimited";
   time: string;
   encoding: SocketDebugEncoding;
   text: string;

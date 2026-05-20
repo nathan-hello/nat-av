@@ -17,26 +17,37 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   let sendError = "";
 
   async function sendSelectedSocket() {
-    if (!handle.props.selectedDeviceName || draft.length === 0 || sending) return;
+    if (!handle.props.selectedDeviceName || draft.length === 0 || sending) {
+      return;
+    }
 
     sending = true;
     sendError = "";
     await handle.update();
 
-    try {
-      await handle.props.debug.writeSocket(handle.props.selectedDeviceName, draft, encoding);
-      draft = "";
-    } catch (error) {
-      sendError = error instanceof Error ? error.message : String(error);
-    } finally {
-      sending = false;
-      await handle.update();
+    if (encoding === "utf8") {
+      draft = draft.replaceAll("\\n", "\n");
+      draft = draft.replaceAll("\\r", "\r");
     }
+
+    await handle.props.debug.writeSocket(handle.props.selectedDeviceName, draft, encoding);
+
+
+
+    draft = "";
+    sending = false;
+    await handle.update();
   }
 
   return () => {
-    const selected = handle.props.selectedDeviceName ? handle.props.debug.getDevice(handle.props.selectedDeviceName) : undefined;
-    const messages = handle.props.selectedDeviceName ? [...handle.props.debug.getSocketMessages(handle.props.selectedDeviceName)].reverse() : [];
+    const selected =
+      handle.props.selectedDeviceName ?
+        handle.props.debug.getDevice(handle.props.selectedDeviceName)
+      : undefined;
+    const messages =
+      handle.props.selectedDeviceName ?
+        [...handle.props.debug.getSocketMessages(handle.props.selectedDeviceName)].reverse()
+      : [];
 
     return (
       <>
@@ -44,9 +55,13 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
           <div mix={panelHeaderStyle}>
             <div>
               <h2 mix={panelTitleStyle}>{selected?.name ?? "Select a device"}</h2>
-              <p mix={panelSubtitleStyle}>{selected?.socket ? `trace: ${selected.socket.traceName}` : "No socket selected yet."}</p>
+              <p mix={panelSubtitleStyle}>
+                {selected?.socket ?
+                  `trace: ${selected.socket.traceName}`
+                : "No socket selected yet."}
+              </p>
             </div>
-            {handle.props.selectedDeviceName ? (
+            {handle.props.selectedDeviceName ?
               <button
                 type="button"
                 mix={[
@@ -59,21 +74,39 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
               >
                 Clear
               </button>
-            ) : null}
+            : null}
           </div>
 
           <div mix={messageListStyle}>
-            {messages.length > 0 ? messages.map((message, index) => (
-              <article key={`${message.time}:${message.direction}:${index}`} mix={messageCardStyle(message.direction)}>
-                <div mix={messageMetaRowStyle}>
-                  <span mix={messageDirectionStyle(message.direction)}>{message.direction === "rx" ? "RX" : "TX"}</span>
-                  <span>{message.time}</span>
-                  <span>{message.length ?? message.text.length} bytes</span>
-                </div>
-                <pre mix={messageBodyStyle}>{message.text || "<empty utf8 payload>"}</pre>
-                {message.hex ? <code mix={hexStyle}>{message.hex}</code> : null}
-              </article>
-            )) : <p mix={emptyStyle}>{handle.props.selectedDeviceName ? "No socket traffic yet." : "Select a socket-capable device."}</p>}
+            {messages.length > 0 ?
+              messages.map((message, index) => (
+                <article
+                  key={`${message.time}:${message.direction}:${index}`}
+                  mix={messageCardStyle(message.direction)}
+                >
+                  <div mix={messageMetaRowStyle}>
+                    <span mix={messageDirectionStyle(message.direction)}>
+                      {message.direction === "rx-delimited" ?
+                        "RX"
+                      : message.direction === "rx" ?
+                        "RX"
+                      : "TX"}
+                    </span>
+                    <span>{message.time}</span>
+                    <span>{message.length ?? message.text.length} bytes</span>
+                  </div>
+                  <pre mix={messageBodyStyle}>{message.text || "<empty utf8 payload>"}</pre>
+                  {message.hex ?
+                    <code mix={hexStyle}>{message.hex}</code>
+                  : null}
+                </article>
+              ))
+            : <p mix={emptyStyle}>
+                {handle.props.selectedDeviceName ?
+                  "No socket traffic yet."
+                : "Select a socket-capable device."}
+              </p>
+            }
           </div>
         </section>
 
@@ -81,7 +114,9 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
           <div mix={panelHeaderStyle}>
             <div>
               <h2 mix={panelTitleStyle}>Write</h2>
-              <p mix={panelSubtitleStyle}>Send utf8 text directly to the underlying device socket.</p>
+              <p mix={panelSubtitleStyle}>
+                Send utf8 text directly to the underlying device socket.
+              </p>
             </div>
           </div>
 
@@ -118,10 +153,16 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
               />
             </label>
 
-            {sendError ? <p mix={errorStyle}>{sendError}</p> : null}
+            {sendError ?
+              <p mix={errorStyle}>{sendError}</p>
+            : null}
 
             <div mix={composerFooterStyle}>
-              <span mix={hintStyle}>{handle.props.selectedDeviceName ? `Target: ${handle.props.selectedDeviceName}` : "Pick a device before sending."}</span>
+              <span mix={hintStyle}>
+                {handle.props.selectedDeviceName ?
+                  `Target: ${handle.props.selectedDeviceName}`
+                : "Pick a device before sending."}
+              </span>
               <button
                 type="button"
                 disabled={!handle.props.selectedDeviceName || draft.length === 0 || sending}
@@ -142,23 +183,109 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   };
 }
 
-const panelStyle = css({ background: "#020617", border: "1px solid #1e293b", borderRadius: "18px", padding: "18px", display: "grid", gap: "14px" });
-const panelHeaderStyle = css({ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "start", flexWrap: "wrap" });
+const panelStyle = css({
+  background: "#020617",
+  border: "1px solid #1e293b",
+  borderRadius: "18px",
+  padding: "18px",
+  display: "grid",
+  gap: "14px",
+});
+const panelHeaderStyle = css({
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
+  alignItems: "start",
+  flexWrap: "wrap",
+});
 const panelTitleStyle = css({ margin: 0, fontSize: "18px" });
 const panelSubtitleStyle = css({ margin: "6px 0 0", color: "#94a3b8", fontSize: "13px" });
 const messageListStyle = css({ display: "grid", gap: "10px", maxHeight: "58vh", overflow: "auto" });
-const messageCardStyle = (direction: "rx" | "tx") => css({ display: "grid", gap: "10px", padding: "14px", borderRadius: "16px", border: "1px solid " + (direction === "rx" ? "#155e75" : "#713f12"), background: direction === "rx" ? "#082f49" : "#431407" });
-const messageMetaRowStyle = css({ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: "#cbd5e1" });
-const messageDirectionStyle = (direction: "rx" | "tx") => css({ padding: "3px 8px", borderRadius: "999px", background: direction === "rx" ? "#0e7490" : "#b45309", color: "#f8fafc", fontSize: "11px", fontWeight: "700", letterSpacing: "0.08em" });
-const messageBodyStyle = css({ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "13px", lineHeight: 1.5 });
-const hexStyle = css({ display: "block", color: "#cbd5e1", fontSize: "12px", wordBreak: "break-all" });
+const messageCardStyle = (direction: "rx" | "tx" | "rx-delimited") =>
+  css({
+    display: "grid",
+    gap: "10px",
+    padding: "14px",
+    borderRadius: "16px",
+    border:
+      "1px solid " + (direction === "rx" || direction === "rx-delimited" ? "#155e75" : "#713f12"),
+    background: direction === "rx" || direction === "rx-delimited" ? "#082f49" : "#431407",
+  });
+const messageMetaRowStyle = css({
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+  fontSize: "12px",
+  color: "#cbd5e1",
+});
+const messageDirectionStyle = (direction: "rx" | "tx" | "rx-delimited") =>
+  css({
+    padding: "3px 8px",
+    borderRadius: "999px",
+    background: direction === "rx" ? "#0e7490" : "#b45309",
+    color: "#f8fafc",
+    fontSize: "11px",
+    fontWeight: "700",
+    letterSpacing: "0.08em",
+  });
+const messageBodyStyle = css({
+  margin: 0,
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: "13px",
+  lineHeight: 1.5,
+});
+const hexStyle = css({
+  display: "block",
+  color: "#cbd5e1",
+  fontSize: "12px",
+  wordBreak: "break-all",
+});
 const composerStyle = css({ display: "grid", gap: "14px" });
 const fieldStyle = css({ display: "grid", gap: "8px", color: "#cbd5e1", fontSize: "13px" });
-const inputStyle = css({ width: "100%", borderRadius: "12px", border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", padding: "10px 12px" });
-const textareaStyle = css({ width: "100%", borderRadius: "16px", border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", padding: "12px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", lineHeight: 1.5, resize: "vertical" });
-const composerFooterStyle = css({ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" });
+const inputStyle = css({
+  width: "100%",
+  borderRadius: "12px",
+  border: "1px solid #334155",
+  background: "#0f172a",
+  color: "#e2e8f0",
+  padding: "10px 12px",
+});
+const textareaStyle = css({
+  width: "100%",
+  borderRadius: "16px",
+  border: "1px solid #334155",
+  background: "#0f172a",
+  color: "#e2e8f0",
+  padding: "12px",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  lineHeight: 1.5,
+  resize: "vertical",
+});
+const composerFooterStyle = css({
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
+  alignItems: "center",
+  flexWrap: "wrap",
+});
 const hintStyle = css({ color: "#94a3b8", fontSize: "12px" });
-const primaryButtonStyle = css({ borderRadius: "999px", border: "1px solid #0ea5e9", background: "#0284c7", color: "#f8fafc", padding: "10px 16px", fontWeight: "700" });
-const secondaryButtonStyle = css({ borderRadius: "999px", border: "1px solid #334155", background: "#0f172a", color: "#cbd5e1", padding: "8px 12px" });
+const primaryButtonStyle = css({
+  borderRadius: "999px",
+  border: "1px solid #0ea5e9",
+  background: "#0284c7",
+  color: "#f8fafc",
+  padding: "10px 16px",
+  fontWeight: "700",
+});
+const secondaryButtonStyle = css({
+  borderRadius: "999px",
+  border: "1px solid #334155",
+  background: "#0f172a",
+  color: "#cbd5e1",
+  padding: "8px 12px",
+});
 const errorStyle = css({ margin: 0, color: "#fca5a5", fontSize: "13px" });
 const emptyStyle = css({ margin: 0, color: "#64748b" });

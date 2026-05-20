@@ -29,3 +29,30 @@ app/ folder.
 
 The `./av/` directory is a vendored library called `nat-av`. Refer to
 `.agents/Natav.md` for more information.
+
+## Rules
+
+- Whenever creating a Typescript assertion by using the `as` keyword, you must
+  add a `// TSAS: ` comment above the assertion explaining why the assertion
+  exists. This comment should only be one line of text, even after `prettier`
+  formats the code. You should refrain from using assertions unless
+
+  - It is something that is unknowable from the Typescript compiler and we are
+    100% confident that the assertion will be valid by the time it will become
+    necessary. For example, we might initialize a class variable with a default
+    value but we are 100% of the time going to instantiate it properly, so we
+    use `as Type`. If you use an assertion for this reason, describe in the
+    comment where exactly the guarantee of runtime-typesafety is coming from.
+    Keep this comment short: only one line of text.
+  
+  - It is a situation where if we were to make it typesafe then it would
+    explode the complexity of the type system for a small amount of gain. This
+    project has a lot of Typescript code just for the end to end RPC
+    typesafety. If you're reaching for a complex type, it likely already
+    exists. If such a type would make the complicated type system even more
+    complex, then you may use `as`. If you use an assertion for this reason,
+    describe in the comment why it would be complicated. It is a comment so
+    keep it short: only one of text.
+
+- All imports use either the `@/` or `@av/` aliases. Do not ever use relative
+  paths to import a file.

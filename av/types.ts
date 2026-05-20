@@ -4,6 +4,7 @@ export type Protocols = "tcp" | "udp" | "ssh" | "telnet" | "http" | "mock";
 
 export type DriverEvents<StateData = any> = {
   "driver:state-updated": Partial<StateData>;
+  "driver:delimited": Buffer;
   "socket:bubbled": SocketEventMap;
 };
 

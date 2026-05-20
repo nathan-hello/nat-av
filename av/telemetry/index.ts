@@ -15,7 +15,7 @@ export type TaskResult<R> =
   | { ok: false; error: string; data?: RPCErrorData };
 
 export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
-  private namespace: string;
+  namespace: string;
 
   constructor(namespace: string) {
     this.namespace = namespace;

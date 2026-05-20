@@ -1,6 +1,6 @@
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import { type Bus, bus } from "@av/bus";
+import { bus } from "@av/bus";
 import type { DeviceSocket, DriverEvents } from "@av/types";
 
 type AnyDriver = Driver<
@@ -30,16 +30,14 @@ export abstract class Driver<
   public name: Name;
   public _drivername: DriverName;
   protected tel: Telemetry;
-  protected bus: Pick<Bus, "on" | "once">;
 
   constructor({ name, driverName }: { name: Name; driverName: DriverName }) {
     super();
     this.name = name;
     this._drivername = driverName;
     this.tel = new Telemetry(`Driver::${this.name}`);
-    this.bus = bus;
 
-    this.bus.on("natav:state:override", (payload) => {
+    bus.on("natav:state:override", (payload) => {
       if (payload.name !== this.name) {
         return;
       }
@@ -47,6 +45,21 @@ export abstract class Driver<
       this.state = { ...this.state, ...payload.data };
 
       this.dispatch("driver:state-updated", this.state);
+    });
+
+    this.on("driver:delimited", (payload) => {
+      bus.dispatch("natav:debug:socket", {
+        type: "natav:debug:socket",
+        message: {
+          traceName: this.socket?.name ?? this.name,
+          direction: "rx-delimited",
+          time: new Date().toISOString(),
+          encoding: "utf8",
+          text: payload.toString("utf8"),
+          hex: payload.toString("hex"),
+          length: payload.length,
+        },
+      });
     });
   }
 

@@ -53,9 +53,9 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       },
     });
 
-    this.requests.on("message", (message) => {
-      if (!("id" in message)) {
-        this.tel.debug("got-jsonrpc-notification", { notification: message });
+    this.requests.on("message", (event) => {
+      if (!("id" in event)) {
+        this.tel.debug("got-jsonrpc-notification", { notification: event });
       }
     });
 
@@ -90,15 +90,13 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       throw new RPCErrorData({ code: 400, message: result.error });
     }
 
-    const response = result.data;
-
-    if (typeof response.result === "number" && response.result !== 0) {
-      this.tel.error("error-from-device", { request: req, response });
+    if (typeof result.data.result === "number" && result.data.result !== 0) {
+      this.tel.error("error-from-device", { request: req, response: result.data });
     }
 
-    this.tel.debug("RESPONSE", { text: JSON.stringify(response) });
+    this.dispatch("driver:delimited", Buffer.from(JSON.stringify(result.data)));
 
-    return response;
+    return result.data;
   }
 
   api = {

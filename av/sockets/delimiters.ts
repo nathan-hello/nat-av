@@ -28,16 +28,30 @@ export const Delimiters = {
     };
   },
 
-  characterDelimted: (delimiter: string): DataDelimiter<string> => {
+  characterDelimted: (
+    delimiter: string | string[],
+    includeDelimiter: boolean,
+  ): DataDelimiter<string> => {
+    const delimiters = Array.isArray(delimiter) ? delimiter : [delimiter];
     return (buffer: Buffer) => {
       const data = buffer.toString("utf8");
-      const lines = data.split(delimiter);
-
-      if (lines.length > 1) {
-        return lines.slice(0, -1); // Return all complete lines
+      let bestIndex = -1;
+      let bestDelimiter = "";
+      for (const d of delimiters) {
+        const index = data.indexOf(d);
+        if (index !== -1 && (bestIndex === -1 || index < bestIndex)) {
+          bestIndex = index;
+          bestDelimiter = d;
+        }
+      }
+      if (bestIndex === -1) {
+        return null;
       }
 
-      return null; // No complete lines yet
+      if (includeDelimiter) {
+        return [data.slice(0, bestIndex + bestDelimiter.length)];
+      }
+      return [data.slice(0, bestIndex)];
     };
   },
 

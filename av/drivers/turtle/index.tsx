@@ -13,7 +13,7 @@ export default class ChazyControl<const N extends string = string> extends Drive
     this.socket = socket;
     this.requests = new RequestManager({
       socket: this.socket,
-      delimiter: Delimiters.characterDelimted("CONTROLLER>"),
+      delimiter: Delimiters.characterDelimted(["CONTROLLER>", "\r\n\r\n", "\\r\\n\\r\\n"], false),
       tel: this.tel,
       formatter: (str) => {
         return Buffer.from(str + "\r");
@@ -23,6 +23,11 @@ export default class ChazyControl<const N extends string = string> extends Drive
         strategy: "blocking-queue",
         minGapMs: 1,
       },
+    });
+
+    this.requests.on("message", (event) => {
+      this.tel.debug("got driver delimited", { str: event });
+      this.dispatch("driver:delimited", Buffer.from(event));
     });
   }
 

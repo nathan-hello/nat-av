@@ -1,4 +1,4 @@
-import { type EventName, type EventPayload, type Bus } from "@av/bus";
+import { type EventName, type EventPayload, bus } from "@av/bus";
 import type Natav from "@av/natav";
 import { RPCErrors, RPCNotification } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
@@ -43,27 +43,25 @@ function readMessage(data: MessageEvent["data"]): string {
 export class WebsocketHandler<N extends Natav = Natav> {
   private clients = new Set<WebSocketConnection>();
   private rpc: RPCServer<N>;
-  private bus: Bus;
   private natav: N;
   private tel = new Telemetry("Server::WS");
 
-  constructor(args: { bus: Bus; rpc: RPCServer<N>; natav: N }) {
-    this.bus = args.bus;
+  constructor(args: { rpc: RPCServer<N>; natav: N }) {
     this.rpc = args.rpc;
     this.natav = args.natav;
-    this.bus.on("natav:state:update", (payload) => {
+    bus.on("natav:state:update", (payload) => {
       this.BroadcastEvent("natav:state:update", payload);
     });
 
-    this.bus.on("natav:device:connected", (payload) => {
+    bus.on("natav:device:connected", (payload) => {
       this.BroadcastEvent("natav:device:connected", payload);
     });
 
-    this.bus.on("natav:device:disconnected", (payload) => {
+    bus.on("natav:device:disconnected", (payload) => {
       this.BroadcastEvent("natav:device:disconnected", payload);
     });
 
-    this.bus.on("natav:automation:triggered", (payload) => {
+    bus.on("natav:automation:triggered", (payload) => {
       this.BroadcastEvent("natav:automation:triggered", payload);
     });
   }

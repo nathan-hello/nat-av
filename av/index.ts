@@ -57,14 +57,13 @@ export const schema = new SchemaGenerator({
 });
 
 const system = new System({
-  bus,
   natav,
   schema: schema.toJSON(),
 });
-new AutomationEngine({ bus, natav });
+new AutomationEngine({ natav });
 
 const rpc = new RPCServer({ system, natav });
-const websocket = new WebsocketHandler({ bus, rpc, natav });
+const websocket = new WebsocketHandler({ rpc, natav });
 const debug = new RpcDebugServer({ bus, natav });
 
 export async function start(app: WebSocketApp) {
