@@ -1,17 +1,12 @@
 import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import type { System, SystemStateData } from "@av/system";
-import type { ApiSurfaceSchema } from "@av/schema/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { RpcDebugClient } from "@av/rpc/debug/client";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { RPCNotification, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
-import type {
-  ClientRpcBindings,
-  PendingRequest,
-  RpcEvents,
-} from "@av/rpc/client/types";
+import type { PendingRequest, RpcEvents } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { isRPCNotification } from "@av/rpc/utils";
@@ -46,8 +41,6 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   private systemApiProxy: SystemApi<N>;
   private systemHandle: ClientRpcSystem<N>;
 
-  // TSAS:
-  public schema: ClientRpcBindings = {} as ClientRpcBindings;
   public deviceStates: DeviceStateMap<N> = {};
   public systemStateData: SystemStateData = null;
   public debug: RpcDebugClient;
@@ -70,14 +63,14 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
           return (...args: any[]) => this.callSystem(methodName, ...args);
         },
       },
-    // TSAS:
+      // TSAS:
     ) as SystemApi<N>;
 
     this.systemHandle = {
       api: this.systemApiProxy,
       isPending: (method) => this.isSystemPending(method),
       pendingCount: (method) => this.getSystemPendingCount(method),
-    // TSAS:
+      // TSAS:
     } as ClientRpcSystem<N>;
     Object.defineProperty(this.systemHandle, "state", {
       enumerable: true,
@@ -125,7 +118,7 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     await this.waitForOpen();
 
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([this.system.api.GetSchema(), this.getSystemState()]);
+      return await Promise.all([this.getSystemState()]);
     });
 
     if (!initial.ok) {
@@ -141,9 +134,8 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     }
 
     this.tel.info("successfully resolved promises");
-    const [schema, systemState] = initial.data;
+    const [systemState] = initial.data;
 
-    this.schema = schema;
     this.applySystemState(systemState);
 
     this.dispatch("ready", true);
@@ -186,7 +178,10 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   private async callSystem(method: string, ...args: any) {
     const id = this.nextRequestId();
     this.tel.debug("system", { method, args, id });
-    return this.request(new RPCRequest(id, "system.api", { method, args }), this.getSystemPendingKey(method));
+    return this.request(
+      new RPCRequest(id, "system.api", { method, args }),
+      this.getSystemPendingKey(method),
+    );
   }
 
   async getSystemState(): Promise<SystemStateData> {
@@ -200,11 +195,6 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   getDeviceState<Name extends Natav.Names<N>>(name: Name): Natav.State<N, Name> | undefined {
     // TSAS:
     return this.deviceStates[name] as Natav.State<N, Name> | undefined;
-  }
-
-  getDeviceSchema<Name extends Natav.Names<N>>(name: Name) {
-    // TSAS:
-    return this.schema.devices?.[name] as ApiSurfaceSchema | undefined;
   }
 
   isDevicePending<Name extends Natav.Names<N>>(

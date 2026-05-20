@@ -56,10 +56,7 @@ export const schema = new SchemaGenerator({
   exportName: "ClientRpc",
 });
 
-const system = new System({
-  natav,
-  schema: schema.toJSON(),
-});
+const system = new System({ natav });
 new AutomationEngine({ natav });
 
 const rpc = new RPCServer({ system, natav });

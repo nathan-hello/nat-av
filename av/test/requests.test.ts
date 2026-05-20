@@ -33,7 +33,7 @@ describe("requests", () => {
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Serial"),
       socket,
-      delimiter: Delimiters.characterDelimted("\n"),
+      delimiter: Delimiters.characterDelimted("\n", false),
       formatter: (str) => {
         if (str.at(-1) !== "\n") {
           str += "\n";
@@ -76,7 +76,7 @@ describe("requests", () => {
       tel: new Telemetry("Test::Requests::Matched"),
       socket,
       delimiter: (buffer) => {
-        const newline = Delimiters.characterDelimted("\n")(buffer);
+        const newline = Delimiters.characterDelimted("\n", false)(buffer);
         if (!newline) {
           return null;
         }
@@ -114,7 +114,7 @@ describe("requests", () => {
       tel: new Telemetry("Test::Requests::MatchedPaced"),
       socket,
       delimiter: (buffer) => {
-        const newline = Delimiters.characterDelimted("\n")(buffer);
+        const newline = Delimiters.characterDelimted("\n", false)(buffer);
         if (!newline) {
           return null;
         }
@@ -159,7 +159,7 @@ describe("requests", () => {
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::BlockingQueue"),
       socket,
-      delimiter: Delimiters.characterDelimted("\n"),
+      delimiter: Delimiters.characterDelimted("\n", false),
       formatter: (str) => {
         if (str.at(-1) !== "\n") {
           str += "\n";
@@ -192,7 +192,7 @@ describe("requests", () => {
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Messages"),
       socket,
-      delimiter: Delimiters.characterDelimted("\n"),
+      delimiter: Delimiters.characterDelimted("\n", false),
       timeoutMs: 1000,
     });
 

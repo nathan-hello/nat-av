@@ -1,6 +1,4 @@
 import { createRouter } from "remix/fetch-router";
-
-import { schema } from "@av/index";
 import { assets } from "./assets.ts";
 import { debug } from "./controllers/debug.tsx";
 import { home } from "./controllers/home.tsx";
@@ -13,9 +11,6 @@ router.get(routes.assets, async ({ request }) => {
   return response ?? new Response("Not Found", { status: 404 });
 });
 
-router.get(routes.schema, () => {
-  return schema.response();
-});
-
 router.map(routes.home, home);
+
 router.map(routes.debug, debug);

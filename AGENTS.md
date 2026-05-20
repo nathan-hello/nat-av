@@ -56,3 +56,8 @@ The `./av/` directory is a vendored library called `nat-av`. Refer to
 
 - All imports use either the `@/` or `@av/` aliases. Do not ever use relative
   paths to import a file.
+
+- The `System` class in `av/system.ts` is not meant for whatever system apis I
+  might want exposed. Its purpose is for a real-world application holding
+  internal state that is not related to any particular device. Do not add any APIs
+  or state to this class unless otherwise specified. 
