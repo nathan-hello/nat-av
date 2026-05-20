@@ -4,7 +4,7 @@ import type {
   GridTemplate,
   RectangularRegion,
 } from "@av/drivers/decoder/impl/templates/builder";
-import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/source";
+import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
 
 type CanvasGlobal = {
   resX: number;

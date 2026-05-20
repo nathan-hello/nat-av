@@ -1,8 +1,8 @@
 import { SimpleConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import { createRoot, run } from "remix/ui";
-import { HomePage } from "@/controllers/home/page";
-import { DebugPage } from "@/controllers/debug/page";
+import { HomePage } from "@/spa/home";
+import { DebugPage } from "@/spa/debug";
 
 StartLogging([new SimpleConsoleExporter()]);
 
