@@ -1,7 +1,7 @@
 import { Driver } from "../../../driver";
 import type { VideoRoute } from "../types";
 import type Decoder from "../index";
-import { BUILTIN_TEMPLATES } from "./templates/3x1/templates";
+import { BUILTIN_TEMPLATES } from "./templates/1x1/templates";
 import type { GridTemplate } from "./templates/builder";
 import config from "../config";
 

@@ -83,7 +83,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       method,
       params,
       id: this.highestId++,
-      // Typescript doesn't know that "method" and "params" are connected
+      // TSAS: Typescript doesn't know that "method" and "params" are connected
     } as DecoderMap[Method]["req"];
 
     const result = await this.requests.request<DecoderMap[Method]["res"]>(req);
