@@ -57,144 +57,181 @@ export function extractApiSurfaceSchema(args: ExtractApiSurfaceArgs): ApiSurface
 }
 
 function extractProperties(type: Type, location: MorphNode): Record<string, PropertySchema> {
-  const properties: Record<string, PropertySchema> = {};
-  for (const property of type.getProperties()) {
-    const name = property.getName();
-    if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
-    const propertyType = property.getTypeAtLocation(location);
-    if (propertyType.getCallSignatures().length > 0) continue;
-    properties[name] = {
-      readonly: isReadonlySymbol(property),
-      required: !property.isOptional(),
-      type: resolveType(
-        property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType,
-        location,
-      ),
-    };
-  }
-  return properties;
-}
-
-function extractMethods(type: Type, location: MorphNode): Record<string, MethodSchema> {
-  const methods: Record<string, MethodSchema> = {};
-  for (const property of type.getProperties()) {
-    const name = property.getName();
-    if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
-    const propertyType = property.getTypeAtLocation(location);
-    if (propertyType.getCallSignatures().length === 0) continue;
-    methods[name] = extractMethod(propertyType, location);
-  }
-  return methods;
-}
-
-function extractMethod(type: Type, location: MorphNode): MethodSchema {
-  const signature = type.getCallSignatures()[0];
-  if (!signature) return { params: [], returns: { kind: "unknown" } };
-  const params: ParameterSchema[] = signature.getParameters().map((parameter) => {
-    const declaration = parameter.getDeclarations()[0];
-    const parameterType = parameter.getTypeAtLocation(location);
-    let required = true;
-    let defaultValue: string | undefined;
-    if (declaration && Node.isParameterDeclaration(declaration)) {
-      required = !declaration.isOptional() && !declaration.hasInitializer();
-      defaultValue = declaration.getInitializer()?.getText();
-    }
-    return {
-      name: parameter.getName(),
-      required,
-      ...(defaultValue !== undefined ? { defaultValue } : {}),
-      type: resolveType(
-        required ? parameterType : stripUndefinedFromUnion(parameterType),
-        location,
-      ),
-    };
-  });
-  return { params, returns: resolveType(normalizeType(signature.getReturnType()), location) };
-}
-
-function resolveType(type: Type, location: MorphNode, seen: Set<string> = new Set()): TypeSchema {
-  const resolved = normalizeType(type);
-  const typeId = getTypeId(resolved, location);
-  if (seen.has(typeId))
-    return { kind: "reference", name: getTypeName(resolved, location) ?? typeId };
-  if (resolved.isNull()) return { kind: "primitive", type: "null" };
-  if (resolved.isUndefined()) return { kind: "primitive", type: "undefined" };
-  if (resolved.isStringLiteral())
-    // TSAS:
-    return { kind: "literal", value: resolved.getLiteralValue() as string };
-    if (resolved.isNumberLiteral())
-    // TSAS:
-    return { kind: "literal", value: resolved.getLiteralValue() as number };
-  if (resolved.isBooleanLiteral()) return { kind: "literal", value: resolved.getText() === "true" };
-  if (resolved.isString()) return { kind: "primitive", type: "string" };
-  if (resolved.isNumber()) return { kind: "primitive", type: "number" };
-  if (resolved.isBoolean()) return { kind: "primitive", type: "boolean" };
-  if (resolved.isBigInt()) return { kind: "primitive", type: "bigint" };
-  const typeName = getTypeName(resolved, location);
-  if (resolved.isUnion()) {
-    const members = resolved
-      .getUnionTypes()
-      .filter((member) => !member.isUndefined())
-      .map((member) => resolveType(normalizeType(member), location, new Set(seen)));
-    if (
-      members.length === 2 &&
-      members.every((m) => m.kind === "literal" && typeof m.value === "boolean")
-    )
-      return { kind: "primitive", type: "boolean" };
-    return { kind: "union", members };
-  }
-  if (resolved.isTuple())
-    return {
-      kind: "tuple",
-      items: resolved.getTupleElements().map((item) => resolveType(item, location, new Set(seen))),
-    };
-  if (resolved.isArray())
-    return {
-      kind: "array",
-      items:
-        resolved.getArrayElementType() ?
-          resolveType(resolved.getArrayElementType()!, location, new Set(seen))
-        : { kind: "unknown" },
-    };
-  if (resolved.getCallSignatures().length > 0)
-    return { kind: "reference", name: typeName ?? "Function" };
-  if (resolved.isObject()) {
-    seen.add(typeId);
+  try {
     const properties: Record<string, PropertySchema> = {};
-    for (const property of resolved.getProperties()) {
+    for (const property of safe(() => type.getProperties(), [] as Type["getProperties"] extends () => infer R ? R : never)) {
       const name = property.getName();
       if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
       const propertyType = property.getTypeAtLocation(location);
-      if (propertyType.getCallSignatures().length > 0) continue;
+      if (safe(() => propertyType.getCallSignatures().length, 0) > 0) continue;
       properties[name] = {
         readonly: isReadonlySymbol(property),
         required: !property.isOptional(),
         type: resolveType(
           property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType,
           location,
-          new Set(seen),
         ),
       };
     }
-    if (Object.keys(properties).length > 0)
-      return {
-        kind: "object",
-        ...(typeName && typeName !== "__type" ? { name: typeName } : {}),
-        properties,
-      };
+    return properties;
+  } catch {
+    return {};
   }
-  if (typeName) return { kind: "reference", name: typeName };
-  return { kind: "unknown" };
+}
+
+function extractMethods(type: Type, location: MorphNode): Record<string, MethodSchema> {
+  try {
+    const methods: Record<string, MethodSchema> = {};
+    for (const property of safe(() => type.getProperties(), [] as Type["getProperties"] extends () => infer R ? R : never)) {
+      const name = property.getName();
+      if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
+      const propertyType = property.getTypeAtLocation(location);
+      if (safe(() => propertyType.getCallSignatures().length, 0) === 0) continue;
+      methods[name] = extractMethod(propertyType, location);
+    }
+    return methods;
+  } catch {
+    return {};
+  }
+}
+
+function extractMethod(type: Type, location: MorphNode): MethodSchema {
+  try {
+    const signature = safe(() => type.getCallSignatures()[0], undefined);
+    if (!signature) return { params: [], returns: { kind: "unknown" } };
+    const params: ParameterSchema[] = safe(() => signature.getParameters(), [] as ReturnType<typeof signature.getParameters>).map((parameter) => {
+      const declaration = safe(() => parameter.getDeclarations()[0], undefined);
+      const parameterType = safe(() => parameter.getTypeAtLocation(location), undefined);
+      let required = true;
+      let defaultValue: string | undefined;
+      if (declaration && Node.isParameterDeclaration(declaration)) {
+        required = !declaration.isOptional() && !declaration.hasInitializer();
+        defaultValue = safe(() => declaration.getInitializer()?.getText(), undefined);
+      }
+      return {
+        name: safe(() => parameter.getName(), "param"),
+        required,
+        ...(defaultValue !== undefined ? { defaultValue } : {}),
+        type: resolveType(
+          parameterType ? (required ? parameterType : stripUndefinedFromUnion(parameterType)) : ("unknown" as unknown as Type),
+          location,
+        ),
+      };
+    });
+    return { params, returns: resolveType(normalizeType(safe(() => signature.getReturnType(), type)), location) };
+  } catch {
+    return { params: [], returns: { kind: "unknown" } };
+  }
+}
+
+function resolveType(type: Type, location: MorphNode, seen: Set<Type> = new Set()): TypeSchema {
+  try {
+    if (seen.has(type)) return { kind: "reference", name: getTypeName(type, location) ?? "unknown" };
+    const resolved = normalizeType(type);
+    const typeName = getTypeName(resolved, location);
+    if (seen.has(resolved)) return { kind: "reference", name: typeName ?? "unknown" };
+    if (safe(() => resolved.isNull(), false)) return { kind: "primitive", type: "null" };
+    if (safe(() => resolved.isUndefined(), false)) return { kind: "primitive", type: "undefined" };
+    if (safe(() => resolved.isStringLiteral(), false))
+      return { kind: "literal", value: resolved.getLiteralValue() as string };
+    if (safe(() => resolved.isNumberLiteral(), false)) return { kind: "literal", value: resolved.getLiteralValue() as number };
+    if (safe(() => resolved.isBooleanLiteral(), false)) {
+      const value = resolved.getLiteralValue();
+      return { kind: "literal", value: typeof value === "boolean" ? value : false };
+    }
+    if (safe(() => resolved.isString(), false)) return { kind: "primitive", type: "string" };
+    if (safe(() => resolved.isNumber(), false)) return { kind: "primitive", type: "number" };
+    if (safe(() => resolved.isBoolean(), false)) return { kind: "primitive", type: "boolean" };
+    if (safe(() => resolved.isBigInt(), false)) return { kind: "primitive", type: "bigint" };
+    if (safe(() => resolved.isUnion(), false)) {
+      const members = safe(() => resolved.getUnionTypes(), [])
+        .filter((member) => !member.isUndefined())
+        .map((member) => resolveType(normalizeType(member), location, new Set(seen)));
+      if (
+        members.length === 2 &&
+        members.every((m) => m.kind === "literal" && typeof m.value === "boolean")
+      )
+        return { kind: "primitive", type: "boolean" };
+      return { kind: "union", members };
+    }
+    if (safe(() => resolved.isTuple(), false))
+      return {
+        kind: "tuple",
+        items: safe(() => resolved.getTupleElements(), [] as ReturnType<typeof resolved.getTupleElements>).map((item) => resolveType(item, location, new Set(seen))),
+      };
+    if (safe(() => resolved.isArray(), false))
+      return {
+        kind: "array",
+        items:
+          safe(() => resolved.getArrayElementType(), undefined) ?
+            resolveType(safe(() => resolved.getArrayElementType()!, type), location, new Set(seen))
+          : { kind: "unknown" },
+      };
+    if (safe(() => resolved.getCallSignatures().length, 0) > 0)
+      return { kind: "reference", name: typeName ?? "Function" };
+    if (safe(() => resolved.isObject(), false)) {
+      seen.add(resolved);
+      const properties: Record<string, PropertySchema> = {};
+      const methods: Record<string, MethodSchema> = {};
+      const includeMethods = shouldExtractObjectMethods(resolved);
+      for (const property of safe(() => resolved.getProperties(), [] as ReturnType<Type["getProperties"]>)) {
+        const name = property.getName();
+        if (!isPublicSymbol(property) || OBJECT_METHOD_DENYLIST.has(name)) continue;
+        const propertyType = property.getTypeAtLocation(location);
+        if (includeMethods && safe(() => propertyType.getCallSignatures().length, 0) > 0) {
+          methods[name] = extractMethod(propertyType, location);
+          continue;
+        }
+
+        properties[name] = {
+          readonly: isReadonlySymbol(property),
+          required: !property.isOptional(),
+          type: resolveType(
+            property.isOptional() ? stripUndefinedFromUnion(propertyType) : propertyType,
+            location,
+            new Set(seen),
+          ),
+        };
+      }
+      if (Object.keys(properties).length > 0 || Object.keys(methods).length > 0)
+        return {
+          kind: "object",
+          ...(typeName && typeName !== "__type" ? { name: typeName } : {}),
+          properties,
+          methods,
+        };
+    }
+    if (typeName) return { kind: "reference", name: typeName };
+    return { kind: "unknown" };
+  } catch {
+    return { kind: "unknown" };
+  }
 }
 
 function normalizeType(type: Type): Type {
-  if (type.isUnion()) return unwrapUndefined(type);
-  return unwrapUndefined(unwrapPromise(type));
+  try {
+    if (type.isUnion()) return unwrapUndefined(type);
+    return unwrapUndefined(unwrapPromise(type));
+  } catch {
+    return type;
+  }
+}
+
+function safe<T>(fn: () => T, fallback: T): T {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
 }
 
 function unwrapPromise(type: Type): Type {
-  const symbolName = type.getSymbol()?.getName() ?? type.getAliasSymbol()?.getName();
-  return symbolName === "Promise" ? (type.getTypeArguments()[0] ?? type) : type;
+  try {
+    const symbolName = type.getSymbol()?.getName() ?? type.getAliasSymbol()?.getName();
+    return symbolName === "Promise" ? (type.getTypeArguments()[0] ?? type) : type;
+  } catch {
+    return type;
+  }
 }
 
 function unwrapUndefined(type: Type): Type {
@@ -210,30 +247,37 @@ function stripUndefinedFromUnion(type: Type): Type {
 }
 
 function getTypeName(type: Type, location: MorphNode): string | undefined {
-  const symbolName = type.getAliasSymbol()?.getName() ?? type.getSymbol()?.getName();
-  if (symbolName && !symbolName.startsWith("__")) return symbolName;
-  return sanitizeTypeText(type.getText(location));
-}
-
-function sanitizeTypeText(text: string): string | undefined {
-  const normalized = text.replace(/import\([^)]*\)\./g, "").trim();
-  if (
-    !normalized ||
-    normalized.startsWith("{") ||
-    normalized.startsWith("(") ||
-    normalized.includes("=>") ||
-    normalized.startsWith("readonly {")
-  )
+  try {
+    const symbolName = type.getAliasSymbol()?.getName() ?? type.getSymbol()?.getName();
+    if (symbolName && !symbolName.startsWith("__")) return symbolName;
+  } catch {
     return undefined;
-  return normalized;
+  }
+  return undefined;
 }
 
-function getTypeId(type: Type, location: MorphNode) {
-  return `${getTypeName(type, location) ?? "unknown"}:${type.getText(location)}`;
+function shouldExtractObjectMethods(type: Type): boolean {
+  let symbol: Symbol | undefined;
+  try {
+    symbol = type.getAliasSymbol() ?? type.getSymbol();
+  } catch {
+    return false;
+  }
+  if (!symbol) return true;
+
+  return !safe(
+    () => symbol.getDeclarations().some((declaration) => Node.isClassDeclaration(declaration) || Node.isClassExpression(declaration)),
+    true,
+  );
 }
 
 function getSourceFromType(type: Type): SourceSchema | undefined {
-  const symbol = type.getAliasSymbol() ?? type.getSymbol();
+  let symbol: Symbol | undefined;
+  try {
+    symbol = type.getAliasSymbol() ?? type.getSymbol();
+  } catch {
+    return undefined;
+  }
   if (!symbol || symbol.getName().startsWith("__")) return undefined;
   return getSourceFromSymbol(symbol);
 }

@@ -63,9 +63,9 @@ export class RpcDebugServer<N extends Natav = natav> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
   schema: ApiSurfaceSchema;
-  private system: System;
+  private system: System<N>;
 
-  constructor(private args: { natav: N; system: System; schema: ApiSurfaceSchema }) {
+  constructor(private args: { natav: N; system: System<N>; schema: ApiSurfaceSchema }) {
     this.schema = args.schema;
     this.system = args.system;
 
@@ -121,6 +121,8 @@ export class RpcDebugServer<N extends Natav = natav> {
 
   private async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
     switch (message.method) {
+      case DebugRpcMethods.GetSchema:
+        return new RPCResponse(message.id, this.schema);
       case DebugRpcMethods.GetTree:
         return new RPCResponse(message.id, this.args.natav.GetDebugTree());
       case DebugRpcMethods.WriteSocket:

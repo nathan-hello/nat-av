@@ -6,7 +6,12 @@ export type TypeSchema =
   | { kind: "array"; items: TypeSchema }
   | { kind: "tuple"; items: TypeSchema[] }
   | { kind: "union"; members: TypeSchema[] }
-  | { kind: "object"; name?: string; properties: Record<string, PropertySchema> }
+  | {
+      kind: "object";
+      name?: string;
+      properties: Record<string, PropertySchema>;
+      methods: Record<string, MethodSchema>;
+    }
   | { kind: "reference"; name: string }
   | { kind: "unknown"; name?: string };
 

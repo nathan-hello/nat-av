@@ -54,6 +54,7 @@ export type DebugEntry = {
 };
 
 export const DebugRpcMethods = {
+  GetSchema: "debug.schema.get",
   GetTree: "debug.tree.get",
   WriteSocket: "debug.socket.write",
 } as const;

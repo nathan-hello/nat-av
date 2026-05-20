@@ -2,6 +2,7 @@ import type { DebugDeviceNode } from "@av/rpc/debug/types";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { getRpc } from "@/state";
+import { DebugSchemaPanel } from "./api";
 import { DebugSocketPanel } from "./socket";
 import { DebugDeviceTree } from "./tree";
 
@@ -58,6 +59,8 @@ export function DebugPage(handle: Handle) {
                 handle.update();
               }}
             />
+
+            <DebugSchemaPanel schema={debug.schema} />
           </section>
         </section>
       </main>

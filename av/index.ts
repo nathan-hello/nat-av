@@ -52,8 +52,8 @@ export const natav = new Natav([
 export type natav = typeof natav;
 
 export const schema = new SchemaGenerator({
-  entryFile: new URL("./rpc/client/index.ts", import.meta.url),
-  exportName: "ClientRpc",
+  entryFile: new URL("./rpc/client/surface.ts", import.meta.url),
+  exportName: "ClientRpcSurface",
 });
 
 const system = new System({ natav });
