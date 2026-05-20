@@ -19,7 +19,6 @@ import { RPCErrorData } from "@av/rpc/protocol";
 type DecoderMessage = DecoderResponse | DecoderNotification;
 
 export default class Decoder<const N extends string = string> extends Driver<N> {
-  private TIMEOUT_TIME_MS = 10000;
   private highestId = 0;
   private routes: DecoderRoutes = {
     audio: [],
@@ -45,7 +44,7 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       socket,
       formatter,
       delimiter,
-      timeoutMs: this.TIMEOUT_TIME_MS,
+      timeoutMs: 10000,
       responseStrategy: {
         strategy: "match",
         matchFn: (request, message) => "id" in message && message.id === request.id,

@@ -14,6 +14,7 @@ import { StartLogging } from "@av/telemetry/sdk";
 import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
 import { Telemetry } from "@av/telemetry";
+import ChazyControl from "@av/drivers/turtle";
 
 // TSAS:
 if ((globalThis as any).__devices__) {
@@ -42,6 +43,10 @@ export const natav = new Natav([
       placement: [{ outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 }],
     },
   ]),
+  new ChazyControl({
+    name: "ChazyControl",
+    socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
+  }),
 ]);
 
 export type natav = typeof natav;
