@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { Driver } from "../driver";
 import Natav from "../natav";
 import { ClientRpcDevice } from "../rpc/client/devices";
+import type { Schema } from "@av/types";
 
 class Leaf<const N extends string> extends Driver<
   N,
@@ -16,6 +17,10 @@ class Leaf<const N extends string> extends Driver<
   state = { online: true };
   api = {};
   socket = undefined;
+
+  schema = (): Schema<typeof this.api> => {
+    return [];
+  };
 
   constructor(name: N) {
     super({ name, driverName: "leaf" });
@@ -33,6 +38,10 @@ class Parent<const N extends string, const D extends Record<string, Leaf<string>
   state = { ready: true };
   api = {};
   socket = undefined;
+
+  schema = (): Schema<typeof this.api> => {
+    return [];
+  };
 
   constructor(name: N, deps: D) {
     super({ name, driverName: "parent" });

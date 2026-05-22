@@ -1,6 +1,6 @@
 import { Driver } from "../../driver";
 import { TypedEventTarget } from "../../lib/eventtarget";
-import type { DeviceSocket } from "@av/types";
+import type { DeviceSocket, Schema } from "@av/types";
 
 type MediasiteStatus = "IDLE" | "RECBUSY" | "RECORD" | "PAUSED" | "PUBLISH";
 
@@ -189,6 +189,11 @@ export default class Mediasite<const N extends string = string> extends Driver<N
         break;
     }
   }
+
+  schema = (): Schema<this> => {
+    // TSAS: TODO: Implement schema.
+    return [] as unknown as Schema<this>;
+  };
 
   private send(command: string) {
     const msg = `* ${command} \r`;

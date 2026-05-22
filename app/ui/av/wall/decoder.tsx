@@ -1,9 +1,9 @@
 import { css, on, type Handle } from "remix/ui";
-import type { LogicalWindow } from "@av/drivers/decoder/impl/display";
+import type { LogicalWindow } from "@av/drivers/decoder/display";
 import type {
   GridTemplate,
   RectangularRegion,
-} from "@av/drivers/decoder/impl/templates/builder";
+} from "@av/drivers/decoder/display/templates/builder";
 import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
 
 type CanvasGlobal = {
@@ -82,7 +82,10 @@ export function Decoder(handle: Handle<DecoderProps>) {
         handle.props.canvas.width - startGlobal.resX,
       );
       const nextCssTop = clamp(
-        Math.round(decoderYToCssTop(startGlobal.offsetY, startGlobal.resY, handle.props.canvas.height) + deltaY),
+        Math.round(
+          decoderYToCssTop(startGlobal.offsetY, startGlobal.resY, handle.props.canvas.height) +
+            deltaY,
+        ),
         0,
         handle.props.canvas.height - startGlobal.resY,
       );
@@ -148,7 +151,12 @@ export function Decoder(handle: Handle<DecoderProps>) {
         }}
       >
         {handle.props.template.regions.map((region) => {
-          const global = getRegionGlobal(region, handle.props.canvas, gridUnitWidth, gridUnitHeight);
+          const global = getRegionGlobal(
+            region,
+            handle.props.canvas,
+            gridUnitWidth,
+            gridUnitHeight,
+          );
 
           return (
             <div
@@ -197,7 +205,9 @@ export function Decoder(handle: Handle<DecoderProps>) {
                 borderColor:
                   snapTarget?.type === "region" && snapTarget.id === region.id ? "#000" : undefined,
                 background:
-                  snapTarget?.type === "region" && snapTarget.id === region.id ? "rgba(0, 0, 0, 0.06)" : undefined,
+                  snapTarget?.type === "region" && snapTarget.id === region.id ?
+                    "rgba(0, 0, 0, 0.06)"
+                  : undefined,
               }}
             >
               {region.id}
@@ -208,7 +218,8 @@ export function Decoder(handle: Handle<DecoderProps>) {
         {handle.props.windows.map((twindow) => {
           const preview = dragState?.windowId === twindow.id ? dragState.preview : twindow.global;
           const sourceName =
-            handle.props.encoders?.find((encoder) => encoder.uri === twindow.routes[0]?.uri)?.name ??
+            handle.props.encoders?.find((encoder) => encoder.uri === twindow.routes[0]?.uri)
+              ?.name ??
             twindow.routes[0]?.uri ??
             `Window ${twindow.id}`;
 
@@ -262,21 +273,22 @@ export function Decoder(handle: Handle<DecoderProps>) {
                 width: `${preview.resX * scale}px`,
                 height: `${preview.resY * scale}px`,
                 borderColor:
-                  dragState?.windowId === twindow.id ||
-                  handle.props.selectedWindowId === twindow.id ||
-                  (snapTarget?.type === "window" && snapTarget.id === twindow.id) ?
+                  (
+                    dragState?.windowId === twindow.id ||
+                    handle.props.selectedWindowId === twindow.id ||
+                    (snapTarget?.type === "window" && snapTarget.id === twindow.id)
+                  ) ?
                     "#000"
                   : undefined,
                 background:
                   dragState?.windowId === twindow.id ? "rgba(0, 0, 0, 0.08)"
-                  : snapTarget?.type === "window" && snapTarget.id === twindow.id ? "rgba(0, 0, 0, 0.05)"
+                  : snapTarget?.type === "window" && snapTarget.id === twindow.id ?
+                    "rgba(0, 0, 0, 0.05)"
                   : undefined,
                 cursor: handle.props.mode === "free" ? "grab" : "pointer",
               }}
             >
-              <span mix={windowLabelStyle}>
-                {sourceName}
-              </span>
+              <span mix={windowLabelStyle}>{sourceName}</span>
             </button>
           );
         })}

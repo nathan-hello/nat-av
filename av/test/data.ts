@@ -1,3 +1,4 @@
+import type { Schema } from "@av/types";
 import { Driver } from "../driver";
 import Natav from "../natav";
 import { Tcp } from "../sockets/tcp";
@@ -36,6 +37,21 @@ export class TestShim<const N extends string = string> extends Driver<
     send: async (message: string) => this.socket.write(Buffer.from(message, "utf8")),
   };
 
+  schema = (): Schema<typeof this.api> => {
+    return [
+      {
+        name: "ping",
+        returns: { type: "string" },
+        args: [],
+      },
+      {
+        name: "send",
+        args: [{ type: "string" }],
+        returns: { type: "number" },
+      },
+    ];
+  };
+
   constructor({ name, socket }: { name: N; socket: Tcp }) {
     super({ name, driverName: "test-shim" });
     this.socket = socket;
@@ -63,4 +79,3 @@ export const driver = new TestShim({
 });
 
 export const natav = new Natav([driver]);
-

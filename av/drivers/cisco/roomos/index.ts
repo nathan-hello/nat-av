@@ -1,6 +1,6 @@
 import { Driver } from "@av/driver";
 import type { TOutput } from "./types";
-import type { DeviceSocket } from "@av/types";
+import type { DeviceSocket, Schema } from "@av/types";
 import { createProxy } from "./proxy";
 
 export default class CiscoRoomOS<
@@ -15,6 +15,11 @@ export default class CiscoRoomOS<
     this.socket = socket;
     this.output = output;
   }
+
+  schema = (): Schema<this> => {
+    // TSAS: TODO: Implement schema.
+    return [] as unknown as Schema<this>;
+  };
 
   state = {};
   get api() {

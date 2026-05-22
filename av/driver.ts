@@ -1,13 +1,13 @@
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { bus } from "@av/bus";
-import type { DeviceSocket, DriverEvents } from "@av/types";
+import type { ApiRecord, DeviceSocket, DriverEvents, Schema } from "@av/types";
 
 type AnyDriver = Driver<
   string,
   Record<string, AnyDriver>,
   string,
-  unknown,
+  ApiRecord,
   unknown,
   Partial<DeviceSocket> | undefined
 >;
@@ -18,13 +18,15 @@ export abstract class Driver<
   Name extends string = string,
   Deps extends Record<string, AnyDriver> = {},
   DriverName extends string = any,
-  Api = any,
+  Api extends ApiRecord = ApiRecord,
   State = any,
   Socket extends Partial<DeviceSocket> | undefined = any,
 > extends ProtectedTypedEventTarget<DriverEvents<State>> {
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
+  public abstract schema: () => Schema<Api> | Promise<Schema<Api>>;
+
   // TSAS:
   public deps: Deps = {} as Deps;
   public name: Name;

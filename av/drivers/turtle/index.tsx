@@ -1,7 +1,7 @@
 import { Driver } from "@av/driver";
 import { RequestManager } from "@av/requests";
 import { Delimiters } from "@av/sockets/delimiters";
-import type { DeviceSocket } from "@av/types";
+import type { DeviceSocket, Schema } from "@av/types";
 
 export default class ChazyControl<const N extends string = string> extends Driver<N> {
   mock = undefined;
@@ -30,6 +30,11 @@ export default class ChazyControl<const N extends string = string> extends Drive
       this.dispatch("driver:delimited", Buffer.from(event));
     });
   }
+
+  schema = (): Schema<this> => {
+    // TSAS: TODO: Implement schema.
+    return [] as unknown as Schema<this>;
+  };
 
   api = {
     GetDanteInfo: async () => {

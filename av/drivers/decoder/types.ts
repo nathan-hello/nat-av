@@ -41,20 +41,9 @@ export type MoveWindowArgs = {
   height?: number;
 };
 
-export type VideoRouteMinArgs = {
-  output: number;
-  window?: number;
-  uri: string;
-  x?: number;
-  y?: number;
-  z?: number;
-  width?: number;
-  height?: number;
-};
-
 export type AudioRoute = {
   output: number;
-  window?: number;
+  window: number;
   uri: string;
 };
 

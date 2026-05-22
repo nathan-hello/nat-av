@@ -4,6 +4,8 @@ import type Decoder from "../index";
 import { BUILTIN_TEMPLATES } from "./templates/1x1/templates";
 import type { GridTemplate } from "./templates/builder";
 import config from "../config";
+import type { Schema } from "@av/types";
+import { DisplaySchema } from "@av/drivers/decoder/display/schema";
 
 /**
  * LogicalWindow is a type to describe a window as
@@ -52,10 +54,7 @@ export type DisplayState = {
 };
 
 type DecodersFromConfigs<C extends readonly DecoderConfig[]> = {
-  [K in C[number]["driver"]["name"]]: Extract<
-    C[number]["driver"],
-    { name: K }
-  >;
+  [K in C[number]["driver"]["name"]]: Extract<C[number]["driver"], { name: K }>;
 };
 
 type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
@@ -81,6 +80,10 @@ export default class DisplayManager<
 
   private template = BUILTIN_TEMPLATES[0];
 
+  schema = () => {
+    return DisplaySchema;
+  };
+
   constructor(name: N, configs: C) {
     super({ name, driverName: "natalie-display-manager" });
     this.configs = configs;
@@ -96,12 +99,13 @@ export default class DisplayManager<
   get state(): DisplayState {
     return {
       canvas: { width: this.canvasWidth, height: this.canvasHeight },
-      audioOutputs: this.configs.flatMap((config, decoderIndex) =>
-        config.driver.state.context?.audio.map((output) => ({
-          decoderIndex,
-          output: output.output,
-          type: output.type,
-        })) ?? [],
+      audioOutputs: this.configs.flatMap(
+        (config, decoderIndex) =>
+          config.driver.state.context?.audio.map((output) => ({
+            decoderIndex,
+            output: output.output,
+            type: output.type,
+          })) ?? [],
       ),
       windows: this.lwindows,
       encoders: config.encoders,
@@ -125,8 +129,8 @@ export default class DisplayManager<
         const region = t.regions.find((r) => r.id === window.id);
         if (!region) {
           await this.api.destroy(window.id);
-          return
-        };
+          return;
+        }
 
         const resX = region.width * gridUnitWidth;
         const resY = region.height * gridUnitHeight;
@@ -183,6 +187,7 @@ export default class DisplayManager<
       return decoder.api.route({
         audio: {
           output: output.output,
+          window: 0,
           uri,
         },
       });

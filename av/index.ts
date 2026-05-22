@@ -6,7 +6,7 @@ import { System } from "@av/system";
 import { bus } from "@av/bus";
 import { RPCServer } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
-import DisplayManager from "@av/drivers/decoder/impl/display";
+import DisplayManager from "@av/drivers/decoder/display";
 
 import { CustomExporter } from "@av/telemetry/exporters";
 import { FileExporter, SimpleConsoleExporter } from "@av/telemetry/server/exporters";

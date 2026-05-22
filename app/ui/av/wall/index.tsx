@@ -1,5 +1,5 @@
 import { css, on, type Handle } from "remix/ui";
-import type { LogicalWindow } from "@av/drivers/decoder/impl/display";
+import type { LogicalWindow } from "@av/drivers/decoder/display";
 import type { ClientRpc } from "@av/rpc/client";
 import { Decoder } from "@/ui/av/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/av/wall/source";
