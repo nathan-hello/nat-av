@@ -49,23 +49,6 @@ over the RPC layer, including overriding a Driver's state, the System's state,
 listening to events propagated by the Websocket or notifications from the
 server.
 
-## av/schema/
-
-This directory is responsible for creating a JSON object that describe the
-Typescript types of the various Driver classes and other methods and state
-exposed over the `ClientRpc` class. Anything that `ClientRpc` is able to do
-should be represented in JSON form through the `ts-morph`. 
-
-The reason we want JSON or Javascript representation of the Typescript classes
-is so that the frontend can generate UI based on the Typescript definitions
-of the Drivers, System, and anything else exposed in `ClientRpc`. This means
-that we can make a generic UI that will update itself based on the typedefs
-of the Drivers, System, etc. For example, if a method of Decoder is
-`(n: number) => void`, then we can render an `<input type="number"/>` for that
-field. If that method changes to `(n: string) => void`, then the input
-automatically changes to `<textarea />`. This is not possible to do without
-something like ts-morph.
-
 ## av/sockets
 
 This is the transport mediums between Driver implementations and the devices

@@ -2,17 +2,15 @@ import type { ClientRpc } from "@av/rpc/client";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
-import type { ApiSurfaceSchema } from "@av/schema/types";
 import {
   DebugRpcMethods,
   type DebugDeviceNode,
-  type DebugEntry,
   type DebugRpcNotification,
   type DebugSocketMessage,
-  type DebugSocketWriteResult,
   type SocketDebugEncoding,
 } from "@av/rpc/debug/types";
 import { Telemetry } from "@av/telemetry";
+import type { LogEntry } from "@av/telemetry/types";
 
 type PendingRequest = {
   resolve: (result: any) => void;
@@ -43,9 +41,8 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
   private timeout = 30000;
   private deviceIndex = new Map<string, DebugDeviceNode>();
 
-  public schema: ApiSurfaceSchema | undefined = undefined;
   public tree: DebugDeviceNode[] = [];
-  public entries: DebugEntry[] = [];
+  public entries: LogEntry[] = [];
   public socketMessages: Record<string, DebugSocketMessage[]> = {};
 
   constructor(rpc: ClientRpc) {
@@ -91,7 +88,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     deviceName: string,
     text: string,
     encoding: SocketDebugEncoding = "utf8",
-  ): Promise<DebugSocketWriteResult> {
+  ) {
     return await this.request(
       new RPCRequest(this.nextRequestId(), DebugRpcMethods.WriteSocket, { deviceName, text, encoding }),
     );
@@ -135,7 +132,6 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
     const initial = await this.tel.task("GET_DEBUG_INITIAL_STATE", async () => {
       return await Promise.all([
-        this.request<ApiSurfaceSchema>(new RPCRequest(this.nextRequestId(), DebugRpcMethods.GetSchema)),
         this.request<DebugDeviceNode[]>(new RPCRequest(this.nextRequestId(), DebugRpcMethods.GetTree)),
       ]);
     });
@@ -145,8 +141,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
       return;
     }
 
-    const [schema, tree] = initial.data;
-    this.schema = schema;
+    const [tree] = initial.data;
     this.applyDebugTree(tree);
     this.dispatch("ready", true);
     this.dispatch("change", {});

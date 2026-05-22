@@ -1,3 +1,5 @@
+import type { LogEntry } from "@av/telemetry/types";
+
 export type SocketDebugEncoding = "utf8";
 
 export type DebugSocketDescriptor = {
@@ -34,27 +36,7 @@ export type DebugSocketEvent = {
   length: number;
 };
 
-export type DebugSocketWriteResult = {
-  bytesWritten: number;
-};
-
-export type DebugEntry = {
-  time: string;
-  context: {
-    spanId: string | undefined;
-    traceId: string | undefined;
-    traceName: string;
-  };
-  severity: {
-    id: number;
-    text: string;
-  };
-  name: string;
-  data: any;
-};
-
 export const DebugRpcMethods = {
-  GetSchema: "debug.schema.get",
   GetTree: "debug.tree.get",
   WriteSocket: "debug.socket.write",
 } as const;
@@ -62,7 +44,7 @@ export const DebugRpcMethods = {
 export type DebugRpcNotification =
   | {
       type: "debug:log";
-      entry: DebugEntry;
+      entry: LogEntry;
     }
   | {
       type: "debug:socket:message";

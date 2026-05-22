@@ -1,7 +1,6 @@
 import { Driver } from "../driver";
 import Natav from "../natav";
 import { Tcp } from "../sockets/tcp";
-import { SchemaGenerator } from "../schema/index.ts";
 import { ConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 
@@ -65,4 +64,3 @@ export const driver = new TestShim({
 
 export const natav = new Natav([driver]);
 
-export const schema = new SchemaGenerator({ entryFile: import.meta.url, exportName: "natav" });

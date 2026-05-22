@@ -14,6 +14,10 @@ export type ParsedData<T = any> = {
   timestamp: Date;
 };
 
+export type WriteResult = {
+  bytesWritten: number;
+}
+
 export type SocketEventMap = {
   connected: void;
   disconnected: { error: string | undefined };

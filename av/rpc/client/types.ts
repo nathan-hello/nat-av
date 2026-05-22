@@ -1,7 +1,5 @@
 import type Natav from "@av/natav";
-import type { DebugEntry } from "@av/rpc/debug/types";
 import type { RPCError } from "@av/rpc/protocol";
-import type { ApiSurfaceSchema } from "@av/schema/types";
 
 export type PendingRequest = {
   resolve: (result: any) => void;
@@ -17,18 +15,6 @@ export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
 
 export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
-};
-
-export type ClientRpcBindings = ApiSurfaceSchema & {};
-
-export type ClientRpcDeviceDebug = {
-  schema: ApiSurfaceSchema | undefined;
-  typeName: string | undefined;
-  source: ApiSurfaceSchema["source"] | undefined;
-  methods: ApiSurfaceSchema["methods"];
-  state: unknown;
-  logs: DebugEntry[];
-  clearLogs(): void;
 };
 
 export type RpcEvents = {

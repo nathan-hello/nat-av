@@ -1,4 +1,4 @@
-import { bus, type Bus } from "@av/bus";
+import { bus } from "@av/bus";
 import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import {
@@ -7,7 +7,6 @@ import {
   type DebugRpcNotification,
   type DebugSocketEvent,
   type DebugSocketMessage,
-  type DebugSocketWriteResult,
   type SocketDebugEncoding,
 } from "@av/rpc/debug/types";
 import {
@@ -21,8 +20,8 @@ import {
 import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
-import type { ApiSurfaceSchema } from "@av/schema/types";
 import type { System } from "@av/system";
+import type { WriteResult } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -62,11 +61,9 @@ function readMessage(data: MessageEvent["data"]): string {
 export class RpcDebugServer<N extends Natav = natav> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
-  schema: ApiSurfaceSchema;
   private system: System<N>;
 
-  constructor(private args: { natav: N; system: System<N>; schema: ApiSurfaceSchema }) {
-    this.schema = args.schema;
+  constructor(private args: { natav: N; system: System<N> }) {
     this.system = args.system;
 
     bus.on("natav:opentelemetry:entry", (payload) => {
@@ -121,8 +118,6 @@ export class RpcDebugServer<N extends Natav = natav> {
 
   private async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
     switch (message.method) {
-      case DebugRpcMethods.GetSchema:
-        return new RPCResponse(message.id, this.schema);
       case DebugRpcMethods.GetTree:
         return new RPCResponse(message.id, this.args.natav.GetDebugTree());
       case DebugRpcMethods.WriteSocket:
@@ -137,7 +132,7 @@ export class RpcDebugServer<N extends Natav = natav> {
 
   private async handleSocketWrite(
     message: RPCRequest,
-  ): Promise<RPCResponse<DebugSocketWriteResult> | RPCError> {
+  ): Promise<RPCResponse<WriteResult> | RPCError> {
     if (!message.params || typeof message.params !== "object") {
       return new RPCError(message.id, {
         code: RPCErrorCodes.InvalidParams,

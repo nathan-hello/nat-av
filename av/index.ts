@@ -11,7 +11,6 @@ import DisplayManager from "@av/drivers/decoder/impl/display";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { FileExporter, SimpleConsoleExporter } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
-import { SchemaGenerator } from "@av/schema";
 import Natav from "@av/natav";
 import { Telemetry } from "@av/telemetry";
 import ChazyControl from "@av/drivers/turtle";
@@ -51,16 +50,11 @@ export const natav = new Natav([
 
 export type natav = typeof natav;
 
-export const schema = new SchemaGenerator({
-  entryFile: new URL("./rpc/client/surface.ts", import.meta.url),
-  exportName: "ClientRpcSurface",
-});
-
 const system = new System({ natav });
 new AutomationEngine({ natav });
 
 const rpc = new RPCServer({ system, natav });
-const debug = new RpcDebugServer({ system, natav, schema: schema.toJSON() });
+const debug = new RpcDebugServer({ system, natav });
 
 const websocket = new WebsocketHandler({ rpc, natav });
 
