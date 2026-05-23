@@ -63,10 +63,10 @@ export class WebsocketHandler {
   }
 
   BroadcastEvent<E extends keyof Events.System.Map>(
-    _: E,
+    event: E,
     payload: Events.System.Map[E],
   ) {
-    const notification = new RPCNotification(payload);
+    const notification = new RPCNotification({ type: event, ...payload });
     this.broadcast(JSON.stringify(notification));
   }
 

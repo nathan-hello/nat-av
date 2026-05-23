@@ -27,7 +27,6 @@ export class ClientRpcDevice<
             this.client.call(this.name, methodName, args);
         },
       },
-      // TSAS:
     ) as Natav.Handle<N, Name>["api"];
   }
 

@@ -42,7 +42,7 @@ const natav = new Orchistrator([
       driver: new Decoder({
         name: "decoder-1",
         socket: new Tcp({
-          addr: "decoder-e8d8d1599092.local",
+          addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
         }),
@@ -52,10 +52,10 @@ const natav = new Orchistrator([
       ],
     },
   ]),
-  new ChazyControl({
-    name: "ChazyControl",
-    socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
-  }),
+  // new ChazyControl({
+  //   name: "ChazyControl",
+  //   socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
+  // }),
 ]);
 
 export type natav = typeof natav;

@@ -1,6 +1,12 @@
 import type { Driver } from "@av/driver";
 import type { Sockets } from "@av/types/socket";
 
+
+// This namespace is not allowed to import Natav namespace.
+// The Natav namespace uses Driver for inference, so trying
+// to get the Natav.Names<N> for example will cause a circular
+// dependency that Typescript cannot resolve.
+//
 export namespace Drivers {
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
