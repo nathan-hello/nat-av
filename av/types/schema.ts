@@ -1,5 +1,4 @@
-type ApiMethod = (...args: any[]) => any;
-export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
+import type { Drivers } from "@av/types/drivers";
 
 type PrimitiveName<T> =
   [T] extends [string] ? "string"
@@ -28,9 +27,6 @@ type IsOptionalKey<T, K extends keyof T> = {} extends Pick<T, K> ? true : false;
 type TupleOptionalKeys<T extends readonly any[]> = {
   [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
 }[keyof T];
-
-export type ReturnWire<T> =
-  [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;
 
 type LiteralValue = string | number | boolean | null;
 
@@ -89,16 +85,8 @@ type SchemaKind<T> =
   : [T] extends [object] ? "object"
   : "primitive";
 
-export type SchemaMap<T> = {
-  readonly union: UnionSchema<T>;
-  readonly literal: LiteralSchema<T>;
-  readonly array: [T] extends [readonly (infer U)[]] ? ArraySchema<U> : never;
-  readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T> : never;
-  readonly object: ObjectSchema<T>;
-  readonly primitive: PrimitiveSchema<T>;
-};
 
-type SchemaOf<T> = SchemaMap<T>[SchemaKind<T>];
+type SchemaOf<T> = Schema.Map<T>[SchemaKind<T>];
 
 type SchemaFromUnion<T> = Permutation<T extends any ? SchemaOf<T> : never>;
 
@@ -128,57 +116,12 @@ type Permutation<T, U = T> =
 
 type ObjectFields<T> = Permutation<ObjectField<T>>;
 
-type PrimitiveUi<T> = {
-  readonly label?: string;
-  readonly placeholder?: string;
-  readonly widget?:
-    | "textarea"
-    | "password"
-    | "text"
-    | "slider"
-    | "radio"
-    | "dropdown";
-  readonly options?: readonly T[];
-  readonly defaultValue?: T;
-};
-
-type ObjectUi<T> = {
-  readonly label?: string;
-  readonly fields?: {
-    readonly [K in keyof T & string]?: UiOf<T[K]>;
-  };
-};
-
-type ArrayUi = {
-  readonly label?: string;
-  readonly collapsible?: boolean;
-};
-
-type UiKind<T> =
-  [T] extends [readonly any[]] ? "array"
-  : [T] extends [object] ? "object"
-  : "primitive";
-
-type UiMap<T> = {
-  readonly array: ArrayUi;
-  readonly object: ObjectUi<T>;
-  readonly primitive: PrimitiveUi<T>;
-};
-
-type UiOf<T> = UiMap<T>[UiKind<T>];
-
-type ArgsUi<T extends readonly any[]> = {
-  readonly [K in keyof T]: UiOf<T[K]>;
-} & {
-  readonly length: T["length"];
-};
-
-type ApiEndpoint<Name extends string, Fn extends ApiMethod> = {
+type Leaf<Name extends string, Fn extends Drivers.ApiMethod> = {
   readonly name: Name;
 
   // Source API return type, after Promise resolution and JSON wire coercion.
   // undefined/void return values are represented as null over the wire.
-  readonly returns: SchemaOf<ReturnWire<ReturnType<Fn>>>;
+  readonly returns: SchemaOf<Schema.ReturnWire<ReturnType<Fn>>>;
 
   // Source API argument types.
   // null and undefined remain distinct here. A parameter expecting undefined
@@ -186,30 +129,94 @@ type ApiEndpoint<Name extends string, Fn extends ApiMethod> = {
   // the API parameter type is null.
   readonly args: SchemaFromTuple<Parameters<Fn>>;
 
-  readonly ui?: ArgsUi<Parameters<Fn>>;
+  readonly ui?: Schema.Ui.Args<Parameters<Fn>>;
 };
 
-type ApiBranch<Name extends string, T extends ApiRecord> = {
+type Branch<Name extends string, T extends Drivers.ApiRecord> = {
   readonly name: Name;
-  readonly children: Schema<T>;
+  readonly children: Schema.Schema<T>;
 };
 
 type ApiSchemaNode<Name extends string, T> =
-  T extends ApiMethod ? ApiEndpoint<Name, T>
-  : T extends ApiRecord ? ApiBranch<Name, T>
+  T extends Drivers.ApiMethod ? Leaf<Name, T>
+  : T extends Drivers.ApiRecord ? Branch<Name, T>
   : never;
 
-export type Schema<T> =
-  T extends ApiRecord ?
-    ReadonlyArray<
-      {
-        readonly [K in keyof T & string]: ApiSchemaNode<K, T[K]>;
-      }[keyof T & string]
-    >
-  : T extends { api: ApiRecord } ?
-    ReadonlyArray<
-      {
-        readonly [K in keyof T["api"] & string]: ApiSchemaNode<K, T["api"][K]>;
-      }[keyof T["api"] & string]
-    >
-  : never;
+export namespace Schema {
+  export namespace Ui {
+    type Primitive<T> = {
+      readonly label?: string;
+      readonly placeholder?: string;
+      readonly widget?:
+        | "textarea"
+        | "password"
+        | "text"
+        | "slider"
+        | "radio"
+        | "dropdown";
+      readonly options?: readonly T[];
+      readonly defaultValue?: T;
+    };
+
+    type Object<T> = {
+      readonly label?: string;
+      readonly fields?: {
+        readonly [K in keyof T & string]?: Of<T[K]>;
+      };
+    };
+
+    type Array = {
+      readonly label?: string;
+      readonly collapsible?: boolean;
+    };
+
+    type Kind<T> =
+      [T] extends [readonly any[]] ? "array"
+      : [T] extends [object] ? "object"
+      : "primitive";
+
+    type Map<T> = {
+      readonly array: Array;
+      readonly object: Object<T>;
+      readonly primitive: Primitive<T>;
+    };
+
+    type Of<T> = Map<T>[Kind<T>];
+
+    export type Args<T extends readonly any[]> = {
+      readonly [K in keyof T]: Of<T[K]>;
+    } & {
+      readonly length: T["length"];
+    };
+  }
+
+export type Map<T> = {
+  readonly union: UnionSchema<T>;
+  readonly literal: LiteralSchema<T>;
+  readonly array: [T] extends [readonly (infer U)[]] ? ArraySchema<U> : never;
+  readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T> : never;
+  readonly object: ObjectSchema<T>;
+  readonly primitive: PrimitiveSchema<T>;
+};
+
+  export type ReturnWire<T> =
+    [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;
+
+  export type Schema<T> =
+    T extends Drivers.ApiRecord ?
+      ReadonlyArray<
+        {
+          readonly [K in keyof T & string]: ApiSchemaNode<K, T[K]>;
+        }[keyof T & string]
+      >
+    : T extends { api: Drivers.ApiRecord } ?
+      ReadonlyArray<
+        {
+          readonly [K in keyof T["api"] & string]: ApiSchemaNode<
+            K,
+            T["api"][K]
+          >;
+        }[keyof T["api"] & string]
+      >
+    : never;
+}

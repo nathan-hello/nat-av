@@ -1,13 +1,13 @@
 import { Driver } from "@av/driver";
 import type { TOutput } from "./types";
-import type { DeviceSocket, Schema } from "@av/types";
+import type { Sockets, Schema } from "@av/types";
 import { createProxy } from "./proxy";
 
 export default class CiscoRoomOS<
   T extends TOutput,
   const N extends string = string,
 > extends Driver<N> {
-  socket: DeviceSocket;
+  socket: Sockets.Socket;
   output: T;
 
   constructor({
@@ -16,7 +16,7 @@ export default class CiscoRoomOS<
     output,
   }: {
     name: N;
-    socket: DeviceSocket;
+    socket: Sockets.Socket;
     output: T;
   }) {
     super({ name, driverName: "cisco-room-devices-11-9" });
@@ -24,9 +24,9 @@ export default class CiscoRoomOS<
     this.output = output;
   }
 
-  schema = (): Schema<this> => {
+  schema = (): Schema.Schema<this> => {
     // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema<this>;
+    return [] as unknown as Schema.Schema<this>;
   };
 
   state = {};

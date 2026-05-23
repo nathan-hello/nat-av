@@ -1,6 +1,6 @@
 import { Delimiters } from "@av/sockets/delimiters";
 import { RequestManager } from "@av/requests";
-import type { DeviceSocket } from "@av/types";
+import type { Sockets } from "@av/types";
 import {
   type AudioRoute,
   type DecoderMap,
@@ -30,10 +30,10 @@ export default class Decoder<
   private debug = false;
 
   mock = undefined;
-  socket: DeviceSocket;
+  socket: Sockets.Socket;
   private requests: RequestManager<DecoderRequest, DecoderMessage>;
 
-  constructor({ name, socket }: { name: N; socket: DeviceSocket }) {
+  constructor({ name, socket }: { name: N; socket: Sockets.Socket }) {
     super({ name, driverName: "natalie-decoder" });
     this.socket = socket;
 

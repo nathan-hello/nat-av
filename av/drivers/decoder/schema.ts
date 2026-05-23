@@ -1,8 +1,8 @@
-import type { Schema, SchemaMap } from "@av/types";
+import type { Schema } from "@av/types";
 import type * as T from "@av/drivers/decoder/types";
 import type Decoder from "@av/drivers/decoder";
 
-export const SchemaAudioRoute: SchemaMap<T.AudioRoute>["object"] = {
+export const SchemaAudioRoute: Schema.Map<T.AudioRoute>["object"] = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -11,12 +11,12 @@ export const SchemaAudioRoute: SchemaMap<T.AudioRoute>["object"] = {
   ],
 };
 
-export const SchemaAudioRouteArray: SchemaMap<T.AudioRoute[]>["array"] = {
+export const SchemaAudioRouteArray: Schema.Map<T.AudioRoute[]>["array"] = {
   type: "array",
   items: [SchemaAudioRoute],
 };
 
-export const SchemaVideoRoute: SchemaMap<T.VideoRoute>["object"] = {
+export const SchemaVideoRoute: Schema.Map<T.VideoRoute>["object"] = {
   type: "object",
   fields: [
     { name: "height", value: { type: "number" } },
@@ -30,12 +30,12 @@ export const SchemaVideoRoute: SchemaMap<T.VideoRoute>["object"] = {
   ],
 };
 
-export const SchemaVideoRouteArray: SchemaMap<T.VideoRoute[]>["array"] = {
+export const SchemaVideoRouteArray: Schema.Map<T.VideoRoute[]>["array"] = {
   type: "array",
   items: [SchemaVideoRoute],
 };
 
-export const SchemaMoveWindowArgs: SchemaMap<T.MoveWindowArgs>["object"] = {
+export const SchemaMoveWindowArgs: Schema.Map<T.MoveWindowArgs>["object"] = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -48,7 +48,7 @@ export const SchemaMoveWindowArgs: SchemaMap<T.MoveWindowArgs>["object"] = {
   ],
 };
 
-export const SchemaRouteDestroyParams: SchemaMap<
+export const SchemaRouteDestroyParams: Schema.Map<
   T.RouteDestroyRequest["params"]
 >["object"] = {
   type: "object",
@@ -83,7 +83,7 @@ export const SchemaRouteDestroyParams: SchemaMap<
   ],
 };
 
-export const SchemaVideoOutputContext: SchemaMap<
+export const SchemaVideoOutputContext: Schema.Map<
   T.DecoderContext["video"][number]
 >["object"] = {
   type: "object",
@@ -95,7 +95,7 @@ export const SchemaVideoOutputContext: SchemaMap<
   ],
 };
 
-export const SchemaAudioOutputContext: SchemaMap<
+export const SchemaAudioOutputContext: Schema.Map<
   T.DecoderContext["audio"][number]
 >["object"] = {
   type: "object",
@@ -105,7 +105,7 @@ export const SchemaAudioOutputContext: SchemaMap<
   ],
 };
 
-export const SchemaDecoderContext: SchemaMap<T.DecoderContext>["object"] = {
+export const SchemaDecoderContext: Schema.Map<T.DecoderContext>["object"] = {
   type: "object",
   fields: [
     {
@@ -135,7 +135,7 @@ export const VideoAndAudioReturn = {
   ],
 } as const;
 
-export const DecoderSchema = (): Schema<Decoder["api"]> => [
+export const DecoderSchema = (): Schema.Schema<Decoder> => [
   {
     name: "fetchRoutes",
     args: [],

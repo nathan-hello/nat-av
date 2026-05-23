@@ -18,7 +18,7 @@ class Leaf<const N extends string> extends Driver<
   api = {};
   socket = undefined;
 
-  schema = (): Schema<typeof this.api> => {
+  schema = (): Schema.Schema<typeof this.api> => {
     return [];
   };
 
@@ -35,7 +35,7 @@ class Parent<
   api = {};
   socket = undefined;
 
-  schema = (): Schema<typeof this.api> => {
+  schema = (): Schema.Schema<typeof this.api> => {
     return [];
   };
 

@@ -20,7 +20,7 @@ import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 import type { System } from "@av/system";
-import type { Natav, WriteResult } from "@av/types";
+import type { Natav, Sockets } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -136,7 +136,7 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
 
   private async handleSocketWrite(
     message: RPCRequest,
-  ): Promise<RPCResponse<WriteResult> | RPCError> {
+  ): Promise<RPCResponse<Sockets.WriteResult> | RPCError> {
     if (!message.params || typeof message.params !== "object") {
       return new RPCError(message.id, {
         code: RPCErrorCodes.InvalidParams,

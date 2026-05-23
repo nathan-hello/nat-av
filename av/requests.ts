@@ -1,18 +1,18 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
-import type { PendingRequest, RequestEvents, RequestSocket, ResponseStrategy } from "@av/types";
+import type { Requests, Events } from "@av/types";
 
 export class RequestManager<Request, Message> extends TypedEventTarget<
-  RequestEvents<Request, Message>
+  Events.Request.Map<Request, Message>
 > {
   private readonly tel: Telemetry;
-  private readonly socket: RequestSocket;
+  private readonly socket: Requests.Socket;
   private readonly delimiter: DataDelimiter<Message>;
   private readonly formatter?: DataFormatter<Request>;
   private readonly timeoutMs: number;
-  private readonly responseStrategy?: ResponseStrategy<Request, Message>;
-  private readonly pending: PendingRequest<Request, Message>[] = [];
+  private readonly responseStrategy?: Requests.Strategy<Request, Message>;
+  private readonly pending: Requests.Pending<Request, Message>[] = [];
   private readonly offReceive: () => void;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
   private nextSendAt = 0;
@@ -27,11 +27,11 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     responseStrategy,
   }: {
     tel: Telemetry;
-    socket: RequestSocket;
+    socket: Requests.Socket;
     delimiter: DataDelimiter<Message>;
     formatter?: DataFormatter<Request>;
     timeoutMs?: number;
-    responseStrategy?: ResponseStrategy<Request, Message>;
+    responseStrategy?: Requests.Strategy<Request, Message>;
   }) {
     super();
     this.tel = tel;
@@ -73,7 +73,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     }
 
     return new Promise<TaskResult<Response>>((resolve) => {
-      const entry: PendingRequest<Request, Message> = {
+      const entry: Requests.Pending<Request, Message> = {
         request,
         // TSAS:
         resolve: resolve as (result: TaskResult<Message>) => void,
@@ -185,7 +185,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     }
   }
 
-  private async sendPending(entry: PendingRequest<Request, Message>) {
+  private async sendPending(entry: Requests.Pending<Request, Message>) {
     entry.sent = true;
 
     const result = await this.tel.task("REQUESTS_SEND", async () => {
@@ -245,7 +245,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     return true;
   }
 
-  private removePending(entry: PendingRequest<Request, Message>) {
+  private removePending(entry: Requests.Pending<Request, Message>) {
     const index = this.pending.indexOf(entry);
     if (index !== -1) {
       this.pending.splice(index, 1);

@@ -1,6 +1,6 @@
 import { Driver } from "../../driver";
 import { TypedEventTarget } from "../../lib/eventtarget";
-import type { DeviceSocket, Schema } from "@av/types";
+import type { Sockets, Schema } from "@av/types";
 
 type MediasiteStatus = "IDLE" | "RECBUSY" | "RECORD" | "PAUSED" | "PUBLISH";
 
@@ -71,7 +71,7 @@ export default class Mediasite<
   };
 
   mock = undefined;
-  socket: DeviceSocket;
+  socket: Sockets.Socket;
 
   constructor({
     name,
@@ -79,7 +79,7 @@ export default class Mediasite<
     poll,
   }: {
     name: N;
-    socket: DeviceSocket;
+    socket: Sockets.Socket;
     poll?: { queries: PollQuery[]; intervalMs?: number };
   }) {
     super({ name, driverName: "mediasite" });
@@ -217,9 +217,9 @@ export default class Mediasite<
     }
   }
 
-  schema = (): Schema<this> => {
+  schema = (): Schema.Schema<Mediasite> => {
     // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema<this>;
+    return [] as unknown as Schema.Schema<Mediasite>;
   };
 
   private send(command: string) {

@@ -1,5 +1,5 @@
 import type DisplayManager from "@av/drivers/decoder/display";
-import type { Schema, SchemaMap } from "@av/types";
+import type { Schema } from "@av/types";
 
 const ArgResOffset = {
   type: "object",
@@ -11,7 +11,7 @@ const ArgResOffset = {
   ],
 } as const;
 
-export const DisplaySchema: Schema<DisplayManager> = [
+export const DisplaySchema: Schema.Schema<DisplayManager> = [
   {
     name: "move",
     returns: {

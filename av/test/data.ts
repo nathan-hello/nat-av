@@ -38,7 +38,7 @@ export class TestShim<const N extends string = string> extends Driver<
       this.socket.write(Buffer.from(message, "utf8")),
   };
 
-  schema = (): Schema<typeof this.api> => {
+  schema = (): Schema.Schema<TestShim> => {
     return [
       {
         name: "ping",

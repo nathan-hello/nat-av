@@ -52,4 +52,17 @@ export namespace Events {
       };
     };
   }
+  export namespace Request {
+    export type Map<Request, Message> = {
+      message: Message;
+      timeout: { request: Request };
+      "write-error": { request: Request; error: string };
+      error: {
+        phase: "receive" | "match" | "send";
+        error: string;
+        request?: Request;
+        message?: Message;
+      };
+    };
+  }
 }

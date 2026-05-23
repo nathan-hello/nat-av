@@ -1,16 +1,16 @@
 import { Driver } from "@av/driver";
 import { RequestManager } from "@av/requests";
 import { Delimiters } from "@av/sockets/delimiters";
-import type { DeviceSocket, Schema } from "@av/types";
+import type { Sockets, Schema } from "@av/types";
 
 export default class ChazyControl<
   const N extends string = string,
 > extends Driver<N> {
   mock = undefined;
-  socket: DeviceSocket;
+  socket: Sockets.Socket;
   requests: RequestManager<string, string>;
 
-  constructor({ name, socket }: { name: N; socket: DeviceSocket }) {
+  constructor({ name, socket }: { name: N; socket: Sockets.Socket }) {
     super({ name, driverName: "chazy-control" });
     this.socket = socket;
     this.requests = new RequestManager({
@@ -36,9 +36,9 @@ export default class ChazyControl<
     });
   }
 
-  schema = (): Schema<this> => {
+  schema = (): Schema.Schema<this> => {
     // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema<this>;
+    return [] as unknown as Schema.Schema<this>;
   };
 
   api = {

@@ -1,31 +1,23 @@
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { bus } from "@av/bus";
-import type { ApiRecord, DeviceSocket, Schema, Events } from "@av/types";
-
-type AnyDriver = Driver<
-  string,
-  Record<string, AnyDriver>,
-  string,
-  ApiRecord,
-  Record<string, any>,
-  Partial<DeviceSocket> | undefined
->;
-
-type DependencyInput = readonly AnyDriver[] | readonly { driver: AnyDriver }[];
+import type { Sockets, Schema, Events } from "@av/types";
+import type { Drivers } from "@av/types/drivers";
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Record<string, AnyDriver> = {},
-  DriverName extends string = any,
-  Api extends ApiRecord = ApiRecord,
+  Deps extends Drivers.Dependency = {},
+  DriverName extends string = string,
+  Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
-  Socket extends Partial<DeviceSocket> | undefined = any,
+  Socket extends Partial<Sockets.Socket> | undefined = any,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
-  public abstract schema?: () => Schema<Api> | Promise<Schema<Api>>;
+  public abstract schema?: () =>
+    | Schema.Schema<Api>
+    | Promise<Schema.Schema<Api>>;
 
   // TSAS:
   public deps: Deps = {} as Deps;
@@ -52,8 +44,10 @@ export abstract class Driver<
     });
   }
 
-  setDependencies(v: DependencyInput) {
-    function unwrapDriver(v: DependencyInput[number]): AnyDriver {
+  setDependencies(v: Drivers.DependencyInput) {
+    function unwrapDriver(
+      v: Drivers.DependencyInput[number],
+    ): Drivers.AnyDriver {
       return "driver" in v ? v.driver : v;
     }
 
