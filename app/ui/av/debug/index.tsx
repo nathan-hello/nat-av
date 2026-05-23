@@ -58,7 +58,6 @@ export function DebugPage(handle: Handle) {
                 handle.update();
               }}
             />
-
           </section>
         </section>
       </main>
@@ -87,7 +86,7 @@ const headerStyle = css({
   justifyContent: "space-between",
   gap: "16px",
   flexWrap: "wrap",
-  color: "#000000"
+  color: "#000000",
 });
 const statusRowStyle = css({
   display: "flex",

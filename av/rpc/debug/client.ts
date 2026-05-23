@@ -84,13 +84,13 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  async writeSocket(
-    deviceName: string,
-    text: string,
-    encoding: SocketDebugEncoding = "utf8",
-  ) {
+  async writeSocket(deviceName: string, text: string, encoding: SocketDebugEncoding = "utf8") {
     return await this.request(
-      new RPCRequest(this.nextRequestId(), DebugRpcMethods.WriteSocket, { deviceName, text, encoding }),
+      new RPCRequest(this.nextRequestId(), DebugRpcMethods.WriteSocket, {
+        deviceName,
+        text,
+        encoding,
+      }),
     );
   }
 
@@ -132,7 +132,9 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
     const initial = await this.tel.task("GET_DEBUG_INITIAL_STATE", async () => {
       return await Promise.all([
-        this.request<DebugDeviceNode[]>(new RPCRequest(this.nextRequestId(), DebugRpcMethods.GetTree)),
+        this.request<DebugDeviceNode[]>(
+          new RPCRequest(this.nextRequestId(), DebugRpcMethods.GetTree),
+        ),
       ]);
     });
 
@@ -250,7 +252,10 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
     return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.rejectPendingRequest(message.id, new Error(`Debug RPC call timed out after ${this.timeout}ms`));
+        this.rejectPendingRequest(
+          message.id,
+          new Error(`Debug RPC call timed out after ${this.timeout}ms`),
+        );
       }, this.timeout);
 
       this.pendingRequests.set(message.id, { resolve, reject, timeout });

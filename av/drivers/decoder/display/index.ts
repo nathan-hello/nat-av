@@ -201,8 +201,8 @@ export default class DisplayManager<
       z?: number,
     ) => {
       const existing = this.lwindows.find((w) => w.id === windowId);
-      if (!existing){
-        return [[-1]]
+      if (!existing) {
+        return [[-1]];
       }
 
       // Get the URI from existing routes

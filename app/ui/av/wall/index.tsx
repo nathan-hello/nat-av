@@ -43,7 +43,9 @@ export function Wall(handle: Handle<WallProps>) {
 
   function parseAudioOutputKey(value: string) {
     const [decoderIndex, output] = value.split(":").map((part) => Number.parseInt(part, 10));
-    return Number.isFinite(decoderIndex) && Number.isFinite(output) ? { decoderIndex, output } : null;
+    return Number.isFinite(decoderIndex) && Number.isFinite(output) ?
+        { decoderIndex, output }
+      : null;
   }
 
   function loadWindow(dwindow: LogicalWindow, source?: SourceSelectDetail | null) {
@@ -181,20 +183,20 @@ export function Wall(handle: Handle<WallProps>) {
                       handle.update();
                     }}
                     onSourceDropToRegion={(region, global, source) => {
-                        selectedSource = source;
-                        selectedWindowId = region.id;
-                        form = {
-                          dwindowId: region.id,
-                          uri: source.id,
-                          audioOutput: form.audioOutput,
-                          resX: global.resX,
-                          resY: global.resY,
-                          offsetX: global.offsetX,
-                          offsetY: global.offsetY,
-                        };
-                        void display.api.route(region.id, source.id, global);
-                        handle.update();
-                      }}
+                      selectedSource = source;
+                      selectedWindowId = region.id;
+                      form = {
+                        dwindowId: region.id,
+                        uri: source.id,
+                        audioOutput: form.audioOutput,
+                        resX: global.resX,
+                        resY: global.resY,
+                        offsetX: global.offsetX,
+                        offsetY: global.offsetY,
+                      };
+                      void display.api.route(region.id, source.id, global);
+                      handle.update();
+                    }}
                     onSourceDropToWindow={(dwindow, source) => {
                       selectedSource = source;
                       loadWindow(dwindow, source);

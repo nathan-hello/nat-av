@@ -32,8 +32,6 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
 
     await handle.props.debug.writeSocket(handle.props.selectedDeviceName, draft, encoding);
 
-
-
     draft = "";
     sending = false;
     await handle.update();

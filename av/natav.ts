@@ -53,14 +53,18 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
       return {
         name: driver.name,
         driverName: driver._drivername,
-        children: Object.values(driver.deps as Record<string, Driver>).map((child) => toNode(child)),
-        ...(typeof socket?.name === "string" ? {
-          socket: {
-            traceName: socket.name,
-            canWrite,
-            canReceive,
-          },
-        } : {}),
+        children: Object.values(driver.deps as Record<string, Driver>).map((child) =>
+          toNode(child),
+        ),
+        ...(typeof socket?.name === "string" ?
+          {
+            socket: {
+              traceName: socket.name,
+              canWrite,
+              canReceive,
+            },
+          }
+        : {}),
       };
     };
 

@@ -24,7 +24,6 @@ app/ folder.
 
 ## Build-Out Notes
 
-
 # Natav Library
 
 The `./av/` directory is a vendored library called `nat-av`. Refer to
@@ -36,7 +35,6 @@ The `./av/` directory is a vendored library called `nat-av`. Refer to
   add a `// TSAS: ` comment above the assertion explaining why the assertion
   exists. This comment should only be one line of text, even after `prettier`
   formats the code. You should refrain from using assertions unless
-
   - It is something that is unknowable from the Typescript compiler and we are
     100% confident that the assertion will be valid by the time it will become
     necessary. For example, we might initialize a class variable with a default
@@ -44,7 +42,6 @@ The `./av/` directory is a vendored library called `nat-av`. Refer to
     use `as Type`. If you use an assertion for this reason, describe in the
     comment where exactly the guarantee of runtime-typesafety is coming from.
     Keep this comment short: only one line of text.
-  
   - It is a situation where if we were to make it typesafe then it would
     explode the complexity of the type system for a small amount of gain. This
     project has a lot of Typescript code just for the end to end RPC
@@ -60,4 +57,4 @@ The `./av/` directory is a vendored library called `nat-av`. Refer to
 - The `System` class in `av/system.ts` is not meant for whatever system apis I
   might want exposed. Its purpose is for a real-world application holding
   internal state that is not related to any particular device. Do not add any APIs
-  or state to this class unless otherwise specified. 
+  or state to this class unless otherwise specified.

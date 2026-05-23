@@ -125,7 +125,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
       this.tel.info("RECIEVED_DATA", {
         hex: data.toString("hex"),
         text: data.toString("utf8"),
-        length: data.length
+        length: data.length,
       });
       bus.dispatch("natav:debug:socket", {
         type: "natav:debug:socket",
