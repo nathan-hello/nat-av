@@ -182,7 +182,9 @@ export default class DisplayManager<
 
     routeAudio: async (uri: string, output: { decoderIndex: number; output: number }) => {
       const decoder = this.configs[output.decoderIndex]?.driver;
-      if (!decoder) return;
+      if (!decoder) {
+        return -1;
+      }
 
       return decoder.api.route({
         audio: {
@@ -199,7 +201,9 @@ export default class DisplayManager<
       z?: number,
     ) => {
       const existing = this.lwindows.find((w) => w.id === windowId);
-      if (!existing) return;
+      if (!existing){
+        return [[-1]]
+      }
 
       // Get the URI from existing routes
       const uri = existing.routes[0]?.uri ?? "";
@@ -236,7 +240,9 @@ export default class DisplayManager<
         return Promise.all(this.configs.map((c) => c.driver.api.unroute("all")));
       }
       const existing = this.lwindows.find((w) => w.id === windowId);
-      if (!existing) return;
+      if (!existing) {
+        return [-1];
+      }
 
       // Group routes by decoder for destruction
       // For destroy, we use the stored global position from the existing window

@@ -226,14 +226,19 @@ type SchemaFromTuple<T extends readonly any[]> = {
   readonly [K in keyof T]: SchemaOfTupleElement<T, K>;
 };
 
-type ObjectFields<T> = ReadonlyArray<
-  {
-    readonly [K in keyof T & string]: {
-      readonly name: K;
-      readonly value: SchemaOfObjectProperty<T, K>;
-    };
-  }[keyof T & string]
->;
+type ObjectField<T> = {
+  readonly [K in keyof T & string]: {
+    readonly name: K;
+    readonly value: SchemaOfObjectProperty<T, K>;
+  };
+}[keyof T & string];
+
+type Permutation<T, U = T> =
+  [T] extends [never] ? readonly []
+  : T extends T ? readonly [T, ...Permutation<Exclude<U, T>>]
+  : never;
+
+type ObjectFields<T> = Permutation<ObjectField<T>>;
 
 type PrimitiveUi<T> = {
   readonly label?: string;
