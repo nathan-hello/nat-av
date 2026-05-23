@@ -5,19 +5,29 @@ import type { System, SystemStateData } from "@av/system";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { RpcDebugClient } from "@av/rpc/debug/client";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
-import { RPCNotification, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
+import {
+  RPCNotification,
+  RPCRequest,
+  RPCError,
+  RPCResponse,
+} from "@av/rpc/protocol";
 import type { PendingRequest, RpcEvents } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { isRPCNotification } from "@av/rpc/utils";
 
 type SystemApi<N extends Natav> = {
-  [M in keyof System<N>["api"]]: System<N>["api"][M] extends (...args: infer Args) => infer R ?
+  [M in keyof System<N>["api"]]: System<N>["api"][M] extends (
+    (...args: infer Args) => infer R
+  ) ?
     (...args: Args) => Promise<Awaited<R>>
   : never;
 };
 
-type SystemMethodName<N extends Natav> = Extract<keyof System<N>["api"], string>;
+type SystemMethodName<N extends Natav> = Extract<
+  keyof System<N>["api"],
+  string
+>;
 
 type ClientRpcSystem<N extends Natav> = {
   api: SystemApi<N>;
@@ -30,7 +40,9 @@ type DeviceStateMap<N extends Natav> = Partial<{
   [K in Natav.Names<N>]: Natav.State<N, K>;
 }>;
 
-export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarget<RpcEvents> {
+export class ClientRpc<
+  N extends Natav = natav,
+> extends ProtectedTypedEventTarget<RpcEvents> {
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
@@ -83,7 +95,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
     this.transport.on("close", (event) => {
       this.rejectAllPendingRequests(
-        new Error(`RPC transport closed${event.reason ? `: ${event.reason}` : ""}`),
+        new Error(
+          `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
+        ),
       );
       this.dispatch("close", event);
       this.notifyAllDevices();
@@ -123,7 +137,10 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
 
     if (!initial.ok) {
       if (!initial.ok) {
-        this.dispatch("error", { reason: "init-promises-threw", error: new Error(initial.error) });
+        this.dispatch("error", {
+          reason: "init-promises-threw",
+          error: new Error(initial.error),
+        });
       }
 
       this.close();
@@ -166,7 +183,11 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
     return this.request(
-      new RPCRequest(this.nextRequestId(), "device.call", { device, method, args }),
+      new RPCRequest(this.nextRequestId(), "device.call", {
+        device,
+        method,
+        args,
+      }),
       this.getDevicePendingKey(device, method),
     );
   }
@@ -192,7 +213,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
     return state;
   }
 
-  getDeviceState<Name extends Natav.Names<N>>(name: Name): Natav.State<N, Name> | undefined {
+  getDeviceState<Name extends Natav.Names<N>>(
+    name: Name,
+  ): Natav.State<N, Name> | undefined {
     // TSAS:
     return this.deviceStates[name] as Natav.State<N, Name> | undefined;
   }
@@ -243,7 +266,10 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
         data?: unknown;
       };
 
-      if (params.type === "natav:state:update" && typeof params.name === "string") {
+      if (
+        params.type === "natav:state:update" &&
+        typeof params.name === "string"
+      ) {
         this.mergeDeviceState(
           // TSAS:
           params.name as Natav.Names<N>,
@@ -386,7 +412,9 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
       const timeoutId = setTimeout(() => {
         this.rejectPendingRequest(
           message.id,
-          new Error(`RPC call timed out after ${this.timeout}ms id ${message.id}`),
+          new Error(
+            `RPC call timed out after ${this.timeout}ms id ${message.id}`,
+          ),
         );
       }, this.timeout);
 
@@ -397,13 +425,17 @@ export class ClientRpc<N extends Natav = natav> extends ProtectedTypedEventTarge
         pendingKey,
       });
 
-      const str = this.tel.task("JSON_STRINGIFY", () => RPCNotification.serialize(message));
+      const str = this.tel.task("JSON_STRINGIFY", () =>
+        RPCNotification.serialize(message),
+      );
       if (!str.ok) {
         this.rejectPendingRequest(message.id, new Error(str.error));
         return;
       }
 
-      const send = this.tel.task("WS_SEND", () => this.transport.send(str.data));
+      const send = this.tel.task("WS_SEND", () =>
+        this.transport.send(str.data),
+      );
       if (!send.ok) {
         this.rejectPendingRequest(message.id, new Error(String(send.error)));
       }

@@ -3,9 +3,10 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
-export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> extends TypedEventTarget<
-  DeviceEvents<N, Name>
-> {
+export class ClientRpcDevice<
+  N extends Natav,
+  Name extends Natav.Names<N>,
+> extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
 
   constructor(
@@ -22,7 +23,8 @@ export class ClientRpcDevice<N extends Natav, Name extends Natav.Names<N>> exten
             return undefined;
           }
 
-          return (...args: any[]) => this.client.call(this.name, methodName, args);
+          return (...args: any[]) =>
+            this.client.call(this.name, methodName, args);
         },
       },
       // TSAS:

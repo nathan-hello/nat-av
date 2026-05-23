@@ -12,7 +12,9 @@ export function render(node: RemixNode, request: Request, init?: ResponseInit) {
       if (cookie) headers.set("cookie", cookie);
       if (target) headers.set("x-remix-target", target);
 
-      let response = await router.fetch(new Request(new URL(src, request.url), { headers }));
+      let response = await router.fetch(
+        new Request(new URL(src, request.url), { headers }),
+      );
       return response.body ?? response.text();
     },
   });

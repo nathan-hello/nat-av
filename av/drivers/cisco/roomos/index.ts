@@ -10,7 +10,15 @@ export default class CiscoRoomOS<
   socket: DeviceSocket;
   output: T;
 
-  constructor({ name, socket, output }: { name: N; socket: DeviceSocket; output: T }) {
+  constructor({
+    name,
+    socket,
+    output,
+  }: {
+    name: N;
+    socket: DeviceSocket;
+    output: T;
+  }) {
     super({ name, driverName: "cisco-room-devices-11-9" });
     this.socket = socket;
     this.output = output;

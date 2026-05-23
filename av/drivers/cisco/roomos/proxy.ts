@@ -3,7 +3,8 @@ import type { TMapToX, TOutput } from "./types";
 import { RoomOSWriter } from "./writer";
 
 // Map the "type" property to the actual return type of the leaf functions
-type TMapReturn<T extends TOutput["type"]> = T extends "http" ? Request : string;
+type TMapReturn<T extends TOutput["type"]> =
+  T extends "http" ? Request : string;
 
 /**
  * Re-maps the TCommand structure so that every leaf function

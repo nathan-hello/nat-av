@@ -22,7 +22,10 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
   private all(): Driver[] {
     const collect = (drivers: readonly Driver[]): Driver[] =>
       // TSAS:
-      drivers.flatMap((d) => [d, ...collect(Object.values(d.deps) as readonly Driver[])]);
+      drivers.flatMap((d) => [
+        d,
+        ...collect(Object.values(d.deps) as readonly Driver[]),
+      ]);
 
     return collect(this.configs);
   }
@@ -53,8 +56,8 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
       return {
         name: driver.name,
         driverName: driver._drivername,
-        children: Object.values(driver.deps as Record<string, Driver>).map((child) =>
-          toNode(child),
+        children: Object.values(driver.deps as Record<string, Driver>).map(
+          (child) => toNode(child),
         ),
         ...(typeof socket?.name === "string" ?
           {
@@ -98,11 +101,26 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
 namespace Natav {
   export type ConfigsOf<N extends Natav> = N extends Natav<infer C> ? C : never;
   export type Names<N extends Natav> = NamesOf<ConfigsOf<N>>;
-  export type Driver<N extends Natav, Name extends Names<N>> = DriverFor<ConfigsOf<N>, Name>;
-  export type State<N extends Natav, Name extends Names<N>> = StateFor<ConfigsOf<N>, Name>;
-  export type Api<N extends Natav, Name extends Names<N>> = ApiFor<ConfigsOf<N>, Name>;
-  export type Deps<N extends Natav, Name extends Names<N>> = DepsOf<ConfigsOf<N>, Name>;
-  export type DepNames<N extends Natav, Name extends Names<N>> = DepNamesOf<ConfigsOf<N>, Name>;
+  export type Driver<N extends Natav, Name extends Names<N>> = DriverFor<
+    ConfigsOf<N>,
+    Name
+  >;
+  export type State<N extends Natav, Name extends Names<N>> = StateFor<
+    ConfigsOf<N>,
+    Name
+  >;
+  export type Api<N extends Natav, Name extends Names<N>> = ApiFor<
+    ConfigsOf<N>,
+    Name
+  >;
+  export type Deps<N extends Natav, Name extends Names<N>> = DepsOf<
+    ConfigsOf<N>,
+    Name
+  >;
+  export type DepNames<N extends Natav, Name extends Names<N>> = DepNamesOf<
+    ConfigsOf<N>,
+    Name
+  >;
   export type Dep<
     N extends Natav,
     Name extends Names<N>,
@@ -113,10 +131,16 @@ namespace Natav {
     Name extends Names<N>,
     DepName extends DepNames<N, Name>,
   > = Dep<N, Name, DepName>["state"];
-  export type DepApi<N extends Natav, Name extends Names<N>, DepName extends DepNames<N, Name>> = {
-    [M in keyof Dep<N, Name, DepName>["api"]]: Dep<N, Name, DepName>["api"][M] extends (
-      (...args: infer Args) => infer R
-    ) ?
+  export type DepApi<
+    N extends Natav,
+    Name extends Names<N>,
+    DepName extends DepNames<N, Name>,
+  > = {
+    [M in keyof Dep<N, Name, DepName>["api"]]: Dep<
+      N,
+      Name,
+      DepName
+    >["api"][M] extends (...args: infer Args) => infer R ?
       (...args: Args) => Promise<Awaited<R>>
     : never;
   };

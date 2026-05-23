@@ -27,14 +27,10 @@ class Leaf<const N extends string> extends Driver<
   }
 }
 
-class Parent<const N extends string, const D extends Record<string, Leaf<string>>> extends Driver<
-  N,
-  D,
-  "parent",
-  {},
-  { ready: boolean },
-  undefined
-> {
+class Parent<
+  const N extends string,
+  const D extends Record<string, Leaf<string>>,
+> extends Driver<N, D, "parent", {}, { ready: boolean }, undefined> {
   state = { ready: true };
   api = {};
   socket = undefined;
@@ -80,7 +76,10 @@ describe("driver deps", () => {
     };
 
     // TSAS:
-    const device = new ClientRpcDevice<typeof graph, "parent-1">(client as any, "parent-1");
+    const device = new ClientRpcDevice<typeof graph, "parent-1">(
+      client as any,
+      "parent-1",
+    );
 
     assert.deepEqual(device.dep("child-1"), { name: "child-1" });
   });

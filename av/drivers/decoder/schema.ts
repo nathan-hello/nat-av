@@ -48,7 +48,9 @@ export const SchemaMoveWindowArgs: SchemaMap<T.MoveWindowArgs>["object"] = {
   ],
 };
 
-export const SchemaRouteDestroyParams: SchemaMap<T.RouteDestroyRequest["params"]>["object"] = {
+export const SchemaRouteDestroyParams: SchemaMap<
+  T.RouteDestroyRequest["params"]
+>["object"] = {
   type: "object",
   fields: [
     {
@@ -81,7 +83,9 @@ export const SchemaRouteDestroyParams: SchemaMap<T.RouteDestroyRequest["params"]
   ],
 };
 
-export const SchemaVideoOutputContext: SchemaMap<T.DecoderContext["video"][number]>["object"] = {
+export const SchemaVideoOutputContext: SchemaMap<
+  T.DecoderContext["video"][number]
+>["object"] = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -91,7 +95,9 @@ export const SchemaVideoOutputContext: SchemaMap<T.DecoderContext["video"][numbe
   ],
 };
 
-export const SchemaAudioOutputContext: SchemaMap<T.DecoderContext["audio"][number]>["object"] = {
+export const SchemaAudioOutputContext: SchemaMap<
+  T.DecoderContext["audio"][number]
+>["object"] = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -102,8 +108,14 @@ export const SchemaAudioOutputContext: SchemaMap<T.DecoderContext["audio"][numbe
 export const SchemaDecoderContext: SchemaMap<T.DecoderContext>["object"] = {
   type: "object",
   fields: [
-    { name: "video", value: { type: "array", items: [SchemaVideoOutputContext] } },
-    { name: "audio", value: { type: "array", items: [SchemaAudioOutputContext] } },
+    {
+      name: "video",
+      value: { type: "array", items: [SchemaVideoOutputContext] },
+    },
+    {
+      name: "audio",
+      value: { type: "array", items: [SchemaAudioOutputContext] },
+    },
   ],
 };
 
@@ -129,7 +141,11 @@ export const DecoderSchema = (): Schema<Decoder["api"]> => [
     args: [],
     returns: VideoAndAudioReturn,
   },
-  { name: "debug", args: [{ type: "boolean", optional: true }], returns: { type: "number" } },
+  {
+    name: "debug",
+    args: [{ type: "boolean", optional: true }],
+    returns: { type: "number" },
+  },
   {
     name: "route",
     returns: { type: "number" },
@@ -145,7 +161,15 @@ export const DecoderSchema = (): Schema<Decoder["api"]> => [
       },
     ],
   },
-  { name: "moveRelative", args: [SchemaMoveWindowArgs], returns: { type: "number" } },
-  { name: "moveAbsolute", args: [SchemaMoveWindowArgs], returns: { type: "number" } },
+  {
+    name: "moveRelative",
+    args: [SchemaMoveWindowArgs],
+    returns: { type: "number" },
+  },
+  {
+    name: "moveAbsolute",
+    args: [SchemaMoveWindowArgs],
+    returns: { type: "number" },
+  },
   { name: "fetchContext", args: [], returns: SchemaDecoderContext },
 ];

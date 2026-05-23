@@ -49,7 +49,9 @@ class McipPending extends TypedEventTarget<Record<string, McipReply>> {
   currentId: number | null = null;
 }
 
-export default class Mediasite<const N extends string = string> extends Driver<N> {
+export default class Mediasite<
+  const N extends string = string,
+> extends Driver<N> {
   private TIMEOUT_MS = 5000;
   private rxBuf = "";
   private pending = new McipPending();
@@ -121,12 +123,16 @@ export default class Mediasite<const N extends string = string> extends Driver<N
           spaceIndex === -1 ?
             message.toUpperCase()
           : message.substring(0, spaceIndex).toUpperCase();
-        const params = spaceIndex === -1 ? "" : message.substring(spaceIndex + 1);
+        const params =
+          spaceIndex === -1 ? "" : message.substring(spaceIndex + 1);
 
         this.processResponse(command, params);
 
         if (this.pending.currentId !== null) {
-          this.pending.dispatch(this.pending.currentId.toString(), { command, params });
+          this.pending.dispatch(this.pending.currentId.toString(), {
+            command,
+            params,
+          });
         }
       }
     });
@@ -149,7 +155,9 @@ export default class Mediasite<const N extends string = string> extends Driver<N
         break;
       case "IMAGECOUNT":
         this.state.imageCount = parseInt(params) || 0;
-        this.dispatch("driver:state-updated", { imageCount: this.state.imageCount });
+        this.dispatch("driver:state-updated", {
+          imageCount: this.state.imageCount,
+        });
         break;
       case "PUBLISH":
         this.state.publish = params === "TRUE";
@@ -169,15 +177,21 @@ export default class Mediasite<const N extends string = string> extends Driver<N
         break;
       case "IMAGEAUTO":
         this.state.imageAutoScene = params === "TRUE";
-        this.dispatch("driver:state-updated", { imageAutoScene: this.state.imageAutoScene });
+        this.dispatch("driver:state-updated", {
+          imageAutoScene: this.state.imageAutoScene,
+        });
         break;
       case "PRESENTATIONTITLE":
         this.state.presentationTitle = params;
-        this.dispatch("driver:state-updated", { presentationTitle: this.state.presentationTitle });
+        this.dispatch("driver:state-updated", {
+          presentationTitle: this.state.presentationTitle,
+        });
         break;
       case "SCHEDULEDID":
         this.state.scheduledId = params;
-        this.dispatch("driver:state-updated", { scheduledId: this.state.scheduledId });
+        this.dispatch("driver:state-updated", {
+          scheduledId: this.state.scheduledId,
+        });
         break;
       case "EMESSAGE":
         this.tel.error("INVALID_COMMAND", { params });
@@ -254,7 +268,8 @@ export default class Mediasite<const N extends string = string> extends Driver<N
 
     // Image
     imageAdvance: () => this.request("IMAGEADVANCE"),
-    imageAutoScene: (on: boolean) => this.request(`IMAGEAUTO ${on ? "TRUE" : "FALSE"}`),
+    imageAutoScene: (on: boolean) =>
+      this.request(`IMAGEAUTO ${on ? "TRUE" : "FALSE"}`),
     presetIndex: (index: number) => this.request(`PRESETINDEX ${index}`),
 
     // Encoding profile
@@ -262,16 +277,19 @@ export default class Mediasite<const N extends string = string> extends Driver<N
 
     // Schedule
     selectScheduled: (id: string) => this.request(`SCHEDULEDID ${id}`),
-    scheduledToday: (on: boolean) => this.request(`SCHEDULEDTODAY ${on ? "TRUE" : "FALSE"}`),
+    scheduledToday: (on: boolean) =>
+      this.request(`SCHEDULEDTODAY ${on ? "TRUE" : "FALSE"}`),
 
     // Video routing
-    route: (input: string, output = "Video1") => this.request(`ROUTE "${input}" ${output}`),
+    route: (input: string, output = "Video1") =>
+      this.request(`ROUTE "${input}" ${output}`),
     unroute: (output: string) => this.request(`UNROUTE ${output}`),
     encoderVideoInput: (route: number, stream: string) =>
       this.request(`ENCODERVIDEOINPUT ${route} ${stream}`),
 
     // Audio
-    audioRecordLevel: (level: number) => this.request(`AUDIORECORDLEVEL ${level}`),
+    audioRecordLevel: (level: number) =>
+      this.request(`AUDIORECORDLEVEL ${level}`),
 
     // Queries
     queryStatus: () => this.query("STATUS"),

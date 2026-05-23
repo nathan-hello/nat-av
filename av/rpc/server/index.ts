@@ -21,21 +21,24 @@ export class RPCServer<N extends Natav = natav> {
   }
 
   async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
-    const result = await this.tel.task("server-rpc:handle-request", async (span) => {
-      this.tel.info("RPC_RECEIVED", {
-        jsonrpc: message.jsonrpc,
-        id: message.id,
-        method: message.method,
-      });
+    const result = await this.tel.task(
+      "server-rpc:handle-request",
+      async (span) => {
+        this.tel.info("RPC_RECEIVED", {
+          jsonrpc: message.jsonrpc,
+          id: message.id,
+          method: message.method,
+        });
 
-      span.setAttributes({
-        "rpc.id": message.id,
-        "rpc.method": message.method,
-      });
+        span.setAttributes({
+          "rpc.id": message.id,
+          "rpc.method": message.method,
+        });
 
-      this.tel.info("RPC_VALIDATED", { message });
-      return this.router.handle(message);
-    });
+        this.tel.info("RPC_VALIDATED", { message });
+        return this.router.handle(message);
+      },
+    );
 
     if (result.ok) {
       return result.data;

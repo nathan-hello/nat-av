@@ -38,7 +38,11 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
     });
 
     socket.addEventListener("close", (event) => {
-      this.tel.info("got event", { event: "close", reason: event.reason, code: event.code });
+      this.tel.info("got event", {
+        event: "close",
+        reason: event.reason,
+        code: event.code,
+      });
       this.dispatch("close", event);
 
       if (this.closedExplicitly || !this.options.reconnect) {

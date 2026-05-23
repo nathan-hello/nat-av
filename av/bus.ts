@@ -17,9 +17,16 @@ export type SystemEvents<N extends Natav = natav> =
     }
   | { type: "natav:device:connected"; name: Natav.Names<N> }
   | { type: "natav:device:disconnected"; name: Natav.Names<N> }
-  | { type: "natav:device:error"; name: Natav.Names<N>; error?: Error | unknown }
+  | {
+      type: "natav:device:error";
+      name: Natav.Names<N>;
+      error?: Error | unknown;
+    }
   | { type: "natav:debug:socket"; message: DebugSocketEvent }
-  | { type: "natav:opentelemetry:entry"; message: { record: ReadableLogRecord; asString: string } }
+  | {
+      type: "natav:opentelemetry:entry";
+      message: { record: ReadableLogRecord; asString: string };
+    }
   | {
       type: "natav:automation:triggered";
       name: string;
@@ -27,17 +34,25 @@ export type SystemEvents<N extends Natav = natav> =
       action: { name: string; data: string };
     };
 
-export type SystemEvent<T extends SystemEvents["type"]> = Extract<SystemEvents, { type: T }>;
-
-export type SystemEventOfName<T extends SystemEvents["type"], Name extends string> = Extract<
+export type SystemEvent<T extends SystemEvents["type"]> = Extract<
   SystemEvents,
-  { type: T; name: Name }
+  { type: T }
 >;
 
-export type EventName = SystemEvents["type"];
-export type EventPayload<E extends EventName = EventName> = Extract<SystemEvents, { type: E }>;
+export type SystemEventOfName<
+  T extends SystemEvents["type"],
+  Name extends string,
+> = Extract<SystemEvents, { type: T; name: Name }>;
 
-export type EventHandler<E extends EventName = EventName> = (payload: EventPayload<E>) => void;
+export type EventName = SystemEvents["type"];
+export type EventPayload<E extends EventName = EventName> = Extract<
+  SystemEvents,
+  { type: E }
+>;
+
+export type EventHandler<E extends EventName = EventName> = (
+  payload: EventPayload<E>,
+) => void;
 
 type EventMap = {
   [T in EventName]: EventPayload<T>;

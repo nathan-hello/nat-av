@@ -17,7 +17,10 @@ export class FileExporter implements LogRecordExporter {
     }
   }
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       fs.appendFileSync(this.file, ReadableLogRecordStringify(record) + "\n");
     }
@@ -35,7 +38,10 @@ const ANSI_PURPLE = "\u001b[35m";
 export class SimpleConsoleExporter implements LogRecordExporter {
   constructor() {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       const scopeName = `${ANSI_PURPLE}${record.instrumentationScope.name}${ANSI_RESET}`;
       switch (record.severityNumber) {

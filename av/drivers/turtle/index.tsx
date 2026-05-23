@@ -3,7 +3,9 @@ import { RequestManager } from "@av/requests";
 import { Delimiters } from "@av/sockets/delimiters";
 import type { DeviceSocket, Schema } from "@av/types";
 
-export default class ChazyControl<const N extends string = string> extends Driver<N> {
+export default class ChazyControl<
+  const N extends string = string,
+> extends Driver<N> {
   mock = undefined;
   socket: DeviceSocket;
   requests: RequestManager<string, string>;
@@ -13,7 +15,10 @@ export default class ChazyControl<const N extends string = string> extends Drive
     this.socket = socket;
     this.requests = new RequestManager({
       socket: this.socket,
-      delimiter: Delimiters.characterDelimted(["CONTROLLER>", "\r\n\r\n", "\\r\\n\\r\\n"], false),
+      delimiter: Delimiters.characterDelimted(
+        ["CONTROLLER>", "\r\n\r\n", "\\r\\n\\r\\n"],
+        false,
+      ),
       tel: this.tel,
       formatter: (str) => {
         return Buffer.from(str + "\r");

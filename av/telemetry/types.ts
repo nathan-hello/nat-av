@@ -20,14 +20,16 @@ export function SeverityToString(severity?: number): string {
   return "error";
 }
 
-export type SeverityNumber = (typeof SeverityNumber)[keyof typeof SeverityNumber];
+export type SeverityNumber =
+  (typeof SeverityNumber)[keyof typeof SeverityNumber];
 
 export const SpanStatusCode = {
   OK: 1,
   ERROR: 2,
 } as const;
 
-export type SpanStatusCode = (typeof SpanStatusCode)[keyof typeof SpanStatusCode];
+export type SpanStatusCode =
+  (typeof SpanStatusCode)[keyof typeof SpanStatusCode];
 
 export type SpanContext = {
   traceId: string;
@@ -68,12 +70,17 @@ export function ReadableLogRecordStringify(record: ReadableLogRecord): string {
       trace_id: record.spanContext.traceId,
       span_id: record.spanContext.spanId,
     }),
-    message: typeof record.body === "string" ? record.body : JSON.stringify(record.body),
+    message:
+      typeof record.body === "string" ?
+        record.body
+      : JSON.stringify(record.body),
     attributes: record.attributes,
   });
 }
 
-export function ReadableLogRecordToLogEntry(record: ReadableLogRecord): LogEntry {
+export function ReadableLogRecordToLogEntry(
+  record: ReadableLogRecord,
+): LogEntry {
   let body: string;
   if (typeof record.body === "string") {
     body = record.body;

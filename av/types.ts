@@ -48,18 +48,22 @@ type DepUnion<Deps> =
   : never;
 
 type DriverTree<D> =
-  D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>> : never;
+  D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>>
+  : never;
 
 type DriversOf<C extends readonly Driver[]> = DriverTree<C[number]>;
 
 export type NamesOf<C extends readonly Driver[]> = DriversOf<C>["name"];
 
-export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<
-  DriversOf<C>,
-  { name: N }
->;
+export type DriverFor<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = Extract<DriversOf<C>, { name: N }>;
 
-export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["state"];
+export type StateFor<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = DriverFor<C, N>["state"];
 
 export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   [M in keyof DriverFor<C, N>["api"]]: DriverFor<C, N>["api"][M] extends (
@@ -69,7 +73,10 @@ export type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   : never;
 };
 
-export type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<C, N>["deps"];
+export type DepsOf<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = DriverFor<C, N>["deps"];
 
 export type DepNamesOf<C extends readonly Driver[], N extends NamesOf<C>> =
   IsAny<DepsOf<C, N>> extends true ? never : keyof DepsOf<C, N> & string;
@@ -96,7 +103,9 @@ export type DriverHandle<D extends Driver<any, any>> = {
 type DriverDepMixin<Deps> =
   [DepNames<Deps>] extends [never] ? {}
   : {
-      dep: <DN extends DepNames<Deps>>(depName: DN) => DriverHandle<Extract<Deps[DN], Driver>>;
+      dep: <DN extends DepNames<Deps>>(
+        depName: DN,
+      ) => DriverHandle<Extract<Deps[DN], Driver>>;
     };
 
 // Driver.schema types. Use Schema<this.api>.
@@ -121,10 +130,14 @@ type IsUnion<T, U = T> =
   : never;
 
 type UnionToIntersection<U> =
-  (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
+  (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I
+  : never;
 
 type LastOfUnion<U> =
-  UnionToIntersection<U extends any ? (x: U) => void : never> extends (x: infer L) => void ? L
+  UnionToIntersection<U extends any ? (x: U) => void : never> extends (
+    (x: infer L) => void
+  ) ?
+    L
   : never;
 
 type UnionToTuple<T, L = LastOfUnion<T>> =
@@ -142,7 +155,8 @@ type TupleOptionalKeys<T extends readonly any[]> = {
   [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
 }[keyof T];
 
-export type ReturnWire<T> = [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;
+export type ReturnWire<T> =
+  [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;
 
 type LiteralValue = string | number | boolean | null;
 
@@ -243,7 +257,13 @@ type ObjectFields<T> = Permutation<ObjectField<T>>;
 type PrimitiveUi<T> = {
   readonly label?: string;
   readonly placeholder?: string;
-  readonly widget?: "textarea" | "password" | "text" | "slider" | "radio" | "dropdown";
+  readonly widget?:
+    | "textarea"
+    | "password"
+    | "text"
+    | "slider"
+    | "radio"
+    | "dropdown";
   readonly options?: readonly T[];
   readonly defaultValue?: T;
 };

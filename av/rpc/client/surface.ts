@@ -14,5 +14,7 @@ export type ClientRpcSurface<N extends Natav = natav> = {
   readonly deviceStates: Partial<{ [K in Natav.Names<N>]: Natav.State<N, K> }>;
   readonly systemStateData: SystemStateData;
   readonly isOnline: boolean;
-  device<Name extends Natav.Names<N>>(name: Name): ClientRpcDeviceHandle<N, Name>;
+  device<Name extends Natav.Names<N>>(
+    name: Name,
+  ): ClientRpcDeviceHandle<N, Name>;
 };

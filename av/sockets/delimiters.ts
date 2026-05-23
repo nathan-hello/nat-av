@@ -1,7 +1,9 @@
 import type { Telemetry } from "@av/telemetry";
 
 export type DataDelimiter<T = any> = (buffer: Buffer) => T[] | null;
-export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<ReturnType<T>>;
+export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<
+  ReturnType<T>
+>;
 export type DataFormatter<T> = (value: T) => Buffer;
 
 export const Delimiters = {

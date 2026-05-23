@@ -5,7 +5,10 @@ import type { DeviceSocket } from "@av/types";
 
 type RequestSocket = Pick<DeviceSocket, "on" | "write">;
 
-type RequestMatcher<Request, Message> = (request: Request, message: Message) => boolean;
+type RequestMatcher<Request, Message> = (
+  request: Request,
+  message: Message,
+) => boolean;
 type ResponseStrategy<Request, Message> =
   | {
       strategy: "match";
@@ -96,7 +99,9 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     });
   }
 
-  request<Response extends Message = Message>(request: Request): Promise<TaskResult<Response>> {
+  request<Response extends Message = Message>(
+    request: Request,
+  ): Promise<TaskResult<Response>> {
     if (this.ended) {
       return Promise.resolve({ ok: false, error: "requests-ended" });
     }
@@ -128,7 +133,11 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
         }
         this.removePending(entry);
         resolve({ ok: false, error: enqueue.error });
-        this.dispatch("error", { phase: "send", error: enqueue.error, request });
+        this.dispatch("error", {
+          phase: "send",
+          error: enqueue.error,
+          request,
+        });
       }
     });
   }
@@ -230,7 +239,10 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
 
     this.removePending(entry);
     entry.resolve(result);
-    this.dispatch("write-error", { request: entry.request, error: result.error });
+    this.dispatch("write-error", {
+      request: entry.request,
+      error: result.error,
+    });
     this.flush();
   }
 
@@ -239,7 +251,9 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
       const strategy = this.responseStrategy;
       switch (strategy?.strategy) {
         case "match":
-          return this.pending.findIndex((entry) => strategy.matchFn(entry.request, message));
+          return this.pending.findIndex((entry) =>
+            strategy.matchFn(entry.request, message),
+          );
         case "blocking-queue":
           return this.pending.findIndex((entry) => entry.sent);
         default:

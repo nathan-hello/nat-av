@@ -18,7 +18,9 @@ function createId(bytes: number): string {
     }
   }
 
-  return Array.from(buffer, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(buffer, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 let activeSpan: Span | undefined;
@@ -67,7 +69,10 @@ function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
 
 export function withSpan<T>(span: Span, fn: () => Promise<T>): Promise<T>;
 export function withSpan<T>(span: Span, fn: () => T): T;
-export function withSpan<T>(span: Span, fn: () => T | Promise<T>): T | Promise<Awaited<T>> {
+export function withSpan<T>(
+  span: Span,
+  fn: () => T | Promise<T>,
+): T | Promise<Awaited<T>> {
   const previousSpan = activeSpan;
   activeSpan = span;
 

@@ -17,7 +17,11 @@ export function DebugDeviceTree(handle: Handle<DebugDeviceTreeProps>) {
   );
 }
 
-function renderTreeNode(node: DebugDeviceNode, handle: Handle<DebugDeviceTreeProps>, depth = 0) {
+function renderTreeNode(
+  node: DebugDeviceNode,
+  handle: Handle<DebugDeviceTreeProps>,
+  depth = 0,
+) {
   const socket = node.socket;
   const selectable = !!socket?.canWrite && !!socket?.canReceive;
   const isSelected = handle.props.selectedDeviceName === node.name;
@@ -48,7 +52,9 @@ function renderTreeNode(node: DebugDeviceNode, handle: Handle<DebugDeviceTreePro
           <strong>{node.name}</strong>
           <span mix={treeMetaStyle}>{node.driverName}</span>
         </span>
-        <span mix={treeBadgeStyle(selectable)}>{selectable ? "socket" : "no socket"}</span>
+        <span mix={treeBadgeStyle(selectable)}>
+          {selectable ? "socket" : "no socket"}
+        </span>
       </button>
       {node.children.length > 0 ?
         node.children.map((child) => renderTreeNode(child, handle, depth + 1))

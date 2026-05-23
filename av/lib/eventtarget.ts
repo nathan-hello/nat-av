@@ -132,7 +132,10 @@ export class ProtectedTypedEventTarget<
     this.offCallbacks.forEach((func) => func());
   }
 
-  protected dispatch<K extends keyof Events>(type: K, payload: Events[K]): void {
+  protected dispatch<K extends keyof Events>(
+    type: K,
+    payload: Events[K],
+  ): void {
     // TSAS:
     const event = new CustomEvent(type as string, { detail: payload });
     super.dispatchEvent(event);

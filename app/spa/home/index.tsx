@@ -14,8 +14,8 @@ export function HomePage(handle: Handle) {
             <p mix={eyebrowStyle}>Control surface</p>
             <h1 mix={titleStyle}>Decoder Control</h1>
             <p mix={subtitleStyle}>
-              Live router for the `video-wall` device. Route, move, template-switch, and wipe from
-              one page.
+              Live router for the `video-wall` device. Route, move,
+              template-switch, and wipe from one page.
             </p>
           </div>
           <div mix={statusPillsStyle}>
@@ -48,8 +48,16 @@ const eyebrowStyle = css({
   color: "#64748b",
   fontSize: "11px",
 });
-const titleStyle = css({ margin: "4px 0 0", fontSize: "32px", lineHeight: 1.1 });
-const subtitleStyle = css({ margin: "10px 0 0", color: "#94a3b8", maxWidth: "72ch" });
+const titleStyle = css({
+  margin: "4px 0 0",
+  fontSize: "32px",
+  lineHeight: 1.1,
+});
+const subtitleStyle = css({
+  margin: "10px 0 0",
+  color: "#94a3b8",
+  maxWidth: "72ch",
+});
 const statusPillsStyle = css({
   display: "flex",
   gap: "10px",

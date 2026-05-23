@@ -1,12 +1,19 @@
 import type { natav } from "@av/index";
 import type Natav from "@av/natav";
-import { RPCMethods, RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
+import {
+  RPCMethods,
+  RPCRequest,
+  RPCError,
+  RPCResponse,
+} from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { RPCErrorCodes } from "@av/rpc/protocol";
 
-export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandler {
+export class SystemRpcRouter<
+  N extends Natav = natav,
+> implements RPCRequestHandler {
   prefix = "system.";
   private tel = new Telemetry("Rpc::Router::System");
 
@@ -26,7 +33,9 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
     }
   }
 
-  private async handleApiCall(message: RPCRequest): Promise<RPCResponse | RPCError> {
+  private async handleApiCall(
+    message: RPCRequest,
+  ): Promise<RPCResponse | RPCError> {
     const params = message.systemApiParams();
     if (!params) {
       return new RPCError(message.id, {
@@ -37,7 +46,8 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
 
     const result = await this.tel.task(`system:${params.method}`, async () => {
       // TSAS:
-      const method = this.system.api[params.method as keyof typeof this.system.api];
+      const method =
+        this.system.api[params.method as keyof typeof this.system.api];
       if (typeof method !== "function") {
         return new RPCError(message.id, {
           code: RPCErrorCodes.MethodNotFound,
@@ -57,6 +67,9 @@ export class SystemRpcRouter<N extends Natav = natav> implements RPCRequestHandl
       return new RPCError(message.id, result.data.error);
     }
 
-    return new RPCError(message.id, { code: RPCErrorCodes.InternalError, message: result.error });
+    return new RPCError(message.id, {
+      code: RPCErrorCodes.InternalError,
+      message: result.error,
+    });
   }
 }

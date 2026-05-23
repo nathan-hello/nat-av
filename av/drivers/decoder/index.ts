@@ -18,7 +18,9 @@ import { DecoderSchema } from "@av/drivers/decoder/schema";
 
 type DecoderMessage = DecoderResponse | DecoderNotification;
 
-export default class Decoder<const N extends string = string> extends Driver<N> {
+export default class Decoder<
+  const N extends string = string,
+> extends Driver<N> {
   private highestId = 0;
   private routes: DecoderRoutes = {
     audio: [],
@@ -35,9 +37,10 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     super({ name, driverName: "natalie-decoder" });
     this.socket = socket;
 
-    const { delimiter, formatter } = Delimiters.lengthPrefixedJson<DecoderRequest, DecoderMessage>(
-      this.tel,
-    );
+    const { delimiter, formatter } = Delimiters.lengthPrefixedJson<
+      DecoderRequest,
+      DecoderMessage
+    >(this.tel);
 
     this.requests = new RequestManager<DecoderRequest, DecoderMessage>({
       tel: this.tel,
@@ -47,7 +50,8 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       timeoutMs: 10000,
       responseStrategy: {
         strategy: "match",
-        matchFn: (request, message) => "id" in message && message.id === request.id,
+        matchFn: (request, message) =>
+          "id" in message && message.id === request.id,
         maxInFlight: 5,
         minGapMs: 10,
       },
@@ -95,7 +99,10 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     }
 
     if (typeof result.data.result === "number" && result.data.result !== 0) {
-      this.tel.error("error-from-device", { request: req, response: result.data });
+      this.tel.error("error-from-device", {
+        request: req,
+        response: result.data,
+      });
     }
 
     this.dispatch("driver:delimited", Buffer.from(JSON.stringify(result.data)));
@@ -114,10 +121,15 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
       return 0;
     },
     route: async (r: { video?: VideoRoute; audio?: AudioRoute }) => {
-      let params: { video: VideoRoute[]; audio: AudioRoute[] } = { audio: [], video: [] };
+      let params: { video: VideoRoute[]; audio: AudioRoute[] } = {
+        audio: [],
+        video: [],
+      };
       let next: DecoderRoutes | undefined;
       if (r.video !== undefined) {
-        const output = this.context?.video?.find((v) => v.output === r.video?.output);
+        const output = this.context?.video?.find(
+          (v) => v.output === r.video?.output,
+        );
         if (!output) {
           throw new RPCErrorData({
             code: 401,
@@ -244,7 +256,12 @@ export default class Decoder<const N extends string = string> extends Driver<N> 
     },
 
     unroute: async (
-      r: { video: { output: number; window: number }[]; audio: { output: number }[] } | "all",
+      r:
+        | {
+            video: { output: number; window: number }[];
+            audio: { output: number }[];
+          }
+        | "all",
     ) => {
       if (r === "all") {
         const response = await this.request("route_destroy", {

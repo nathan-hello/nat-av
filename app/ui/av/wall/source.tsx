@@ -26,7 +26,10 @@ export function Source(handle: Handle<SourceProps>) {
       mix={[
         sourceStyle,
         on("click", () => {
-          handle.props.onSelect?.({ id: handle.props.id, name: handle.props.name });
+          handle.props.onSelect?.({
+            id: handle.props.id,
+            name: handle.props.name,
+          });
         }),
         on("dragstart", (event) => {
           dragging = true;

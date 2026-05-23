@@ -1,4 +1,10 @@
-import { clientEntry, css, on, type Handle, type SerializableProps } from "remix/ui";
+import {
+  clientEntry,
+  css,
+  on,
+  type Handle,
+  type SerializableProps,
+} from "remix/ui";
 
 const FADE_MS = 180;
 const HOLD_MS = 1200;
@@ -20,7 +26,8 @@ export const PromptButton = clientEntry(
         state === "copied" || state === "resetting" ? "Copied to clipboard"
         : state === "failed" ? "Copy failed"
         : promptLabel;
-      let active = state === "copied" || state === "failed" || state === "resetting";
+      let active =
+        state === "copied" || state === "failed" || state === "resetting";
 
       return (
         <button

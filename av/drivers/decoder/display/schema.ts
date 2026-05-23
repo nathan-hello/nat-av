@@ -18,7 +18,11 @@ export const DisplaySchema: Schema<DisplayManager> = [
       type: "array",
       items: [{ type: "array", items: [{ type: "number" }] }],
     },
-    args: [{ type: "number" }, ArgResOffset, { type: "number", optional: true }],
+    args: [
+      { type: "number" },
+      ArgResOffset,
+      { type: "number", optional: true },
+    ],
   },
   {
     name: "route",

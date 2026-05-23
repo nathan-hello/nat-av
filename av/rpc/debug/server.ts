@@ -93,7 +93,10 @@ export class RpcDebugServer<N extends Natav = natav> {
 
   WsErrorHandler = (_: Event, __: DebugWebSocketConnection) => {};
 
-  WsMessageHandler = async (event: MessageEvent, ws: DebugWebSocketConnection) => {
+  WsMessageHandler = async (
+    event: MessageEvent,
+    ws: DebugWebSocketConnection,
+  ) => {
     const message = this.tel.task("DEBUG_WS_MSG_JSON_PARSE", () => {
       return JSON.parse(readMessage(event.data));
     });
@@ -107,7 +110,10 @@ export class RpcDebugServer<N extends Natav = natav> {
     if (!req) {
       ws.send(
         JSON.stringify(
-          RPCErrors.RequestInvalid("id" in message.data ? message.data.id : null, message.data),
+          RPCErrors.RequestInvalid(
+            "id" in message.data ? message.data.id : null,
+            message.data,
+          ),
         ),
       );
       return;
@@ -116,7 +122,9 @@ export class RpcDebugServer<N extends Natav = natav> {
     ws.send(JSON.stringify(await this.handleRequest(req)));
   };
 
-  private async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
+  private async handleRequest(
+    message: RPCRequest,
+  ): Promise<RPCResponse | RPCError> {
     switch (message.method) {
       case DebugRpcMethods.GetTree:
         return new RPCResponse(message.id, this.args.natav.GetDebugTree());
@@ -146,7 +154,10 @@ export class RpcDebugServer<N extends Natav = natav> {
       encoding?: unknown;
     };
 
-    if (typeof params.deviceName !== "string" || typeof params.text !== "string") {
+    if (
+      typeof params.deviceName !== "string" ||
+      typeof params.text !== "string"
+    ) {
       return new RPCError(message.id, {
         code: RPCErrorCodes.InvalidParams,
         message: "Debug socket write requires string deviceName and text",

@@ -104,7 +104,10 @@ export class WebsocketHandler<N extends Natav = Natav> {
     if (!req) {
       ws.send(
         JSON.stringify(
-          RPCErrors.RequestInvalid("id" in message.data ? message.data.id : null, message.data),
+          RPCErrors.RequestInvalid(
+            "id" in message.data ? message.data.id : null,
+            message.data,
+          ),
         ),
       );
       return;

@@ -14,7 +14,8 @@ export function DebugPage(handle: Handle) {
   return () => {
     const tree = debug.tree;
     const fallbackSelection = findFirstSocketDevice(tree);
-    const selectedNode = selectedDeviceName ? debug.getDevice(selectedDeviceName) : undefined;
+    const selectedNode =
+      selectedDeviceName ? debug.getDevice(selectedDeviceName) : undefined;
 
     if (!selectedNode?.socket?.canWrite || !selectedNode?.socket?.canReceive) {
       selectedDeviceName = fallbackSelection?.name ?? null;
@@ -65,7 +66,9 @@ export function DebugPage(handle: Handle) {
   };
 }
 
-function findFirstSocketDevice(nodes: DebugDeviceNode[]): DebugDeviceNode | undefined {
+function findFirstSocketDevice(
+  nodes: DebugDeviceNode[],
+): DebugDeviceNode | undefined {
   for (const node of nodes) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;
@@ -80,7 +83,12 @@ function findFirstSocketDevice(nodes: DebugDeviceNode[]): DebugDeviceNode | unde
   return undefined;
 }
 
-const shellStyle = css({ padding: "24px", display: "grid", gap: "18px", color: "#e2e8f0" });
+const shellStyle = css({
+  padding: "24px",
+  display: "grid",
+  gap: "18px",
+  color: "#e2e8f0",
+});
 const headerStyle = css({
   display: "flex",
   justifyContent: "space-between",
@@ -104,8 +112,18 @@ const statusPillStyle = (connected: boolean) =>
     fontSize: "12px",
   });
 const linkStyle = css({ color: "#7dd3fc", textDecoration: "none" });
-const layoutStyle = css({ display: "flex", gap: "18px", flexWrap: "wrap", alignItems: "stretch" });
-const sidebarStyle = css({ flex: "1 1 320px", minWidth: "280px", display: "grid", gap: "12px" });
+const layoutStyle = css({
+  display: "flex",
+  gap: "18px",
+  flexWrap: "wrap",
+  alignItems: "stretch",
+});
+const sidebarStyle = css({
+  flex: "1 1 320px",
+  minWidth: "280px",
+  display: "grid",
+  gap: "12px",
+});
 const consoleColumnStyle = css({
   flex: "3 1 720px",
   minWidth: "320px",

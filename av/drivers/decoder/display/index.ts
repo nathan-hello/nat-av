@@ -173,14 +173,19 @@ export default class DisplayManager<
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
           const decoder = this.configs[decoderIdx].driver;
-          return Promise.all(routes.map((route) => decoder.api.route({ video: route })));
+          return Promise.all(
+            routes.map((route) => decoder.api.route({ video: route })),
+          );
         }),
       );
 
       return results;
     },
 
-    routeAudio: async (uri: string, output: { decoderIndex: number; output: number }) => {
+    routeAudio: async (
+      uri: string,
+      output: { decoderIndex: number; output: number },
+    ) => {
       const decoder = this.configs[output.decoderIndex]?.driver;
       if (!decoder) {
         return -1;
@@ -225,7 +230,9 @@ export default class DisplayManager<
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
           const decoder = this.configs[decoderIdx].driver;
-          return Promise.all(routes.map((route) => decoder.api.moveAbsolute(route)));
+          return Promise.all(
+            routes.map((route) => decoder.api.moveAbsolute(route)),
+          );
         }),
       );
 
@@ -237,7 +244,9 @@ export default class DisplayManager<
 
     destroy: async (windowId: number | "all") => {
       if (windowId === "all") {
-        return Promise.all(this.configs.map((c) => c.driver.api.unroute("all")));
+        return Promise.all(
+          this.configs.map((c) => c.driver.api.unroute("all")),
+        );
       }
       const existing = this.lwindows.find((w) => w.id === windowId);
       if (!existing) {
@@ -246,7 +255,10 @@ export default class DisplayManager<
 
       // Group routes by decoder for destruction
       // For destroy, we use the stored global position from the existing window
-      const destroyByDecoder = new Map<number, { output: number; window: number }[]>();
+      const destroyByDecoder = new Map<
+        number,
+        { output: number; window: number }[]
+      >();
       for (const route of existing.routes) {
         const found = this.findOutputForRoute(route, existing.global);
         if (!found) continue;
@@ -282,14 +294,22 @@ export default class DisplayManager<
   }
 
   private rebuildWindows(): void {
-    const routesByDecoder = this.configs.map((c) => c.driver.state.routes.video);
+    const routesByDecoder = this.configs.map(
+      (c) => c.driver.state.routes.video,
+    );
     this.lwindows = this.videoRoutesToWindows(routesByDecoder);
   }
 
   private computeCanvasDimensions(): void {
     for (const { output } of this.loutputs) {
-      this.canvasWidth = Math.max(this.canvasWidth, output.canvasX + output.resX);
-      this.canvasHeight = Math.max(this.canvasHeight, output.canvasY + output.resY);
+      this.canvasWidth = Math.max(
+        this.canvasWidth,
+        output.canvasX + output.resX,
+      );
+      this.canvasHeight = Math.max(
+        this.canvasHeight,
+        output.canvasY + output.resY,
+      );
     }
   }
 
@@ -299,8 +319,10 @@ export default class DisplayManager<
         const a = this.loutputs[i].output;
         const b = this.loutputs[j].output;
 
-        const overlapX = a.canvasX < b.canvasX + b.resX && a.canvasX + a.resX > b.canvasX;
-        const overlapY = a.canvasY < b.canvasY + b.resY && a.canvasY + a.resY > b.canvasY;
+        const overlapX =
+          a.canvasX < b.canvasX + b.resX && a.canvasX + a.resX > b.canvasX;
+        const overlapY =
+          a.canvasY < b.canvasY + b.resY && a.canvasY + a.resY > b.canvasY;
 
         if (overlapX && overlapY) {
           throw new Error(
@@ -349,8 +371,10 @@ export default class DisplayManager<
       const outputRight = output.canvasX + output.resX;
       const outputBottom = output.canvasY + output.resY;
 
-      const overlapsX = global.offsetX < outputRight && windowRight > output.canvasX;
-      const overlapsY = global.offsetY < outputBottom && windowBottom > output.canvasY;
+      const overlapsX =
+        global.offsetX < outputRight && windowRight > output.canvasX;
+      const overlapsY =
+        global.offsetY < outputBottom && windowBottom > output.canvasY;
 
       if (overlapsX && overlapsY) {
         routes.push({
@@ -369,12 +393,16 @@ export default class DisplayManager<
     return { id, global, routes };
   }
 
-  private videoRoutesToWindows(routesByDecoder: VideoRoute[][][]): LogicalWindow[] {
+  private videoRoutesToWindows(
+    routesByDecoder: VideoRoute[][][],
+  ): LogicalWindow[] {
     const windowsMap = new Map<number, LogicalWindow>();
 
     routesByDecoder.forEach((decoderRoutes, decoderIdx) => {
       decoderRoutes.forEach((outputRoutes, outputIdx) => {
-        const output = this.configs[decoderIdx]?.placement.find((p) => p.outputId === outputIdx);
+        const output = this.configs[decoderIdx]?.placement.find(
+          (p) => p.outputId === outputIdx,
+        );
         if (!output) return;
 
         outputRoutes.forEach((route) => {

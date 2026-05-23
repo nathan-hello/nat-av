@@ -1,16 +1,26 @@
-import { type ReadableLogRecord, ReadableLogRecordStringify, SeverityNumber } from "./types";
+import {
+  type ReadableLogRecord,
+  ReadableLogRecordStringify,
+  SeverityNumber,
+} from "./types";
 
 export type ExportResult = { code: 0 };
 
 export interface LogRecordExporter {
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void): void;
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ): void;
   shutdown(): Promise<void>;
 }
 
 export class MultiLogExporter implements LogRecordExporter {
   constructor(private exporters: LogRecordExporter[]) {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const exporter of this.exporters) {
       exporter?.export(logRecords, () => {});
     }
@@ -23,9 +33,17 @@ export class MultiLogExporter implements LogRecordExporter {
 }
 
 export class CustomExporter implements LogRecordExporter {
-  constructor(private callback: (log: { record: ReadableLogRecord; asString: string }) => void) {}
+  constructor(
+    private callback: (log: {
+      record: ReadableLogRecord;
+      asString: string;
+    }) => void,
+  ) {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       this.callback({ record, asString: ReadableLogRecordStringify(record) });
     }
@@ -38,7 +56,10 @@ export class CustomExporter implements LogRecordExporter {
 export class ConsoleExporter implements LogRecordExporter {
   constructor() {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       switch (record.severityNumber) {
         case SeverityNumber["DEBUG"]:
@@ -68,20 +89,39 @@ export class ConsoleExporter implements LogRecordExporter {
 export class SimpleConsoleExporter implements LogRecordExporter {
   constructor() {}
 
-  export(logRecords: ReadableLogRecord[], resultCallback: (result: ExportResult) => void) {
+  export(
+    logRecords: ReadableLogRecord[],
+    resultCallback: (result: ExportResult) => void,
+  ) {
     for (const record of logRecords) {
       switch (record.severityNumber) {
         case SeverityNumber["DEBUG"]:
-          console.debug(record.instrumentationScope.name, record.body, record.attributes);
+          console.debug(
+            record.instrumentationScope.name,
+            record.body,
+            record.attributes,
+          );
           break;
         case SeverityNumber["INFO"]:
-          console.info(record.instrumentationScope.name, record.body, record.attributes);
+          console.info(
+            record.instrumentationScope.name,
+            record.body,
+            record.attributes,
+          );
           break;
         case SeverityNumber["WARN"]:
-          console.warn(record.instrumentationScope.name, record.body, record.attributes);
+          console.warn(
+            record.instrumentationScope.name,
+            record.body,
+            record.attributes,
+          );
           break;
         case SeverityNumber["ERROR"]:
-          console.error(record.instrumentationScope.name, record.body, record.attributes);
+          console.error(
+            record.instrumentationScope.name,
+            record.body,
+            record.attributes,
+          );
           break;
         default:
           console.log(record);

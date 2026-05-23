@@ -1,4 +1,8 @@
-import { bindHttpToWs, WebsocketHandler, type WebSocketApp } from "@av/rpc/server/websocket";
+import {
+  bindHttpToWs,
+  WebsocketHandler,
+  type WebSocketApp,
+} from "@av/rpc/server/websocket";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
@@ -9,7 +13,10 @@ import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/display";
 
 import { CustomExporter } from "@av/telemetry/exporters";
-import { FileExporter, SimpleConsoleExporter } from "@av/telemetry/server/exporters";
+import {
+  FileExporter,
+  SimpleConsoleExporter,
+} from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
 import Natav from "@av/natav";
 import { Telemetry } from "@av/telemetry";
@@ -37,9 +44,15 @@ export const natav = new Natav([
     {
       driver: new Decoder({
         name: "decoder-1",
-        socket: new Tcp({ addr: "decoder-e8d8d1599092.local", port: 12345, keepAlive: true }),
+        socket: new Tcp({
+          addr: "decoder-e8d8d1599092.local",
+          port: 12345,
+          keepAlive: true,
+        }),
       }),
-      placement: [{ outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 }],
+      placement: [
+        { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
+      ],
     },
   ]),
   new ChazyControl({
@@ -60,7 +73,12 @@ const websocket = new WebsocketHandler({ rpc, natav });
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
-  bindDebugHttpToWs(app, "/debug/ws", debug, new Telemetry("Server::DebugWebsocket"));
+  bindDebugHttpToWs(
+    app,
+    "/debug/ws",
+    debug,
+    new Telemetry("Server::DebugWebsocket"),
+  );
 
   await natav.Start();
   // TSAS:

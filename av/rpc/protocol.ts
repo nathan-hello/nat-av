@@ -30,12 +30,19 @@ export class RPCRequest {
   ) {}
 
   systemApiParams(): { method: string; args: any[] } | null {
-    if (this.method !== RPCMethods.SystemApi || !this.params || typeof this.params !== "object") {
+    if (
+      this.method !== RPCMethods.SystemApi ||
+      !this.params ||
+      typeof this.params !== "object"
+    ) {
       return null;
     }
 
     // TSAS:
-    const { method, args } = this.params as { method?: unknown; args?: unknown };
+    const { method, args } = this.params as {
+      method?: unknown;
+      args?: unknown;
+    };
     if (typeof method !== "string") {
       return null;
     }
@@ -44,13 +51,24 @@ export class RPCRequest {
   }
 
   deviceCallParams(): { device: string; method: string; args: any[] } | null {
-    if (this.method !== RPCMethods.DeviceCall || !this.params || typeof this.params !== "object") {
+    if (
+      this.method !== RPCMethods.DeviceCall ||
+      !this.params ||
+      typeof this.params !== "object"
+    ) {
       return null;
     }
 
     // TSAS:
-    const params = this.params as { device?: unknown; method?: unknown; args?: unknown };
-    if (typeof params.device !== "string" || typeof params.method !== "string") {
+    const params = this.params as {
+      device?: unknown;
+      method?: unknown;
+      args?: unknown;
+    };
+    if (
+      typeof params.device !== "string" ||
+      typeof params.method !== "string"
+    ) {
       return null;
     }
 
@@ -76,8 +94,16 @@ export class RPCResponse<T = any> {
     }
 
     // TSAS:
-    const candidate = message as { jsonrpc?: unknown; id?: unknown; result?: unknown };
-    if (candidate.jsonrpc !== "2.0" || candidate.id === undefined || !("result" in candidate)) {
+    const candidate = message as {
+      jsonrpc?: unknown;
+      id?: unknown;
+      result?: unknown;
+    };
+    if (
+      candidate.jsonrpc !== "2.0" ||
+      candidate.id === undefined ||
+      !("result" in candidate)
+    ) {
       return null;
     }
 
@@ -155,7 +181,10 @@ export class RPCNotification<T = any> {
       params?: unknown;
     };
 
-    if (candidate.jsonrpc !== "2.0" || candidate.method !== RPCMethods.Notification) {
+    if (
+      candidate.jsonrpc !== "2.0" ||
+      candidate.method !== RPCMethods.Notification
+    ) {
       return null;
     }
 
@@ -186,7 +215,10 @@ export class RPCNotification<T = any> {
       params?: unknown;
     };
 
-    return candidate.jsonrpc === "2.0" && candidate.method === RPCMethods.Notification;
+    return (
+      candidate.jsonrpc === "2.0" &&
+      candidate.method === RPCMethods.Notification
+    );
   }
 }
 
@@ -194,7 +226,11 @@ export type RPCMessage = RPCRequest | RPCResponse | RPCError | RPCNotification;
 
 export const RPCErrors = {
   JsonParse: (id?: RpcId, data?: any) =>
-    new RPCError(id ?? null, { message: "JSON Parse Error", code: RPCErrorCodes.ParseError, data }),
+    new RPCError(id ?? null, {
+      message: "JSON Parse Error",
+      code: RPCErrorCodes.ParseError,
+      data,
+    }),
   RequestInvalid: (id?: RpcId, data?: any) =>
     new RPCError(id ?? null, {
       message: "Not a JSONRPC Request",

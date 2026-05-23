@@ -1,4 +1,9 @@
-import { SeverityNumber, SpanStatusCode, type AttributeValue, type Span } from "./types";
+import {
+  SeverityNumber,
+  SpanStatusCode,
+  type AttributeValue,
+  type Span,
+} from "./types";
 import { getLoggerProvider } from "./sdk";
 import { RPCErrorData } from "@av/rpc/protocol";
 import { createSpan, getActiveSpan, withSpan } from "./runtime";
@@ -47,7 +52,11 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
             .catch((err): TaskResult<R> => {
               const error = this.handleError(span, name, err);
               if (err instanceof RPCErrorData) {
-                return { ok: false as const, error: err.error.message, data: err };
+                return {
+                  ok: false as const,
+                  error: err.error.message,
+                  data: err,
+                };
               }
               if (err instanceof Error) {
                 return { ok: false as const, error: err.message };
@@ -77,11 +86,16 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
   private handleError(span: Span, name: string, error: unknown): string {
     const message = error instanceof Error ? error.message : String(error);
     span.setStatus({ code: SpanStatusCode.ERROR, message });
-    this.emit(`Task Error: ${name}`, SeverityNumber.ERROR, "ERROR", { error: message });
+    this.emit(`Task Error: ${name}`, SeverityNumber.ERROR, "ERROR", {
+      error: message,
+    });
     return message;
   }
 
-  debug(body: T["debug"][0], attributes?: T["debug"][1] | (() => T["debug"][1])) {
+  debug(
+    body: T["debug"][0],
+    attributes?: T["debug"][1] | (() => T["debug"][1]),
+  ) {
     const attr = typeof attributes === "function" ? attributes() : attributes;
     this.emit(body, SeverityNumber.DEBUG, "DEBUG", attr);
   }
@@ -96,7 +110,10 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     this.emit(body, SeverityNumber.INFO, "INFO", attr);
   }
 
-  error(body: T["error"][0], attributes?: T["error"][1] | (() => T["error"][1])) {
+  error(
+    body: T["error"][0],
+    attributes?: T["error"][1] | (() => T["error"][1]),
+  ) {
     const attr = typeof attributes === "function" ? attributes() : attributes;
     this.emit(body, SeverityNumber.ERROR, "ERROR", attr);
   }

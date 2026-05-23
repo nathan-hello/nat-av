@@ -16,11 +16,17 @@ export function Document() {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
-        <link rel="stylesheet" href={routes.assets.href({ path: "app/assets/tailwind.css" })} />
+        <link
+          rel="stylesheet"
+          href={routes.assets.href({ path: "app/assets/tailwind.css" })}
+        />
       </head>
       <body>
         {children}
-        <script type="module" src={routes.assets.href({ path: "app/assets/entry.tsx" })}></script>
+        <script
+          type="module"
+          src={routes.assets.href({ path: "app/assets/entry.tsx" })}
+        ></script>
       </body>
     </html>
   );

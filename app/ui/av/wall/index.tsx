@@ -42,13 +42,18 @@ export function Wall(handle: Handle<WallProps>) {
   }
 
   function parseAudioOutputKey(value: string) {
-    const [decoderIndex, output] = value.split(":").map((part) => Number.parseInt(part, 10));
+    const [decoderIndex, output] = value
+      .split(":")
+      .map((part) => Number.parseInt(part, 10));
     return Number.isFinite(decoderIndex) && Number.isFinite(output) ?
         { decoderIndex, output }
       : null;
   }
 
-  function loadWindow(dwindow: LogicalWindow, source?: SourceSelectDetail | null) {
+  function loadWindow(
+    dwindow: LogicalWindow,
+    source?: SourceSelectDetail | null,
+  ) {
     selectedWindowId = dwindow.id;
     form = {
       dwindowId: dwindow.id,
@@ -105,7 +110,8 @@ export function Wall(handle: Handle<WallProps>) {
                 <p mix={mutedStyle}>
                   {mode === "free" ?
                     "Drag windows freely. A move RPC is sent as the pointer moves."
-                  : "Drag a source onto a region or existing window to snap-route it."}
+                  : "Drag a source onto a region or existing window to snap-route it."
+                  }
                 </p>
               </div>
               <div mix={modeToggleStyle}>
@@ -136,8 +142,12 @@ export function Wall(handle: Handle<WallProps>) {
               <>
                 <div mix={statusRowStyle}>
                   <span mix={statusPillStyle}>mode: {mode}</span>
-                  <span mix={statusPillStyle}>{movePending ? "move pending" : "move idle"}</span>
-                  <span mix={statusPillStyle}>{routePending ? "route pending" : "route idle"}</span>
+                  <span mix={statusPillStyle}>
+                    {movePending ? "move pending" : "move idle"}
+                  </span>
+                  <span mix={statusPillStyle}>
+                    {routePending ? "route pending" : "route idle"}
+                  </span>
                 </div>
                 <div mix={canvasViewportStyle}>
                   <Decoder
@@ -163,7 +173,11 @@ export function Wall(handle: Handle<WallProps>) {
                       };
 
                       if (selectedSource && !routePending) {
-                        void display.api.route(region.id, selectedSource.id, global);
+                        void display.api.route(
+                          region.id,
+                          selectedSource.id,
+                          global,
+                        );
                       }
 
                       handle.update();
@@ -172,7 +186,11 @@ export function Wall(handle: Handle<WallProps>) {
                       loadWindow(dwindow, selectedSource);
 
                       if (selectedSource && !routePending) {
-                        void display.api.route(dwindow.id, selectedSource.id, dwindow.global);
+                        void display.api.route(
+                          dwindow.id,
+                          selectedSource.id,
+                          dwindow.global,
+                        );
                       }
 
                       handle.update();
@@ -200,7 +218,11 @@ export function Wall(handle: Handle<WallProps>) {
                     onSourceDropToWindow={(dwindow, source) => {
                       selectedSource = source;
                       loadWindow(dwindow, source);
-                      void display.api.route(dwindow.id, source.id, dwindow.global);
+                      void display.api.route(
+                        dwindow.id,
+                        source.id,
+                        dwindow.global,
+                      );
                       handle.update();
                     }}
                   />
@@ -223,7 +245,8 @@ export function Wall(handle: Handle<WallProps>) {
                     name={source.name}
                     selected={selectedSource?.id === source.uri}
                     onSelect={(detail) => {
-                      selectedSource = selectedSource?.id === detail.id ? null : detail;
+                      selectedSource =
+                        selectedSource?.id === detail.id ? null : detail;
                       form = { ...form, uri: selectedSource?.id ?? "" };
                       handle.update();
                     }}
@@ -245,14 +268,20 @@ export function Wall(handle: Handle<WallProps>) {
                   mix={[
                     inputStyle,
                     on("change", (event) => {
-                      form = { ...form, audioOutput: event.currentTarget.value };
+                      form = {
+                        ...form,
+                        audioOutput: event.currentTarget.value,
+                      };
                       handle.update();
                     }),
                   ]}
                 >
                   <option value="">Select an audio output</option>
                   {audioOutputs.map((output) => (
-                    <option key={getAudioOutputKey(output)} value={getAudioOutputKey(output)}>
+                    <option
+                      key={getAudioOutputKey(output)}
+                      value={getAudioOutputKey(output)}
+                    >
                       {`decoder ${output.decoderIndex} output ${output.output}${output.type ? ` (${output.type})` : ""}`}
                     </option>
                   ))}
@@ -353,7 +382,11 @@ export function Wall(handle: Handle<WallProps>) {
                 mix={[
                   buttonStyle,
                   on("click", () => {
-                    void display.api.route(form.dwindowId, form.uri, getGlobal(form));
+                    void display.api.route(
+                      form.dwindowId,
+                      form.uri,
+                      getGlobal(form),
+                    );
                   }),
                 ]}
               >
@@ -428,11 +461,20 @@ export function Wall(handle: Handle<WallProps>) {
                       }),
                     ]}
                     style={{
-                      background: state.template.state.id === template.id ? "#fff" : undefined,
-                      color: state.template.state.id === template.id ? "#000" : undefined,
+                      background:
+                        state.template.state.id === template.id ?
+                          "#fff"
+                        : undefined,
+                      color:
+                        state.template.state.id === template.id ?
+                          "#000"
+                        : undefined,
                     }}
                   >
-                    {changeTemplatePending && state.template.state.id === template.id ?
+                    {(
+                      changeTemplatePending &&
+                      state.template.state.id === template.id
+                    ) ?
                       "Switching..."
                     : template.name}
                   </button>

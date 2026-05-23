@@ -52,7 +52,9 @@ export function Decoder(handle: Handle<DecoderProps>) {
   let snapTarget: { type: "region" | "window"; id: number } | null = null;
   let suppressClickWindowId: number | null = null;
 
-  function setSnapTarget(next: { type: "region" | "window"; id: number } | null) {
+  function setSnapTarget(
+    next: { type: "region" | "window"; id: number } | null,
+  ) {
     if (snapTarget?.type === next?.type && snapTarget?.id === next?.id) {
       return;
     }
@@ -61,7 +63,11 @@ export function Decoder(handle: Handle<DecoderProps>) {
     handle.update();
   }
 
-  function beginWindowDrag(event: PointerEvent, twindow: LogicalWindow, scale: number) {
+  function beginWindowDrag(
+    event: PointerEvent,
+    twindow: LogicalWindow,
+    scale: number,
+  ) {
     if (handle.props.mode !== "free" || event.button !== 0) {
       return;
     }
@@ -83,8 +89,11 @@ export function Decoder(handle: Handle<DecoderProps>) {
       );
       const nextCssTop = clamp(
         Math.round(
-          decoderYToCssTop(startGlobal.offsetY, startGlobal.resY, handle.props.canvas.height) +
-            deltaY,
+          decoderYToCssTop(
+            startGlobal.offsetY,
+            startGlobal.resY,
+            handle.props.canvas.height,
+          ) + deltaY,
         ),
         0,
         handle.props.canvas.height - startGlobal.resY,
@@ -94,7 +103,11 @@ export function Decoder(handle: Handle<DecoderProps>) {
         resX: startGlobal.resX,
         resY: startGlobal.resY,
         offsetX: nextOffsetX,
-        offsetY: cssTopToDecoderY(nextCssTop, startGlobal.resY, handle.props.canvas.height),
+        offsetY: cssTopToDecoderY(
+          nextCssTop,
+          startGlobal.resY,
+          handle.props.canvas.height,
+        ),
       } satisfies CanvasGlobal;
     }
 
@@ -171,7 +184,10 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   handle.props.onRegionSelect?.(region, global);
                 }),
                 on("dragover", (event) => {
-                  if (handle.props.mode !== "snap" || !readDraggedSource(event.dataTransfer)) {
+                  if (
+                    handle.props.mode !== "snap" ||
+                    !readDraggedSource(event.dataTransfer)
+                  ) {
                     return;
                   }
 
@@ -182,7 +198,10 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   setSnapTarget({ type: "region", id: region.id });
                 }),
                 on("dragleave", () => {
-                  if (snapTarget?.type === "region" && snapTarget.id === region.id) {
+                  if (
+                    snapTarget?.type === "region" &&
+                    snapTarget.id === region.id
+                  ) {
                     setSnapTarget(null);
                   }
                 }),
@@ -190,7 +209,11 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   event.preventDefault();
                   const source = readDraggedSource(event.dataTransfer);
                   setSnapTarget(null);
-                  if (!source || handle.props.mode !== "snap" || handle.props.routePending) {
+                  if (
+                    !source ||
+                    handle.props.mode !== "snap" ||
+                    handle.props.routePending
+                  ) {
                     return;
                   }
 
@@ -203,7 +226,9 @@ export function Decoder(handle: Handle<DecoderProps>) {
                 width: `${global.resX * scale}px`,
                 height: `${global.resY * scale}px`,
                 borderColor:
-                  snapTarget?.type === "region" && snapTarget.id === region.id ? "#000" : undefined,
+                  snapTarget?.type === "region" && snapTarget.id === region.id ?
+                    "#000"
+                  : undefined,
                 background:
                   snapTarget?.type === "region" && snapTarget.id === region.id ?
                     "rgba(0, 0, 0, 0.06)"
@@ -216,10 +241,14 @@ export function Decoder(handle: Handle<DecoderProps>) {
         })}
 
         {handle.props.windows.map((twindow) => {
-          const preview = dragState?.windowId === twindow.id ? dragState.preview : twindow.global;
+          const preview =
+            dragState?.windowId === twindow.id ?
+              dragState.preview
+            : twindow.global;
           const sourceName =
-            handle.props.encoders?.find((encoder) => encoder.uri === twindow.routes[0]?.uri)
-              ?.name ??
+            handle.props.encoders?.find(
+              (encoder) => encoder.uri === twindow.routes[0]?.uri,
+            )?.name ??
             twindow.routes[0]?.uri ??
             `Window ${twindow.id}`;
 
@@ -241,7 +270,10 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   beginWindowDrag(event, twindow, scale);
                 }),
                 on("dragover", (event) => {
-                  if (handle.props.mode !== "snap" || !readDraggedSource(event.dataTransfer)) {
+                  if (
+                    handle.props.mode !== "snap" ||
+                    !readDraggedSource(event.dataTransfer)
+                  ) {
                     return;
                   }
 
@@ -252,7 +284,10 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   setSnapTarget({ type: "window", id: twindow.id });
                 }),
                 on("dragleave", () => {
-                  if (snapTarget?.type === "window" && snapTarget.id === twindow.id) {
+                  if (
+                    snapTarget?.type === "window" &&
+                    snapTarget.id === twindow.id
+                  ) {
                     setSnapTarget(null);
                   }
                 }),
@@ -260,7 +295,11 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   event.preventDefault();
                   const source = readDraggedSource(event.dataTransfer);
                   setSnapTarget(null);
-                  if (!source || handle.props.mode !== "snap" || handle.props.routePending) {
+                  if (
+                    !source ||
+                    handle.props.mode !== "snap" ||
+                    handle.props.routePending
+                  ) {
                     return;
                   }
 
@@ -276,13 +315,17 @@ export function Decoder(handle: Handle<DecoderProps>) {
                   (
                     dragState?.windowId === twindow.id ||
                     handle.props.selectedWindowId === twindow.id ||
-                    (snapTarget?.type === "window" && snapTarget.id === twindow.id)
+                    (snapTarget?.type === "window" &&
+                      snapTarget.id === twindow.id)
                   ) ?
                     "#000"
                   : undefined,
                 background:
                   dragState?.windowId === twindow.id ? "rgba(0, 0, 0, 0.08)"
-                  : snapTarget?.type === "window" && snapTarget.id === twindow.id ?
+                  : (
+                    snapTarget?.type === "window" &&
+                    snapTarget.id === twindow.id
+                  ) ?
                     "rgba(0, 0, 0, 0.05)"
                   : undefined,
                 cursor: handle.props.mode === "free" ? "grab" : "pointer",
@@ -307,7 +350,10 @@ function getRegionGlobal(
     resX: region.width * gridUnitWidth,
     resY: region.height * gridUnitHeight,
     offsetX: region.col * gridUnitWidth,
-    offsetY: canvas.height - region.row * gridUnitHeight - region.height * gridUnitHeight,
+    offsetY:
+      canvas.height -
+      region.row * gridUnitHeight -
+      region.height * gridUnitHeight,
   };
 }
 
@@ -319,7 +365,9 @@ function getTemplateGridRows(template: GridTemplate) {
   return template.dimensions.rows;
 }
 
-function readDraggedSource(dataTransfer: DataTransfer | null): DroppedSource | null {
+function readDraggedSource(
+  dataTransfer: DataTransfer | null,
+): DroppedSource | null {
   const id = dataTransfer?.getData(SOURCE_ID_MIME);
   if (!id) {
     return null;
@@ -335,11 +383,19 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function decoderYToCssTop(decoderY: number, windowHeight: number, canvasHeight: number) {
+function decoderYToCssTop(
+  decoderY: number,
+  windowHeight: number,
+  canvasHeight: number,
+) {
   return canvasHeight - decoderY - windowHeight;
 }
 
-function cssTopToDecoderY(cssTop: number, windowHeight: number, canvasHeight: number) {
+function cssTopToDecoderY(
+  cssTop: number,
+  windowHeight: number,
+  canvasHeight: number,
+) {
   return canvasHeight - cssTop - windowHeight;
 }
 

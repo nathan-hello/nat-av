@@ -98,21 +98,24 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
       this.tel.info("CONNECTION_PARAMS", this.config);
       span.setAttributes({ addr: this.config.addr, port: this.config.port });
 
-      return net.createConnection({ host: this.config.addr, port: this.config.port }, () => {
-        this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
+      return net.createConnection(
+        { host: this.config.addr, port: this.config.port },
+        () => {
+          this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
 
-        setTimeout(() => {
-          this.tel.info("HANDLER_OPEN");
-          this.retrying = false;
-          if (this.retryTimeout) {
-            this.tel.info("HANDLER_OPEN_RESET_TIMEOUT");
-            clearTimeout(this.retryTimeout);
-            this.retryTimeout = undefined;
-          }
+          setTimeout(() => {
+            this.tel.info("HANDLER_OPEN");
+            this.retrying = false;
+            if (this.retryTimeout) {
+              this.tel.info("HANDLER_OPEN_RESET_TIMEOUT");
+              clearTimeout(this.retryTimeout);
+              this.retryTimeout = undefined;
+            }
 
-          this.dispatch("connected", undefined);
-        }, 1000);
-      });
+            this.dispatch("connected", undefined);
+          }, 1000);
+        },
+      );
     });
 
     if (!result.ok) {
@@ -139,7 +142,10 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
           length: data.length,
         },
       });
-      this.dispatch("receive", Buffer.isBuffer(data) ? data : Buffer.from(data));
+      this.dispatch(
+        "receive",
+        Buffer.isBuffer(data) ? data : Buffer.from(data),
+      );
     });
 
     this.socket.on("drain", () => {
@@ -159,7 +165,8 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
       this.tel.info("HANDLER_CLOSE", { stopped: this.stopped });
       this.socket = undefined;
       this.dispatch("disconnected", {
-        error: hadError ? "socket closed with error" : "socket closed with no error",
+        error:
+          hadError ? "socket closed with error" : "socket closed with no error",
       });
       await this.scheduleRetry();
     });

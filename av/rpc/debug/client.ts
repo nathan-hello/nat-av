@@ -1,7 +1,12 @@
 import type { ClientRpc } from "@av/rpc/client";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
-import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
+import {
+  RPCError,
+  RPCNotification,
+  RPCRequest,
+  RPCResponse,
+} from "@av/rpc/protocol";
 import {
   DebugRpcMethods,
   type DebugDeviceNode,
@@ -55,7 +60,9 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
     this.transport.on("close", (event) => {
       this.rejectAllPendingRequests(
-        new Error(`Debug transport closed${event.reason ? `: ${event.reason}` : ""}`),
+        new Error(
+          `Debug transport closed${event.reason ? `: ${event.reason}` : ""}`,
+        ),
       );
       this.dispatch("close", event);
       this.dispatch("change", {});
@@ -84,7 +91,11 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  async writeSocket(deviceName: string, text: string, encoding: SocketDebugEncoding = "utf8") {
+  async writeSocket(
+    deviceName: string,
+    text: string,
+    encoding: SocketDebugEncoding = "utf8",
+  ) {
     return await this.request(
       new RPCRequest(this.nextRequestId(), DebugRpcMethods.WriteSocket, {
         deviceName,
@@ -108,7 +119,9 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
       return [];
     }
 
-    return this.entries.filter((entry) => entry.context.traceName === traceName);
+    return this.entries.filter(
+      (entry) => entry.context.traceName === traceName,
+    );
   }
 
   clearSocketMessages(name: string) {
@@ -122,7 +135,9 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
       return;
     }
 
-    this.entries = this.entries.filter((entry) => entry.context.traceName !== traceName);
+    this.entries = this.entries.filter(
+      (entry) => entry.context.traceName !== traceName,
+    );
     delete this.socketMessages[name];
     this.dispatch("change", {});
   }
@@ -139,7 +154,10 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     });
 
     if (!initial.ok) {
-      this.dispatch("error", { reason: "init-promises-threw", error: new Error(initial.error) });
+      this.dispatch("error", {
+        reason: "init-promises-threw",
+        error: new Error(initial.error),
+      });
       return;
     }
 
@@ -270,5 +288,8 @@ function isDebugNotification(value: unknown): value is DebugRpcNotification {
   }
 
   const notification = value as Partial<DebugRpcNotification>;
-  return notification.type === "debug:log" || notification.type === "debug:socket:message";
+  return (
+    notification.type === "debug:log" ||
+    notification.type === "debug:socket:message"
+  );
 }

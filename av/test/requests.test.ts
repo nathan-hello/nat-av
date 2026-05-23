@@ -8,7 +8,10 @@ import { TypedEventTarget } from "../lib/eventtarget";
 import type { DeviceSocket, SocketEventMap } from "../types";
 import { Delimiters } from "@av/sockets/delimiters";
 
-class FakeSocket extends TypedEventTarget<SocketEventMap> implements DeviceSocket {
+class FakeSocket
+  extends TypedEventTarget<SocketEventMap>
+  implements DeviceSocket
+{
   name = "fake-socket";
   writes: Buffer[] = [];
 
@@ -101,7 +104,10 @@ describe("requests", () => {
     socket.receive(`${JSON.stringify({ id: 2, result: "two" })}\n`);
     socket.receive(`${JSON.stringify({ id: 1, result: "one" })}\n`);
 
-    assert.deepEqual(await second, { ok: true, data: { id: 2, result: "two" } });
+    assert.deepEqual(await second, {
+      ok: true,
+      data: { id: 2, result: "two" },
+    });
     assert.deepEqual(await first, { ok: true, data: { id: 1, result: "one" } });
   });
 
@@ -124,7 +130,8 @@ describe("requests", () => {
         }
         return msgs;
       },
-      formatter: (message) => Buffer.from(`${JSON.stringify(message)}\n`, "utf8"),
+      formatter: (message) =>
+        Buffer.from(`${JSON.stringify(message)}\n`, "utf8"),
       timeoutMs: 1000,
       responseStrategy: {
         strategy: "match",
@@ -151,7 +158,10 @@ describe("requests", () => {
     assert.match(socket.writes[1]!.toString("utf8"), /"id":2/);
 
     socket.receive(`${JSON.stringify({ id: 2, result: "two" })}\n`);
-    assert.deepEqual(await second, { ok: true, data: { id: 2, result: "two" } });
+    assert.deepEqual(await second, {
+      ok: true,
+      data: { id: 2, result: "two" },
+    });
   });
 
   it("blocks later requests until earlier responses arrive in blocking queue mode", async () => {

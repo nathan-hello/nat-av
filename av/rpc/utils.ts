@@ -1,4 +1,9 @@
-import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
+import {
+  RPCError,
+  RPCNotification,
+  RPCRequest,
+  RPCResponse,
+} from "@av/rpc/protocol";
 
 export function isRPCRequest(msg: any): RPCRequest | undefined {
   if (
@@ -15,7 +20,12 @@ export function isRPCRequest(msg: any): RPCRequest | undefined {
 }
 
 export function isRPCResponse(msg: any): msg is RPCResponse {
-  return msg && msg.jsonrpc === "2.0" && msg.id !== undefined && msg.result !== undefined;
+  return (
+    msg &&
+    msg.jsonrpc === "2.0" &&
+    msg.id !== undefined &&
+    msg.result !== undefined
+  );
 }
 
 export function isRPCError(msg: any): msg is RPCError {
@@ -39,7 +49,10 @@ export function isRPCNotification(msg: any): msg is RPCNotification {
 
 // Helper to create error responses
 export const WebsocketErrorCodes = {
-  1000: { name: "Normal Closure", meaning: "Clean shutdown, both sides agreed" },
+  1000: {
+    name: "Normal Closure",
+    meaning: "Clean shutdown, both sides agreed",
+  },
   1001: {
     name: "Going Away",
     meaning: "Server shutting down or navigating away",
@@ -77,7 +90,8 @@ export const WebsocketErrorCodes = {
 export function DecodeWebsocketError(code: number): string {
   if (code in WebsocketErrorCodes) {
     // TSAS:
-    return WebsocketErrorCodes[code as keyof typeof WebsocketErrorCodes].meaning;
+    return WebsocketErrorCodes[code as keyof typeof WebsocketErrorCodes]
+      .meaning;
   }
   return "Unknown Close Code";
 }
