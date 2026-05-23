@@ -1,10 +1,10 @@
-import type Natav from "@av/natav";
+import type { Natav } from "@av/types";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
 export class ClientRpcDevice<
-  N extends Natav,
+  N extends Natav.Orch,
   Name extends Natav.Names<N>,
 > extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];

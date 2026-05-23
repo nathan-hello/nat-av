@@ -1,9 +1,9 @@
 import type { natav } from "@av/index";
-import type Natav from "./natav";
+import type { Natav } from "@av/types";
 
 export type SystemStateData = null;
 
-export class System<N extends Natav = natav> {
+export class System<N extends Natav.Orch = natav> {
   private natav: N;
 
   constructor(args: { natav: N }) {

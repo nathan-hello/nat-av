@@ -157,7 +157,7 @@ export const DecoderSchema = (): Schema<Decoder["api"]> => [
     args: [
       {
         type: "union",
-        anyOf: [SchemaRouteDestroyParams, { type: "literal", value: "all" }],
+        anyOf: [{ type: "literal", value: "all" }, SchemaRouteDestroyParams],
       },
     ],
   },

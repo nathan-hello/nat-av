@@ -1,10 +1,10 @@
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { DebugSocketEvent } from "@av/rpc/debug/types";
-import { TypedEventTarget } from "./lib/eventtarget";
-import type Natav from "./natav";
-import type { natav } from "./index";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { natav } from "@av/index";
+import type { Natav } from "@av/types";
 
-export type SystemEvents<N extends Natav = natav> =
+export type SystemEvents<N extends Natav.Orch = natav> =
   | {
       type: "natav:state:update";
       name: Natav.Names<N>;

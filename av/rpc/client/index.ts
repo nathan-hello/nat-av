@@ -1,4 +1,4 @@
-import type Natav from "@av/natav";
+import type { Natav } from "@av/types";
 import type { natav } from "@av/index";
 import type { System, SystemStateData } from "@av/system";
 
@@ -16,7 +16,7 @@ import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { isRPCNotification } from "@av/rpc/utils";
 
-type SystemApi<N extends Natav> = {
+type SystemApi<N extends Natav.Orch> = {
   [M in keyof System<N>["api"]]: System<N>["api"][M] extends (
     (...args: infer Args) => infer R
   ) ?
@@ -24,24 +24,24 @@ type SystemApi<N extends Natav> = {
   : never;
 };
 
-type SystemMethodName<N extends Natav> = Extract<
+type SystemMethodName<N extends Natav.Orch> = Extract<
   keyof System<N>["api"],
   string
 >;
 
-type ClientRpcSystem<N extends Natav> = {
+type ClientRpcSystem<N extends Natav.Orch> = {
   api: SystemApi<N>;
   readonly state: Promise<SystemStateData>;
   isPending(method: SystemMethodName<N>): boolean;
   pendingCount(method: SystemMethodName<N>): number;
 };
 
-type DeviceStateMap<N extends Natav> = Partial<{
+type DeviceStateMap<N extends Natav.Orch> = Partial<{
   [K in Natav.Names<N>]: Natav.State<N, K>;
 }>;
 
 export class ClientRpc<
-  N extends Natav = natav,
+  N extends Natav.Orch = natav,
 > extends ProtectedTypedEventTarget<RpcEvents> {
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;

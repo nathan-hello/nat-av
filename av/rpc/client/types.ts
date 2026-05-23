@@ -1,4 +1,4 @@
-import type Natav from "@av/natav";
+import type { Natav } from "@av/types";
 import type { RPCError } from "@av/rpc/protocol";
 
 export type PendingRequest = {
@@ -8,12 +8,15 @@ export type PendingRequest = {
   pendingKey?: string;
 };
 
-export type DeviceChangeEvent<N extends Natav, Name extends Natav.Names<N>> = {
+export type DeviceChangeEvent<
+  N extends Natav.Orch,
+  Name extends Natav.Names<N>,
+> = {
   name: Name;
   state: Natav.State<N, Name> | undefined;
 };
 
-export type DeviceEvents<N extends Natav, Name extends Natav.Names<N>> = {
+export type DeviceEvents<N extends Natav.Orch, Name extends Natav.Names<N>> = {
   change: DeviceChangeEvent<N, Name>;
 };
 

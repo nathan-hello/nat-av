@@ -25,7 +25,7 @@ export abstract class Driver<
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
-  public abstract schema: () => Schema<Api> | Promise<Schema<Api>>;
+  public abstract schema?: () => Schema<Api> | Promise<Schema<Api>>;
 
   // TSAS:
   public deps: Deps = {} as Deps;

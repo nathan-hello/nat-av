@@ -18,7 +18,7 @@ import {
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
-import Natav from "@av/natav";
+import { Orchistrator } from "@av/natav";
 import { Telemetry } from "@av/telemetry";
 import ChazyControl from "@av/drivers/turtle";
 
@@ -39,7 +39,7 @@ StartLogging([
   }),
 ]);
 
-export const natav = new Natav([
+const natav = new Orchistrator([
   new DisplayManager("video-wall", [
     {
       driver: new Decoder({
@@ -64,7 +64,7 @@ export const natav = new Natav([
 export type natav = typeof natav;
 
 const system = new System({ natav });
-new AutomationEngine({ natav });
+new AutomationEngine();
 
 const rpc = new RPCServer({ system, natav });
 const debug = new RpcDebugServer({ system, natav });

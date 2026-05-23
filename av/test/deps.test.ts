@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { Driver } from "../driver";
-import Natav from "../natav";
 import { ClientRpcDevice } from "../rpc/client/devices";
 import type { Schema } from "@av/types";
+import { Orchistrator } from "@av/natav";
 
 class Leaf<const N extends string> extends Driver<
   N,
@@ -47,7 +47,7 @@ class Parent<
 
 const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child } as const);
-const graph = new Natav([parent] as const);
+const graph = new Orchistrator([parent] as const);
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {

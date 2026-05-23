@@ -1,18 +1,11 @@
 import { bus } from "./bus";
 import type { DebugDeviceNode } from "@av/rpc/debug/types";
 import { type Driver } from "./driver";
-import type {
-  NamesOf,
-  DriverFor,
-  StateFor,
-  ApiFor,
-  DepsOf,
-  DepNamesOf,
-  DepFor,
-  DriverHandle,
-} from "./types";
+import type { NamesOf, DriverFor, StateFor } from "./types";
 
-class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
+export class Orchistrator<
+  const Configs extends readonly Driver[] = readonly Driver[],
+> {
   readonly configs: Configs;
 
   constructor(configs: Configs) {
@@ -30,12 +23,12 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
     return collect(this.configs);
   }
 
-  GetDriver<N extends NamesOf<Configs>>(name: N) {
+  GetDriver<N extends NamesOf<Configs>>(name: N): DriverFor<Configs, N> {
     // TSAS:
     return this.FindDriver(name) as DriverFor<Configs, N>;
   }
 
-  GetDriverState<N extends NamesOf<Configs>>(name: N) {
+  GetDriverState<N extends NamesOf<Configs>>(name: N): StateFor<Configs, N> {
     return this.GetDriver(name).state;
   }
 
@@ -97,56 +90,3 @@ class Natav<const Configs extends readonly Driver[] = readonly Driver[]> {
     );
   }
 }
-
-namespace Natav {
-  export type ConfigsOf<N extends Natav> = N extends Natav<infer C> ? C : never;
-  export type Names<N extends Natav> = NamesOf<ConfigsOf<N>>;
-  export type Driver<N extends Natav, Name extends Names<N>> = DriverFor<
-    ConfigsOf<N>,
-    Name
-  >;
-  export type State<N extends Natav, Name extends Names<N>> = StateFor<
-    ConfigsOf<N>,
-    Name
-  >;
-  export type Api<N extends Natav, Name extends Names<N>> = ApiFor<
-    ConfigsOf<N>,
-    Name
-  >;
-  export type Deps<N extends Natav, Name extends Names<N>> = DepsOf<
-    ConfigsOf<N>,
-    Name
-  >;
-  export type DepNames<N extends Natav, Name extends Names<N>> = DepNamesOf<
-    ConfigsOf<N>,
-    Name
-  >;
-  export type Dep<
-    N extends Natav,
-    Name extends Names<N>,
-    DepName extends DepNames<N, Name>,
-  > = DepFor<ConfigsOf<N>, Name, DepName>;
-  export type DepState<
-    N extends Natav,
-    Name extends Names<N>,
-    DepName extends DepNames<N, Name>,
-  > = Dep<N, Name, DepName>["state"];
-  export type DepApi<
-    N extends Natav,
-    Name extends Names<N>,
-    DepName extends DepNames<N, Name>,
-  > = {
-    [M in keyof Dep<N, Name, DepName>["api"]]: Dep<
-      N,
-      Name,
-      DepName
-    >["api"][M] extends (...args: infer Args) => infer R ?
-      (...args: Args) => Promise<Awaited<R>>
-    : never;
-  };
-  export type Handle<N extends Natav, Name extends Names<N>> = DriverHandle<
-    DriverFor<ConfigsOf<N>, Name>
-  >;
-}
-
-export default Natav;

@@ -1,4 +1,4 @@
-import type Natav from "@av/natav";
+import type {Natav} from "@av/types";
 import type { System } from "@av/system";
 import { RPCResponse, RPCError, RPCRequest } from "@av/rpc/protocol";
 import { RPCErrorCodes } from "@av/rpc/protocol";
@@ -9,7 +9,7 @@ import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
 
-export class RPCServer<N extends Natav = natav> {
+export class RPCServer<N extends Natav.Orch = natav> {
   private tel = new Telemetry("Rpc");
   private router: RPCRequestRouter;
 

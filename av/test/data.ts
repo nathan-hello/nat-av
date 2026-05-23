@@ -1,9 +1,9 @@
 import type { Schema } from "@av/types";
-import { Driver } from "../driver";
-import Natav from "../natav";
-import { Tcp } from "../sockets/tcp";
+import { Driver } from "@av/driver";
+import { Tcp } from "@av/sockets/tcp";
 import { ConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
+import { Orchistrator } from "@av/natav";
 
 StartLogging([new ConsoleExporter()]);
 
@@ -85,4 +85,4 @@ export const driver = new TestShim({
   socket: new Tcp({ addr: "127.0.0.1", port: 12345, keepAlive: true }),
 });
 
-export const natav = new Natav([driver]);
+export const natav = new Orchistrator([driver]);

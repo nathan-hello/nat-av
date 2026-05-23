@@ -1,5 +1,4 @@
 import { bus } from "@av/bus";
-import type Natav from "@av/natav";
 import type { natav } from "@av/index";
 import {
   DebugRpcMethods,
@@ -21,7 +20,7 @@ import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 import type { System } from "@av/system";
-import type { WriteResult } from "@av/types";
+import type { Natav, WriteResult } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -58,7 +57,7 @@ function readMessage(data: MessageEvent["data"]): string {
   return String(data);
 }
 
-export class RpcDebugServer<N extends Natav = natav> {
+export class RpcDebugServer<N extends Natav.Orch = natav> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
   private system: System<N>;
