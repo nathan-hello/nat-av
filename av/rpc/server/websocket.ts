@@ -1,5 +1,5 @@
-import { type EventName, type EventPayload, bus } from "@av/bus";
-import type { Natav } from "@av/types";
+import { bus } from "@av/bus";
+import type { Events, Natav } from "@av/types";
 import { RPCErrors, RPCNotification } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
@@ -60,13 +60,12 @@ export class WebsocketHandler {
     bus.on("natav:device:disconnected", (payload) => {
       this.BroadcastEvent("natav:device:disconnected", payload);
     });
-
-    bus.on("natav:automation:triggered", (payload) => {
-      this.BroadcastEvent("natav:automation:triggered", payload);
-    });
   }
 
-  BroadcastEvent<E extends EventName>(_: E, payload: EventPayload<E>) {
+  BroadcastEvent<E extends keyof Events.System.Map>(
+    _: E,
+    payload: Events.System.Map[E],
+  ) {
     const notification = new RPCNotification(payload);
     this.broadcast(JSON.stringify(notification));
   }

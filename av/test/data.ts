@@ -60,21 +60,27 @@ export class TestShim<const N extends string = string> extends Driver<
     socket.on("connected", () => {
       this.state.connected = true;
       this.dispatch("driver:state-updated", {
-        connected: this.state.connected,
+        data: {
+          connected: this.state.connected,
+        },
       });
     });
 
     socket.on("disconnected", () => {
       this.state.connected = false;
       this.dispatch("driver:state-updated", {
-        connected: this.state.connected,
+        data: {
+          connected: this.state.connected,
+        },
       });
     });
 
     socket.on("receive", (chunk) => {
       this.state.lastFrame = chunk.toString("utf8");
       this.dispatch("driver:state-updated", {
-        lastFrame: this.state.lastFrame,
+        data: {
+          lastFrame: this.state.lastFrame,
+        },
       });
     });
   }

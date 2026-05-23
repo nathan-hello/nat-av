@@ -32,10 +32,7 @@ StartLogging([
   new FileExporter("./logs/natav.jsonl", true),
   new SimpleConsoleExporter(),
   new CustomExporter((event) => {
-    bus.dispatch("natav:opentelemetry:entry", {
-      type: "natav:opentelemetry:entry",
-      message: event,
-    });
+    bus.dispatch("natav:opentelemetry:entry", event);
   }),
 ]);
 

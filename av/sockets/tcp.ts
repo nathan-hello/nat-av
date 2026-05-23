@@ -1,7 +1,7 @@
 import * as net from "node:net";
 import { bus } from "@av/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { SocketEventMap } from "@av/types";
+import type { Events } from "@av/types";
 import { Telemetry } from "@av/telemetry";
 
 type TcpConfig = {
@@ -10,14 +10,9 @@ type TcpConfig = {
   keepAlive: boolean;
 };
 
-type TcpEvents = SocketEventMap & {
-  retryScheduled: { delay: number };
-  timeout: void;
-};
-
 const RETRY_DELAY = 5000;
 
-export class Tcp extends TypedEventTarget<TcpEvents> {
+export class Tcp extends TypedEventTarget<Events.Socket.TcpMap> {
   private socket: net.Socket | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private retrying = false;
@@ -69,8 +64,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
     });
 
     bus.dispatch("natav:debug:socket", {
-      type: "natav:debug:socket",
-      message: {
+      data: {
         traceName: this.name,
         direction: "tx",
         time: new Date().toISOString(),
@@ -131,8 +125,7 @@ export class Tcp extends TypedEventTarget<TcpEvents> {
         length: data.length,
       });
       bus.dispatch("natav:debug:socket", {
-        type: "natav:debug:socket",
-        message: {
+        data: {
           traceName: this.name,
           direction: "rx",
           time: new Date().toISOString(),

@@ -5,11 +5,11 @@ import { setTimeout as delay } from "node:timers/promises";
 import { RequestManager } from "../requests";
 import { Telemetry } from "../telemetry";
 import { TypedEventTarget } from "../lib/eventtarget";
-import type { DeviceSocket, SocketEventMap } from "../types";
+import type { DeviceSocket, Events } from "../types";
 import { Delimiters } from "@av/sockets/delimiters";
 
 class FakeSocket
-  extends TypedEventTarget<SocketEventMap>
+  extends TypedEventTarget<Events.Socket.Map>
   implements DeviceSocket
 {
   name = "fake-socket";

@@ -60,20 +60,17 @@ function readMessage(data: MessageEvent["data"]): string {
 export class RpcDebugServer<N extends Natav.Orch = natav> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
-  private system: System<N>;
 
   constructor(private args: { natav: N; system: System<N> }) {
-    this.system = args.system;
-
     bus.on("natav:opentelemetry:entry", (payload) => {
       this.broadcastNotification({
         type: "debug:log",
-        entry: ReadableLogRecordToLogEntry(payload.message.record),
+        entry: ReadableLogRecordToLogEntry(payload.record),
       });
     });
 
     bus.on("natav:debug:socket", (payload) => {
-      for (const message of this.resolveSocketMessages(payload.message)) {
+      for (const message of this.resolveSocketMessages(payload.data)) {
         this.broadcastNotification({
           type: "debug:socket:message",
           message,

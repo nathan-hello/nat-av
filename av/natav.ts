@@ -70,13 +70,24 @@ export class Orchistrator<
   async Start() {
     this.configs.forEach((d) => {
       d.on("driver:state-updated", (data) =>
-        bus.dispatch("natav:state:update", {
-          type: "natav:state:update",
-          // TSAS:
-          name: d.name as "video-wall",
-          data: data,
-        }),
+        // TS doesn't know about the Names/State impls within this class.
+        // @ts-ignore-next-line
+        bus.dispatch("natav:state:update", data),
       );
+
+      d.on("driver:delimited", (payload) => {
+        bus.dispatch("natav:debug:socket", {
+          data: {
+            traceName: d.socket?.name ?? d.name,
+            direction: "rx-delimited",
+            time: new Date().toISOString(),
+            encoding: "utf8",
+            text: payload.toString("utf8"),
+            hex: payload.toString("hex"),
+            length: payload.length,
+          },
+        });
+      });
 
       d.socket?.start?.();
     });

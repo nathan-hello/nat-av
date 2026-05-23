@@ -1,4 +1,5 @@
-import { type SystemEvent, bus } from "@av/bus";
+import { bus } from "@av/bus";
+import type { Events } from "@av/types";
 
 export class AutomationEngine {
   constructor() {
@@ -7,7 +8,9 @@ export class AutomationEngine {
     });
   }
 
-  private handleStateChange(data: SystemEvent<"natav:state:update">): void {
+  private handleStateChange(
+    data: Events.System.Map["natav:state:update"],
+  ): void {
     switch (data.name) {
       case "video-wall":
         break;

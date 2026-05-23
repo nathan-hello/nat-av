@@ -1,14 +1,14 @@
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { bus } from "@av/bus";
-import type { ApiRecord, DeviceSocket, DriverEvents, Schema } from "@av/types";
+import type { ApiRecord, DeviceSocket, Schema, Events } from "@av/types";
 
 type AnyDriver = Driver<
   string,
   Record<string, AnyDriver>,
   string,
   ApiRecord,
-  unknown,
+  Record<string, any>,
   Partial<DeviceSocket> | undefined
 >;
 
@@ -19,9 +19,9 @@ export abstract class Driver<
   Deps extends Record<string, AnyDriver> = {},
   DriverName extends string = any,
   Api extends ApiRecord = ApiRecord,
-  State = any,
+  State extends Record<string, any> = Record<string, any>,
   Socket extends Partial<DeviceSocket> | undefined = any,
-> extends ProtectedTypedEventTarget<DriverEvents<State>> {
+> extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;
   public abstract socket: Socket;
@@ -46,21 +46,8 @@ export abstract class Driver<
 
       this.state = { ...this.state, ...payload.data };
 
-      this.dispatch("driver:state-updated", this.state);
-    });
-
-    this.on("driver:delimited", (payload) => {
-      bus.dispatch("natav:debug:socket", {
-        type: "natav:debug:socket",
-        message: {
-          traceName: this.socket?.name ?? this.name,
-          direction: "rx-delimited",
-          time: new Date().toISOString(),
-          encoding: "utf8",
-          text: payload.toString("utf8"),
-          hex: payload.toString("hex"),
-          length: payload.length,
-        },
+      this.dispatch("driver:state-updated", {
+        data: this.state,
       });
     });
   }
@@ -85,9 +72,9 @@ export abstract class Driver<
     return this.deps[name];
   }
 
-  protected dispatch<K extends keyof DriverEvents<State>>(
+  protected dispatch<K extends keyof Events.Driver.Map>(
     type: K,
-    payload: DriverEvents<State>[K],
+    payload: Events.Driver.Map[K],
   ): void {
     super.dispatch(type, payload);
 

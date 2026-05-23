@@ -143,60 +143,73 @@ export default class Mediasite<
       case "STATUS":
         // TSAS:
         this.state.status = params as MediasiteStatus;
-        this.dispatch("driver:state-updated", { status: this.state.status });
+        this.dispatch("driver:state-updated", {
+          data: { status: this.state.status },
+        });
         break;
       case "TIME":
         this.state.time = params;
-        this.dispatch("driver:state-updated", { time: this.state.time });
+        this.dispatch("driver:state-updated", {
+          data: { time: this.state.time },
+        });
         break;
       case "VERSION":
         this.state.version = params;
-        this.dispatch("driver:state-updated", { version: this.state.version });
+        this.dispatch("driver:state-updated", {
+          data: { version: this.state.version },
+        });
         break;
       case "IMAGECOUNT":
         this.state.imageCount = parseInt(params) || 0;
         this.dispatch("driver:state-updated", {
-          imageCount: this.state.imageCount,
+          data: { imageCount: this.state.imageCount },
         });
         break;
       case "PUBLISH":
         this.state.publish = params === "TRUE";
-        this.dispatch("driver:state-updated", { publish: this.state.publish });
+        this.dispatch("driver:state-updated", {
+          data: { publish: this.state.publish },
+        });
         break;
       case "ERROR":
         this.state.errorFlag = params === "TRUE";
         if (!this.state.errorFlag) this.state.error = null;
         this.dispatch("driver:state-updated", {
-          errorFlag: this.state.errorFlag,
-          error: this.state.error,
+          data: { errorFlag: this.state.errorFlag, error: this.state.error },
         });
         break;
       case "ETEXT":
         this.state.error = params;
-        this.dispatch("driver:state-updated", { error: this.state.error });
+        this.dispatch("driver:state-updated", {
+          data: { error: this.state.error },
+        });
         break;
       case "IMAGEAUTO":
         this.state.imageAutoScene = params === "TRUE";
         this.dispatch("driver:state-updated", {
-          imageAutoScene: this.state.imageAutoScene,
+          data: { imageAutoScene: this.state.imageAutoScene },
         });
         break;
       case "PRESENTATIONTITLE":
         this.state.presentationTitle = params;
         this.dispatch("driver:state-updated", {
-          presentationTitle: this.state.presentationTitle,
+          data: { presentationTitle: this.state.presentationTitle },
         });
         break;
       case "SCHEDULEDID":
         this.state.scheduledId = params;
         this.dispatch("driver:state-updated", {
-          scheduledId: this.state.scheduledId,
+          data: {
+            scheduledId: this.state.scheduledId,
+          },
         });
         break;
       case "EMESSAGE":
         this.tel.error("INVALID_COMMAND", { params });
         this.state.error = `Invalid command: ${params}`;
-        this.dispatch("driver:state-updated", { error: this.state.error });
+        this.dispatch("driver:state-updated", {
+          data: { error: this.state.error },
+        });
         break;
       default:
         this.tel.warn("UNHANDLED_RESPONSE", { command, params });

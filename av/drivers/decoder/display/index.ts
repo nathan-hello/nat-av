@@ -146,7 +146,9 @@ export default class DisplayManager<
 
       this.template = t;
       this.dispatch("driver:state-updated", {
-        template: { state: t, choices: BUILTIN_TEMPLATES },
+        data: {
+          template: { state: t, choices: BUILTIN_TEMPLATES },
+        },
       });
     },
     route: async (
@@ -288,7 +290,7 @@ export default class DisplayManager<
     for (const { driver } of this.configs) {
       driver.on("driver:state-updated", () => {
         this.rebuildWindows();
-        this.dispatch("driver:state-updated", this.state);
+        this.dispatch("driver:state-updated", { data: this.state });
       });
     }
   }

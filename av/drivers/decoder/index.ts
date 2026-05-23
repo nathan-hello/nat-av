@@ -115,7 +115,7 @@ export default class Decoder<
       if (b === undefined || this.debug !== b) {
         const response = await this.request("debug_toggle", []);
         this.debug = !this.debug;
-        this.dispatch("driver:state-updated", { debug: this.debug });
+        this.dispatch("driver:state-updated", { data: { debug: this.debug } });
         return response.result;
       }
       return 0;
@@ -179,7 +179,7 @@ export default class Decoder<
 
       const response = await this.request("route", params);
       this.routes = next;
-      this.dispatch("driver:state-updated", { routes: next });
+      this.dispatch("driver:state-updated", { data: { routes: next } });
       return response.result;
     },
 
@@ -228,7 +228,9 @@ export default class Decoder<
       }
       const response = await this.request("fetch_context", []);
       this.context = response.result;
-      this.dispatch("driver:state-updated", { context: this.context });
+      this.dispatch("driver:state-updated", {
+        data: { context: this.context },
+      });
       return response.result;
     },
 
@@ -251,7 +253,7 @@ export default class Decoder<
       });
 
       this.routes = routes;
-      this.dispatch("driver:state-updated", { routes });
+      this.dispatch("driver:state-updated", { data: routes });
       return response.result;
     },
 
@@ -269,7 +271,9 @@ export default class Decoder<
           audio: this.routes.audio,
         });
         this.routes = { audio: [], video: [] };
-        this.dispatch("driver:state-updated", { routes: this.routes });
+        this.dispatch("driver:state-updated", {
+          data: { routes: this.routes },
+        });
         return response.result;
       }
       const response = await this.request("route_destroy", r);
@@ -289,7 +293,7 @@ export default class Decoder<
       });
 
       this.routes = next;
-      this.dispatch("driver:state-updated", { routes: next });
+      this.dispatch("driver:state-updated", { data: { routes: next } });
       return response.result;
     },
   };
