@@ -1,6 +1,5 @@
-import type { Natav } from "@av/types";
+import type { Natav, Rpc } from "@av/types";
 import type { natav } from "@av/index";
-import type { System, SystemStateData } from "@av/system";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { RpcDebugClient } from "@av/rpc/debug/client";
@@ -16,30 +15,6 @@ import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { isRPCNotification } from "@av/rpc/utils";
 
-type SystemApi<N extends Natav.Orch> = {
-  [M in keyof System<N>["api"]]: System<N>["api"][M] extends (
-    (...args: infer Args) => infer R
-  ) ?
-    (...args: Args) => Promise<Awaited<R>>
-  : never;
-};
-
-type SystemMethodName<N extends Natav.Orch> = Extract<
-  keyof System<N>["api"],
-  string
->;
-
-type ClientRpcSystem<N extends Natav.Orch> = {
-  api: SystemApi<N>;
-  readonly state: Promise<SystemStateData>;
-  isPending(method: SystemMethodName<N>): boolean;
-  pendingCount(method: SystemMethodName<N>): number;
-};
-
-type DeviceStateMap<N extends Natav.Orch> = Partial<{
-  [K in Natav.Names<N>]: Natav.State<N, K>;
-}>;
-
 export class ClientRpc<
   N extends Natav.Orch = natav,
 > extends ProtectedTypedEventTarget<RpcEvents> {
@@ -50,11 +25,9 @@ export class ClientRpc<
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private requestIdCounter = 0;
   private timeout = 30000;
-  private systemApiProxy: SystemApi<N>;
-  private systemHandle: ClientRpcSystem<N>;
+  private systemHandle: Rpc.System.ClientHandle<N>;
 
-  public deviceStates: DeviceStateMap<N> = {};
-  public systemStateData: SystemStateData = null;
+  public deviceStates: Natav.StateMap<N> = {};
   public debug: RpcDebugClient;
 
   constructor() {
@@ -64,27 +37,27 @@ export class ClientRpc<
       retryDelay: 1000,
     });
     this.debug = new RpcDebugClient(this);
-    this.systemApiProxy = new Proxy(
-      {},
-      {
-        get: (_, methodName: string | symbol) => {
-          if (typeof methodName !== "string") {
-            return undefined;
-          }
-
-          return (...args: any[]) => this.callSystem(methodName, ...args);
-        },
-      },
-      // TSAS:
-    ) as SystemApi<N>;
 
     this.systemHandle = {
-      api: this.systemApiProxy,
+      api: new Proxy(
+        {},
+        {
+          get: (_, methodName: string | symbol) => {
+            if (typeof methodName !== "string") {
+              return undefined;
+            }
+
+            return (...args: any[]) => this.callSystem(methodName, ...args);
+          },
+        },
+      ) as Rpc.System.Api<N>,
       isPending: (method) => this.isSystemPending(method),
       pendingCount: (method) => this.getSystemPendingCount(method),
-      // TSAS:
-    } as ClientRpcSystem<N>;
+      // TSAS: We are missing the `state` property. It is defined below.
+    } as Rpc.System.ClientHandle<N>;
+
     Object.defineProperty(this.systemHandle, "state", {
+      // This makes "state" show up in `Object.keys()`, etc.
       enumerable: true,
       get: () => this.getSystemState(),
     });
@@ -136,12 +109,10 @@ export class ClientRpc<
     });
 
     if (!initial.ok) {
-      if (!initial.ok) {
-        this.dispatch("error", {
-          reason: "init-promises-threw",
-          error: new Error(initial.error),
-        });
-      }
+      this.dispatch("error", {
+        reason: "init-promises-threw",
+        error: new Error(initial.error),
+      });
 
       this.close();
       setTimeout(() => {
@@ -151,9 +122,6 @@ export class ClientRpc<
     }
 
     this.tel.info("successfully resolved promises");
-    const [systemState] = initial.data;
-
-    this.applySystemState(systemState);
 
     this.dispatch("ready", true);
     this.notifyAllDevices();
@@ -171,8 +139,7 @@ export class ClientRpc<
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
     const cached = this.deviceHandles.get(name);
     if (cached) {
-      // TSAS:
-      return cached as ClientRpcDevice<N, Name>;
+      return cached;
     }
 
     const device = new ClientRpcDevice(this, name);
@@ -192,7 +159,7 @@ export class ClientRpc<
     );
   }
 
-  get system(): ClientRpcSystem<N> {
+  get system() {
     return this.systemHandle;
   }
 
@@ -205,19 +172,17 @@ export class ClientRpc<
     );
   }
 
-  async getSystemState(): Promise<SystemStateData> {
-    const state = await this.request<SystemStateData>(
+  async getSystemState(): Promise<Rpc.System.State> {
+    const state = await this.request<Rpc.System.State>(
       new RPCRequest(this.nextRequestId(), "system.state"),
     );
-    this.applySystemState(state);
     return state;
   }
 
   getDeviceState<Name extends Natav.Names<N>>(
     name: Name,
   ): Natav.State<N, Name> | undefined {
-    // TSAS:
-    return this.deviceStates[name] as Natav.State<N, Name> | undefined;
+    return this.deviceStates[name];
   }
 
   isDevicePending<Name extends Natav.Names<N>>(
@@ -234,17 +199,16 @@ export class ClientRpc<
     return this.pendingCounts.get(this.getDevicePendingKey(name, method)) ?? 0;
   }
 
-  isSystemPending(method: SystemMethodName<N>) {
+  isSystemPending(method: keyof Rpc.System.Api<N>) {
     return this.getSystemPendingCount(method) > 0;
   }
 
-  getSystemPendingCount(method: SystemMethodName<N>) {
+  getSystemPendingCount(method: keyof Rpc.System.Api<N>) {
     return this.pendingCounts.get(this.getSystemPendingKey(method)) ?? 0;
   }
 
   refreshDevice<Name extends Natav.Names<N>>(name: Name) {
-    // TSAS:
-    this.deviceHandles.get(name as string)?.dispatchChange();
+    this.deviceHandles.get(name)?.dispatchChange();
     this.dispatch("change", { name });
   }
 
@@ -259,7 +223,9 @@ export class ClientRpc<
     if (isRPCNotification(parsed.data)) {
       this.tel.info("got-notification", parsed.data);
 
-      // TSAS:
+      // TSAS: Casting as unknown so we are forced to actually
+      // parse through the types. Otherwise this object will be
+      // typed as `any`
       const params = parsed.data.params as {
         type?: unknown;
         name?: unknown;
@@ -314,10 +280,6 @@ export class ClientRpc<
     }
   }
 
-  private applySystemState(state: SystemStateData) {
-    this.systemStateData = state;
-  }
-
   private mergeDeviceState<Name extends Natav.Names<N>>(
     name: Name,
     patch: Partial<Natav.State<N, Name>>,
@@ -325,12 +287,10 @@ export class ClientRpc<
     const currentState = this.deviceStates[name];
     const nextState =
       currentState && typeof currentState === "object" ?
-        // TSAS:
-        { ...(currentState as object), ...patch }
+        { ...currentState, ...patch }
       : patch;
 
-    // TSAS:
-    this.deviceStates[name] = nextState as Natav.State<N, Name>;
+    this.deviceStates[name] = nextState;
   }
 
   private nextRequestId() {

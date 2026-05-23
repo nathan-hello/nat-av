@@ -18,15 +18,15 @@ type DriversOf<C extends readonly Driver[]> = DriverTree<C[number]>;
 
 export type NamesOf<C extends readonly Driver[]> = DriversOf<C>["name"];
 
-export type DriverFor<C extends readonly Driver[], N extends NamesOf<C>> = Extract<
-  DriversOf<C>,
-  { name: N }
->;
+export type DriverFor<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = Extract<DriversOf<C>, { name: N }>;
 
-export type StateFor<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<
-  C,
-  N
->["state"];
+export type StateFor<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = DriverFor<C, N>["state"];
 
 type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   [M in keyof DriverFor<C, N>["api"]]: DriverFor<C, N>["api"][M] extends (
@@ -84,6 +84,11 @@ export namespace Natav {
     ConfigsOf<N>,
     Name
   >;
+
+  export type StateMap<N extends Orchistrator> = Partial<{
+    [K in Natav.Names<N>]: Natav.State<N, K>;
+  }>;
+
   export type Api<N extends Orchistrator, Name extends Names<N>> = ApiFor<
     ConfigsOf<N>,
     Name
