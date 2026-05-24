@@ -52,3 +52,4 @@ export default class CiscoRoomOS<
   }
 }
 
+const asdf = new CiscoRoomOS({name: "asdf", output: {} as unknown as TOutput, socket: {} as unknown as Sockets.Socket});

@@ -1,9 +1,40 @@
-import roomOSSchema from "@av/drivers/cisco/roomos/typegen";
+import type {
+  RoomOSKind,
+  RoomOSObject,
+  RoomOSProduct,
+  RoomOSProductTarget,
+  RoomOSRoot,
+} from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
 
-type RoomOSSchema = typeof roomOSSchema;
-type RoomOSObject = RoomOSSchema["objects"][number];
-type RoomOSProduct = RoomOSObject["products"][number];
-type RoomOSKind = RoomOSObject["type"];
+export type {
+  RoomOSKind,
+  RoomOSObject,
+  RoomOSProduct,
+  RoomOSProductTarget,
+  RoomOSRoot,
+} from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
+
+export type {
+  RoomOSCommandArgs,
+  RoomOSCommandArgsByProduct,
+  RoomOSCommandArgsCommon,
+  RoomOSCommandBody,
+  RoomOSCommandBodyByProduct,
+  RoomOSCommandBodyCommon,
+  RoomOSCommandReturn,
+  RoomOSCommandReturnByProduct,
+  RoomOSCommandReturnCommon,
+  RoomOSConfigurationValue,
+  RoomOSConfigurationValueByProduct,
+  RoomOSConfigurationValueCommon,
+  RoomOSFeedbackPayload,
+  RoomOSFeedbackPayloadByProduct,
+  RoomOSFeedbackPayloadCommon,
+  RoomOSStatusValue,
+  RoomOSStatusValueByProduct,
+  RoomOSStatusValueCommon,
+  xCommandReturnDefault,
+} from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
 
 type ValuespaceObject = {
   type?: string;
@@ -11,8 +42,6 @@ type ValuespaceObject = {
   multiple?: string | number | boolean;
 };
 
-export type RoomOSProductTarget = RoomOSProduct | "any";
-export type RoomOSRoot = "xCommand" | "xConfiguration" | "xStatus" | "xFeedback";
 export type RoomOSSchemaKind = RoomOSKind;
 
 export type TOutput =
@@ -37,14 +66,14 @@ export type TMapReturn<T extends TOutput["type"]> = T extends "http" ? Request :
 
 export type TArgument = Record<string, unknown> | string | undefined;
 
-export type RoomOSCommandArgs = Record<string, unknown>;
+export type RoomOSCommandArgsInput = Record<string, unknown>;
 
 export type RoomOSWriteOperation =
   | {
       kind: "command";
       root: "xCommand";
       path: readonly string[];
-      args?: RoomOSCommandArgs;
+      args?: RoomOSCommandArgsInput;
       body?: string;
     }
   | {
