@@ -38,34 +38,8 @@ export type TOutput =
 
 export type TMapReturn<T extends TOutput["type"]> = T extends "http" ? Request : string;
 
-export type TArgument = Record<string, unknown> | string | undefined;
 
-export type RoomOSCommandArgsInput = Record<string, unknown>;
 
-export type RoomOSWriteOperation =
-  | {
-      kind: "command";
-      root: "xCommand";
-      path: readonly string[];
-      args?: RoomOSCommandArgsInput;
-      body?: string;
-    }
-  | {
-      kind: "get";
-      root: "xConfiguration" | "xStatus";
-      path: readonly string[];
-    }
-  | {
-      kind: "set";
-      root: "xConfiguration";
-      path: readonly string[];
-      value: unknown;
-    }
-  | {
-      kind: "listen";
-      root: "xConfiguration" | "xStatus" | "xFeedback";
-      path: readonly string[];
-    };
 
 export interface TRoomOSWriter {
   ToTerminal(resultId?: number | string): string;

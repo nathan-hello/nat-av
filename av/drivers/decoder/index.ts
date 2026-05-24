@@ -69,9 +69,7 @@ export default class Decoder<
     });
   }
 
-  schema = async () => {
-    return DecoderSchema();
-  };
+  schema = DecoderSchema;
 
   get state() {
     return {

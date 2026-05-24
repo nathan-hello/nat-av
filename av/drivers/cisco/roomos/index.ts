@@ -25,6 +25,7 @@ export default class CiscoRoomOS<
   }: {
     name: N;
     socket: Sockets.Socket;
+    product?: Product;
     output: T;
   }) {
     super({ name, driverName: "cisco-room-devices-11-9" });
@@ -48,8 +49,14 @@ export default class CiscoRoomOS<
   }
 }
 
-const asdf = new CiscoRoomOS<"vecchio">({
+const asdf = new CiscoRoomOS({
   name: "asdf",
+  product: "any",
   output: {} as unknown as TOutput,
-  socket: {} as unknown as Sockets.Socket,
-});
+  socket: {} as unknown as Sockets.Socket, });
+
+asdf.api.xCommand.Dial({Number: "12345"});
+
+const foo1 = asdf.api.xConfiguration.Bluetooth.set({Allowed: "True", Enabled: "True"})
+const foo2 = asdf.api.xConfiguration.Bluetooth.Allowed.set("True")
+const foo3 = asdf.api.xConfiguration.Bluetooth.Allowed.get()

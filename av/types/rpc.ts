@@ -3,7 +3,6 @@ import type { LogEntry } from "@av/telemetry/types";
 import type { Natav } from "@av/types/natav";
 
 export namespace Rpc {
-
   export type PendingRequest = {
     resolve: (result: any) => void;
     reject: (error: Error) => void;
@@ -86,6 +85,44 @@ export namespace Rpc {
           message: SocketMessage;
         };
   }
+
+  type JSONPrimitive = string | number | boolean | null;
+  type JSONObject = { [key: string]: JSONValue };
+  type JSONArray = JSONValue[];
+  type JSONValue = JSONPrimitive | JSONObject | JSONArray;
+
+  type IsJSONValue<T> =
+    T extends JSONValue ?
+      [T] extends [never] ?
+        false
+      : true
+    : false;
+
+  type ValidateParams<Args extends any[]> =
+    Args extends [] ? true
+    : Args extends [infer Head, ...infer Tail] ?
+      IsJSONValue<Head> extends true ?
+        ValidateParams<Tail>
+      : false
+    : false;
+
+  type IsJsonFunction<T> =
+    T extends (...args: infer Args) => Promise<infer Return> ?
+      ValidateParams<Args> extends true ?
+        IsJSONValue<Return> extends true ?
+          T
+        : never
+      : never
+    : never;
+
+  type FilterApi<T> = {
+    [K in keyof T as IsJsonFunction<T[K]> extends never ? never : K]: T[K];
+  };
+
+  export type Api<
+    N extends Natav.Orch,
+    Name extends Natav.Names<N>,
+  > = FilterApi<Natav.Api<N, Name>>;
 
   export const Methods = {
     Notification: "notification",

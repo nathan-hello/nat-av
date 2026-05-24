@@ -1,4 +1,4 @@
-import type { Events, Schema } from "@av/types";
+import type { Events, Rpc, Schema } from "@av/types";
 import { Driver } from "@av/drivers";
 import { Tcp } from "@av/sockets/tcp";
 import { ConsoleExporter } from "@av/telemetry/exporters";
@@ -20,6 +20,9 @@ export class TestDriver<const N extends string = string> extends Driver<N> {
     ping: async () => "pong",
     send: async (message: string) =>
       this.socket.write(Buffer.from(message, "utf8")),
+    invalid: async (cb: () => void) => {
+      return new Date();
+    },
   };
 
   schema = (): Schema.Schema<TestDriver> => {
@@ -120,3 +123,5 @@ export class AutomationEngine {
 }
 
 export const system = new TestSystem({ natav });
+
+type Api = Rpc.Api<natav, "shim-1">;
