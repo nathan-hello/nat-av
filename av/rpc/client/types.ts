@@ -5,7 +5,6 @@ export type PendingRequest = {
   resolve: (result: any) => void;
   reject: (error: Error) => void;
   timeout: ReturnType<typeof setTimeout>;
-  pendingKey?: string;
 };
 
 export type DeviceChangeEvent<

@@ -71,6 +71,7 @@ export class Orchistrator<
     this.configs.forEach((d) => {
       d.on("driver:state-updated", (data) =>
         // TS doesn't know about the Names/State impls within this class.
+        // @ts-ignore-next-line
         bus.dispatch("natav:state:update", { name: d.name, data: data.data }),
       );
 

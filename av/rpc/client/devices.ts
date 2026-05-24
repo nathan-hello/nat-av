@@ -8,6 +8,8 @@ export class ClientRpcDevice<
   Name extends Natav.Names<N>,
 > extends TypedEventTarget<DeviceEvents<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
+  private stateValue: Natav.State<N, Name> | undefined;
+  private pendingCounts = new Map<string, number>();
 
   constructor(
     private client: ClientRpc<N>,
@@ -15,6 +17,7 @@ export class ClientRpcDevice<
   ) {
     super();
 
+    // TSAS: Proxies are used to mirror the device API shape at runtime.
     this.apiProxy = new Proxy(
       {},
       {
@@ -23,11 +26,12 @@ export class ClientRpcDevice<
             return undefined;
           }
 
-          return (...args: any[]) =>
-            this.client.call(this.name, methodName, args);
+          return (...args: any[]) => this.call(methodName, args);
         },
       },
     ) as Natav.Handle<N, Name>["api"];
+
+    this.on("change", () => this.client.emitChange(this.name));
   }
 
   get api() {
@@ -35,23 +39,42 @@ export class ClientRpcDevice<
   }
 
   get state() {
-    return this.client.getDeviceState(this.name);
+    return this.stateValue;
+  }
+
+  async call(
+    method: string,
+    args: any[] = [],
+  ) {
+    this.incrementPending(method);
+    try {
+      return await this.client.call(this.name, method, args);
+    } finally {
+      this.decrementPending(method);
+    }
   }
 
   isPending(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
-    return this.client.isDevicePending(this.name, method);
+    return this.pendingCount(method) > 0;
   }
 
   pendingCount(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
-    return this.client.getDevicePendingCount(this.name, method);
+    return this.pendingCounts.get(method) ?? 0;
   }
 
   dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
     return this.client.device(depName);
   }
 
-  notify() {
-    this.client.refreshDevice(this.name);
+  handleStateUpdate(patch: Partial<Natav.State<N, Name>>) {
+    const currentState = this.stateValue;
+    // TSAS: Partial patches are reconciled into the device's cached state.
+    this.stateValue =
+      currentState && typeof currentState === "object" ?
+        { ...currentState, ...patch }
+      : (patch as Natav.State<N, Name>);
+
+    this.dispatchChange();
   }
 
   dispatchChange() {
@@ -59,5 +82,25 @@ export class ClientRpcDevice<
       name: this.name,
       state: this.state,
     });
+  }
+
+  private incrementPending(method: string) {
+    this.pendingCounts.set(method, (this.pendingCounts.get(method) ?? 0) + 1);
+    this.dispatchChange();
+  }
+
+  private decrementPending(method: string) {
+    const current = this.pendingCounts.get(method);
+    if (!current) {
+      return;
+    }
+
+    if (current === 1) {
+      this.pendingCounts.delete(method);
+    } else {
+      this.pendingCounts.set(method, current - 1);
+    }
+
+    this.dispatchChange();
   }
 }

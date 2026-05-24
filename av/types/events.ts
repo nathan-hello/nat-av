@@ -1,7 +1,7 @@
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { DebugSocketEvent } from "@av/rpc/debug/types";
 import type { natav } from "@av/index";
-import type { Natav } from "@av/types";
+import type { Natav, Rpc } from "@av/types";
 
 export namespace Events {
   type StateEventFor<N extends Natav.Orch = any> = {
@@ -63,6 +63,12 @@ export namespace Events {
         request?: Request;
         message?: Message;
       };
+    };
+  }
+
+  export namespace RpcClient {
+    export type SystemEventMap = {
+      change: { state: Promise<Rpc.System.State> | undefined };
     };
   }
 }

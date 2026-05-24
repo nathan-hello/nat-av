@@ -63,16 +63,7 @@ describe("driver deps", () => {
         return { ...marker, name };
       },
       call() {},
-      getDeviceState() {},
-      getDeviceConnection() {
-        return false;
-      },
-      getDeviceSchema() {},
-      getDeviceLogs() {
-        return [];
-      },
-      clearLogs() {},
-      refreshDevice() {},
+      emitChange() {},
     };
 
     // TSAS:

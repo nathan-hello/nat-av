@@ -1,9 +1,10 @@
-import type { Natav, Rpc } from "@av/types";
+import type { Natav } from "@av/types";
 import type { natav } from "@av/index";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { RpcDebugClient } from "@av/rpc/debug/client";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
+import { ClientRpcSystem } from "@av/rpc/client/system";
 import {
   RPCNotification,
   RPCRequest,
@@ -21,13 +22,10 @@ export class ClientRpc<
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
   private pendingRequests = new Map<string | number, PendingRequest>();
-  private pendingCounts = new Map<string, number>();
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private requestIdCounter = 0;
   private timeout = 30000;
-  private systemHandle: Rpc.System.ClientHandle<N>;
-
-  public deviceStates: Natav.StateMap<N> = {};
+  private systemHandle: ClientRpcSystem<N>;
   public debug: RpcDebugClient;
 
   constructor() {
@@ -38,28 +36,10 @@ export class ClientRpc<
     });
     this.debug = new RpcDebugClient(this);
 
-    this.systemHandle = {
-      api: new Proxy(
-        {},
-        {
-          get: (_, methodName: string | symbol) => {
-            if (typeof methodName !== "string") {
-              return undefined;
-            }
-
-            return (...args: any[]) => this.callSystem(methodName, ...args);
-          },
-        },
-      ) as Rpc.System.Api<N>,
-      isPending: (method) => this.isSystemPending(method),
-      pendingCount: (method) => this.getSystemPendingCount(method),
-      // TSAS: We are missing the `state` property. It is defined below.
-    } as Rpc.System.ClientHandle<N>;
-
-    Object.defineProperty(this.systemHandle, "state", {
-      // This makes "state" show up in `Object.keys()`, etc.
-      enumerable: true,
-      get: () => this.getSystemState(),
+    this.systemHandle = new ClientRpcSystem({
+      request: (message) => this.request(message),
+      emitChange: (name) => this.emitChange(name),
+      nextRequestId: () => this.nextRequestId(),
     });
 
     this.transport.on("open", () => {
@@ -73,6 +53,7 @@ export class ClientRpc<
         ),
       );
       this.dispatch("close", event);
+      this.systemHandle.reset();
       this.notifyAllDevices();
     });
 
@@ -105,7 +86,7 @@ export class ClientRpc<
     await this.waitForOpen();
 
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([this.getSystemState()]);
+      return await Promise.all([this.systemHandle.state]);
     });
 
     if (!initial.ok) {
@@ -125,7 +106,6 @@ export class ClientRpc<
 
     this.dispatch("ready", true);
     this.notifyAllDevices();
-    this.dispatch("change", {});
   }
 
   private async waitForOpen() {
@@ -155,61 +135,11 @@ export class ClientRpc<
         method,
         args,
       }),
-      this.getDevicePendingKey(device, method),
     );
   }
 
   get system() {
     return this.systemHandle;
-  }
-
-  private async callSystem(method: string, ...args: any) {
-    const id = this.nextRequestId();
-    this.tel.debug("system", { method, args, id });
-    return this.request(
-      new RPCRequest(id, "system.api", { method, args }),
-      this.getSystemPendingKey(method),
-    );
-  }
-
-  async getSystemState(): Promise<Rpc.System.State> {
-    const state = await this.request<Rpc.System.State>(
-      new RPCRequest(this.nextRequestId(), "system.state"),
-    );
-    return state;
-  }
-
-  getDeviceState<Name extends Natav.Names<N>>(
-    name: Name,
-  ): Natav.State<N, Name> | undefined {
-    return this.deviceStates[name];
-  }
-
-  isDevicePending<Name extends Natav.Names<N>>(
-    name: Name,
-    method: Extract<keyof Natav.Handle<N, Name>["api"], string>,
-  ) {
-    return this.getDevicePendingCount(name, method) > 0;
-  }
-
-  getDevicePendingCount<Name extends Natav.Names<N>>(
-    name: Name,
-    method: Extract<keyof Natav.Handle<N, Name>["api"], string>,
-  ) {
-    return this.pendingCounts.get(this.getDevicePendingKey(name, method)) ?? 0;
-  }
-
-  isSystemPending(method: keyof Rpc.System.Api<N>) {
-    return this.getSystemPendingCount(method) > 0;
-  }
-
-  getSystemPendingCount(method: keyof Rpc.System.Api<N>) {
-    return this.pendingCounts.get(this.getSystemPendingKey(method)) ?? 0;
-  }
-
-  refreshDevice<Name extends Natav.Names<N>>(name: Name) {
-    this.deviceHandles.get(name)?.dispatchChange();
-    this.dispatch("change", { name });
   }
 
   private onMessage(raw: string) {
@@ -236,14 +166,13 @@ export class ClientRpc<
         params.type === "natav:state:update" &&
         typeof params.name === "string"
       ) {
-        this.mergeDeviceState(
-          // TSAS:
-          params.name as Natav.Names<N>,
-          // TSAS:
-          (params.data ?? {}) as Partial<Natav.State<N, Natav.Names<N>>>,
+        // TSAS: The notification payload carries the device name as an untyped string.
+        const deviceName = params.name as Natav.Names<N>;
+        const device = this.device(deviceName);
+        device.handleStateUpdate(
+          // TSAS: The server sends partial device state updates.
+          (params.data ?? {}) as Partial<Natav.State<N, typeof deviceName>>,
         );
-        // TSAS:
-        this.refreshDevice(params.name as Natav.Names<N>);
       }
 
       return;
@@ -280,57 +209,12 @@ export class ClientRpc<
     }
   }
 
-  private mergeDeviceState<Name extends Natav.Names<N>>(
-    name: Name,
-    patch: Partial<Natav.State<N, Name>>,
-  ) {
-    const currentState = this.deviceStates[name];
-    const nextState =
-      currentState && typeof currentState === "object" ?
-        { ...currentState, ...patch }
-      : patch;
-
-    this.deviceStates[name] = nextState;
+  public emitChange(name?: string) {
+    this.dispatch("change", { name });
   }
 
   private nextRequestId() {
     return this.requestIdCounter++;
-  }
-
-  private getDevicePendingKey(device: string, method: string) {
-    return `device:${device}:${method}`;
-  }
-
-  private getSystemPendingKey(method: string) {
-    return `system:${method}`;
-  }
-
-  private incrementPending(key?: string) {
-    if (!key) {
-      return;
-    }
-
-    this.pendingCounts.set(key, (this.pendingCounts.get(key) ?? 0) + 1);
-    this.dispatch("change", {});
-  }
-
-  private decrementPending(key?: string) {
-    if (!key) {
-      return;
-    }
-
-    const current = this.pendingCounts.get(key);
-    if (!current) {
-      return;
-    }
-
-    if (current === 1) {
-      this.pendingCounts.delete(key);
-    } else {
-      this.pendingCounts.set(key, current - 1);
-    }
-
-    this.dispatch("change", {});
   }
 
   private resolvePendingRequest(id: string | number, result: unknown) {
@@ -341,7 +225,6 @@ export class ClientRpc<
 
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(id);
-    this.decrementPending(pending.pendingKey);
     pending.resolve(result);
   }
 
@@ -353,7 +236,6 @@ export class ClientRpc<
 
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(id);
-    this.decrementPending(pending.pendingKey);
     pending.reject(error);
   }
 
@@ -363,12 +245,10 @@ export class ClientRpc<
     }
   }
 
-  private async request<T = any>(message: RPCRequest, pendingKey?: string) {
+  private async request<T = any>(message: RPCRequest) {
     await this.waitForOpen();
 
     return new Promise<T>((resolve, reject) => {
-      this.incrementPending(pendingKey);
-
       const timeoutId = setTimeout(() => {
         this.rejectPendingRequest(
           message.id,
@@ -382,7 +262,6 @@ export class ClientRpc<
         resolve,
         reject,
         timeout: timeoutId,
-        pendingKey,
       });
 
       const str = this.tel.task("JSON_STRINGIFY", () =>
