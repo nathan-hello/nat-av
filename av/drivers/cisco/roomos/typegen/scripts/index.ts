@@ -2,7 +2,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 type Valuespace =
   | string
@@ -101,23 +107,6 @@ const DEFAULT_INPUT = new URL(
 );
 const DEFAULT_OUTPUT = new URL("../schemas/11.33.1.ts", import.meta.url);
 
-function isMainModule(): boolean {
-  const entry = process.argv[1];
-
-  if (entry === undefined) {
-    return false;
-  }
-
-  return import.meta.url === pathToFileURL(entry).href;
-}
-
-function resolveUrl(value: string | undefined, fallback: URL): URL {
-  if (value === undefined) {
-    return fallback;
-  }
-
-  return pathToFileURL(resolve(process.cwd(), value));
-}
 
 function indent(text: string, depth = 1): string {
   const prefix = "  ".repeat(depth);
@@ -132,7 +121,14 @@ function isTruthyFlag(value: unknown): boolean {
 }
 
 function hasMultiplicity(value: unknown): boolean {
-  return value !== undefined && value !== null && value !== false && value !== 0 && value !== "0" && value !== "False";
+  return (
+    value !== undefined &&
+    value !== null &&
+    value !== false &&
+    value !== 0 &&
+    value !== "0" &&
+    value !== "False"
+  );
 }
 
 function sortStrings(values: readonly string[]): string[] {
@@ -178,10 +174,14 @@ function normalizeParam(param: Param): ReducedParam {
   return normalized;
 }
 
-function normalizeChildren(children: Record<string, EventNode>): Record<string, ReducedEventNode> {
+function normalizeChildren(
+  children: Record<string, EventNode>,
+): Record<string, ReducedEventNode> {
   const normalized: Record<string, ReducedEventNode> = {};
 
-  for (const [name, child] of Object.entries(children).sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [name, child] of Object.entries(children).sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
     normalized[name] = normalizeEventNode(child);
   }
 
@@ -215,7 +215,8 @@ function normalizeEntry(entry: SchemaEntry): ReducedEntry {
 
   switch (entry.type) {
     case "Command": {
-      const params = entry.attributes.params?.map((param) => normalizeParam(param)) ?? [];
+      const params =
+        entry.attributes.params?.map((param) => normalizeParam(param)) ?? [];
       params.sort((a, b) => a.name.localeCompare(b.name));
       attributes.params = params;
 
@@ -248,7 +249,9 @@ function normalizeEntry(entry: SchemaEntry): ReducedEntry {
   };
 }
 
-function mergeEntries(entries: readonly SchemaEntry[]): readonly ReducedEntry[] {
+function mergeEntries(
+  entries: readonly SchemaEntry[],
+): readonly ReducedEntry[] {
   const groups = new Map<string, ReducedEntry>();
 
   for (const entry of entries) {
@@ -262,7 +265,10 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly ReducedEntry[] 
     const existing = groups.get(signature);
 
     if (existing !== undefined) {
-      existing.products = sortStrings([...existing.products, ...reduced.products]);
+      existing.products = sortStrings([
+        ...existing.products,
+        ...reduced.products,
+      ]);
       continue;
     }
 
@@ -282,11 +288,17 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly ReducedEntry[] 
       return pathOrder;
     }
 
-    return JSON.stringify(left.attributes).localeCompare(JSON.stringify(right.attributes));
+    return JSON.stringify(left.attributes).localeCompare(
+      JSON.stringify(right.attributes),
+    );
   });
 }
 
-function renderTuple(items: readonly string[], depth: number, multiline = false): string {
+function renderTuple(
+  items: readonly string[],
+  depth: number,
+  multiline = false,
+): string {
   if (!items.length) {
     return "readonly []";
   }
@@ -322,7 +334,13 @@ function renderValuespace(value: ReducedValuespace, depth: number): string {
   }
 
   if (value.Values !== undefined) {
-    fields.push(`Values: ${renderTuple(value.Values.map((item) => JSON.stringify(item)), depth, false)};`);
+    fields.push(
+      `Values: ${renderTuple(
+        value.Values.map((item) => JSON.stringify(item)),
+        depth,
+        false,
+      )};`,
+    );
   }
 
   if (value.multiple) {
@@ -333,9 +351,7 @@ function renderValuespace(value: ReducedValuespace, depth: number): string {
 }
 
 function renderParam(param: ReducedParam, depth: number): string {
-  const fields = [
-    `name: ${JSON.stringify(param.name)};`,
-  ];
+  const fields = [`name: ${JSON.stringify(param.name)};`];
 
   if (param.required) {
     fields.push("required: true;");
@@ -350,7 +366,8 @@ function renderEventNode(node: ReducedEventNode, depth: number): string {
 
   if (node.children !== undefined) {
     const children = Object.entries(node.children).map(
-      ([name, child]) => `${JSON.stringify(name)}: ${renderEventNode(child, depth + 1)};`,
+      ([name, child]) =>
+        `${JSON.stringify(name)}: ${renderEventNode(child, depth + 1)};`,
     );
     fields.push(`children: ${renderObject(children, depth + 1)};`);
   }
@@ -370,9 +387,16 @@ function renderEventNode(node: ReducedEventNode, depth: number): string {
   return renderObject(fields, depth);
 }
 
-function renderCommandAttributes(attributes: ReducedEntry["attributes"], depth: number): string {
+function renderCommandAttributes(
+  attributes: ReducedEntry["attributes"],
+  depth: number,
+): string {
   const fields = [
-    `params: ${renderTuple((attributes.params ?? []).map((param) => renderParam(param, depth + 1)), depth + 1, true)};`,
+    `params: ${renderTuple(
+      (attributes.params ?? []).map((param) => renderParam(param, depth + 1)),
+      depth + 1,
+      false,
+    )};`,
   ];
 
   if (attributes.multiline) {
@@ -382,25 +406,36 @@ function renderCommandAttributes(attributes: ReducedEntry["attributes"], depth: 
   return renderObject(fields, depth);
 }
 
-function renderValueAttributes(attributes: ReducedEntry["attributes"], depth: number): string {
+function renderValueAttributes(
+  attributes: ReducedEntry["attributes"],
+  depth: number,
+): string {
   if (attributes.valuespace === undefined) {
     throw new Error("Missing valuespace while rendering value attributes");
   }
 
-  return renderObject([
-    `valuespace: ${renderValuespace(attributes.valuespace, depth + 1)};`,
-  ], depth);
+  return renderObject(
+    [`valuespace: ${renderValuespace(attributes.valuespace, depth + 1)};`],
+    depth,
+  );
 }
 
-function renderEventAttributes(attributes: ReducedEntry["attributes"], depth: number): string {
-  return renderObject([
-    `children: ${renderObject(
-      Object.entries(attributes.children ?? {}).map(
-        ([name, child]) => `${JSON.stringify(name)}: ${renderEventNode(child, depth + 2)};`,
-      ),
-      depth + 1,
-    )};`,
-  ], depth);
+function renderEventAttributes(
+  attributes: ReducedEntry["attributes"],
+  depth: number,
+): string {
+  return renderObject(
+    [
+      `children: ${renderObject(
+        Object.entries(attributes.children ?? {}).map(
+          ([name, child]) =>
+            `${JSON.stringify(name)}: ${renderEventNode(child, depth + 2)};`,
+        ),
+        depth + 1,
+      )};`,
+    ],
+    depth,
+  );
 }
 
 function renderEntry(entry: ReducedEntry): string {
@@ -421,17 +456,25 @@ function renderEntry(entry: ReducedEntry): string {
 
   return `{
   path: ${JSON.stringify(entry.path)};
-  products: ${renderTuple(entry.products.map((product) => JSON.stringify(product)), 1, false)};
+  products: ${renderTuple(
+    entry.products.map((product) => JSON.stringify(product)),
+    1,
+    false,
+  )};
   type: ${JSON.stringify(entry.type)};
   attributes: ${attributes};
 }`;
 }
 
 function uniqueProducts(entries: readonly SchemaEntry[]): readonly string[] {
-  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort((a, b) => a.localeCompare(b));
+  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort(
+    (a, b) => a.localeCompare(b),
+  );
 }
 
-function uniqueKinds(entries: readonly SchemaEntry[]): readonly SchemaEntry["type"][] {
+function uniqueKinds(
+  entries: readonly SchemaEntry[],
+): readonly SchemaEntry["type"][] {
   const kinds: SchemaEntry["type"][] = [];
 
   for (const kind of new Set(entries.map((entry) => entry.type))) {
@@ -460,6 +503,13 @@ function generateSource(schema: SchemaJson): string {
 }
 
 async function main(argv = process.argv.slice(2)): Promise<void> {
+  function resolveUrl(value: string | undefined, fallback: URL): URL {
+    if (value === undefined) {
+      return fallback;
+    }
+
+    return pathToFileURL(resolve(process.cwd(), value));
+  }
   const [inputArg, outputArg] = argv;
   const inputUrl = resolveUrl(inputArg, DEFAULT_INPUT);
   const outputUrl = resolveUrl(outputArg, DEFAULT_OUTPUT);
@@ -470,6 +520,16 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
 
   await mkdir(new URL(".", outputUrl), { recursive: true });
   await writeFile(outputUrl, `${contents}\n`, "utf8");
+}
+
+function isMainModule(): boolean {
+  const entry = process.argv[1];
+
+  if (entry === undefined) {
+    return false;
+  }
+
+  return import.meta.url === pathToFileURL(entry).href;
 }
 
 if (isMainModule()) {
