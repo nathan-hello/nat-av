@@ -20,7 +20,6 @@ import {
 import { StartLogging } from "@av/telemetry/sdk";
 import { Orchistrator } from "@av/natav";
 import { Telemetry } from "@av/telemetry";
-import ChazyControl from "@av/drivers/turtle";
 
 // TSAS:
 if ((globalThis as any).__devices__) {

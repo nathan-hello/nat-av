@@ -1,5 +1,5 @@
 import type { Events, Schema } from "@av/types";
-import { Driver } from "@av/driver";
+import { Driver } from "@av/drivers";
 import { Tcp } from "@av/sockets/tcp";
 import { ConsoleExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";

@@ -1,5 +1,5 @@
-import { Driver } from "@av/driver";
-import type { Sockets, Schema } from "@av/types";
+import { Driver } from "@av/drivers";
+import type { Sockets } from "@av/types";
 import { createProxy } from "@av/drivers/cisco/roomos/proxy";
 import type {
   RoomOSApi,
@@ -10,7 +10,7 @@ import type {
 } from "@av/drivers/cisco/roomos/types";
 
 export default class CiscoRoomOS<
-Product extends RoomOSProductTarget = "any",
+  Product extends RoomOSProductTarget = "any",
   const N extends string = string,
   T extends TOutput = TOutput,
 > extends Driver<N> {

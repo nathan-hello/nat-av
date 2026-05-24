@@ -1,4 +1,4 @@
-import type { Driver } from "@av/driver";
+import type { Driver } from "@av/drivers";
 import type { Sockets } from "@av/types/socket";
 
 // This namespace is not allowed to import Natav namespace.

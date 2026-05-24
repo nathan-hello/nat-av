@@ -1,5 +1,5 @@
-import { bus } from "./bus";
-import { type Driver } from "./driver";
+import { bus } from "@av/bus";
+import { type Driver } from "@av/drivers";
 import type { NamesOf, DriverFor, StateFor, Rpc } from "./types";
 
 export class Orchistrator<

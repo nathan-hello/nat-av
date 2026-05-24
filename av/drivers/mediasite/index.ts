@@ -1,5 +1,5 @@
-import { Driver } from "../../driver";
-import { TypedEventTarget } from "../../lib/eventtarget";
+import { Driver } from "@av/drivers";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { Sockets, Schema } from "@av/types";
 
 type MediasiteStatus = "IDLE" | "RECBUSY" | "RECORD" | "PAUSED" | "PUBLISH";

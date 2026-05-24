@@ -1,4 +1,4 @@
-import type { Driver } from "@av/driver";
+import type { Driver } from "@av/drivers";
 import type { Orchistrator } from "@av/natav";
 
 type IsAny<T> = 0 extends 1 & T ? true : false;

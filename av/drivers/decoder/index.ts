@@ -12,7 +12,7 @@ import {
   type VideoRoute,
   type DecoderRoutes,
 } from "./types";
-import { Driver } from "@av/driver";
+import { Driver } from "@av/drivers";
 import { RPCErrorData } from "@av/rpc/protocol";
 import { DecoderSchema } from "@av/drivers/decoder/schema";
 
