@@ -14,6 +14,7 @@ export default class CiscoRoomOS<
   Product extends RoomOSProductTarget = "any",
   const N extends string = string,
 > extends Driver<N> {
+  schema = undefined;
   socket: Sockets.Socket;
   output: T;
 
@@ -30,11 +31,6 @@ export default class CiscoRoomOS<
     this.socket = socket;
     this.output = output;
   }
-
-  schema = (): Schema.Schema<this> => {
-    // TSAS: The schema is intentionally deferred; the empty tree satisfies the readonly array shape.
-    return [] as unknown as Schema.Schema<this>;
-  };
 
   state: Record<string, never> = {};
 
