@@ -1,12 +1,11 @@
-import type { Natav } from "@av/types";
+import type { Natav, Events } from "@av/types";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { DeviceEvents } from "@av/rpc/client/types";
 import type { ClientRpc } from "@av/rpc/client";
 
 export class ClientRpcDevice<
   N extends Natav.Orch,
   Name extends Natav.Names<N>,
-> extends TypedEventTarget<DeviceEvents<N, Name>> {
+> extends TypedEventTarget<Events.Rpc.Client.DeviceMap<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
   private stateValue: Natav.State<N, Name> | undefined;
   private pendingCounts = new Map<string, number>();
@@ -42,10 +41,7 @@ export class ClientRpcDevice<
     return this.stateValue;
   }
 
-  async call(
-    method: string,
-    args: any[] = [],
-  ) {
+  async call(method: string, args: any[] = []) {
     this.incrementPending(method);
     try {
       return await this.client.call(this.name, method, args);

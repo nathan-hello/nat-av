@@ -1,4 +1,4 @@
-import type { Natav } from "@av/types";
+import type { Natav, Events } from "@av/types";
 import type { natav } from "@av/index";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
@@ -11,14 +11,13 @@ import {
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import type { RpcEvents } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 
 export class ClientRpc<
   N extends Natav.Orch = natav,
-> extends ProtectedTypedEventTarget<RpcEvents> {
+> extends ProtectedTypedEventTarget<Events.Rpc.Client.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
   private requests: ClientRpcRequests;
@@ -150,7 +149,7 @@ export class ClientRpc<
       return;
     }
 
-    const notification = RPCNotification.is(parsed.data)
+    const notification = RPCNotification.is(parsed.data);
 
     if (notification) {
       this.tel.info("got-notification", parsed.data);

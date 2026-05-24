@@ -1,4 +1,4 @@
-import type { Events, Natav, Schema } from "@av/types";
+import type { Events, Schema } from "@av/types";
 import { Driver } from "@av/driver";
 import { Tcp } from "@av/sockets/tcp";
 import { ConsoleExporter } from "@av/telemetry/exporters";

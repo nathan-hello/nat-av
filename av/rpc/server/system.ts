@@ -1,11 +1,6 @@
 import type { natav } from "@av/index";
-import type { Natav } from "@av/types";
-import {
-  RPCMethods,
-  RPCRequest,
-  RPCError,
-  RPCResponse,
-} from "@av/rpc/protocol";
+import { Rpc, type Natav } from "@av/types";
+import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
@@ -21,9 +16,9 @@ export class SystemRpcRouter<
 
   async handle(message: RPCRequest): Promise<RPCResponse | RPCError> {
     switch (message.method) {
-      case RPCMethods.SystemState:
+      case Rpc.Methods.SystemState:
         return new RPCResponse(message.id, this.system.state);
-      case RPCMethods.SystemApi:
+      case Rpc.Methods.SystemApi:
         return this.handleApiCall(message);
       default:
         return new RPCError(message.id, {

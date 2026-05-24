@@ -1,4 +1,4 @@
-import type { DebugDeviceNode } from "@av/rpc/debug/types";
+import type { Rpc } from "@av/types";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { getRpc } from "@/state";
@@ -67,8 +67,8 @@ export function DebugPage(handle: Handle) {
 }
 
 function findFirstSocketDevice(
-  nodes: DebugDeviceNode[],
-): DebugDeviceNode | undefined {
+  nodes: Rpc.Client.Debug.Node[],
+): Rpc.Client.Debug.Node | undefined {
   for (const node of nodes) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;

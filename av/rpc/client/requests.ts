@@ -1,11 +1,11 @@
 import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
-import type { PendingRequest } from "@av/rpc/client/types";
+import type { Rpc } from "@av/types";
 import type { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 
 export class ClientRpcRequests {
   private tel = new Telemetry("Rpc::Requests");
-  private pendingRequests = new Map<string | number, PendingRequest>();
+  private pendingRequests = new Map<string | number, Rpc.Client.PendingRequest>();
   private requestIdCounter = 0;
   private timeout = 30000;
 

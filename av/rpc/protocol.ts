@@ -1,3 +1,5 @@
+import { Rpc } from "@av/types";
+
 type RpcId = string | number;
 
 // Error codes following JSON-RPC 2.0 spec
@@ -13,13 +15,6 @@ export const RPCErrorCodes = {
   DeviceCallFailed: -32003,
 } as const;
 
-export const RPCMethods = {
-  SystemApi: "system.api",
-  SystemState: "system.state",
-  DeviceCall: "device.call",
-  Notification: "notification",
-} as const;
-
 export class RPCRequest {
   jsonrpc = "2.0" as const;
 
@@ -31,7 +26,7 @@ export class RPCRequest {
 
   systemApiParams(): { method: string; args: any[] } | null {
     if (
-      this.method !== RPCMethods.SystemApi ||
+      this.method !== Rpc.Methods.SystemApi ||
       !this.params ||
       typeof this.params !== "object"
     ) {
@@ -52,7 +47,7 @@ export class RPCRequest {
 
   deviceCallParams(): { device: string; method: string; args: any[] } | null {
     if (
-      this.method !== RPCMethods.DeviceCall ||
+      this.method !== Rpc.Methods.DeviceCall ||
       !this.params ||
       typeof this.params !== "object"
     ) {
@@ -202,7 +197,7 @@ export class RPCErrorData extends Error {
 
 export class RPCNotification<T = any> {
   jsonrpc = "2.0" as const;
-  method = RPCMethods.Notification;
+  method = Rpc.Methods.Notification;
   params: T;
 
   constructor(params: T) {
@@ -226,7 +221,7 @@ export class RPCNotification<T = any> {
       "jsonrpc" in value &&
       value.jsonrpc === "2.0" &&
       "method" in value &&
-      value.method === RPCMethods.Notification &&
+      value.method === Rpc.Methods.Notification &&
       "params" in value
     ) {
       return new RPCNotification(value.params);

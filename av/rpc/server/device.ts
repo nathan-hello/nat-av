@@ -1,5 +1,5 @@
 import type { natav } from "@av/index";
-import type {Natav} from "@av/types";
+import type { Natav } from "@av/types";
 import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import { Telemetry } from "@av/telemetry";
@@ -39,10 +39,9 @@ export class DeviceRpcRouter<
           });
         }
 
-        // TSAS:
-        const method = (device.api as Record<string, unknown> | undefined)?.[
-          params.method
-        ];
+        // FIXME: this does not recurse through the api shape
+        const method = device.api?.[params.method];
+
         if (typeof method !== "function") {
           return new RPCError(message.id, {
             code: RPCErrorCodes.DeviceMethodNotFound,

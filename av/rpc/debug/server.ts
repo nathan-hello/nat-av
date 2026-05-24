@@ -1,13 +1,6 @@
 import { bus } from "@av/bus";
 import type { natav } from "@av/index";
-import {
-  DebugRpcMethods,
-  type DebugDeviceNode,
-  type DebugRpcNotification,
-  type DebugSocketEvent,
-  type DebugSocketMessage,
-  type SocketDebugEncoding,
-} from "@av/rpc/debug/types";
+import { Rpc } from "@av/types";
 import {
   RPCError,
   RPCErrorCodes,
@@ -20,7 +13,7 @@ import { DecodeWebsocketError } from "@av/rpc/errors";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 import type { System } from "@av/system";
-import type { Natav, Sockets } from "@av/types";
+import type { Events, Natav, Sockets } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -122,9 +115,9 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     message: RPCRequest,
   ): Promise<RPCResponse | RPCError> {
     switch (message.method) {
-      case DebugRpcMethods.GetTree:
+      case Rpc.Client.Debug.Methods.GetTree:
         return new RPCResponse(message.id, this.args.natav.GetDebugTree());
-      case DebugRpcMethods.WriteSocket:
+      case Rpc.Client.Debug.Methods.WriteSocket:
         return await this.handleSocketWrite(message);
       default:
         return new RPCError(message.id, {
@@ -179,7 +172,7 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
 
     try {
       const bytesWritten = await device.socket.write(
-        Buffer.from(params.text, encoding as SocketDebugEncoding),
+        Buffer.from(params.text, encoding),
       );
       return new RPCResponse(message.id, { bytesWritten });
     } catch (error) {
@@ -190,7 +183,7 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     }
   }
 
-  private broadcastNotification(notification: DebugRpcNotification) {
+  private broadcastNotification(notification: Rpc.Client.Debug.Notification) {
     const message = JSON.stringify(new RPCNotification(notification));
 
     this.clients.forEach((client) => {
@@ -202,10 +195,10 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     });
   }
 
-  private resolveSocketMessages(event: DebugSocketEvent): DebugSocketMessage[] {
-    const messages: DebugSocketMessage[] = [];
+  private resolveSocketMessages(event: Events.Rpc.Client.DebugMap): Rpc.Client.Debug.SocketMessage[] {
+    const messages: Rpc.Client.Debug.SocketMessage[] = [];
 
-    const visit = (node: DebugDeviceNode) => {
+    const visit = (node: Rpc.Client.Debug.Node) => {
       if (node.socket?.traceName === event.traceName) {
         messages.push({
           device: node.name,

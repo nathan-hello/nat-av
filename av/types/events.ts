@@ -1,15 +1,9 @@
 import type { ReadableLogRecord } from "@av/telemetry/types";
-import type { DebugSocketEvent } from "@av/rpc/debug/types";
 import type { natav } from "@av/index";
-import type { Natav, Rpc } from "@av/types";
+import type { Natav, Rpc as NRpc } from "@av/types";
+import type { RPCError } from "@av/rpc/protocol";
 
 export namespace Events {
-  type StateEventFor<N extends Natav.Orch = any> = {
-    [Name in Natav.Names<N>]: {
-      name: Name;
-      data: Partial<Natav.State<N, Name>>;
-    };
-  }[Natav.Names<N>];
   export namespace Socket {
     export type Map = {
       connected: void;
@@ -28,6 +22,11 @@ export namespace Events {
       retryScheduled: { delay: number };
     };
   }
+
+  // This namespace is not allowed to import Natav namespace.
+  // The Natav namespace uses Driver for inference, so trying
+  // to get the Natav.Names<N> for example will cause a circular
+  // dependency that Typescript cannot resolve.
   export namespace Driver {
     export type Map<StateData = any> = {
       "driver:state-updated": {
@@ -39,19 +38,27 @@ export namespace Events {
   }
 
   export namespace System {
+    type StateEventFor<N extends Natav.Orch = any> = {
+      [Name in Natav.Names<N>]: {
+        name: Name;
+        data: Partial<Natav.State<N, Name>>;
+      };
+    }[Natav.Names<N>];
+
     export type Map<N extends Natav.Orch = natav> = {
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
       "natav:device:connected": { name: Natav.Names<N> };
       "natav:device:disconnected": { name: Natav.Names<N> };
       "natav:device:error": { name: Natav.Names<N>; error?: Error | unknown };
-      "natav:debug:socket": { data: DebugSocketEvent };
+      "natav:debug:socket": { data: Rpc.Client.DebugMap };
       "natav:opentelemetry:entry": {
         record: ReadableLogRecord;
         asString: string;
       };
     };
   }
+
   export namespace Request {
     export type Map<Request, Message> = {
       message: Message;
@@ -66,9 +73,42 @@ export namespace Events {
     };
   }
 
-  export namespace RpcClient {
-    export type SystemEventMap = {
-      change: { state: Promise<Rpc.System.State> | undefined };
-    };
+  export namespace Rpc {
+    export namespace Client {
+      export type Map = {
+        ready: boolean;
+        close: CloseEvent;
+        error:
+          | { reason: "transport"; event: Event }
+          | { reason: "init-promises-threw"; error: Error }
+          | { reason: "json-parse-failed"; raw: string }
+          | { reason: "rpc-error"; error: RPCError };
+        change: { name?: string };
+      };
+
+      export type SystemMap = {
+        change: { state: Promise<NRpc.Client.System.State> | undefined };
+      };
+
+      export type DeviceMap<
+        N extends Natav.Orch,
+        Name extends Natav.Names<N>,
+      > = {
+        change: {
+          name: Name;
+          state: Natav.State<N, Name> | undefined;
+        };
+      };
+
+      export type DebugMap = {
+        traceName: string;
+        direction: "rx" | "tx" | "rx-delimited";
+        time: string;
+        encoding: NRpc.Client.Debug.Encoding;
+        text: string;
+        hex: string;
+        length: number;
+      };
+    }
   }
 }

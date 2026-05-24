@@ -1,6 +1,6 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { TransportOptions } from "@av/rpc/client/types";
 import { Telemetry } from "@av/telemetry";
+import { Rpc } from "@av/types";
 
 export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
   private tel = new Telemetry("ClientWebsocket");
@@ -11,7 +11,7 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
 
   constructor(
     private url: string,
-    private options: Required<TransportOptions>,
+    private options: Required<Rpc.Client.TransportOptions>,
   ) {
     super();
   }

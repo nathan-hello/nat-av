@@ -1,7 +1,6 @@
 import { bus } from "./bus";
-import type { DebugDeviceNode } from "@av/rpc/debug/types";
 import { type Driver } from "./driver";
-import type { NamesOf, DriverFor, StateFor } from "./types";
+import type { NamesOf, DriverFor, StateFor, Rpc} from "./types";
 
 export class Orchistrator<
   const Configs extends readonly Driver[] = readonly Driver[],
@@ -40,8 +39,8 @@ export class Orchistrator<
     return this.all().map((d) => d.name);
   }
 
-  GetDebugTree(): DebugDeviceNode[] {
-    const toNode = (driver: Driver): DebugDeviceNode => {
+  GetDebugTree(): Rpc.Client.Debug.Node[] {
+    const toNode = (driver: Driver): Rpc.Client.Debug.Node => {
       const socket = driver.socket;
       const canWrite = typeof socket?.write === "function";
       const canReceive = typeof socket?.on === "function";
