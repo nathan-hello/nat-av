@@ -14,34 +14,6 @@ export type {
   RoomOSRoot,
 } from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
 
-export type {
-  RoomOSCommandArgs,
-  RoomOSCommandArgsByProduct,
-  RoomOSCommandArgsCommon,
-  RoomOSCommandBody,
-  RoomOSCommandBodyByProduct,
-  RoomOSCommandBodyCommon,
-  RoomOSCommandReturn,
-  RoomOSCommandReturnByProduct,
-  RoomOSCommandReturnCommon,
-  RoomOSConfigurationValue,
-  RoomOSConfigurationValueByProduct,
-  RoomOSConfigurationValueCommon,
-  RoomOSFeedbackPayload,
-  RoomOSFeedbackPayloadByProduct,
-  RoomOSFeedbackPayloadCommon,
-  RoomOSStatusValue,
-  RoomOSStatusValueByProduct,
-  RoomOSStatusValueCommon,
-  xCommandReturnDefault,
-} from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
-
-type ValuespaceObject = {
-  type?: string;
-  Values?: readonly string[];
-  multiple?: string | number | boolean;
-};
-
 export type RoomOSSchemaKind = RoomOSKind;
 
 export type TOutput =

@@ -1,10 +1,5 @@
-import roomOSSchema from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
-
 const INDEXED_SEGMENT = /\[[^\]]*\]/g;
 const NUMERIC_SEGMENT = /^\d+$/;
-
-export default roomOSSchema;
-export { roomOSSchema };
 
 export function stripIndex(segment: string): string {
   return segment.replace(INDEXED_SEGMENT, "");
