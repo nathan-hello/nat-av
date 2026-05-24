@@ -10,9 +10,9 @@ import type {
 } from "@av/drivers/cisco/roomos/types";
 
 export default class CiscoRoomOS<
-  T extends TOutput,
-  Product extends RoomOSProductTarget = "any",
+Product extends RoomOSProductTarget = "any",
   const N extends string = string,
+  T extends TOutput = TOutput,
 > extends Driver<N> {
   schema = undefined;
   socket: Sockets.Socket;
@@ -34,7 +34,7 @@ export default class CiscoRoomOS<
 
   state: Record<string, never> = {};
 
-  get api() {
+  get api(): RoomOSApi<Product, TMapReturn<T["type"]>> {
     const createRootProxy = <Root extends RoomOSRoot>(root: Root) =>
       createProxy<Root, T, Product>(root, this.output);
 
@@ -44,10 +44,12 @@ export default class CiscoRoomOS<
       xConfiguration: createRootProxy("xConfiguration"),
       xStatus: createRootProxy("xStatus"),
       xFeedback: createRootProxy("xFeedback"),
-    } as unknown as RoomOSApi<Product, TMapReturn<T["type"]>>;
+    };
   }
 }
 
-const asdf = new CiscoRoomOS({name: "asdf", output: {} as unknown as TOutput, socket: {} as unknown as Sockets.Socket});
-
-asdf.api.xCommand.Call.Hold({});
+const asdf = new CiscoRoomOS<"vecchio">({
+  name: "asdf",
+  output: {} as unknown as TOutput,
+  socket: {} as unknown as Sockets.Socket,
+});

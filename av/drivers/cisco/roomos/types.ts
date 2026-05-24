@@ -1,4 +1,5 @@
 import type {
+  RoomOSCommandApi,
   RoomOSKind,
   RoomOSObject,
   RoomOSProduct,
@@ -7,6 +8,7 @@ import type {
 } from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
 
 export type {
+  RoomOSCommandApi,
   RoomOSKind,
   RoomOSObject,
   RoomOSProduct,
@@ -206,7 +208,7 @@ export type RoomOSApi<
   Product extends RoomOSProductTarget = "any",
   ReturnType = string,
 > = {
-  xCommand: RootApiFor<Product, "Command", ReturnType>;
+  xCommand: RoomOSCommandApi<Product, ReturnType>;
   xConfiguration: RootApiFor<Product, "Configuration", ReturnType>;
   xStatus: RootApiFor<Product, "Status", ReturnType>;
   xFeedback: RootApiFor<Product, "Event", ReturnType>;

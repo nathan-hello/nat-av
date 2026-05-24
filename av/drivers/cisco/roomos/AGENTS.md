@@ -227,8 +227,9 @@ i would be okay with that.
 ## Session Notes
 
 - The schema generator now lives in `typegen/scripts/index.ts` and reads `typegen/schemas/11.33.1 October 2025.json`.
-- The generator now emits a compact `typegen/schemas/11.33.1.ts` union of unique RoomOS entries plus `RoomOSSchema`, `RoomOSObject`, `RoomOSProduct`, `RoomOSProductTarget`, `RoomOSRoot`, and `xCommandReturnDefault`.
-- `types.ts` consumes the generated `RoomOSObject` union directly and keeps the runtime `RoomOSWriteOperation`/`TRoomOSWriter` contract separate.
+- The generator now emits a compact `typegen/schemas/11.33.1.ts` union of unique RoomOS entries plus `RoomOSSchema`, `RoomOSObject`, `RoomOSProduct`, `RoomOSProductTarget`, `RoomOSRoot`, `xCommandReturnDefault`, and an explicit documented `RoomOSCommandApi` tree.
+- The command tree is split into common leaves and exact product-set buckets so hovering a command property shows its docs and optional args without re-parsing the full schema.
+- `types.ts` consumes the generated `RoomOSObject` union directly, uses the generated `RoomOSCommandApi` for `xCommand`, and keeps the runtime `RoomOSWriteOperation`/`TRoomOSWriter` contract separate.
 - The proxy/runtime layer is wired for all four roots and the writer handles terminal, XML, JSON-RPC, and HTTP serialization.
 - `npm run typecheck` passes after regeneration.
 - The generated `typegen/schemas/11.33.1.ts` file is ignored by git and lives in the workspace only.
