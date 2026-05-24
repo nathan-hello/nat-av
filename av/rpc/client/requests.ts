@@ -1,4 +1,4 @@
-import { RPCError, RPCNotification, RPCRequest, RPCResponse } from "@av/rpc/protocol";
+import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 import type { PendingRequest } from "@av/rpc/client/types";
 import type { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
@@ -64,7 +64,7 @@ export class ClientRpcRequests {
       this.emitChange();
 
       const str = this.tel.task("JSON_STRINGIFY", () =>
-        RPCNotification.serialize(message),
+        JSON.stringify(message),
       );
       if (!str.ok) {
         this.rejectPendingRequest(message.id, new Error(str.error));

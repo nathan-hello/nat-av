@@ -12,11 +12,11 @@ import {
   RPCError,
   RPCErrorCodes,
   RPCNotification,
-  type RPCRequest,
+  RPCRequest,
   RPCResponse,
   RPCErrors,
 } from "@av/rpc/protocol";
-import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
+import { DecodeWebsocketError } from "@av/rpc/errors";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 import type { System } from "@av/system";
@@ -102,7 +102,7 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
       return;
     }
 
-    const req = isRPCRequest(message.data);
+    const req = RPCRequest.is(message.data);
     if (!req) {
       ws.send(
         JSON.stringify(

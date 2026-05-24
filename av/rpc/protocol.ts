@@ -78,6 +78,38 @@ export class RPCRequest {
       args: Array.isArray(params.args) ? params.args : [],
     };
   }
+
+  static is(value: unknown): RPCRequest | null {
+    if (typeof value === "string") {
+      try {
+        value = JSON.parse(value);
+      } catch (e) {
+        return null;
+      }
+    } else if (!value || typeof value !== "object") {
+      return null;
+    }
+
+    if (
+      value &&
+      typeof value === "object" &&
+      "jsonrpc" in value &&
+      value.jsonrpc === "2.0" &&
+      "id" in value &&
+      value.id !== undefined &&
+      typeof value.id === "number" &&
+      "method" in value &&
+      typeof value.method === "string"
+    ) {
+      return new RPCRequest(
+        value.id,
+        value.method,
+        "params" in value ? value.params : undefined,
+      );
+    }
+
+    return null;
+  }
 }
 
 export class RPCResponse<T = any> {
@@ -88,27 +120,31 @@ export class RPCResponse<T = any> {
     public result: T,
   ) {}
 
-  static parse(message: unknown): RPCResponse<any> | null {
-    if (!message || typeof message !== "object") {
+  static is(value: unknown): RPCResponse | null {
+    if (typeof value === "string") {
+      try {
+        value = JSON.parse(value);
+      } catch (e) {
+        return null;
+      }
+    } else if (!value || typeof value !== "object") {
       return null;
     }
 
-    // TSAS:
-    const candidate = message as {
-      jsonrpc?: unknown;
-      id?: unknown;
-      result?: unknown;
-    };
     if (
-      candidate.jsonrpc !== "2.0" ||
-      candidate.id === undefined ||
-      !("result" in candidate)
+      value &&
+      typeof value === "object" &&
+      "jsonrpc" in value &&
+      value.jsonrpc === "2.0" &&
+      "id" in value &&
+      value.id !== undefined &&
+      typeof value.id === "number" &&
+      "result" in value &&
+      typeof value.result !== "undefined"
     ) {
-      return null;
+      return new RPCResponse(value.id, value.result);
     }
-
-    // TSAS:
-    return new RPCResponse(candidate.id as RpcId, candidate.result);
+    return null;
   }
 }
 
@@ -120,37 +156,40 @@ export class RPCError {
     public error: { code: number; message: string; data?: any },
   ) {}
 
-  static parse(message: unknown): RPCError | null {
-    if (!message || typeof message !== "object") {
+  static is(value: unknown): RPCError | null {
+    if (typeof value === "string") {
+      try {
+        value = JSON.parse(value);
+      } catch (e) {
+        return null;
+      }
+    } else if (!value || typeof value !== "object") {
       return null;
     }
 
-    // TSAS:
-    const candidate = message as {
-      jsonrpc?: unknown;
-      id?: unknown;
-      error?: unknown;
-    };
-
-    const error = candidate.error as
-      | { code?: unknown; message?: unknown; data?: unknown }
-      | undefined;
     if (
-      candidate.jsonrpc !== "2.0" ||
-      candidate.id === undefined ||
-      !error ||
-      typeof error.code !== "number" ||
-      typeof error.message !== "string"
+      value &&
+      typeof value === "object" &&
+      "jsonrpc" in value &&
+      value.jsonrpc === "2.0" &&
+      "id" in value &&
+      value.id !== undefined &&
+      typeof value.id === "number" &&
+      "error" in value &&
+      typeof value.error === "object" &&
+      value.error &&
+      "code" in value.error &&
+      typeof value.error.code === "number" &&
+      "message" in value.error &&
+      typeof value.error.message === "string"
     ) {
-      return null;
+      return new RPCError(value.id, {
+        code: value.error.code,
+        message: value.error.message,
+        data: "data" in value.error ? value.error.data : null,
+      });
     }
-
-    // TSAS:
-    return new RPCError(candidate.id as RpcId, {
-      code: error.code,
-      message: error.message,
-      data: error.data,
-    });
+    return null;
   }
 }
 
@@ -164,65 +203,37 @@ export class RPCErrorData extends Error {
 export class RPCNotification<T = any> {
   jsonrpc = "2.0" as const;
   method = RPCMethods.Notification;
+  params: T;
 
-  constructor(public params: T) {}
+  constructor(params: T) {
+    this.params = params;
+  }
 
-  static parse(message: string | unknown): RPCNotification<any> | null {
-    const value = typeof message === "string" ? JSON.parse(message) : message;
-
-    if (!value || typeof value !== "object") {
+  static is(value: unknown): RPCNotification<any> | null {
+    if (typeof value === "string") {
+      try {
+        value = JSON.parse(value);
+      } catch (e) {
+        return null;
+      }
+    } else if (!value || typeof value !== "object") {
       return null;
     }
-
-    // TSAS:
-    const candidate = value as {
-      jsonrpc?: unknown;
-      method?: unknown;
-      params?: unknown;
-    };
 
     if (
-      candidate.jsonrpc !== "2.0" ||
-      candidate.method !== RPCMethods.Notification
+      value &&
+      typeof value === "object" &&
+      "jsonrpc" in value &&
+      value.jsonrpc === "2.0" &&
+      "method" in value &&
+      value.method === RPCMethods.Notification &&
+      "params" in value
     ) {
-      return null;
+      return new RPCNotification(value.params);
     }
-
-    return new RPCNotification(candidate.params);
-  }
-
-  static notification<T>(params: T) {
-    return new RPCNotification(params);
-  }
-
-  static serialize(message: RPCMessage): string {
-    return JSON.stringify(message);
-  }
-
-  static fromRaw(raw: string) {
-    return JSON.parse(raw);
-  }
-
-  static is(value: unknown): value is RPCNotification<any> {
-    if (!value || typeof value !== "object") {
-      return false;
-    }
-
-    // TSAS:
-    const candidate = value as {
-      jsonrpc?: unknown;
-      method?: unknown;
-      params?: unknown;
-    };
-
-    return (
-      candidate.jsonrpc === "2.0" &&
-      candidate.method === RPCMethods.Notification
-    );
+    return null;
   }
 }
-
-export type RPCMessage = RPCRequest | RPCResponse | RPCError | RPCNotification;
 
 export const RPCErrors = {
   JsonParse: (id?: RpcId, data?: any) =>

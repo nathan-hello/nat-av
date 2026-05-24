@@ -182,19 +182,19 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
       return;
     }
 
-    const notification = RPCNotification.parse(parsed.data);
+    const notification = RPCNotification.is(parsed.data);
     if (notification && isDebugNotification(notification.params)) {
       this.handleNotification(notification.params);
       return;
     }
 
-    const response = RPCResponse.parse(parsed.data);
+    const response = RPCResponse.is(parsed.data);
     if (response) {
       this.resolvePendingRequest(response.id, response.result);
       return;
     }
 
-    const error = RPCError.parse(parsed.data);
+    const error = RPCError.is(parsed.data);
     if (error && error.id !== null) {
       this.rejectPendingRequest(error.id, new Error(error.error.message));
     }
@@ -277,7 +277,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
       }, this.timeout);
 
       this.pendingRequests.set(message.id, { resolve, reject, timeout });
-      this.transport.send(RPCNotification.serialize(message));
+      this.transport.send(JSON.stringify(message));
     });
   }
 }

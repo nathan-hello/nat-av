@@ -1,8 +1,8 @@
 import { bus } from "@av/bus";
 import type { Events, Natav } from "@av/types";
-import { RPCErrors, RPCNotification } from "@av/rpc/protocol";
+import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
-import { DecodeWebsocketError, isRPCRequest } from "@av/rpc/utils";
+import { DecodeWebsocketError } from "@av/rpc/errors";
 import { Telemetry } from "@av/telemetry";
 
 const decoder = new TextDecoder();
@@ -98,7 +98,7 @@ export class WebsocketHandler {
       ws.send(JSON.stringify(RPCErrors.JsonParse()));
     }
 
-    const req = isRPCRequest(message.data);
+    const req = RPCRequest.is(message.data);
 
     if (!req) {
       ws.send(

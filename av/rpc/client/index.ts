@@ -7,13 +7,13 @@ import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcSystem } from "@av/rpc/client/system";
 import {
   RPCError,
+  RPCNotification,
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
 import type { RpcEvents } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
-import { isRPCNotification } from "@av/rpc/utils";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 
 export class ClientRpc<
@@ -33,7 +33,9 @@ export class ClientRpc<
       retryDelay: 1000,
     });
     this.debug = new RpcDebugClient(this);
-    this.requests = new ClientRpcRequests(this.transport, () => this.emitChange());
+    this.requests = new ClientRpcRequests(this.transport, () =>
+      this.emitChange(),
+    );
 
     this.systemHandle = new ClientRpcSystem({
       request: (message) => this.requests.request(message),
@@ -148,7 +150,9 @@ export class ClientRpc<
       return;
     }
 
-    if (isRPCNotification(parsed.data)) {
+    const notification = RPCNotification.is(parsed.data)
+
+    if (notification) {
       this.tel.info("got-notification", parsed.data);
 
       // TSAS: Casting as unknown so we are forced to actually
@@ -176,13 +180,13 @@ export class ClientRpc<
       return;
     }
 
-    const response = RPCResponse.parse(parsed.data);
+    const response = RPCResponse.is(parsed.data);
     if (response) {
       this.requests.handleResponse(response);
       return;
     }
 
-    const rpcError = RPCError.parse(parsed.data);
+    const rpcError = RPCError.is(parsed.data);
     if (rpcError) {
       this.requests.handleError(rpcError);
     }
