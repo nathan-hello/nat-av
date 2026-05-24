@@ -3,12 +3,6 @@ import type { LogEntry } from "@av/telemetry/types";
 import type { Natav } from "@av/types/natav";
 
 export namespace Rpc {
-  export const Methods = {
-    Notification: "notification",
-    ...Device.Methods,
-    ...System.Methods,
-    ...Debug.Methods,
-  } as const;
 
   export type PendingRequest = {
     resolve: (result: any) => void;
@@ -92,4 +86,11 @@ export namespace Rpc {
           message: SocketMessage;
         };
   }
+
+  export const Methods = {
+    Notification: "notification",
+    ...Device.Methods,
+    ...System.Methods,
+    ...Debug.Methods,
+  } as const;
 }
