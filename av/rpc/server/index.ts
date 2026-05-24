@@ -1,4 +1,4 @@
-import type {Natav} from "@av/types";
+import type { Natav } from "@av/types";
 import type { System } from "@av/system";
 import { RPCResponse, RPCError, RPCRequest } from "@av/rpc/protocol";
 import { RPCErrorCodes } from "@av/rpc/protocol";

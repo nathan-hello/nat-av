@@ -195,7 +195,9 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     });
   }
 
-  private resolveSocketMessages(event: Events.Rpc.DebugMap): Rpc.Debug.SocketMessage[] {
+  private resolveSocketMessages(
+    event: Events.Rpc.DebugMap,
+  ): Rpc.Debug.SocketMessage[] {
     const messages: Rpc.Debug.SocketMessage[] = [];
 
     const visit = (node: Rpc.Debug.Node) => {

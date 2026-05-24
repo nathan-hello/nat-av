@@ -10,7 +10,6 @@ type UdpConfig = {
   port: number;
 };
 
-
 const RETRY_DELAY = 5000;
 
 export class Udp extends TypedEventTarget<Events.Socket.UdpMap> {

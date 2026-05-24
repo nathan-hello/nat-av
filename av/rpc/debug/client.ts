@@ -91,15 +91,11 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     encoding: Rpc.Debug.Encoding = "utf8",
   ) {
     return await this.request(
-      new RPCRequest(
-        this.nextRequestId(),
-        Rpc.Debug.Methods.WriteSocket,
-        {
-          deviceName,
-          text,
-          encoding,
-        },
-      ),
+      new RPCRequest(this.nextRequestId(), Rpc.Debug.Methods.WriteSocket, {
+        deviceName,
+        text,
+        encoding,
+      }),
     );
   }
 
@@ -146,10 +142,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     const initial = await this.tel.task("GET_DEBUG_INITIAL_STATE", async () => {
       return await Promise.all([
         this.request<Rpc.Debug.Node[]>(
-          new RPCRequest(
-            this.nextRequestId(),
-            Rpc.Debug.Methods.GetTree,
-          ),
+          new RPCRequest(this.nextRequestId(), Rpc.Debug.Methods.GetTree),
         ),
       ]);
     });

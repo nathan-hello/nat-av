@@ -24,5 +24,4 @@ export namespace Requests {
     sent: boolean;
     timeout?: ReturnType<typeof setTimeout>;
   };
-
 }

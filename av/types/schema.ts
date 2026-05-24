@@ -85,7 +85,6 @@ type SchemaKind<T> =
   : [T] extends [object] ? "object"
   : "primitive";
 
-
 type SchemaOf<T> = Schema.Map<T>[SchemaKind<T>];
 
 type SchemaFromUnion<T> = Permutation<T extends any ? SchemaOf<T> : never>;
@@ -190,14 +189,14 @@ export namespace Schema {
     };
   }
 
-export type Map<T> = {
-  readonly union: UnionSchema<T>;
-  readonly literal: LiteralSchema<T>;
-  readonly array: [T] extends [readonly (infer U)[]] ? ArraySchema<U> : never;
-  readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T> : never;
-  readonly object: ObjectSchema<T>;
-  readonly primitive: PrimitiveSchema<T>;
-};
+  export type Map<T> = {
+    readonly union: UnionSchema<T>;
+    readonly literal: LiteralSchema<T>;
+    readonly array: [T] extends [readonly (infer U)[]] ? ArraySchema<U> : never;
+    readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T> : never;
+    readonly object: ObjectSchema<T>;
+    readonly primitive: PrimitiveSchema<T>;
+  };
 
   export type ReturnWire<T> =
     [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;

@@ -1,6 +1,6 @@
 import { bus } from "./bus";
 import { type Driver } from "./driver";
-import type { NamesOf, DriverFor, StateFor, Rpc} from "./types";
+import type { NamesOf, DriverFor, StateFor, Rpc } from "./types";
 
 export class Orchistrator<
   const Configs extends readonly Driver[] = readonly Driver[],
