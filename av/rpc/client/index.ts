@@ -6,25 +6,23 @@ import { RpcDebugClient } from "@av/rpc/debug/client";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcSystem } from "@av/rpc/client/system";
 import {
-  RPCNotification,
-  RPCRequest,
   RPCError,
+  RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import type { PendingRequest, RpcEvents } from "@av/rpc/client/types";
+import type { RpcEvents } from "@av/rpc/client/types";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { isRPCNotification } from "@av/rpc/utils";
+import { ClientRpcRequests } from "@av/rpc/client/requests";
 
 export class ClientRpc<
   N extends Natav.Orch = natav,
 > extends ProtectedTypedEventTarget<RpcEvents> {
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
-  private pendingRequests = new Map<string | number, PendingRequest>();
+  private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
-  private requestIdCounter = 0;
-  private timeout = 30000;
   private systemHandle: ClientRpcSystem<N>;
   public debug: RpcDebugClient;
 
@@ -35,26 +33,27 @@ export class ClientRpc<
       retryDelay: 1000,
     });
     this.debug = new RpcDebugClient(this);
+    this.requests = new ClientRpcRequests(this.transport, () => this.emitChange());
 
     this.systemHandle = new ClientRpcSystem({
-      request: (message) => this.request(message),
-      emitChange: (name) => this.emitChange(name),
-      nextRequestId: () => this.nextRequestId(),
+      request: (message) => this.requests.request(message),
+      nextRequestId: () => this.requests.nextRequestId(),
     });
+
+    this.systemHandle.on("change", () => this.emitChange("system"));
 
     this.transport.on("open", () => {
       void this.init();
     });
 
     this.transport.on("close", (event) => {
-      this.rejectAllPendingRequests(
+      this.requests.rejectAll(
         new Error(
           `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
         ),
       );
       this.dispatch("close", event);
       this.systemHandle.reset();
-      this.notifyAllDevices();
     });
 
     this.transport.on("error", (event) => {
@@ -105,7 +104,6 @@ export class ClientRpc<
     this.tel.info("successfully resolved promises");
 
     this.dispatch("ready", true);
-    this.notifyAllDevices();
   }
 
   private async waitForOpen() {
@@ -129,8 +127,8 @@ export class ClientRpc<
 
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
-    return this.request(
-      new RPCRequest(this.nextRequestId(), "device.call", {
+    return this.requests.request(
+      new RPCRequest(this.requests.nextRequestId(), "device.call", {
         device,
         method,
         args,
@@ -180,110 +178,17 @@ export class ClientRpc<
 
     const response = RPCResponse.parse(parsed.data);
     if (response) {
-      this.tel.info("got-response", response);
-      const pending = this.pendingRequests.get(response.id);
-      if (pending) {
-        this.resolvePendingRequest(response.id, response.result);
-      }
+      this.requests.handleResponse(response);
       return;
     }
 
     const rpcError = RPCError.parse(parsed.data);
     if (rpcError) {
-      this.tel.info("got-error", rpcError);
-      if (rpcError.id === null) {
-        return;
-      }
-
-      const pending = this.pendingRequests.get(rpcError.id);
-      if (!pending) {
-        return;
-      }
-
-      const error = new Error(rpcError.error.message);
-      // TSAS:
-      (error as any).code = rpcError.error.code;
-      // TSAS:
-      (error as any).data = rpcError.error.data;
-      this.rejectPendingRequest(rpcError.id, error);
+      this.requests.handleError(rpcError);
     }
   }
 
   public emitChange(name?: string) {
     this.dispatch("change", { name });
-  }
-
-  private nextRequestId() {
-    return this.requestIdCounter++;
-  }
-
-  private resolvePendingRequest(id: string | number, result: unknown) {
-    const pending = this.pendingRequests.get(id);
-    if (!pending) {
-      return;
-    }
-
-    clearTimeout(pending.timeout);
-    this.pendingRequests.delete(id);
-    pending.resolve(result);
-  }
-
-  private rejectPendingRequest(id: string | number, error: Error) {
-    const pending = this.pendingRequests.get(id);
-    if (!pending) {
-      return;
-    }
-
-    clearTimeout(pending.timeout);
-    this.pendingRequests.delete(id);
-    pending.reject(error);
-  }
-
-  private rejectAllPendingRequests(error: Error) {
-    for (const id of this.pendingRequests.keys()) {
-      this.rejectPendingRequest(id, new Error(error.message));
-    }
-  }
-
-  private async request<T = any>(message: RPCRequest) {
-    await this.waitForOpen();
-
-    return new Promise<T>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        this.rejectPendingRequest(
-          message.id,
-          new Error(
-            `RPC call timed out after ${this.timeout}ms id ${message.id}`,
-          ),
-        );
-      }, this.timeout);
-
-      this.pendingRequests.set(message.id, {
-        resolve,
-        reject,
-        timeout: timeoutId,
-      });
-
-      const str = this.tel.task("JSON_STRINGIFY", () =>
-        RPCNotification.serialize(message),
-      );
-      if (!str.ok) {
-        this.rejectPendingRequest(message.id, new Error(str.error));
-        return;
-      }
-
-      const send = this.tel.task("WS_SEND", () =>
-        this.transport.send(str.data),
-      );
-      if (!send.ok) {
-        this.rejectPendingRequest(message.id, new Error(String(send.error)));
-      }
-    });
-  }
-
-  private notifyAllDevices() {
-    for (const handle of this.deviceHandles.values()) {
-      handle.dispatchChange();
-    }
   }
 }

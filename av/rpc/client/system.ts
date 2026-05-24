@@ -6,7 +6,6 @@ import { Telemetry } from "@av/telemetry";
 
 type SystemClient = {
   request<T>(message: RPCRequest): Promise<T>;
-  emitChange(name?: string): void;
   nextRequestId(): number;
 };
 
@@ -34,8 +33,6 @@ export class ClientRpcSystem<
         },
       },
     ) as Rpc.System.Api<N>;
-
-    this.on("change", () => this.client.emitChange("system"));
   }
 
   get api() {
@@ -60,6 +57,7 @@ export class ClientRpcSystem<
   }
 
   async call(method: string, args: any[] = []) {
+    this.tel.debug("system.call", { method, args });
     this.incrementPending(method);
     try {
       return await this.client.request(
@@ -74,6 +72,7 @@ export class ClientRpcSystem<
   }
 
   private refreshState(): Promise<Rpc.System.State> {
+    this.tel.debug("system.state");
     const state = this.client.request<Rpc.System.State>(
       new RPCRequest(this.client.nextRequestId(), "system.state"),
     );
