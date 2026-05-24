@@ -51,7 +51,7 @@ export namespace Events {
       "natav:device:connected": { name: Natav.Names<N> };
       "natav:device:disconnected": { name: Natav.Names<N> };
       "natav:device:error": { name: Natav.Names<N>; error?: Error | unknown };
-      "natav:debug:socket": { data: Rpc.Client.DebugMap };
+      "natav:debug:socket": { data: Rpc.DebugMap };
       "natav:opentelemetry:entry": {
         record: ReadableLogRecord;
         asString: string;
@@ -74,41 +74,36 @@ export namespace Events {
   }
 
   export namespace Rpc {
-    export namespace Client {
-      export type Map = {
-        ready: boolean;
-        close: CloseEvent;
-        error:
-          | { reason: "transport"; event: Event }
-          | { reason: "init-promises-threw"; error: Error }
-          | { reason: "json-parse-failed"; raw: string }
-          | { reason: "rpc-error"; error: RPCError };
-        change: { name?: string };
-      };
+    export type Map = {
+      ready: boolean;
+      close: CloseEvent;
+      error:
+        | { reason: "transport"; event: Event }
+        | { reason: "init-promises-threw"; error: Error }
+        | { reason: "json-parse-failed"; raw: string }
+        | { reason: "rpc-error"; error: RPCError };
+      change: { name?: string };
+    };
 
-      export type SystemMap = {
-        change: { state: Promise<NRpc.Client.System.State> | undefined };
-      };
+    export type SystemMap = {
+      change: { state: Promise<NRpc.System.State> | undefined };
+    };
 
-      export type DeviceMap<
-        N extends Natav.Orch,
-        Name extends Natav.Names<N>,
-      > = {
-        change: {
-          name: Name;
-          state: Natav.State<N, Name> | undefined;
-        };
+    export type DeviceMap<N extends Natav.Orch, Name extends Natav.Names<N>> = {
+      change: {
+        name: Name;
+        state: Natav.State<N, Name> | undefined;
       };
+    };
 
-      export type DebugMap = {
-        traceName: string;
-        direction: "rx" | "tx" | "rx-delimited";
-        time: string;
-        encoding: NRpc.Client.Debug.Encoding;
-        text: string;
-        hex: string;
-        length: number;
-      };
-    }
+    export type DebugMap = {
+      traceName: string;
+      direction: "rx" | "tx" | "rx-delimited";
+      time: string;
+      encoding: NRpc.Debug.Encoding;
+      text: string;
+      hex: string;
+      length: number;
+    };
   }
 }

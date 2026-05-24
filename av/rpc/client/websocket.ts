@@ -11,7 +11,7 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
 
   constructor(
     private url: string,
-    private options: Required<Rpc.Client.TransportOptions>,
+    private options: Required<Rpc.TransportOptions>,
   ) {
     super();
   }

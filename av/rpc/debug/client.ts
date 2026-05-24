@@ -38,11 +38,11 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
   private pendingRequests = new Map<string | number, PendingRequest>();
   private requestIdCounter = 0;
   private timeout = 30000;
-  private deviceIndex = new Map<string, Rpc.Client.Debug.Node>();
+  private deviceIndex = new Map<string, Rpc.Debug.Node>();
 
-  public tree: Rpc.Client.Debug.Node[] = [];
+  public tree: Rpc.Debug.Node[] = [];
   public entries: LogEntry[] = [];
-  public socketMessages: Record<string, Rpc.Client.Debug.SocketMessage[]> = {};
+  public socketMessages: Record<string, Rpc.Debug.SocketMessage[]> = {};
 
   constructor(rpc: ClientRpc) {
     super();
@@ -88,12 +88,12 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
   async writeSocket(
     deviceName: string,
     text: string,
-    encoding: Rpc.Client.Debug.Encoding = "utf8",
+    encoding: Rpc.Debug.Encoding = "utf8",
   ) {
     return await this.request(
       new RPCRequest(
         this.nextRequestId(),
-        Rpc.Client.Debug.Methods.WriteSocket,
+        Rpc.Debug.Methods.WriteSocket,
         {
           deviceName,
           text,
@@ -145,10 +145,10 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
     const initial = await this.tel.task("GET_DEBUG_INITIAL_STATE", async () => {
       return await Promise.all([
-        this.request<Rpc.Client.Debug.Node[]>(
+        this.request<Rpc.Debug.Node[]>(
           new RPCRequest(
             this.nextRequestId(),
-            Rpc.Client.Debug.Methods.GetTree,
+            Rpc.Debug.Methods.GetTree,
           ),
         ),
       ]);
@@ -201,7 +201,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     }
   }
 
-  private handleNotification(notification: Rpc.Client.Debug.Notification) {
+  private handleNotification(notification: Rpc.Debug.Notification) {
     switch (notification.type) {
       case "debug:log":
         this.entries = [notification.entry, ...this.entries].slice(0, 500);
@@ -217,11 +217,11 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
     }
   }
 
-  private applyDebugTree(tree: Rpc.Client.Debug.Node[]) {
+  private applyDebugTree(tree: Rpc.Debug.Node[]) {
     this.tree = tree;
     this.deviceIndex = new Map();
 
-    const visit = (node: Rpc.Client.Debug.Node) => {
+    const visit = (node: Rpc.Debug.Node) => {
       this.deviceIndex.set(node.name, node);
 
       for (const child of node.children) {
@@ -283,12 +283,12 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
   }
 }
 
-function isDebugNotification(value: unknown): value is Rpc.Client.Debug.Notification {
+function isDebugNotification(value: unknown): value is Rpc.Debug.Notification {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const notification = value as Partial<Rpc.Client.Debug.Notification>;
+  const notification = value as Partial<Rpc.Debug.Notification>;
   return (
     notification.type === "debug:log" ||
     notification.type === "debug:socket:message"

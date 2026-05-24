@@ -2,7 +2,7 @@ import type { Rpc } from "@av/types";
 import { css, on, type Handle } from "remix/ui";
 
 type DebugDeviceTreeProps = {
-  tree: Rpc.Client.Debug.Node[];
+  tree: Rpc.Debug.Node[];
   selectedDeviceName: string | null;
   onSelect(name: string): void;
 };
@@ -18,7 +18,7 @@ export function DebugDeviceTree(handle: Handle<DebugDeviceTreeProps>) {
 }
 
 function renderTreeNode(
-  node: Rpc.Client.Debug.Node,
+  node: Rpc.Debug.Node,
   handle: Handle<DebugDeviceTreeProps>,
   depth = 0,
 ) {

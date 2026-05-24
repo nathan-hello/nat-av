@@ -39,8 +39,8 @@ export class Orchistrator<
     return this.all().map((d) => d.name);
   }
 
-  GetDebugTree(): Rpc.Client.Debug.Node[] {
-    const toNode = (driver: Driver): Rpc.Client.Debug.Node => {
+  GetDebugTree(): Rpc.Debug.Node[] {
+    const toNode = (driver: Driver): Rpc.Debug.Node => {
       const socket = driver.socket;
       const canWrite = typeof socket?.write === "function";
       const canReceive = typeof socket?.on === "function";

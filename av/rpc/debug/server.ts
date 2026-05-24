@@ -115,9 +115,9 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     message: RPCRequest,
   ): Promise<RPCResponse | RPCError> {
     switch (message.method) {
-      case Rpc.Client.Debug.Methods.GetTree:
+      case Rpc.Debug.Methods.GetTree:
         return new RPCResponse(message.id, this.args.natav.GetDebugTree());
-      case Rpc.Client.Debug.Methods.WriteSocket:
+      case Rpc.Debug.Methods.WriteSocket:
         return await this.handleSocketWrite(message);
       default:
         return new RPCError(message.id, {
@@ -183,7 +183,7 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     }
   }
 
-  private broadcastNotification(notification: Rpc.Client.Debug.Notification) {
+  private broadcastNotification(notification: Rpc.Debug.Notification) {
     const message = JSON.stringify(new RPCNotification(notification));
 
     this.clients.forEach((client) => {
@@ -195,10 +195,10 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
     });
   }
 
-  private resolveSocketMessages(event: Events.Rpc.Client.DebugMap): Rpc.Client.Debug.SocketMessage[] {
-    const messages: Rpc.Client.Debug.SocketMessage[] = [];
+  private resolveSocketMessages(event: Events.Rpc.DebugMap): Rpc.Debug.SocketMessage[] {
+    const messages: Rpc.Debug.SocketMessage[] = [];
 
-    const visit = (node: Rpc.Client.Debug.Node) => {
+    const visit = (node: Rpc.Debug.Node) => {
       if (node.socket?.traceName === event.traceName) {
         messages.push({
           device: node.name,

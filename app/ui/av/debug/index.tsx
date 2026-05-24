@@ -67,8 +67,8 @@ export function DebugPage(handle: Handle) {
 }
 
 function findFirstSocketDevice(
-  nodes: Rpc.Client.Debug.Node[],
-): Rpc.Client.Debug.Node | undefined {
+  nodes: Rpc.Debug.Node[],
+): Rpc.Debug.Node | undefined {
   for (const node of nodes) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;

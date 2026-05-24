@@ -17,7 +17,7 @@ import { ClientRpcRequests } from "@av/rpc/client/requests";
 
 export class ClientRpc<
   N extends Natav.Orch = natav,
-> extends ProtectedTypedEventTarget<Events.Rpc.Client.Map> {
+> extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientWebsocket;
   private requests: ClientRpcRequests;

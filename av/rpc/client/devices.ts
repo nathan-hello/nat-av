@@ -5,7 +5,7 @@ import type { ClientRpc } from "@av/rpc/client";
 export class ClientRpcDevice<
   N extends Natav.Orch,
   Name extends Natav.Names<N>,
-> extends TypedEventTarget<Events.Rpc.Client.DeviceMap<N, Name>> {
+> extends TypedEventTarget<Events.Rpc.DeviceMap<N, Name>> {
   private apiProxy: Natav.Handle<N, Name>["api"];
   private stateValue: Natav.State<N, Name> | undefined;
   private pendingCounts = new Map<string, number>();
