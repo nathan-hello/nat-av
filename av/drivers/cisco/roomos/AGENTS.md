@@ -74,7 +74,18 @@ do anything special. However in the typed helper there should be a docstring on
 the typescript type like
 
 ```ts
-namespace xCommand  = {
+type xCommandReturnDefault = null;
+
+namespace xCommand  {
+
+export namespace Return {
+    export namespace Airplay {
+        export namespace KeyEvent {
+            type Back = xCommandReturnDefault: 
+        }
+    }    
+}
+
 type Api = {
 AirPlay: {
     KeyEvent {
@@ -84,7 +95,7 @@ AirPlay: {
       * Access: "public-api"
       * Backend: "any"
       */
-      Back: () => Promise<xCommandReturnDefault> 
+      Back: () => Promise<Return.Airplay.KeyEvent.Back> 
     }
 }
 }
@@ -94,6 +105,11 @@ AirPlay: {
 And then the Proxy object will build the actual Terminal, XML, JSONRPC, or HTTP request via the writer and deal with the promises.
 
 The only thing we care about is getting 100% accurate function arguments and return types. 
+
+Entries of `type: "Command"` don't tell you what the return type is. That's okay, just make the tree anyways and we will override it later. 
+
+The nested `namespace` is because we want to access the types in the same way as the Api. We don't want to inline it because then we can't
+have a docstring. 
 
 
 ```json
@@ -205,4 +221,5 @@ type Api = {
 ```
 
 It doesn't have to look exactly this. The goal is to have all of the types colocated, named, and 
-documented for maximum developer experience. 
+documented for maximum developer experience. Honestly if nested namespaces works for all of this then
+i would be okay with that. 

@@ -1,10 +1,17 @@
 import { Driver } from "@av/driver";
-import type { TOutput } from "./types";
 import type { Sockets, Schema } from "@av/types";
-import { createProxy } from "./proxy";
+import { createProxy } from "@av/drivers/cisco/roomos/proxy";
+import type {
+  RoomOSApi,
+  RoomOSProductTarget,
+  RoomOSRoot,
+  TMapReturn,
+  TOutput,
+} from "@av/drivers/cisco/roomos/types";
 
 export default class CiscoRoomOS<
   T extends TOutput,
+  Product extends RoomOSProductTarget = "any",
   const N extends string = string,
 > extends Driver<N> {
   socket: Sockets.Socket;
@@ -25,23 +32,23 @@ export default class CiscoRoomOS<
   }
 
   schema = (): Schema.Schema<this> => {
-    // TSAS: TODO: Implement schema.
+    // TSAS: The schema is intentionally deferred; the empty tree satisfies the readonly array shape.
     return [] as unknown as Schema.Schema<this>;
   };
 
-  state = {};
+  state: Record<string, never> = {};
+
   get api() {
+    const createRootProxy = <Root extends RoomOSRoot>(root: Root) =>
+      createProxy<Root, T, Product>(root, this.output);
+
+    // TSAS: The recursive proxy tree matches the generated RoomOS API surface.
     return {
-      xCommand: createProxy("xCommand", this.output),
-    };
+      xCommand: createRootProxy("xCommand"),
+      xConfiguration: createRootProxy("xConfiguration"),
+      xStatus: createRootProxy("xStatus"),
+      xFeedback: createRootProxy("xFeedback"),
+    } as unknown as RoomOSApi<Product, TMapReturn<T["type"]>>;
   }
 }
 
-const asdf = new CiscoRoomOS({
-  name: "asdf",
-  // TSAS:
-  socket: "" as any,
-  output: { type: "http", getSessionId: () => "asdf" },
-});
-
-const fdsa = asdf.api.xCommand.Message.Send({ num: 123 });

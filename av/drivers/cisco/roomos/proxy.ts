@@ -1,53 +1,156 @@
-import type { TArgument } from "./types";
-import type { TMapToX, TOutput } from "./types";
-import { RoomOSWriter } from "./writer";
+import { RoomOSWriter } from "@av/drivers/cisco/roomos/writer";
+import type {
+  RoomOSProductTarget,
+  RoomOSRoot,
+  RoomOSWriteOperation,
+  TOutput,
+} from "@av/drivers/cisco/roomos/types";
 
-// Map the "type" property to the actual return type of the leaf functions
-type TMapReturn<T extends TOutput["type"]> =
-  T extends "http" ? Request : string;
-
-/**
- * Re-maps the TCommand structure so that every leaf function
- * returns the type specified by the proxy configuration.
- */
-type MapToProxyReturn<Obj, R> = {
-  [K in keyof Obj]: Obj[K] extends (...args: infer A) => any ? (...args: A) => R
-  : MapToProxyReturn<Obj[K], R>;
-};
-
-export function createProxy<T extends keyof TMapToX, C extends TOutput>(
-  root: T,
+function send<C extends TOutput>(
+  operation: RoomOSWriteOperation,
   config: C,
-  path: string[] = [root],
-): MapToProxyReturn<TMapToX[T], TMapReturn<C["type"]>> {
-  // We use Function as the target so the 'apply' trap is valid
-  // TSAS:
-  const target = (() => {}) as any;
+): C["type"] extends "http" ? Request : string {
+  const writer = new RoomOSWriter(operation);
+  let result: string | Request;
+
+  switch (config.type) {
+    case "terminal":
+      result = writer.ToTerminal(config.getResultId?.());
+      break;
+    case "xml":
+      result = writer.ToXml(config.getResultId?.());
+      break;
+    case "jsonrpc":
+      result = writer.ToJsonRpc(config.getId());
+      break;
+    case "http":
+      result = writer.ToHttp(config.getSessionId());
+      break;
+    default:
+      throw new Error("Invalid proxy type");
+  }
+
+  // TSAS: The discriminated output switch guarantees the selected transport result type.
+  return result as C["type"] extends "http" ? Request : string;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function methodSupported(root: RoomOSRoot, name: string): boolean {
+  switch (root) {
+    case "xCommand":
+      return false;
+    case "xConfiguration":
+      return name === "get" || name === "set" || name === "on" || name === "once";
+    case "xStatus":
+      return name === "get" || name === "on" || name === "once";
+    case "xFeedback":
+      return name === "on" || name === "once";
+  }
+
+  return false;
+}
+
+function buildCommandOperation(
+  path: readonly string[],
+  args?: Record<string, unknown>,
+  body?: string,
+): RoomOSWriteOperation {
+  return { kind: "command", root: "xCommand", path, args, body };
+}
+
+function buildGetOperation(
+  root: "xConfiguration" | "xStatus",
+  path: readonly string[],
+): RoomOSWriteOperation {
+  return { kind: "get", root, path };
+}
+
+function buildSetOperation(
+  path: readonly string[],
+  value: unknown,
+): RoomOSWriteOperation {
+  return { kind: "set", root: "xConfiguration", path, value };
+}
+
+function buildListenOperation(
+  root: "xConfiguration" | "xStatus" | "xFeedback",
+  path: readonly string[],
+): RoomOSWriteOperation {
+  return { kind: "listen", root, path };
+}
+
+export function createProxy<
+  Root extends RoomOSRoot,
+  C extends TOutput,
+  Product extends RoomOSProductTarget = "any",
+>(
+  root: Root,
+  config: C,
+  path: readonly string[] = [root],
+): any {
+  const target = () => undefined;
 
   return new Proxy(target, {
-    get(_, prop: string) {
-      // If JS runtime is looking for internal symbols, return undefined
-      // so the runtime never pollutes the path given to RoomOSWriter
-      if (typeof prop === "symbol") {
+    get(_, prop: string | symbol) {
+      if (typeof prop === "symbol" || prop === "then") {
         return undefined;
       }
+
+      if (methodSupported(root, prop)) {
+        return (...args: unknown[]) => {
+          if (prop === "get") {
+            if (root === "xConfiguration" || root === "xStatus") {
+              return send(buildGetOperation(root, path), config);
+            }
+
+            throw new TypeError(`Object is not callable: ${root}`);
+          }
+
+          if (prop === "set") {
+            if (root !== "xConfiguration") {
+              throw new TypeError(`Object is not callable: ${root}`);
+            }
+
+            return send(buildSetOperation(path, args[0]), config);
+          }
+
+          if (root === "xConfiguration" || root === "xStatus" || root === "xFeedback") {
+            return send(buildListenOperation(root, path), config);
+          }
+
+          throw new TypeError(`Object is not callable: ${root}`);
+        };
+      }
+
       return createProxy(root, config, [...path, prop]);
     },
-    apply(_, __, args: [TArgument]) {
-      const writer = new RoomOSWriter(path, args[0]);
-
-      switch (config.type) {
-        case "terminal":
-          return writer.ToTerminal(config.getResultId?.());
-        case "xml":
-          return writer.ToXml(config.getResultId?.());
-        case "jsonrpc":
-          return writer.ToJsonRpc(config.getId());
-        case "http":
-          return writer.ToHttp(config.getSessionId());
-        default:
-          throw new Error("Invalid proxy type");
+    apply(_, __, args: unknown[]) {
+      if (root !== "xCommand") {
+        throw new TypeError(`Object is not callable: ${root}`);
       }
+
+      if (args.length === 0) {
+        return send(buildCommandOperation(path), config);
+      }
+
+      const [first, second] = args;
+
+      if (typeof first === "string") {
+        return send(buildCommandOperation(path, undefined, first), config);
+      }
+
+      if (isPlainRecord(first)) {
+        if (typeof second === "string") {
+          return send(buildCommandOperation(path, first, second), config);
+        }
+
+        return send(buildCommandOperation(path, first), config);
+      }
+
+      throw new TypeError("Invalid command arguments");
     },
   });
 }
