@@ -18,6 +18,10 @@ export type {
 
 export type RoomOSSchemaKind = RoomOSKind;
 
+export type RoomOSResult<T = any> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
 export type TOutput =
   | {
       type: "terminal";
@@ -30,13 +34,32 @@ export type TOutput =
   | {
       type: "jsonrpc";
       getId: () => string | number;
-    }
-  | {
-      type: "http";
-      getSessionId: () => string;
     };
 
-export type TMapReturn<T extends TOutput["type"]> = T extends "http" ? Request : string;
+export type RoomOSWriteOperation =
+  | {
+      kind: "command";
+      root: "xCommand";
+      path: readonly string[];
+      args?: Record<string, unknown>;
+      body?: string;
+    }
+  | {
+      kind: "get";
+      root: "xConfiguration" | "xStatus";
+      path: readonly string[];
+    }
+  | {
+      kind: "set";
+      root: "xConfiguration";
+      path: readonly string[];
+      value: unknown;
+    }
+  | {
+      kind: "listen";
+      root: "xConfiguration" | "xStatus" | "xFeedback";
+      path: readonly string[];
+    };
 
 
 
@@ -45,7 +68,6 @@ export interface TRoomOSWriter {
   ToTerminal(resultId?: number | string): string;
   ToXml(resultId?: number | string): string;
   ToJsonRpc(id?: number | string): string;
-  ToHttp(sessionId: string): Request;
 }
 
 type Simplify<T> = { [K in keyof T]: T[K] } & {};
@@ -146,63 +168,126 @@ type MergeEntries<Entries, ReturnType> =
   [Entries] extends [never] ? {}
   : Simplify<UnionToIntersection<TreesForEntries<Entries, ReturnType>>>;
 
-type Gettable<Value, ReturnType> = { get: () => ReturnType };
-type Settable<Value, ReturnType> = { set: (value: Value) => ReturnType };
-type Listenable<Value, ReturnType> = {
-  on: (handler: (value: Value) => void) => ReturnType;
-  once: (handler: (value: Value) => void) => ReturnType;
-};
+type PathValue<Tree, Path extends readonly string[]> =
+  Path extends readonly [infer Head extends string, ...infer Tail extends readonly string[]] ?
+    Head extends keyof Tree ? PathValue<Tree[Head], Tail>
+    : never
+  : Tree;
 
-type Configify<Value, ReturnType> =
-  IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: Configify<Value[K], ReturnType> } & Gettable<Value, ReturnType> & Settable<Value, ReturnType> & Listenable<Value, ReturnType>
-  : Gettable<Value, ReturnType> & Settable<Value, ReturnType> & Listenable<Value, ReturnType>;
+type PathTree<Path extends readonly string[], Value> =
+  Path extends readonly [infer Head extends string, ...infer Tail extends readonly string[]] ?
+    { [K in Head]: PathTree<Tail, Value> }
+  : Value;
 
-type Statusify<Value, ReturnType> =
-  IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: Statusify<Value[K], ReturnType> } & Gettable<Value, ReturnType> & Listenable<Value, ReturnType>
-  : Gettable<Value, ReturnType> & Listenable<Value, ReturnType>;
-
-type Eventify<Value, ReturnType> =
-  IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: Eventify<Value[K], ReturnType> } & Listenable<Value, ReturnType>
-  : Listenable<Value, ReturnType>;
-
-type RootKindApi<Kind extends RoomOSKind, Value, ReturnType> =
-  Kind extends "Command" ? Value
-  : Kind extends "Configuration" ? Configify<Value, ReturnType>
-  : Kind extends "Status" ? Statusify<Value, ReturnType>
-  : Kind extends "Event" ? Eventify<Value, ReturnType>
+type ValidateFeedbackPath<Tree, Path extends readonly string[]> =
+  Path extends readonly [infer Head extends string, ...infer Tail extends readonly string[]] ?
+    Head extends keyof Tree ?
+      Tail extends readonly [] ? Path
+      : IsPlainObject<Tree[Head]> extends true ?
+        ValidateFeedbackPath<Tree[Head], Tail> extends never ? never : Path
+      : never
+    : never
   : never;
 
-type RootApiFor<Product extends RoomOSProductTarget, Kind extends RoomOSKind, ReturnType> =
-  RootKindApi<Kind, MergeEntries<EntriesForProduct<Kind, Product>, ReturnType>, ReturnType>;
+type FeedbackSubscriptionsFor<Tree, Subscriptions extends readonly (readonly string[])[]> = {
+  [Index in keyof Subscriptions]: Subscriptions[Index] extends readonly string[] ?
+    ValidateFeedbackPath<Tree, Subscriptions[Index]>
+  : never;
+};
+
+type FeedbackStateFromSubscriptions<Tree, Subscriptions extends readonly (readonly string[])[]> =
+  [Subscriptions[number]] extends [never] ? {}
+  : Simplify<UnionToIntersection<Subscriptions[number] extends infer Path ?
+      Path extends readonly string[] ? PathTree<Path, PathValue<Tree, Path>>
+      : never
+    : never>>;
+
+type Gettable<Value> = { get: () => Promise<RoomOSResult<Value>> };
+type Settable<Value> = { set: (value: Value) => Promise<RoomOSResult<Value>> };
+type Listenable<Value> = {
+  on: (handler: (value: Value) => void) => () => void;
+  once: (handler: (value: Value) => void) => Promise<Value>;
+};
+
+type FeedbackNode<Value, State> = {
+  subscribe: (callback?: (value: Value, state: State) => void) => Promise<RoomOSResult<void>>;
+} & Listenable<Value>;
+
+type Configify<Value> =
+  IsPlainObject<Value> extends true ?
+    { [K in keyof Value]: Configify<Value[K]> } & Gettable<Value> & Settable<Value> & Listenable<Value>
+  : Gettable<Value> & Settable<Value> & Listenable<Value>;
+
+type Statusify<Value> =
+  IsPlainObject<Value> extends true ?
+    { [K in keyof Value]: Statusify<Value[K]> } & Gettable<Value> & Listenable<Value>
+  : Gettable<Value> & Listenable<Value>;
+
+type Feedbackify<Value, State> =
+  IsPlainObject<Value> extends true ?
+    { [K in keyof Value]: Feedbackify<Value[K], State> } & FeedbackNode<Value, State>
+  : FeedbackNode<Value, State>;
+
+type RootKindApi<Kind extends RoomOSKind, Value, State> =
+  Kind extends "Command" ? Value
+  : Kind extends "Configuration" ? Configify<Value>
+  : Kind extends "Status" ? Statusify<Value>
+  : Kind extends "Event" ? Feedbackify<Value, State>
+  : never;
+
+type RootApiFor<Product extends RoomOSProductTarget, Kind extends RoomOSKind, State> =
+  RootKindApi<Kind, MergeEntries<EntriesForProduct<Kind, Product>, never>, State>;
+
+export type RoomOSFeedbackState<Product extends RoomOSProductTarget = "any"> =
+  MergeEntries<EntriesForProduct<"Event", Product>, never>;
+
+export type RoomOSFeedbackSubscriptions<
+  Product extends RoomOSProductTarget,
+  Subscriptions extends readonly (readonly string[])[],
+> = FeedbackSubscriptionsFor<RoomOSFeedbackState<Product>, Subscriptions>;
+
+export type RoomOSState<
+  Product extends RoomOSProductTarget,
+  Subscriptions extends readonly (readonly string[])[] = readonly [],
+> = FeedbackStateFromSubscriptions<RoomOSFeedbackState<Product>, Subscriptions>;
+
+export type RoomOSFeedbackApi<
+  Product extends RoomOSProductTarget = "any",
+  State = RoomOSFeedbackState<Product>,
+> = Feedbackify<RoomOSFeedbackState<Product>, State>;
+
+export type RoomOSConfigurationApi<Product extends RoomOSProductTarget = "any"> =
+  RootApiFor<Product, "Configuration", never>;
+
+export type RoomOSStatusApi<Product extends RoomOSProductTarget = "any"> =
+  RootApiFor<Product, "Status", never>;
 
 export type RoomOSApi<
   Product extends RoomOSProductTarget = "any",
-  ReturnType = string,
+  State = RoomOSFeedbackState<Product>,
 > = {
-  xCommand: RoomOSCommandApi<Product, ReturnType>;
-  xConfiguration: RootApiFor<Product, "Configuration", ReturnType>;
-  xStatus: RootApiFor<Product, "Status", ReturnType>;
-  xFeedback: RootApiFor<Product, "Event", ReturnType>;
+  xCommand: RoomOSCommandApi<Product, Promise<RoomOSResult<any>>>;
+  xConfiguration: RoomOSConfigurationApi<Product>;
+  xStatus: RoomOSStatusApi<Product>;
+  xFeedback: RoomOSFeedbackApi<Product, State>;
 };
 
 export type TMapToX<
   Product extends RoomOSProductTarget = "any",
   Output extends TOutput = TOutput,
-> = RoomOSApi<Product, TMapReturn<Output["type"]>>;
+  State = RoomOSState<Product>,
+> = RoomOSApi<Product, State>;
 
 export type RoomOSRootApi<
   Product extends RoomOSProductTarget,
   Root extends RoomOSRoot,
-  ReturnType,
-> = Root extends "xCommand" ? RoomOSApi<Product, ReturnType>["xCommand"]
-  : Root extends "xConfiguration" ? RoomOSApi<Product, ReturnType>["xConfiguration"]
-  : Root extends "xStatus" ? RoomOSApi<Product, ReturnType>["xStatus"]
-  : Root extends "xFeedback" ? RoomOSApi<Product, ReturnType>["xFeedback"]
+  State = RoomOSFeedbackState<Product>,
+> = Root extends "xCommand" ? RoomOSApi<Product, State>["xCommand"]
+  : Root extends "xConfiguration" ? RoomOSApi<Product, State>["xConfiguration"]
+  : Root extends "xStatus" ? RoomOSApi<Product, State>["xStatus"]
+  : Root extends "xFeedback" ? RoomOSApi<Product, State>["xFeedback"]
   : never;
 
 export type RoomOSEntry = RoomOSObject;
 
-export type RoomOSApiReturn<Output extends TOutput> = TMapReturn<Output["type"]>;
+export type RoomOSApiReturn<Output extends TOutput> = Promise<RoomOSResult<any>>;

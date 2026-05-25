@@ -9,9 +9,9 @@ import type {
 function send<C extends TOutput>(
   operation: RoomOSWriteOperation,
   config: C,
-): C["type"] extends "http" ? Request : string {
+): string {
   const writer = new RoomOSWriter(operation);
-  let result: string | Request;
+  let result: string;
 
   switch (config.type) {
     case "terminal":
@@ -23,15 +23,11 @@ function send<C extends TOutput>(
     case "jsonrpc":
       result = writer.ToJsonRpc(config.getId());
       break;
-    case "http":
-      result = writer.ToHttp(config.getSessionId());
-      break;
     default:
       throw new Error("Invalid proxy type");
   }
 
-  // TSAS: The discriminated output switch guarantees the selected transport result type.
-  return result as C["type"] extends "http" ? Request : string;
+  return result;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -47,7 +43,7 @@ function methodSupported(root: RoomOSRoot, name: string): boolean {
     case "xStatus":
       return name === "get" || name === "on" || name === "once";
     case "xFeedback":
-      return name === "on" || name === "once";
+      return name === "subscribe" || name === "on" || name === "once";
   }
 
   return false;

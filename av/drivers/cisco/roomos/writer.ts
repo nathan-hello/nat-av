@@ -153,15 +153,4 @@ export class RoomOSWriter implements TRoomOSWriter {
   ToTerminal(resultId?: number | string): string {
     return makeTerminalCommand(this.operation, resultId);
   }
-
-  ToHttp(sessionId: string): Request {
-    return new Request("about:blank", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Session-Id": sessionId,
-      },
-      body: this.ToJsonRpc(sessionId),
-    });
-  }
 }
