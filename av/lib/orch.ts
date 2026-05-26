@@ -1,6 +1,6 @@
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import { type Driver } from "@av/drivers";
-import type { NamesOf, DriverFor, StateFor, Rpc } from "./types";
+import type { NamesOf, DriverFor, StateFor, Rpc } from "@av/types";
 
 export class Orchistrator<
   const Configs extends readonly Driver[] = readonly Driver[],

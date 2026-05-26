@@ -4,10 +4,9 @@ import {
   type WebSocketApp,
 } from "@av/rpc/server/websocket";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
-import { AutomationEngine } from "@av/automation";
 import { Tcp } from "@av/sockets/tcp";
 import { System } from "@av/system";
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import { RPCServer } from "@av/rpc/server";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/display";
@@ -18,8 +17,9 @@ import {
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
-import { Orchistrator } from "@av/natav";
+import { Orchistrator } from "@av/lib/orch";
 import { Telemetry } from "@av/telemetry";
+import ChazyControl from "@av/drivers/turtle";
 
 // TSAS:
 if ((globalThis as any).__devices__) {
@@ -60,7 +60,6 @@ const natav = new Orchistrator([
 export type natav = typeof natav;
 
 const system = new System({ natav });
-new AutomationEngine();
 
 const rpc = new RPCServer({ system, natav });
 const debug = new RpcDebugServer({ system, natav });

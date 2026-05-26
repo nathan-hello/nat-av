@@ -1,5 +1,6 @@
-import type { natav } from "@av/index";
 import type { Natav } from "@av/types";
+import type { natav } from "@av/index";
+import { AutomationEngine } from "@av/system/automation";
 
 // This is the System class. It is not a socket-less driver because if
 // this were to be managed by the Natav.Orch Orchistrator, then we would
@@ -10,6 +11,7 @@ export class System<N extends Natav.Orch = natav> {
 
   constructor(args: { natav: N }) {
     this.natav = args.natav;
+    new AutomationEngine();
   }
 
   api = {

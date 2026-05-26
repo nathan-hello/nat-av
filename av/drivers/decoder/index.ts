@@ -1,5 +1,5 @@
 import { Delimiters } from "@av/sockets/delimiters";
-import { RequestManager } from "@av/requests";
+import { RequestManager } from "@av/lib/requests";
 import type { Sockets } from "@av/types";
 import {
   type AudioRoute,

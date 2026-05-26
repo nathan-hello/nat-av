@@ -1,5 +1,5 @@
 import { Driver } from "@av/drivers";
-import { RequestManager } from "@av/requests";
+import { RequestManager } from "@av/lib/requests";
 import { Delimiters } from "@av/sockets/delimiters";
 import type { Sockets, Schema } from "@av/types";
 

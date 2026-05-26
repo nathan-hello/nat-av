@@ -1,4 +1,4 @@
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import type { natav } from "@av/index";
 import { Rpc } from "@av/types";
 import {

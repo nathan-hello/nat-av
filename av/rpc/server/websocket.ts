@@ -1,4 +1,4 @@
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import type { Events, Natav } from "@av/types";
 import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";

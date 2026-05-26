@@ -1,5 +1,5 @@
 import * as net from "node:net";
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { Events } from "@av/types";
 import { Telemetry } from "@av/telemetry";

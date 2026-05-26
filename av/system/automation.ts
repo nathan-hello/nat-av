@@ -1,7 +1,8 @@
-import { bus } from "@av/bus";
-import type { Events } from "@av/types";
+import { bus } from "@av/lib/bus";
+import type { natav } from "@av/index";
+import type { Events, Natav } from "@av/types";
 
-export class AutomationEngine {
+export class AutomationEngine<N extends Natav.Orch = natav> {
   constructor() {
     bus.on("natav:state:update", (update) => {
       this.handleStateChange(update);

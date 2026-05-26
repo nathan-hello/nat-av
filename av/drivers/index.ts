@@ -1,6 +1,6 @@
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import { bus } from "@av/bus";
+import { bus } from "@av/lib/bus";
 import type { Sockets, Schema, Events } from "@av/types";
 import type { Drivers } from "@av/types/drivers";
 

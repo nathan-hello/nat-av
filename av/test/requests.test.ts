@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { RequestManager } from "../requests";
-import { Telemetry } from "../telemetry";
-import { TypedEventTarget } from "../lib/eventtarget";
-import type { Sockets, Events } from "../types";
+import { RequestManager } from "@av/lib/requests";
+import { Telemetry } from "@av/telemetry";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { Sockets, Events } from "@av/types";
 import { Delimiters } from "@av/sockets/delimiters";
 
 class FakeSocket
