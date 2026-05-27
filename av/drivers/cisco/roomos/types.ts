@@ -70,7 +70,7 @@ type ValueFromValuespace<V> =
     LiteralArrayValue[]
   : V extends "int" | "Integer" ? number
   : V extends "string" | "String" ? string
-  : V extends "literal" ? string
+  : V extends "literal" ? unknown
   : V extends (
     {
       type: "literal";
@@ -78,7 +78,7 @@ type ValueFromValuespace<V> =
     }
   ) ?
     [EventLiteralValue] extends [never] ?
-      string
+      unknown
     : EventLiteralValue
   : never;
 

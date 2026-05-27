@@ -9,6 +9,7 @@ type Valuespace =
   | {
       type?: string;
       Values?: readonly string[];
+      values?: readonly string[];
       multiple?: string | number | boolean;
       Min?: string | number;
       Max?: string | number;
@@ -30,6 +31,7 @@ type Param = {
 type EventNode = {
   children?: Record<string, EventNode>;
   valuespace?: Valuespace;
+  values?: readonly string[];
   multiple?: string | number | boolean;
   required?: string | number | boolean;
   [key: string]: unknown;
@@ -173,6 +175,14 @@ function sortStrings(values: readonly string[]): string[] {
   return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 }
 
+function literalValues(valuespace: Valuespace): readonly string[] | undefined {
+  if (typeof valuespace === "string") {
+    return undefined;
+  }
+
+  return valuespace.Values ?? valuespace.values;
+}
+
 function baseValueType(valuespace: Valuespace): string {
   if (typeof valuespace === "string") {
     switch (valuespace) {
@@ -183,7 +193,7 @@ function baseValueType(valuespace: Valuespace): string {
       case "string":
         return "string";
       case "literal":
-        return "string";
+        return "unknown";
       default:
         return "unknown";
     }
@@ -197,21 +207,21 @@ function baseValueType(valuespace: Valuespace): string {
     case "Boolean":
       return "boolean";
     case "Literal":
-      return valuespace.Values?.length
-        ? valuespace.Values.map((value) => JSON.stringify(value)).join(" | ")
-        : "string";
+      return literalValues(valuespace)?.length
+        ? literalValues(valuespace)!.map((value) => JSON.stringify(value)).join(" | ")
+        : "unknown";
     case "IntegerArray":
       return "number";
     case "StringArray":
       return "string";
     case "LiteralArray":
-      return valuespace.Values?.length
-        ? valuespace.Values.map((value) => JSON.stringify(value)).join(" | ")
-        : "string";
+      return literalValues(valuespace)?.length
+        ? literalValues(valuespace)!.map((value) => JSON.stringify(value)).join(" | ")
+        : "unknown";
     case "literal":
-      return valuespace.Values?.length
-        ? valuespace.Values.map((value) => JSON.stringify(value)).join(" | ")
-        : "string";
+      return literalValues(valuespace)?.length
+        ? literalValues(valuespace)!.map((value) => JSON.stringify(value)).join(" | ")
+        : "unknown";
     case "int":
       return "number";
     case "string":
@@ -279,8 +289,12 @@ function formatEntryDoc(entry: SchemaEntry): string {
   return emitDoc(docs);
 }
 
-function formatParamDoc(param: Param): string {
+function formatParamDoc(path: string, param: Param): string {
   const docs: string[] = [];
+
+  if (isLiteralWithoutValues(param.valuespace)) {
+    docs.push(`Cisco schema does not specify a type for ${path} ${param.name}`);
+  }
 
   if (param.description) {
     docs.push(`Description: ${param.description}`);
@@ -327,6 +341,23 @@ function formatParamDoc(param: Param): string {
   return emitDoc(docs);
 }
 
+function isLiteralWithoutValues(valuespace: Valuespace): boolean {
+  if (typeof valuespace === "string") {
+    return valuespace === "literal";
+  }
+
+  if (valuespace.type !== "Literal" && valuespace.type !== "literal") {
+    return false;
+  }
+
+  const values = literalValues(valuespace);
+  return values === undefined || values.length === 0;
+}
+
+function formatMissingTypeDoc(path: string): string {
+  return emitDoc([`Cisco schema does not specify a type for ${path}`]);
+}
+
 function formatDocValue(value: unknown): string {
   if (typeof value === "string") {
     return JSON.stringify(value);
@@ -354,8 +385,10 @@ function normalizeValuespace(valuespace: Valuespace): ReducedValuespace {
     normalized.type = valuespace.type;
   }
 
-  if (valuespace.Values !== undefined) {
-    normalized.Values = sortStrings(valuespace.Values);
+  const values = literalValues(valuespace);
+
+  if (values !== undefined) {
+    normalized.Values = sortStrings(values);
   }
 
   if (hasMultiplicity(valuespace.multiple)) {
@@ -393,6 +426,13 @@ function normalizeEventNode(node: EventNode): ReducedEventNode {
 
   if (node.valuespace !== undefined) {
     normalized.valuespace = normalizeValuespace(node.valuespace);
+
+    if (node.values !== undefined && typeof normalized.valuespace === "string") {
+      normalized.valuespace = {
+        type: normalized.valuespace,
+        Values: sortStrings(node.values),
+      };
+    }
   }
 
   if (hasMultiplicity(node.multiple)) {
@@ -460,7 +500,7 @@ function signatureValuespace(valuespace: Valuespace | undefined): unknown {
 
   return {
     type: valuespace.type ?? null,
-    Values: valuespace.Values ? sortStrings(valuespace.Values) : null,
+    Values: literalValues(valuespace) ? sortStrings(literalValues(valuespace)!) : null,
     multiple: hasMultiplicity(valuespace.multiple),
     Min: valuespace.Min ?? null,
     Max: valuespace.Max ?? null,
@@ -489,6 +529,7 @@ function signatureEventNode(node: EventNode | undefined): unknown {
     multiple: hasMultiplicity(node.multiple),
     required: isTruthyFlag(node.required),
     valuespace: signatureValuespace(node.valuespace),
+    values: node.values ? sortStrings(node.values) : null,
     children: node.children
       ? Object.fromEntries(
           Object.entries(node.children)
@@ -733,12 +774,16 @@ function renderParam(param: ReducedParam, depth: number): string {
   return renderObject(fields, depth);
 }
 
-function renderEventNode(node: ReducedEventNode, depth: number): string {
+function renderEventNode(node: ReducedEventNode, depth: number, path: string): string {
   const fields: string[] = [];
 
   if (node.children !== undefined) {
     const children = Object.entries(node.children).map(
-      ([name, child]) => `${JSON.stringify(name)}: ${renderEventNode(child, depth + 1)};`,
+      ([name, child]) => {
+        const childPath = `${path} ${name}`;
+        const docs = isLiteralWithoutValues(child.valuespace ?? "") ? formatMissingTypeDoc(childPath) : "";
+        return `${docs}${JSON.stringify(name)}: ${renderEventNode(child, depth + 1, childPath)};`;
+      },
     );
     fields.push(`children: ${renderObject(children, depth + 1)};`);
   }
@@ -766,7 +811,7 @@ function renderCommandArgsObject(entry: ReducedEntry, depth: number): string {
   }
 
   const fields = params.map((param) => {
-    const docs = formatParamDoc(param);
+    const docs = formatParamDoc(entry.path, param);
     return `${docs}${JSON.stringify(param.name)}${isTruthyFlag(param.required) ? "" : "?"}: ${valueType(param.valuespace)};`;
   });
 
@@ -964,7 +1009,7 @@ function renderEntry(entry: ReducedEntry): string {
       attributes = renderValueAttributes(entry.attributes, 3);
       break;
     case "Event":
-      attributes = renderEventAttributes(entry.attributes, 3);
+      attributes = renderEventAttributes(entry.attributes, 3, entry.path);
       break;
   }
 
@@ -1005,12 +1050,17 @@ function renderValueAttributes(
 function renderEventAttributes(
   attributes: ReducedEntry["attributes"],
   depth: number,
+  path: string,
 ): string {
   return renderObject(
     [
       `children: ${renderObject(
         Object.entries(attributes.children ?? {}).map(
-          ([name, child]) => `${JSON.stringify(name)}: ${renderEventNode(child, depth + 2)};`,
+          ([name, child]) => {
+            const childPath = `${path} ${name}`;
+            const docs = isLiteralWithoutValues(child.valuespace ?? "") ? formatMissingTypeDoc(childPath) : "";
+            return `${docs}${JSON.stringify(name)}: ${renderEventNode(child, depth + 2, childPath)};`;
+          },
         ),
         depth + 1,
       )};`,

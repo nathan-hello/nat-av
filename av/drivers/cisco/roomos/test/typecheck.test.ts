@@ -27,21 +27,24 @@ const roomos = new CiscoRoomOS({
     Audio: true,
     Bluetooth: true,
     Conference: true,
+    PresentationPreviewStarted: true,
+    UserInterface: true,
   },
 });
 
-roomos.state.Audio.Input.Connectors.Microphone[0].LoudspeakerActivity;
+// Should be `unknown`
+roomos.state.UserInterface.ScreenShotStored.Type
 
-roomos.state.Audio.Input.Connectors.Microphone[0].AudioPairingRate;
-roomos.state.Audio.Input.Connectors.Microphone[0].LoudspeakerActivity;
+// Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
+roomos.state.PresentationPreviewStarted.Cause
 
-roomos.state.Bluetooth;
 roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
 
 roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
   value.ProgressIndication.Progress;
   state.Bluetooth;
 });
+roomos.state.UserInterface.WebView.Display.Mode
 
 roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
   (value, state) => {
