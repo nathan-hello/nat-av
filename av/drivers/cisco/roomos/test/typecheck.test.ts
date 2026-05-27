@@ -1,5 +1,5 @@
 import CiscoRoomOS from "@av/drivers/cisco/roomos";
-import type { TOutput } from "@av/drivers/cisco/roomos/types";
+import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import type { Sockets } from "@av/types";
 
 const socket = {
@@ -14,36 +14,66 @@ const socket = {
   },
 } satisfies Sockets.Socket;
 
-const output = {
+const output: RoomOS.Format = {
   type: "jsonrpc",
   getId: () => 1,
-} satisfies TOutput;
+};
 
 const roomos = new CiscoRoomOS({
   name: "roomos-typecheck",
   product: "any",
   socket,
   output,
-  subscriptions: [
-    ["Bluetooth"],
-    ["Conference", "ParticipantList", "ParticipantAdded"],
-  ] as const,
+  subscriptions: {
+    Audio: {
+      Input: {
+        Connectors: {
+          Microphone: true,
+        },
+      },
+    },
+    Bluetooth: true,
+    Conference: {
+      ParticipantList: {
+        ParticipantAdded: true,
+      },
+    },
+  },
 });
 
-if (false) {
-  roomos.state.Bluetooth;
-  roomos.state.Conference.ParticipantList.ParticipantAdded;
+const roomosNested = new CiscoRoomOS({
+  name: "roomos-typecheck-nested",
+  product: "any",
+  socket,
+  output,
+  subscriptions: {
+    Bluetooth: {
+      Streaming: {
+        PlaybackPosition: true,
+      },
+    },
+  } as const,
+});
 
-  roomos.api.xFeedback.Bluetooth.subscribe((value, state) => {
-    value;
-    state.Bluetooth;
-  });
+roomos.state.Audio.Input.Connectors.Microphone[0].UltrasoundSNR
+roomos.state.Audio.Input.Connectors.Microphone[0].PPMeter
 
-  roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe((value, state) => {
+roomos.state.Bluetooth;
+roomos.state.Conference.ParticipantList.ParticipantAdded;
+
+roomos.api.xFeedback.Bluetooth.subscribe((value, state) => {
+  value;
+  state.Bluetooth;
+});
+
+roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
+  (value, state) => {
     value.Position;
     state.Bluetooth.Streaming.PlaybackPosition;
-  });
+  },
+);
 
-  // @ts-expect-error This path was not subscribed.
-  roomos.state.Unsubscribed;
-}
+roomosNested.state.Bluetooth.Streaming.PlaybackPosition;
+
+// @ts-expect-error This path was not subscribed.
+roomos.state.Unsubscribed;

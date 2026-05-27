@@ -892,7 +892,7 @@ function renderCommandApiSection(
   const commandEntries = entries.filter((entry) => entry.type === "Command");
   const { common, sets } = groupCommandEntriesByProductSet(commandEntries, allProducts);
   const setAliases = sets.map((set, index) => {
-    const alias = `RoomOSCommandApiSet_${index}`;
+    const alias = `CommandApiSet_${index}`;
     return { alias, products: set.products, entries: set.entries };
   });
 
@@ -908,7 +908,7 @@ function renderCommandApiSection(
     }
   }
 
-  const output: string[] = [renderCommandApiType("RoomOSCommandApiCommon", common)];
+  const output: string[] = [renderCommandApiType("CommandApiCommon", common)];
 
   for (const { alias, entries: setEntries } of setAliases) {
     output.push(renderCommandApiType(alias, setEntries));
@@ -917,11 +917,11 @@ function renderCommandApiSection(
   const allSetAliases = setAliases.map(({ alias }) => `${alias}<ReturnType>`);
 
   output.push(
-    `export type RoomOSCommandApiAny<ReturnType = string> = RoomOSCommandApiCommon<ReturnType>${allSetAliases.length ? ` & ${allSetAliases.join(" & ")}` : ""};`,
+    `export type CommandApiAny<ReturnType = string> = CommandApiCommon<ReturnType>${allSetAliases.length ? ` & ${allSetAliases.join(" & ")}` : ""};`,
   );
 
   output.push(
-    `export type RoomOSCommandApiByProduct<ReturnType = string> = {
+    `export type CommandApiByProduct<ReturnType = string> = {
 ${allProducts
   .map((product) => {
     const aliases = aliasesByProduct[product];
@@ -943,10 +943,10 @@ ${allProducts
   );
 
   output.push(
-    `export type RoomOSCommandApi<
-  Product extends RoomOSProductTarget = "any",
+    `export type CommandApi<
+  TProduct extends ProductTarget = "any",
   ReturnType = string,
-> = Product extends "any" ? RoomOSCommandApiAny<ReturnType> : Product extends RoomOSProduct ? RoomOSCommandApiCommon<ReturnType> & RoomOSCommandApiByProduct<ReturnType>[Product] : {};`,
+  > = TProduct extends "any" ? CommandApiAny<ReturnType> : TProduct extends Product ? CommandApiCommon<ReturnType> & CommandApiByProduct<ReturnType>[TProduct] : {};`,
   );
 
   return output.join("\n\n");
@@ -1027,14 +1027,16 @@ function generateSource(schema: SchemaJson): string {
   const union = mergedEntries.map((entry) => `  | ${renderEntry(entry)}`);
 
   return [
-    `export type RoomOSSchema = { objects: readonly RoomOSObject[] };`,
-    `export type RoomOSObject =\n${union.join("\n")};`,
-    `export type RoomOSProduct = ${allProducts.map((product) => JSON.stringify(product)).join(" | ")};`,
-    `export type RoomOSKind = ${kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,
-    `export type RoomOSProductTarget = RoomOSProduct | "any";`,
-    `export type RoomOSRoot = "xCommand" | "xConfiguration" | "xStatus" | "xFeedback";`,
+    `export namespace GeneratedRoomOS {`,
+    `export type Schema = { objects: readonly Object[] };`,
+    `export type Object =\n${union.join("\n")};`,
+    `export type Product = ${allProducts.map((product) => JSON.stringify(product)).join(" | ")};`,
+    `export type Kind = ${kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,
+    `export type ProductTarget = Product | "any";`,
+    `export type Root = "xCommand" | "xConfiguration" | "xStatus" | "xFeedback";`,
     `export type xCommandReturnDefault = null;`,
     commandApi,
+    `}`
   ].join("\n\n");
 }
 

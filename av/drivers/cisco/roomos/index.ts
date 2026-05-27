@@ -1,24 +1,16 @@
 import { Driver } from "@av/drivers";
 import type { Sockets } from "@av/types";
 import { createProxy } from "@av/drivers/cisco/roomos/proxy";
-import type {
-  RoomOSApi,
-  RoomOSFeedbackSubscriptions,
-  RoomOSProductTarget,
-  RoomOSRoot,
-  RoomOSState,
-  TOutput,
-} from "@av/drivers/cisco/roomos/types";
+import type { RoomOS, Generated } from "@av/drivers/cisco/roomos/types";
 
 export default class CiscoRoomOS<
-  Product extends RoomOSProductTarget = "any",
-  const Subscriptions extends readonly (readonly string[])[] = readonly [],
+  Product extends Generated.ProductTarget = "any",
+  const Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
   const N extends string = string,
-  T extends TOutput = TOutput,
 > extends Driver<N> {
   schema = undefined;
   socket: Sockets.Socket;
-  output: T;
+  output: RoomOS.Format;
 
   constructor({
     name,
@@ -29,8 +21,8 @@ export default class CiscoRoomOS<
     name: N;
     socket: Sockets.Socket;
     product?: Product;
-    subscriptions?: Subscriptions & RoomOSFeedbackSubscriptions<Product, Subscriptions>;
-    output: T;
+    subscriptions?: Subscriptions & RoomOS.FeedbackSubscriptions<Product>;
+    output: RoomOS.Format;
   }) {
     super({ name, driverName: "cisco-room-devices-11-9" });
     this.socket = socket;
@@ -38,18 +30,17 @@ export default class CiscoRoomOS<
   }
 
   // TSAS: The initial state is populated asynchronously from feedback subscriptions.
-  state: RoomOSState<Product, Subscriptions> = {} as RoomOSState<Product, Subscriptions>;
+  state: RoomOS.State<Product, Subscriptions> = {} as RoomOS.State<
+    Product,
+    Subscriptions
+  >;
 
-  get api(): RoomOSApi<Product, RoomOSState<Product, Subscriptions>> {
-    const createRootProxy = <Root extends RoomOSRoot>(root: Root) =>
-      createProxy<Root, T, Product>(root, this.output);
-
-    // TSAS: The recursive proxy tree matches the generated RoomOS API surface.
+  get api(): RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> {
     return {
-      xCommand: createRootProxy("xCommand"),
-      xConfiguration: createRootProxy("xConfiguration"),
-      xStatus: createRootProxy("xStatus"),
-      xFeedback: createRootProxy("xFeedback"),
+      xCommand: createProxy("xCommand", this.output),
+      xConfiguration: createProxy("xConfiguration", this.output),
+      xStatus: createProxy("xStatus", this.output),
+      xFeedback: createProxy("xFeedback", this.output),
     };
   }
 }

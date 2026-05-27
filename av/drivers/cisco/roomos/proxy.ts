@@ -1,13 +1,8 @@
 import { RoomOSWriter } from "@av/drivers/cisco/roomos/writer";
-import type {
-  RoomOSProductTarget,
-  RoomOSRoot,
-  RoomOSWriteOperation,
-  TOutput,
-} from "@av/drivers/cisco/roomos/types";
+import type { RoomOS, Generated } from "@av/drivers/cisco/roomos/types";
 
-function send<C extends TOutput>(
-  operation: RoomOSWriteOperation,
+function send<C extends RoomOS.Format>(
+  operation: RoomOS.WriteOperation,
   config: C,
 ): string {
   const writer = new RoomOSWriter(operation);
@@ -34,57 +29,55 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function methodSupported(root: RoomOSRoot, name: string): boolean {
+function methodSupported(root: Generated.Root, name: string): boolean {
   switch (root) {
     case "xCommand":
       return false;
     case "xConfiguration":
-      return name === "get" || name === "set" || name === "on" || name === "once";
+      return (
+        name === "get" || name === "set" || name === "on" || name === "once"
+      );
     case "xStatus":
       return name === "get" || name === "on" || name === "once";
     case "xFeedback":
       return name === "subscribe" || name === "on" || name === "once";
+    default:
+      return false;
   }
-
-  return false;
 }
 
 function buildCommandOperation(
   path: readonly string[],
   args?: Record<string, unknown>,
   body?: string,
-): RoomOSWriteOperation {
+): RoomOS.WriteOperation {
   return { kind: "command", root: "xCommand", path, args, body };
 }
 
 function buildGetOperation(
   root: "xConfiguration" | "xStatus",
   path: readonly string[],
-): RoomOSWriteOperation {
+): RoomOS.WriteOperation {
   return { kind: "get", root, path };
 }
 
 function buildSetOperation(
   path: readonly string[],
   value: unknown,
-): RoomOSWriteOperation {
+): RoomOS.WriteOperation {
   return { kind: "set", root: "xConfiguration", path, value };
 }
 
 function buildListenOperation(
   root: "xConfiguration" | "xStatus" | "xFeedback",
   path: readonly string[],
-): RoomOSWriteOperation {
+): RoomOS.WriteOperation {
   return { kind: "listen", root, path };
 }
 
-export function createProxy<
-  Root extends RoomOSRoot,
-  C extends TOutput,
-  Product extends RoomOSProductTarget = "any",
->(
-  root: Root,
-  config: C,
+export function createProxy(
+  root: Generated.Root,
+  config: RoomOS.Format,
   path: readonly string[] = [root],
 ): any {
   const target = () => undefined;
@@ -113,7 +106,11 @@ export function createProxy<
             return send(buildSetOperation(path, args[0]), config);
           }
 
-          if (root === "xConfiguration" || root === "xStatus" || root === "xFeedback") {
+          if (
+            root === "xConfiguration" ||
+            root === "xStatus" ||
+            root === "xFeedback"
+          ) {
             return send(buildListenOperation(root, path), config);
           }
 

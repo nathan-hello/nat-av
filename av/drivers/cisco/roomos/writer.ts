@@ -7,10 +7,7 @@ import {
   toRpcPath,
 } from "@av/drivers/cisco/roomos/typegen";
 
-import type {
-  RoomOSWriteOperation,
-  TRoomOSWriter,
-} from "@av/drivers/cisco/roomos/types";
+import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 
 function escapeXml(value: string): string {
   return value
@@ -71,22 +68,32 @@ function withResultId(command: string, resultId?: number | string): string {
   return `${command} | resultId="${resultId}"`;
 }
 
-function wrapBody(command: string, body: string, resultId?: number | string): string {
+function wrapBody(
+  command: string,
+  body: string,
+  resultId?: number | string,
+): string {
   const payload = `${withResultId(command, resultId)}\n${body}\n`;
   return `{${Buffer.byteLength(payload, "utf8")}} \n${payload}`;
 }
 
-function makeTerminalCommand(operation: RoomOSWriteOperation, resultId?: number | string): string {
+function makeTerminalCommand(
+  operation: RoomOS.WriteOperation,
+  resultId?: number | string,
+): string {
   switch (operation.kind) {
     case "command": {
-      const head = `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
+      const head =
+        `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
       const args = operation.args ? formatParamObject(operation.args) : "";
       const command = [head, args].filter(Boolean).join(" ");
-      return operation.body !== undefined ? wrapBody(command, operation.body, resultId)
-      : withResultId(command, resultId);
+      return operation.body !== undefined ?
+          wrapBody(command, operation.body, resultId)
+        : withResultId(command, resultId);
     }
     case "get": {
-      const command = `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
+      const command =
+        `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
       return withResultId(command, resultId);
     }
     case "set": {
@@ -103,7 +110,10 @@ function makeTerminalCommand(operation: RoomOSWriteOperation, resultId?: number 
   }
 }
 
-function makeJsonRpc(operation: RoomOSWriteOperation, id?: number | string): string {
+function makeJsonRpc(
+  operation: RoomOS.WriteOperation,
+  id?: number | string,
+): string {
   switch (operation.kind) {
     case "command": {
       const method = `${operation.root}/${renderPath(operation.path.slice(1)).split(" ").join("/")}`;
@@ -114,20 +124,44 @@ function makeJsonRpc(operation: RoomOSWriteOperation, id?: number | string): str
       return JSON.stringify({ jsonrpc: "2.0", method, params, id });
     }
     case "get":
-      return JSON.stringify({ jsonrpc: "2.0", method: "xGet", params: { Path: asRpcPath(operation.root, operation.path) }, id });
+      return JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xGet",
+        params: { Path: asRpcPath(operation.root, operation.path) },
+        id,
+      });
     case "set":
-      return JSON.stringify({ jsonrpc: "2.0", method: "xSet", params: { Path: asRpcPath(operation.root, operation.path), Value: operation.value }, id });
+      return JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xSet",
+        params: {
+          Path: asRpcPath(operation.root, operation.path),
+          Value: operation.value,
+        },
+        id,
+      });
     case "listen":
-      return JSON.stringify({ jsonrpc: "2.0", method: "xFeedback/Subscribe", params: { Query: asRpcPath(operation.root, operation.path) }, id });
+      return JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xFeedback/Subscribe",
+        params: { Query: asRpcPath(operation.root, operation.path) },
+        id,
+      });
   }
 }
 
-function makeXml(operation: RoomOSWriteOperation, id?: number | string): string {
+function makeXml(
+  operation: RoomOS.WriteOperation,
+  id?: number | string,
+): string {
   switch (operation.kind) {
     case "command": {
       const method = `${operation.root}/${renderPath(operation.path.slice(1)).split(" ").join("/")}`;
       const args = operation.args ? renderXmlParams(operation.args) : "";
-      const body = operation.body !== undefined ? `<Body>${escapeXml(operation.body)}</Body>` : "";
+      const body =
+        operation.body !== undefined ?
+          `<Body>${escapeXml(operation.body)}</Body>`
+        : "";
       return `<Command id="${escapeXml(String(id ?? ""))}" method="${escapeXml(method)}">${args}${body}</Command>`;
     }
     case "get":
@@ -139,8 +173,8 @@ function makeXml(operation: RoomOSWriteOperation, id?: number | string): string 
   }
 }
 
-export class RoomOSWriter implements TRoomOSWriter {
-  constructor(private readonly operation: RoomOSWriteOperation) {}
+export class RoomOSWriter implements RoomOS.TWriter {
+  constructor(private readonly operation: RoomOS.WriteOperation) {}
 
   ToXml(resultId?: number | string): string {
     return makeXml(this.operation, resultId);
