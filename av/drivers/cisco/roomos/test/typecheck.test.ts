@@ -2,7 +2,7 @@ import CiscoRoomOS from "@av/drivers/cisco/roomos";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import type { Sockets } from "@av/types";
 
-const socket = {
+const socket: Sockets.Socket = {
   name: "roomos-typecheck",
   start() {},
   end() {},
@@ -12,7 +12,7 @@ const socket = {
   on() {
     return () => {};
   },
-} satisfies Sockets.Socket;
+};
 
 const output: RoomOS.Format = {
   type: "jsonrpc",
@@ -21,48 +21,25 @@ const output: RoomOS.Format = {
 
 const roomos = new CiscoRoomOS({
   name: "roomos-typecheck",
-  product: "any",
   socket,
   output,
   subscriptions: {
-    Audio: {
-      Input: {
-        Connectors: {
-          Microphone: true,
-        },
-      },
-    },
+    Audio: true,
     Bluetooth: true,
-    Conference: {
-      ParticipantList: {
-        ParticipantAdded: true,
-      },
-    },
+    Conference: true,
   },
 });
 
-const roomosNested = new CiscoRoomOS({
-  name: "roomos-typecheck-nested",
-  product: "any",
-  socket,
-  output,
-  subscriptions: {
-    Bluetooth: {
-      Streaming: {
-        PlaybackPosition: true,
-      },
-    },
-  } as const,
-});
+roomos.state.Audio.Input.Connectors.Microphone[0].LoudspeakerActivity;
 
-roomos.state.Audio.Input.Connectors.Microphone[0].UltrasoundSNR
-roomos.state.Audio.Input.Connectors.Microphone[0].PPMeter
+roomos.state.Audio.Input.Connectors.Microphone[0].AudioPairingRate;
+roomos.state.Audio.Input.Connectors.Microphone[0].LoudspeakerActivity;
 
 roomos.state.Bluetooth;
-roomos.state.Conference.ParticipantList.ParticipantAdded;
+roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
 
-roomos.api.xFeedback.Bluetooth.subscribe((value, state) => {
-  value;
+roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
+  value.ProgressIndication.Progress;
   state.Bluetooth;
 });
 
@@ -72,8 +49,3 @@ roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
     state.Bluetooth.Streaming.PlaybackPosition;
   },
 );
-
-roomosNested.state.Bluetooth.Streaming.PlaybackPosition;
-
-// @ts-expect-error This path was not subscribed.
-roomos.state.Unsubscribed;

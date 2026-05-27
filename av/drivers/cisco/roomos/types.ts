@@ -26,8 +26,11 @@ type IsPlainObject<V> =
   : [V] extends [object] ? true
   : false;
 
+type ArrayElement<V> = V extends readonly (infer Item)[] ? Item : never;
+
 type FeedbackSubscriptionValue<Tree> =
-  IsPlainObject<Tree> extends true ? true | FeedbackSubscriptionsFor<Tree>
+  Tree extends readonly any[] ? true | FeedbackSubscriptionsFor<ArrayElement<Tree>>
+  : IsPlainObject<Tree> extends true ? true | FeedbackSubscriptionsFor<Tree>
   : true;
 
 type FeedbackSubscriptionsFor<Tree> =
@@ -185,6 +188,7 @@ type FeedbackStateFromSubscriptions<Tree, Subscriptions> =
     Simplify<{
       [K in keyof Subscriptions & keyof Tree]: Subscriptions[K] extends true ?
         Tree[K]
+      : Tree[K] extends readonly any[] ? Array<FeedbackStateFromSubscriptions<ArrayElement<Tree[K]>, Subscriptions[K]>>
       : IsPlainObject<Tree[K]> extends true ?
         FeedbackStateFromSubscriptions<Tree[K], Subscriptions[K]>
       : Tree[K];
