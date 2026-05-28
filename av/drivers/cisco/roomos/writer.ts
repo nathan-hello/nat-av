@@ -1,13 +1,92 @@
-import {
-  formatParamObject,
-  formatValue,
-  renderPath,
-  renderQueryPath,
-  rootPathName,
-  toRpcPath,
-} from "@av/drivers/cisco/roomos/typegen";
-
+import { removeBrackets } from "@av/drivers/cisco/roomos/typegen/scripts/parse";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
+
+export function isNumericSegment(segment: string): boolean {
+  if (segment.length === 0) {
+    return false;
+  }
+
+  const zero = "0".charCodeAt(0);
+  const nine = "9".charCodeAt(0);
+
+  for (let i = 0; i < segment.length; i++) {
+    const code = segment.charCodeAt(i);
+
+    if (code < zero || code > nine) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function renderSegments(path: readonly string[], separator: string): string {
+  const parts: string[] = [];
+
+  for (const segment of path) {
+    if (isNumericSegment(segment)) {
+      if (!parts.length) {
+        parts.push(`[${segment}]`);
+      } else {
+        parts[parts.length - 1] = `${parts[parts.length - 1]}[${segment}]`;
+      }
+      continue;
+    }
+
+    parts.push(removeBrackets(segment));
+  }
+
+  return parts.join(separator);
+}
+
+function renderPath(path: readonly string[]): string {
+  return renderSegments(path, " ");
+}
+
+function renderQueryPath(path: readonly string[]): string {
+  return `/${renderSegments(path, "/")}`;
+}
+
+function toRpcPath(path: readonly string[]): Array<string | number> {
+  const rpcPath: Array<string | number> = [];
+
+  for (const segment of path) {
+    if (isNumericSegment(segment)) {
+      rpcPath.push(Number(segment));
+    } else {
+      rpcPath.push(removeBrackets(segment));
+    }
+  }
+
+  return rpcPath;
+}
+
+function formatValue(value: unknown): string {
+  switch (typeof value) {
+    case "boolean":
+      return value ? "True" : "False";
+    case "number":
+    case "string":
+      return JSON.stringify(value);
+    default:
+      throw new TypeError(`Invalid value ${JSON.stringify(value)}`);
+  }
+}
+
+function formatParam(key: string, value: unknown | readonly unknown[]): string {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map((item) => `${key}: ${formatValue(item)}`).join(" ");
+}
+
+function formatParamObject(params: Record<string, unknown>): string {
+  return Object.keys(params)
+    .sort()
+    .flatMap((key) => {
+      const value = params[key];
+      return [formatParam(key, value)];
+    })
+    .join(" ");
+}
 
 function escapeXml(value: string): string {
   return value
@@ -66,6 +145,21 @@ function withResultId(command: string, resultId?: number | string): string {
   }
 
   return `${command} | resultId="${resultId}"`;
+}
+
+export function rootPathName(
+  root: "xCommand" | "xConfiguration" | "xStatus" | "xFeedback",
+): string {
+  switch (root) {
+    case "xCommand":
+      return "Command";
+    case "xConfiguration":
+      return "Configuration";
+    case "xStatus":
+      return "Status";
+    case "xFeedback":
+      return "Event";
+  }
 }
 
 function wrapBody(

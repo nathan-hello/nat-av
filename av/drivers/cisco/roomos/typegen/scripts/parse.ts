@@ -1,0 +1,536 @@
+import type {
+  EventNode,
+  Param,
+  ReducedEntry,
+  ReducedEventNode,
+  ReducedParam,
+  ReducedValuespace,
+  SchemaEntry,
+  Valuespace,
+} from "./types.ts";
+
+function isTruthyFlag(value: unknown): boolean {
+  return value === true || value === "True";
+}
+
+function hasMultiplicity(value: unknown): boolean {
+  return (
+    value !== undefined &&
+    value !== null &&
+    value !== false &&
+    value !== 0 &&
+    value !== "0" &&
+    value !== "False"
+  );
+}
+
+function sortStrings(values: readonly string[]): string[] {
+  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
+function literalValues(valuespace: Valuespace): readonly string[] | undefined {
+  if (typeof valuespace === "string") {
+    return undefined;
+  }
+
+  return valuespace.Values ?? valuespace.values;
+}
+
+function baseValueType(valuespace: Valuespace): string {
+  if (typeof valuespace === "string") {
+    switch (valuespace) {
+      case "Integer":
+      case "int":
+        return "number";
+      case "String":
+      case "string":
+        return "string";
+      case "literal":
+        return "unknown";
+      default:
+        return "unknown";
+    }
+  }
+
+  switch (valuespace.type) {
+    case "Integer":
+      return "number";
+    case "String":
+      return "string";
+    case "Boolean":
+      return "boolean";
+    case "Literal":
+      return literalValues(valuespace)?.length ?
+          literalValues(valuespace)!
+            .map((value) => JSON.stringify(value))
+            .join(" | ")
+        : "unknown";
+    case "IntegerArray":
+      return "number";
+    case "StringArray":
+      return "string";
+    case "LiteralArray":
+      return literalValues(valuespace)?.length ?
+          literalValues(valuespace)!
+            .map((value) => JSON.stringify(value))
+            .join(" | ")
+        : "unknown";
+    case "literal":
+      return literalValues(valuespace)?.length ?
+          literalValues(valuespace)!
+            .map((value) => JSON.stringify(value))
+            .join(" | ")
+        : "unknown";
+    case "int":
+      return "number";
+    case "string":
+      return "string";
+    default:
+      return "unknown";
+  }
+}
+
+function valueType(valuespace: Valuespace | undefined): string {
+  if (valuespace === undefined) {
+    return "unknown";
+  }
+
+  const isArrayType =
+    typeof valuespace === "string" ? false : (
+      /Array$/.test(valuespace.type ?? "") ||
+      hasMultiplicity(valuespace.multiple)
+    );
+  const base = baseValueType(valuespace);
+  return isArrayType ? `Array<${base}>` : base;
+}
+
+function isLiteralWithoutValues(valuespace: Valuespace): boolean {
+  if (typeof valuespace === "string") {
+    return valuespace === "literal";
+  }
+
+  if (valuespace.type !== "Literal" && valuespace.type !== "literal") {
+    return false;
+  }
+
+  const values = literalValues(valuespace);
+  return values === undefined || values.length === 0;
+}
+
+function normalizeValuespace(valuespace: Valuespace): ReducedValuespace {
+  if (typeof valuespace === "string") {
+    return valuespace;
+  }
+
+  const normalized: {
+    type?: string;
+    Values?: string[];
+    multiple?: true;
+  } = {};
+
+  if (valuespace.type !== undefined) {
+    normalized.type = valuespace.type;
+  }
+
+  const values = literalValues(valuespace);
+
+  if (values !== undefined) {
+    normalized.Values = sortStrings(values);
+  }
+
+  if (hasMultiplicity(valuespace.multiple)) {
+    normalized.multiple = true;
+  }
+
+  return normalized;
+}
+
+function normalizeParam(param: Param): ReducedParam {
+  const normalized: ReducedParam = {
+    name: param.name,
+    valuespace: normalizeValuespace(param.valuespace),
+  };
+
+  if (isTruthyFlag(param.required)) {
+    normalized.required = true;
+  }
+
+  return normalized;
+}
+
+function normalizeChildren(
+  children: Record<string, EventNode>,
+): Record<string, ReducedEventNode> {
+  const normalized: Record<string, ReducedEventNode> = {};
+
+  for (const [name, child] of Object.entries(children).sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
+    normalized[name] = normalizeEventNode(child);
+  }
+
+  return normalized;
+}
+
+function normalizeEventNode(node: EventNode): ReducedEventNode {
+  const normalized: ReducedEventNode = {};
+
+  if (node.valuespace !== undefined) {
+    normalized.valuespace = normalizeValuespace(node.valuespace);
+
+    if (
+      node.values !== undefined &&
+      typeof normalized.valuespace === "string"
+    ) {
+      normalized.valuespace = {
+        type: normalized.valuespace,
+        Values: sortStrings(node.values),
+      };
+    }
+  }
+
+  if (hasMultiplicity(node.multiple)) {
+    normalized.multiple = true;
+  }
+
+  if (isTruthyFlag(node.required)) {
+    normalized.required = true;
+  }
+
+  if (node.children !== undefined) {
+    normalized.children = normalizeChildren(node.children);
+  }
+
+  return normalized;
+}
+
+function normalizeEntry(entry: SchemaEntry): ReducedEntry {
+  const attributes: ReducedEntry["attributes"] = {};
+
+  switch (entry.type) {
+    case "Command": {
+      const params =
+        entry.attributes.params?.map((param) => normalizeParam(param)) ?? [];
+      params.sort((a, b) => a.name.localeCompare(b.name));
+      attributes.params = params;
+
+      if (hasMultiplicity(entry.attributes.multiline)) {
+        attributes.multiline = true;
+      }
+
+      break;
+    }
+    case "Configuration":
+    case "Status": {
+      if (entry.attributes.valuespace === undefined) {
+        throw new Error(`Missing valuespace for ${entry.type} ${entry.path}`);
+      }
+
+      attributes.valuespace = normalizeValuespace(entry.attributes.valuespace);
+      break;
+    }
+    case "Event": {
+      attributes.children = normalizeChildren(entry.attributes.children ?? {});
+      break;
+    }
+  }
+
+  return {
+    source: entry,
+    path: entry.path,
+    products: sortStrings(entry.products),
+    type: entry.type,
+    attributes,
+  };
+}
+
+function signatureValuespace(valuespace: Valuespace | undefined): unknown {
+  if (valuespace === undefined) {
+    return null;
+  }
+
+  if (typeof valuespace === "string") {
+    return valuespace;
+  }
+
+  return {
+    type: valuespace.type ?? null,
+    Values:
+      literalValues(valuespace) ?
+        sortStrings(literalValues(valuespace)!)
+      : null,
+    multiple: hasMultiplicity(valuespace.multiple),
+    Min: valuespace.Min ?? null,
+    Max: valuespace.Max ?? null,
+    Step: valuespace.Step ?? null,
+    MinLength: valuespace.MinLength ?? null,
+    MaxLength: valuespace.MaxLength ?? null,
+  };
+}
+
+function signatureParam(param: Param): unknown {
+  return {
+    name: param.name,
+    description: param.description ?? null,
+    required: isTruthyFlag(param.required),
+    default: param.default ?? null,
+    valuespace: signatureValuespace(param.valuespace),
+  };
+}
+
+function signatureEventNode(node: EventNode | undefined): unknown {
+  if (node === undefined) {
+    return null;
+  }
+
+  return {
+    multiple: hasMultiplicity(node.multiple),
+    required: isTruthyFlag(node.required),
+    valuespace: signatureValuespace(node.valuespace),
+    values: node.values ? sortStrings(node.values) : null,
+    children:
+      node.children ?
+        Object.fromEntries(
+          Object.entries(node.children)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([name, child]) => [name, signatureEventNode(child)]),
+        )
+      : null,
+  };
+}
+
+function entrySignature(entry: SchemaEntry): string {
+  const attributes =
+    entry.type === "Command" ?
+      {
+        params: (entry.attributes.params ?? [])
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((param) => signatureParam(param)),
+        multiline: hasMultiplicity(entry.attributes.multiline),
+      }
+    : entry.type === "Configuration" || entry.type === "Status" ?
+      {
+        valuespace: signatureValuespace(entry.attributes.valuespace),
+      }
+    : {
+        children:
+          entry.attributes.children ?
+            Object.fromEntries(
+              Object.entries(entry.attributes.children)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([name, child]) => [name, signatureEventNode(child)]),
+            )
+          : null,
+      };
+
+  return JSON.stringify({
+    path: entry.path,
+    normPath: entry.normPath ?? null,
+    type: entry.type,
+    docs: {
+      access: entry.attributes.access ?? null,
+      backend: entry.attributes.backend ?? null,
+      description: entry.attributes.description ?? null,
+      privacyimpact: entry.attributes.privacyimpact ?? null,
+      role: entry.attributes.role ?? null,
+      state_dependent: entry.attributes.state_dependent ?? null,
+      unavailableStates: entry.attributes.unavailableStates ?? null,
+      multiline: hasMultiplicity(entry.attributes.multiline),
+    },
+    attributes,
+  });
+}
+
+function mergeEntries(
+  entries: readonly SchemaEntry[],
+): readonly ReducedEntry[] {
+  const groups = new Map<string, ReducedEntry>();
+
+  for (const entry of entries) {
+    const reduced = normalizeEntry(entry);
+    const signature = entrySignature(entry);
+
+    const existing = groups.get(signature);
+
+    if (existing !== undefined) {
+      existing.products = sortStrings([
+        ...existing.products,
+        ...reduced.products,
+      ]);
+      continue;
+    }
+
+    groups.set(signature, reduced);
+  }
+
+  return Array.from(groups.values()).sort((left, right) => {
+    const typeOrder = left.type.localeCompare(right.type);
+
+    if (typeOrder !== 0) {
+      return typeOrder;
+    }
+
+    const pathOrder = left.path.localeCompare(right.path);
+
+    if (pathOrder !== 0) {
+      return pathOrder;
+    }
+
+    return JSON.stringify(left.attributes).localeCompare(
+      JSON.stringify(right.attributes),
+    );
+  });
+}
+
+function isCommonEntry(
+  entry: ReducedEntry,
+  allProducts: readonly string[],
+): boolean {
+  return allProducts.every((product) => entry.products.includes(product));
+}
+
+function groupEntriesByCommonAndProduct(
+  entries: readonly ReducedEntry[],
+  allProducts: readonly string[],
+): {
+  common: ReducedEntry[];
+  byProduct: Record<string, ReducedEntry[]>;
+} {
+  const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
+  const byProduct: Record<string, ReducedEntry[]> = {};
+
+  for (const product of allProducts) {
+    byProduct[product] = entries.filter(
+      (entry) =>
+        !isCommonEntry(entry, allProducts) && entry.products.includes(product),
+    );
+  }
+
+  return { common, byProduct };
+}
+
+function groupCommandEntriesByProductSet(
+  entries: readonly ReducedEntry[],
+  allProducts: readonly string[],
+): {
+  common: ReducedEntry[];
+  sets: Array<{
+    key: string;
+    products: string[];
+    entries: ReducedEntry[];
+  }>;
+} {
+  const { common } = groupEntriesByCommonAndProduct(entries, allProducts);
+  const commonSet = new Set(common);
+  const bySet = new Map<
+    string,
+    {
+      key: string;
+      products: string[];
+      entries: ReducedEntry[];
+    }
+  >();
+
+  for (const entry of entries) {
+    if (commonSet.has(entry)) {
+      continue;
+    }
+
+    const key = entry.products.join("\u001f");
+    const existing = bySet.get(key);
+
+    if (existing !== undefined) {
+      existing.entries.push(entry);
+      continue;
+    }
+
+    bySet.set(key, {
+      key,
+      products: entry.products.slice(),
+      entries: [entry],
+    });
+  }
+
+  return {
+    common,
+    sets: Array.from(bySet.values()).sort((left, right) => {
+      const sizeOrder = left.products.length - right.products.length;
+
+      if (sizeOrder !== 0) {
+        return sizeOrder;
+      }
+
+      return left.key.localeCompare(right.key);
+    }),
+  };
+}
+
+function uniqueProducts(entries: readonly SchemaEntry[]): readonly string[] {
+  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort(
+    (a, b) => a.localeCompare(b),
+  );
+}
+
+function uniqueKinds(
+  entries: readonly SchemaEntry[],
+): readonly SchemaEntry["type"][] {
+  const kinds: SchemaEntry["type"][] = [];
+
+  for (const kind of new Set(entries.map((entry) => entry.type))) {
+    kinds.push(kind);
+  }
+
+  return kinds.sort((a, b) => a.localeCompare(b));
+}
+
+function removeBrackets(segment: string): string {
+  let out = "";
+  let depth = 0;
+
+  for (let i = 0; i < segment.length; i++) {
+    const ch = segment[i];
+
+    if (ch === "[") {
+      depth++;
+      continue;
+    }
+
+    if (ch === "]" && depth > 0) {
+      depth--;
+      continue;
+    }
+
+    if (depth === 0) {
+      out += ch;
+    }
+  }
+
+  return out;
+}
+
+export {
+  baseValueType,
+  entrySignature,
+  groupCommandEntriesByProductSet,
+  groupEntriesByCommonAndProduct,
+  hasMultiplicity,
+  isCommonEntry,
+  isLiteralWithoutValues,
+  isTruthyFlag,
+  literalValues,
+  mergeEntries,
+  normalizeChildren,
+  normalizeEntry,
+  normalizeEventNode,
+  normalizeParam,
+  normalizeValuespace,
+  signatureEventNode,
+  signatureParam,
+  signatureValuespace,
+  sortStrings,
+  uniqueKinds,
+  uniqueProducts,
+  valueType,
+  removeBrackets,
+};
