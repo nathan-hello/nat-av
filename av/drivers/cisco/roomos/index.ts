@@ -3,6 +3,13 @@ import type { Sockets } from "@av/types";
 import { createProxy } from "@av/drivers/cisco/roomos/proxy";
 import type { RoomOS, Generated } from "@av/drivers/cisco/roomos/types";
 
+export type State<
+  Product extends Generated.ProductTarget = "any",
+  Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
+> = RoomOS.State<Product, Subscriptions> & {
+  internal: { subscriptions: Subscriptions };
+};
+
 export default class CiscoRoomOS<
   Product extends Generated.ProductTarget = "any",
   const Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
@@ -27,13 +34,11 @@ export default class CiscoRoomOS<
     super({ name, driverName: "cisco-room-devices-11-9" });
     this.socket = socket;
     this.output = output;
+    this.state.internal.subscriptions = subscriptions;
   }
 
   // TSAS: The initial state is populated asynchronously from feedback subscriptions.
-  state: RoomOS.State<Product, Subscriptions> = {} as RoomOS.State<
-    Product,
-    Subscriptions
-  >;
+  state: State<Product, Subscriptions> = {} as State<Product, Subscriptions>;
 
   get api(): RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> {
     return {

@@ -193,7 +193,12 @@ function generateSource(schema: SchemaJson): string {
       buildValueTree,
     ),
     feedbackState: buildGroupedTree(
-      entries.filter((entry) => entry.type === "Event" || entry.type === "Status"),
+      entries.filter(
+        (entry) =>
+          entry.type === "Event" ||
+          entry.type === "Status" ||
+          entry.type === "Configuration",
+      ),
       products,
       buildFeedbackTree,
     ),

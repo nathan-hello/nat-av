@@ -54,5 +54,6 @@ roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
 );
 
 roomos.state.Bluetooth.Streaming.PlaybackPosition
-roomos.state.Bluetooth.Streaming.Next
+roomos.state.Bluetooth.Streaming.PlaybackPosition
 
+const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();
