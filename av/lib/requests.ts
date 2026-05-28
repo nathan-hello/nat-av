@@ -56,11 +56,10 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
       }
 
       for (const message of messages.data) {
+        this.dispatch("delimited", message);
         if (this.resolvePending(message)) {
           continue;
         }
-
-        this.dispatch("message", message);
       }
     });
   }

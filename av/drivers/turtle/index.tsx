@@ -1,4 +1,5 @@
 import { Driver } from "@av/drivers";
+import { toBuffer } from "@av/lib/buffer";
 import { RequestManager } from "@av/lib/requests";
 import { Delimiters } from "@av/sockets/delimiters";
 import type { Sockets, Schema } from "@av/types";
@@ -30,9 +31,8 @@ export default class ChazyControl<
       },
     });
 
-    this.requests.on("message", (event) => {
-      this.tel.debug("got driver delimited", { str: event });
-      this.dispatch("driver:delimited", Buffer.from(event));
+    this.requests.on("delimited", (event) => {
+      this.dispatch("driver:delimited", toBuffer(event));
     });
   }
 

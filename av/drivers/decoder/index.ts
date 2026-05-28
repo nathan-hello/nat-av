@@ -15,6 +15,7 @@ import {
 import { Driver } from "@av/drivers";
 import { RPCErrorData } from "@av/rpc/protocol";
 import { DecoderSchema } from "@av/drivers/decoder/schema";
+import { toBuffer } from "@av/lib/buffer";
 
 type DecoderMessage = DecoderResponse | DecoderNotification;
 
@@ -57,10 +58,11 @@ export default class Decoder<
       },
     });
 
-    this.requests.on("message", (event) => {
+    this.requests.on("delimited", (event) => {
       if (!("id" in event)) {
         this.tel.debug("got-jsonrpc-notification", { notification: event });
       }
+      this.dispatch("driver:delimited", toBuffer(event));
     });
 
     socket.on("connected", async () => {
@@ -102,8 +104,6 @@ export default class Decoder<
         response: result.data,
       });
     }
-
-    this.dispatch("driver:delimited", Buffer.from(JSON.stringify(result.data)));
 
     return result.data;
   }

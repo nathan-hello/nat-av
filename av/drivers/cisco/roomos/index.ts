@@ -6,6 +6,7 @@ import { RequestManager } from "@av/lib/requests";
 import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import { Delimiters } from "@av/sockets/delimiters";
 import { RPCErrorData } from "@av/rpc/protocol";
+import { toBuffer } from "@av/lib/buffer";
 
 export type State<
   Product extends Generated.ProductTarget = "any",
@@ -56,6 +57,10 @@ export class CiscoRoomOS<
       delimiter: Delimiters.json,
     });
 
+    this.requests.on("delimited", (message) => {
+      this.dispatch("driver:delimited", toBuffer(message));
+    });
+
     this.state.internal = {
       // TSAS:
       subscriptions: subscriptions as typeof this.state.internal.subscriptions,
@@ -74,7 +79,22 @@ export class CiscoRoomOS<
 
     this.dispatch("driver:delimited", Buffer.from(JSON.stringify(result.data)));
 
-    return result.data;
+    if ("error" in result) {
+      return {
+        ok: false,
+        error: result.error,
+      };
+    }
+
+    if (
+      typeof result.data === "object" &&
+      (result.data === null || "result" in result.data)
+    ) {
+      return {
+        ok: true,
+        data: result.data ? result.data.result : null,
+      };
+    }
   }
 
   // TSAS: The initial state is populated asynchronously from feedback subscriptions.

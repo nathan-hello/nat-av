@@ -61,7 +61,7 @@ export namespace Events {
 
   export namespace Request {
     export type Map<Request, Message> = {
-      message: Message;
+      delimited: Message;
       timeout: { request: Request };
       "write-error": { request: Request; error: string };
       error: {

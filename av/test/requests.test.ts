@@ -206,7 +206,7 @@ describe("requests", () => {
       timeoutMs: 1000,
     });
 
-    const message = requests.once("message");
+    const message = requests.once("delimited");
     socket.receive("notification\n");
 
     assert.equal(await message, "notification");
