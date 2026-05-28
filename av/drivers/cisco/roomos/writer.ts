@@ -1,5 +1,6 @@
 import { removeBrackets } from "@av/drivers/cisco/roomos/typegen/scripts/parse";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
+import type { Format } from "@av/types";
 
 export function isNumericSegment(segment: string): boolean {
   if (segment.length === 0) {
@@ -139,7 +140,7 @@ function renderXmlParams(params: Record<string, unknown>): string {
     .join("");
 }
 
-function withResultId(command: string, resultId?: number | string): string {
+function withResultId(command: string, resultId: number): string {
   if (resultId === undefined) {
     return command;
   }
@@ -162,18 +163,14 @@ export function rootPathName(
   }
 }
 
-function wrapBody(
-  command: string,
-  body: string,
-  resultId?: number | string,
-): string {
+function wrapBody(command: string, body: string, resultId: number): string {
   const payload = `${withResultId(command, resultId)}\n${body}\n`;
   return `{${Buffer.byteLength(payload, "utf8")}} \n${payload}`;
 }
 
-function makeTerminalCommand(
+function ToTerminal(
   operation: RoomOS.WriteOperation,
-  resultId?: number | string,
+  resultId: number,
 ): string {
   switch (operation.kind) {
     case "command": {
@@ -204,9 +201,9 @@ function makeTerminalCommand(
   }
 }
 
-function makeJsonRpc(
+function ToJsonRpc(
   operation: RoomOS.WriteOperation,
-  id?: number | string,
+  id: Format.JsonRpc.Id,
 ): string {
   switch (operation.kind) {
     case "command": {
@@ -244,10 +241,7 @@ function makeJsonRpc(
   }
 }
 
-function makeXml(
-  operation: RoomOS.WriteOperation,
-  id?: number | string,
-): string {
+function ToXml(operation: RoomOS.WriteOperation, id: number): string {
   switch (operation.kind) {
     case "command": {
       const method = `${operation.root}/${renderPath(operation.path.slice(1)).split(" ").join("/")}`;
@@ -267,18 +261,11 @@ function makeXml(
   }
 }
 
-export class RoomOSWriter implements RoomOS.TWriter {
-  constructor(private readonly operation: RoomOS.WriteOperation) {}
-
-  ToXml(resultId?: number | string): string {
-    return makeXml(this.operation, resultId);
-  }
-
-  ToJsonRpc(id?: number | string): string {
-    return makeJsonRpc(this.operation, id);
-  }
-
-  ToTerminal(resultId?: number | string): string {
-    return makeTerminalCommand(this.operation, resultId);
-  }
-}
+export const RoomOSFormatter: Record<
+  string,
+  (operation: RoomOS.WriteOperation, id: number) => string
+> = {
+  ToXml,
+  ToJsonRpc,
+  ToTerminal,
+};

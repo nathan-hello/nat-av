@@ -25,3 +25,28 @@ export namespace Requests {
     timeout?: ReturnType<typeof setTimeout>;
   };
 }
+
+export namespace Format {
+  export namespace JsonRpc {
+    export type Id = string | number;
+
+    export type Request<M extends string = string, P = any> = {
+      jsonrpc: "2.0";
+      method: M;
+      params: P;
+      id: Id;
+    };
+
+    export type Response<R = any> = {
+      jsonrpc: "2.0";
+      result: R;
+      id: Id;
+    };
+
+    export type Notification<M extends string = string, R = any> = {
+      jsonrpc: "2.0";
+      method: M;
+      params: R;
+    };
+  }
+}

@@ -1,5 +1,4 @@
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
-import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import type { Sockets } from "@av/types";
 
 const socket: Sockets.Socket = {
@@ -14,15 +13,9 @@ const socket: Sockets.Socket = {
   },
 };
 
-const output: RoomOS.Format = {
-  type: "jsonrpc",
-  getId: () => 1,
-};
-
 const roomos = new CiscoRoomOS({
   name: "roomos-typecheck",
   socket,
-  output,
   subscriptions: {
     Audio: true,
     Bluetooth: true,
@@ -32,6 +25,7 @@ const roomos = new CiscoRoomOS({
   },
 });
 
+if (false) {
 // Should be `unknown`
 roomos.state.UserInterface.ScreenShotStored.Type;
 
@@ -59,3 +53,4 @@ roomos.state.Bluetooth.Streaming.PlaybackPosition;
 roomos.state.Bluetooth.Streaming.PlaybackPosition;
 
 const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();
+}

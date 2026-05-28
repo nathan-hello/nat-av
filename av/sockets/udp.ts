@@ -2,30 +2,36 @@ import * as dgram from "node:dgram";
 
 import { bus } from "@av/lib/bus";
 import { TypedEventTarget } from "../lib/eventtarget";
-import type { Events } from "@av/types";
+import type { Events, Sockets } from "@av/types";
 import { Telemetry } from "@av/telemetry";
 
 type UdpConfig = {
+  name: string;
   addr: string;
   port: number;
 };
 
 const RETRY_DELAY = 5000;
 
-export class Udp extends TypedEventTarget<Events.Socket.UdpMap> {
+export class Udp
+  extends TypedEventTarget<Events.Socket.UdpMap>
+  implements Sockets.Socket
+{
   private socket: dgram.Socket | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private retrying = false;
   private stopped = true;
   private config: UdpConfig;
   private tel: Telemetry;
+  name: string;
 
   constructor(args: UdpConfig) {
+    const name = `Udp::${args.addr}:${args.port}`;
+    const tel = new Telemetry(name);
     super();
+    this.name = name;
+    this.tel = tel;
     this.config = args;
-    this.tel = new Telemetry(
-      `UdpClient::${this.config.addr}:${this.config.port}`,
-    );
     this.tel.info("INITALIZE", this.config);
   }
 
@@ -78,10 +84,10 @@ export class Udp extends TypedEventTarget<Events.Socket.UdpMap> {
     });
   }
 
-  send(data: string | Uint8Array | Buffer): boolean {
+  write(data: string | Uint8Array | Buffer): number {
     if (!this.socket) {
       this.tel.warn("SEND_ATTEMPTED_BEFORE_SOCKET_INITALIZATION");
-      return false;
+      return -1;
     }
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
@@ -101,16 +107,17 @@ export class Udp extends TypedEventTarget<Events.Socket.UdpMap> {
       },
     });
 
-    this.socket.send(buffer, (error) => {
+    let bytesWritten = -1;
+    this.socket.send(buffer, (error, n) => {
       if (error) {
         this.handleError(error);
         return;
       }
-
+      bytesWritten = n;
       this.emit("transmit", { bytesWritten: buffer.length });
     });
 
-    return true;
+    return bytesWritten;
   }
 
   async start() {

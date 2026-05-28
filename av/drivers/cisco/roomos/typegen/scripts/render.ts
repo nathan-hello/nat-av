@@ -26,7 +26,7 @@ function emitDoc(lines: readonly string[]): string {
     return "";
   }
 
-  return `/**\n${lines.map((line) => ` * ${escapeComment(line)}`).join("\n")}\n */\n`;
+  return `\n/**\n${lines.map((line) => ` * ${escapeComment(line)}`).join("\n")}\n */\n`;
 }
 
 function formatEntryDoc(entry: SchemaEntry): string {

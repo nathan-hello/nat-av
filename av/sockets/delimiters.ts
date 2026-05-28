@@ -129,4 +129,92 @@ export const Delimiters = {
       },
     };
   },
+
+  json: <T = unknown>(buf: Buffer): T[] | null => {
+    const str = buf.toString("utf8");
+    const results: T[] = [];
+    let i = 0;
+
+    while (i < str.length) {
+      // Look for the next potential JSON start markers from the current index.
+      // Example: "invalid_prefix { \"a\": 1 } [1, 2]"
+      // firstCurly = 15, firstBrace = 27
+      const firstCurly = str.indexOf("{", i);
+      const firstBrace = str.indexOf("[", i);
+
+      // If no more objects or arrays exist, we are done.
+      if (firstCurly === -1 && firstBrace === -1) {
+        break;
+      }
+
+      let start = -1;
+      let openChar = "";
+      let closeChar = "";
+
+      // Determine which token starts first to set up the matching boundary.
+      // Example: "{...}" vs "[...]"
+      if (firstCurly !== -1 && (firstBrace === -1 || firstCurly < firstBrace)) {
+        start = firstCurly;
+        openChar = "{";
+        closeChar = "}";
+      } else {
+        start = firstBrace;
+        openChar = "[";
+        closeChar = "]";
+      }
+
+      let depth = 0;
+      let inString = false;
+      let end = -1;
+
+      // Scan linearly to find the matching closing token.
+      for (let j = start; j < str.length; j++) {
+        const char = str[j];
+
+        // Handle strings to ignore matches inside JSON keys/values.
+        // Example: { "foo}bar": 1 }
+        // The '}' inside the string is ignored because inString is true.
+        if (char === '"' && str[j - 1] !== "\\") {
+          inString = !inString;
+          continue;
+        }
+
+        // Track structural depth when outside of string literals.
+        if (!inString) {
+          if (char === openChar) {
+            depth++;
+          } else if (char === closeChar) {
+            depth--;
+            // Balanced structure found.
+            if (depth === 0) {
+              end = j + 1;
+              break;
+            }
+          }
+        }
+      }
+
+      if (end !== -1) {
+        // Extract the candidate segment.
+        const candidate = str.substring(start, end);
+        try {
+          // Parse the isolated candidate. This is faster than parsing raw stream snippets
+          // because we only invoke the engine on structurally balanced strings.
+          const parsed = JSON.parse(candidate);
+          results.push(parsed);
+          // Fast-forward past the successfully parsed slice.
+          i = end;
+        } catch {
+          // Recovery: If parsing fails (e.g., "{ broken: JSON }"),
+          // increment by 1 to search for the next candidate start.
+          i = start + 1;
+        }
+      } else {
+        // If the structure is unclosed (e.g., "{ truncated data..."), stop processing.
+        break;
+      }
+    }
+
+    return results.length > 0 ? results : null;
+  },
 };

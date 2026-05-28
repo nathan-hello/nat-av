@@ -152,23 +152,4 @@ export namespace RoomOS {
         path: readonly string[];
       };
 
-  export type Format =
-    | {
-        type: "terminal";
-        getResultId?: () => string | number;
-      }
-    | {
-        type: "xml";
-        getResultId?: () => string | number;
-      }
-    | {
-        type: "jsonrpc";
-        getId: () => string | number;
-      };
-
-  export interface TWriter {
-    ToTerminal(resultId?: number | string): string;
-    ToXml(resultId?: number | string): string;
-    ToJsonRpc(id?: number | string): string;
-  }
 }

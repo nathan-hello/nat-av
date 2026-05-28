@@ -1,23 +1,4 @@
-export type JsonRpcId = string | number;
-
-type JsonRpcRequest<M extends string, P = any> = {
-  jsonrpc: "2.0";
-  method: M;
-  params: P;
-  id: JsonRpcId;
-};
-
-type JsonRpcResponse<R = any> = {
-  jsonrpc: "2.0";
-  result: R;
-  id: JsonRpcId;
-};
-
-type JsonRpcNotification<M extends string, R = any> = {
-  jsonrpc: "2.0";
-  method: M;
-  params: R;
-};
+import type { Format } from "@av/types";
 
 /** Domain Entities */
 export type VideoRoute = {
@@ -47,7 +28,7 @@ export type AudioRoute = {
   uri: string;
 };
 
-export type DebugToggle = JsonRpcRequest<"debug_toggle", []>;
+export type DebugToggle = Format.JsonRpc.Request<"debug_toggle", []>;
 
 type VideoOutputContext = {
   output: number;
@@ -62,46 +43,44 @@ type AudioOutputContext = {
 };
 
 /** Method: fetch_routes */
-export type FetchRoutesRequest = JsonRpcRequest<"fetch_routes", []>;
-export type FetchRoutesResponse = JsonRpcResponse<{
+export type FetchRoutesRequest = Format.JsonRpc.Request<"fetch_routes", []>;
+export type FetchRoutesResponse = Format.JsonRpc.Response<{
   video: VideoRoute[];
   audio: AudioRoute[];
 }>;
 
 /** Method: route */
-export type RouteRequest = JsonRpcRequest<
+export type RouteRequest = Format.JsonRpc.Request<
   "route",
   {
     video?: VideoRoute[];
     audio?: AudioRoute[];
   }
 >;
-export type ExitCodeResponse = JsonRpcResponse<number>;
+export type ExitCodeResponse = Format.JsonRpc.Response<number>;
 
 /** Method: fetch_context */
-export type FetchContextRequest = JsonRpcRequest<"fetch_context", []>;
+export type FetchContextRequest = Format.JsonRpc.Request<"fetch_context", []>;
 export type DecoderContext = {
   video: VideoOutputContext[];
   audio: AudioOutputContext[];
 };
-export type FetchContextResponse = JsonRpcResponse<DecoderContext>;
+export type FetchContextResponse = Format.JsonRpc.Response<DecoderContext>;
 
 /** Method: route_destroy */
-export type RouteDestroyRequest = JsonRpcRequest<
+export type RouteDestroyRequest = Format.JsonRpc.Request<
   "route_destroy",
   {
     video: { output: number; window: number }[];
     audio: { output: number }[];
   }
 >;
-export type RouteDestroyResponse = JsonRpcResponse<number>;
+export type RouteDestroyResponse = Format.JsonRpc.Response<number>;
 
-export type DecoderNotificationMonitorDisconnected = JsonRpcNotification<
-  "monitor_disconnected",
-  number[]
->;
+export type DecoderNotificationMonitorDisconnected =
+  Format.JsonRpc.Notification<"monitor_disconnected", number[]>;
 
-export type DecoderNotificationMonitorConnected = JsonRpcNotification<
+export type DecoderNotificationMonitorConnected = Format.JsonRpc.Notification<
   "monitor_connected",
   number[]
 >;

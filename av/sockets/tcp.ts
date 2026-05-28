@@ -1,7 +1,7 @@
 import * as net from "node:net";
 import { bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { Events } from "@av/types";
+import type { Events, Sockets } from "@av/types";
 import { Telemetry } from "@av/telemetry";
 
 type TcpConfig = {
@@ -12,7 +12,10 @@ type TcpConfig = {
 
 const RETRY_DELAY = 5000;
 
-export class Tcp extends TypedEventTarget<Events.Socket.TcpMap> {
+export class Tcp
+  extends TypedEventTarget<Events.Socket.TcpMap>
+  implements Sockets.Socket
+{
   private socket: net.Socket | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private retrying = false;
