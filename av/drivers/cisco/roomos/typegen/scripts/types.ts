@@ -66,7 +66,7 @@ export type SchemaJson = {
   objects: readonly SchemaEntry[];
 };
 
-export type ReducedValuespace =
+export type ValuespaceModel =
   | string
   | {
       type?: string;
@@ -74,40 +74,62 @@ export type ReducedValuespace =
       multiple?: true;
     };
 
-export type ReducedParam = {
+export type ParamModel = {
   name: string;
   required?: boolean;
-  valuespace: ReducedValuespace;
+  valuespace: ValuespaceModel;
 };
 
-export type ReducedEventNode = {
-  children?: Record<string, ReducedEventNode>;
-  valuespace?: ReducedValuespace;
+export type EventNodeModel = {
+  children?: Record<string, EventNodeModel>;
+  valuespace?: ValuespaceModel;
   multiple?: true;
   required?: true;
 };
 
-export type ReducedEntry = {
+export type EntryModel = {
   source: SchemaEntry;
   path: string;
   products: string[];
   type: SchemaEntry["type"];
-  attributes: {
-    params?: ReducedParam[];
-    valuespace?: ReducedValuespace;
-    children?: Record<string, ReducedEventNode>;
-    multiline?: true;
-  };
+  params?: ParamModel[];
+  valuespace?: ValuespaceModel;
+  children?: Record<string, EventNodeModel>;
+  multiline?: true;
 };
 
-export type CommandTreeNode = {
-  array: boolean;
-  children: Map<string, CommandTreeNode>;
-  entry?: ReducedEntry;
+export type TypeTreeNode = {
+  array?: true;
+  source?: SchemaEntry;
+  missingTypePath?: string;
+  callable?: {
+    params: ParamModel[];
+    multiline?: true;
+  };
+  valuespace?: ValuespaceModel;
+  children?: Record<string, TypeTreeNode>;
 };
 
 export type ProductSetGroup = {
   key: string;
   products: string[];
-  entries: ReducedEntry[];
+  entries: EntryModel[];
+};
+
+export type GroupedTreeModel = {
+  common: TypeTreeNode;
+  sets: Array<{
+    products: string[];
+    tree: TypeTreeNode;
+  }>;
+};
+
+export type GeneratedModel = {
+  entries: readonly EntryModel[];
+  products: readonly string[];
+  kinds: readonly SchemaEntry["type"][];
+  commandApi: GroupedTreeModel;
+  configurationState: GroupedTreeModel;
+  statusState: GroupedTreeModel;
+  feedbackState: GroupedTreeModel;
 };

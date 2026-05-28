@@ -1,12 +1,12 @@
 import type {
+  EntryModel,
+  EventNodeModel,
   EventNode,
+  ParamModel,
   Param,
   ProductSetGroup,
-  ReducedEntry,
-  ReducedEventNode,
-  ReducedParam,
-  ReducedValuespace,
   SchemaEntry,
+  ValuespaceModel,
   Valuespace,
 } from "./types.ts";
 
@@ -29,15 +29,17 @@ function sortStrings(values: readonly string[]): string[] {
   return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 }
 
-function literalValues(valuespace: Valuespace): readonly string[] | undefined {
+function literalValues(
+  valuespace: Valuespace | ValuespaceModel,
+): readonly string[] | undefined {
   if (typeof valuespace === "string") {
     return undefined;
   }
 
-  return valuespace.Values ?? valuespace.values;
+  return valuespace.Values ?? ("values" in valuespace ? valuespace.values : undefined);
 }
 
-function baseValueType(valuespace: Valuespace): string {
+function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
   if (typeof valuespace === "string") {
     switch (valuespace) {
       case "Integer":
@@ -91,7 +93,9 @@ function baseValueType(valuespace: Valuespace): string {
   }
 }
 
-function valueType(valuespace: Valuespace | undefined): string {
+function valueType(
+  valuespace: Valuespace | ValuespaceModel | undefined,
+): string {
   if (valuespace === undefined) {
     return "unknown";
   }
@@ -105,7 +109,9 @@ function valueType(valuespace: Valuespace | undefined): string {
   return isArrayType ? `Array<${base}>` : base;
 }
 
-function isLiteralWithoutValues(valuespace: Valuespace): boolean {
+function isLiteralWithoutValues(
+  valuespace: Valuespace | ValuespaceModel,
+): boolean {
   if (typeof valuespace === "string") {
     return valuespace === "literal";
   }
@@ -118,7 +124,7 @@ function isLiteralWithoutValues(valuespace: Valuespace): boolean {
   return values === undefined || values.length === 0;
 }
 
-function normalizeValuespace(valuespace: Valuespace): ReducedValuespace {
+function normalizeValuespace(valuespace: Valuespace): ValuespaceModel {
   if (typeof valuespace === "string") {
     return valuespace;
   }
@@ -146,8 +152,8 @@ function normalizeValuespace(valuespace: Valuespace): ReducedValuespace {
   return normalized;
 }
 
-function normalizeParam(param: Param): ReducedParam {
-  const normalized: ReducedParam = {
+function normalizeParam(param: Param): ParamModel {
+  const normalized: ParamModel = {
     name: param.name,
     valuespace: normalizeValuespace(param.valuespace),
   };
@@ -161,8 +167,8 @@ function normalizeParam(param: Param): ReducedParam {
 
 function normalizeChildren(
   children: Record<string, EventNode>,
-): Record<string, ReducedEventNode> {
-  const normalized: Record<string, ReducedEventNode> = {};
+): Record<string, EventNodeModel> {
+  const normalized: Record<string, EventNodeModel> = {};
 
   for (const [name, child] of Object.entries(children).sort(([a], [b]) =>
     a.localeCompare(b),
@@ -173,8 +179,8 @@ function normalizeChildren(
   return normalized;
 }
 
-function normalizeEventNode(node: EventNode): ReducedEventNode {
-  const normalized: ReducedEventNode = {};
+function normalizeEventNode(node: EventNode): EventNodeModel {
+  const normalized: EventNodeModel = {};
 
   if (node.valuespace !== undefined) {
     normalized.valuespace = normalizeValuespace(node.valuespace);
@@ -205,18 +211,23 @@ function normalizeEventNode(node: EventNode): ReducedEventNode {
   return normalized;
 }
 
-function normalizeEntry(entry: SchemaEntry): ReducedEntry {
-  const attributes: ReducedEntry["attributes"] = {};
+function normalizeEntry(entry: SchemaEntry): EntryModel {
+  const normalized: EntryModel = {
+    source: entry,
+    path: entry.path,
+    products: sortStrings(entry.products),
+    type: entry.type,
+  };
 
   switch (entry.type) {
     case "Command": {
       const params =
         entry.attributes.params?.map((param) => normalizeParam(param)) ?? [];
       params.sort((a, b) => a.name.localeCompare(b.name));
-      attributes.params = params;
+      normalized.params = params;
 
       if (hasMultiplicity(entry.attributes.multiline)) {
-        attributes.multiline = true;
+        normalized.multiline = true;
       }
 
       break;
@@ -227,22 +238,16 @@ function normalizeEntry(entry: SchemaEntry): ReducedEntry {
         throw new Error(`Missing valuespace for ${entry.type} ${entry.path}`);
       }
 
-      attributes.valuespace = normalizeValuespace(entry.attributes.valuespace);
+      normalized.valuespace = normalizeValuespace(entry.attributes.valuespace);
       break;
     }
     case "Event": {
-      attributes.children = normalizeChildren(entry.attributes.children ?? {});
+      normalized.children = normalizeChildren(entry.attributes.children ?? {});
       break;
     }
   }
 
-  return {
-    source: entry,
-    path: entry.path,
-    products: sortStrings(entry.products),
-    type: entry.type,
-    attributes,
-  };
+  return normalized;
 }
 
 function signatureValuespace(valuespace: Valuespace | undefined): unknown {
@@ -345,12 +350,19 @@ function entrySignature(entry: SchemaEntry): string {
 
 function mergeEntries(
   entries: readonly SchemaEntry[],
-): readonly ReducedEntry[] {
-  const groups = new Map<string, ReducedEntry>();
+): readonly EntryModel[] {
+  const groups = new Map<string, EntryModel>();
 
   for (const entry of entries) {
     const reduced = normalizeEntry(entry);
-    const signature = entrySignature(entry);
+    const signature = JSON.stringify({
+      path: reduced.path,
+      type: reduced.type,
+      params: reduced.params,
+      valuespace: reduced.valuespace,
+      children: reduced.children,
+      multiline: reduced.multiline,
+    });
 
     const existing = groups.get(signature);
 
@@ -378,28 +390,38 @@ function mergeEntries(
       return pathOrder;
     }
 
-    return JSON.stringify(left.attributes).localeCompare(
-      JSON.stringify(right.attributes),
+    return JSON.stringify({
+      params: left.params,
+      valuespace: left.valuespace,
+      children: left.children,
+      multiline: left.multiline,
+    }).localeCompare(
+      JSON.stringify({
+        params: right.params,
+        valuespace: right.valuespace,
+        children: right.children,
+        multiline: right.multiline,
+      }),
     );
   });
 }
 
 function isCommonEntry(
-  entry: ReducedEntry,
+  entry: EntryModel,
   allProducts: readonly string[],
 ): boolean {
   return allProducts.every((product) => entry.products.includes(product));
 }
 
 function groupEntriesByCommonAndProduct(
-  entries: readonly ReducedEntry[],
+  entries: readonly EntryModel[],
   allProducts: readonly string[],
 ): {
-  common: ReducedEntry[];
-  byProduct: Record<string, ReducedEntry[]>;
+  common: EntryModel[];
+  byProduct: Record<string, EntryModel[]>;
 } {
   const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
-  const byProduct: Record<string, ReducedEntry[]> = {};
+  const byProduct: Record<string, EntryModel[]> = {};
 
   for (const product of allProducts) {
     byProduct[product] = entries.filter(
@@ -411,11 +433,11 @@ function groupEntriesByCommonAndProduct(
   return { common, byProduct };
 }
 
-function groupCommandEntriesByProductSet(
-  entries: readonly ReducedEntry[],
+function groupEntriesByProductSet(
+  entries: readonly EntryModel[],
   allProducts: readonly string[],
 ): {
-  common: ReducedEntry[];
+  common: EntryModel[];
   sets: ProductSetGroup[];
 } {
   const { common } = groupEntriesByCommonAndProduct(entries, allProducts);
@@ -503,8 +525,8 @@ function removeBrackets(segment: string): string {
 export {
   baseValueType,
   entrySignature,
-  groupCommandEntriesByProductSet,
   groupEntriesByCommonAndProduct,
+  groupEntriesByProductSet,
   hasMultiplicity,
   isCommonEntry,
   isLiteralWithoutValues,

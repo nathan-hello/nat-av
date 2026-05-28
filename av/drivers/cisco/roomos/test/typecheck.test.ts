@@ -44,7 +44,7 @@ roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
   value.ProgressIndication.Progress;
   state.Bluetooth;
 });
-roomos.state.UserInterface.WebView.Display.Mode
+roomos.state.UserInterface.WebView[0].Status
 
 roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
   (value, state) => {
@@ -52,3 +52,7 @@ roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
     state.Bluetooth.Streaming.PlaybackPosition;
   },
 );
+
+roomos.state.Bluetooth.Streaming.PlaybackPosition
+roomos.state.Bluetooth.Streaming.Next
+
