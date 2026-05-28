@@ -1,4 +1,4 @@
-import CiscoRoomOS from "@av/drivers/cisco/roomos";
+import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import type { Sockets } from "@av/types";
 
@@ -33,10 +33,10 @@ const roomos = new CiscoRoomOS({
 });
 
 // Should be `unknown`
-roomos.state.UserInterface.ScreenShotStored.Type
+roomos.state.UserInterface.ScreenShotStored.Type;
 
 // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-roomos.state.PresentationPreviewStarted.Cause
+roomos.state.PresentationPreviewStarted.Cause;
 
 roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
 
@@ -44,7 +44,9 @@ roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
   value.ProgressIndication.Progress;
   state.Bluetooth;
 });
-roomos.state.UserInterface.WebView[0].Status
+roomos.state.UserInterface.WebView[0].Status;
+
+roomos.api.xCommand.Dial({ Number: "123445" });
 
 roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
   (value, state) => {
@@ -53,7 +55,7 @@ roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
   },
 );
 
-roomos.state.Bluetooth.Streaming.PlaybackPosition
-roomos.state.Bluetooth.Streaming.PlaybackPosition
+roomos.state.Bluetooth.Streaming.PlaybackPosition;
+roomos.state.Bluetooth.Streaming.PlaybackPosition;
 
 const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();

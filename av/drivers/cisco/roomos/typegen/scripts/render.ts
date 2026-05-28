@@ -1,4 +1,9 @@
-import { hasMultiplicity, isLiteralWithoutValues, isTruthyFlag, valueType } from "./parse.ts";
+import {
+  hasMultiplicity,
+  isLiteralWithoutValues,
+  isTruthyFlag,
+  valueType,
+} from "./parse.ts";
 
 import type {
   EntryModel,
@@ -11,14 +16,6 @@ import type {
   TypeTreeNode,
   ValuespaceModel,
 } from "./types.ts";
-
-function indent(text: string, depth = 1): string {
-  const prefix = "  ".repeat(depth);
-  return text
-    .split("\n")
-    .map((line) => (line.length ? `${prefix}${line}` : line))
-    .join("\n");
-}
 
 function escapeComment(value: string): string {
   return value.replaceAll("*/", "* /");
@@ -139,21 +136,15 @@ function formatMissingTypeDoc(path: string): string {
   return emitDoc([`Cisco schema does not specify a type for ${path}`]);
 }
 
-function renderObject(fields: readonly string[], depth: number): string {
+function renderObject(fields: readonly string[]): string {
   if (!fields.length) {
     return "{}";
   }
 
-  return `{
-${fields.map((field) => indent(field, depth + 1)).join("\n")}
-${indent("}", depth)}`;
+  return `{ ${fields.join(" ")} }`;
 }
 
-function renderTuple(
-  items: readonly string[],
-  depth: number,
-  multiline = false,
-): string {
+function renderTuple(items: readonly string[], multiline = false): string {
   if (!items.length) {
     return "readonly []";
   }
@@ -163,45 +154,47 @@ function renderTuple(
   }
 
   if (items.length === 1) {
-    return `readonly [\n${indent(items[0], depth + 1)}\n${indent("]", depth)}`;
+    return `readonly [ ${items[0]} ]`;
   }
 
-  return `readonly [\n${items.map((item) => indent(`${item},`, depth + 1)).join("\n")}\n${indent("]", depth)}`;
+  return `readonly [ ${items.map((item) => item).join("\n")} ]`;
 }
 
-function renderValuespace(valuespace: ValuespaceModel, depth: number): string {
-  void depth;
+function renderValuespace(valuespace: ValuespaceModel): string {
   return valueType(valuespace);
 }
 
-function renderParam(param: ParamModel, depth: number): string {
+function renderParam(param: ParamModel): string {
   const fields = [`name: ${JSON.stringify(param.name)};`];
 
   if (param.required) {
     fields.push("required: true;");
   }
 
-  fields.push(`valuespace: ${renderValuespace(param.valuespace, depth + 1)};`);
-  return renderObject(fields, depth);
+  fields.push(`valuespace: ${renderValuespace(param.valuespace)};`);
+  return renderObject(fields);
 }
 
-function renderEventModel(node: EventNodeModel, depth: number, path: string): string {
+function renderEventModel(node: EventNodeModel, path: string): string {
   const fields: string[] = [];
 
   if (node.children !== undefined) {
     const children = Object.entries(node.children).map(([name, child]) => {
       const childPath = `${path} ${name}`;
       const docs =
-        child.valuespace !== undefined && isLiteralWithoutValues(child.valuespace) ?
+        (
+          child.valuespace !== undefined &&
+          isLiteralWithoutValues(child.valuespace)
+        ) ?
           formatMissingTypeDoc(childPath)
         : "";
-      return `${docs}${JSON.stringify(name)}: ${renderEventModel(child, depth + 1, childPath)};`;
+      return `${docs}${JSON.stringify(name)}: ${renderEventModel(child, childPath)};`;
     });
-    fields.push(`children: ${renderObject(children, depth + 1)};`);
+    fields.push(`children: ${renderObject(children)};`);
   }
 
   if (node.valuespace !== undefined) {
-    fields.push(`valuespace: ${renderValuespace(node.valuespace, depth + 1)};`);
+    fields.push(`valuespace: ${renderValuespace(node.valuespace)};`);
   }
 
   if (node.multiple) {
@@ -212,7 +205,7 @@ function renderEventModel(node: EventNodeModel, depth: number, path: string): st
     fields.push("required: true;");
   }
 
-  return renderObject(fields, depth);
+  return renderObject(fields);
 }
 
 function renderEntry(entry: EntryModel): string {
@@ -220,46 +213,39 @@ function renderEntry(entry: EntryModel): string {
 
   switch (entry.type) {
     case "Command":
-      attributes = renderObject(
-        [
-          `params: ${renderTuple(
-            (entry.params ?? []).map((param) => renderParam(param, 4)),
-            4,
-            false,
-          )};`,
-          ...(entry.multiline ? ["multiline: true;"] : []),
-        ],
-        3,
-      );
+      attributes = renderObject([
+        `params: ${renderTuple(
+          (entry.params ?? []).map((param) => renderParam(param)),
+          false,
+        )};`,
+        ...(entry.multiline ? ["multiline: true;"] : []),
+      ]);
       break;
     case "Configuration":
     case "Status":
       if (entry.valuespace === undefined) {
         throw new Error("Missing valuespace while rendering value attributes");
       }
-      attributes = renderObject(
-        [`valuespace: ${renderValuespace(entry.valuespace, 4)};`],
-        3,
-      );
+      attributes = renderObject([
+        `valuespace: ${renderValuespace(entry.valuespace)};`,
+      ]);
       break;
     case "Event":
-      attributes = renderObject(
-        [
-          `children: ${renderObject(
-            Object.entries(entry.children ?? {}).map(([name, child]) => {
-              const childPath = `${entry.path} ${name}`;
-              const docs =
+      attributes = renderObject([
+        `children: ${renderObject(
+          Object.entries(entry.children ?? {}).map(([name, child]) => {
+            const childPath = `${entry.path} ${name}`;
+            const docs =
+              (
                 child.valuespace !== undefined &&
-                isLiteralWithoutValues(child.valuespace) ?
-                  formatMissingTypeDoc(childPath)
-                : "";
-              return `${docs}${JSON.stringify(name)}: ${renderEventModel(child, 5, childPath)};`;
-            }),
-            4,
-          )};`,
-        ],
-        3,
-      );
+                isLiteralWithoutValues(child.valuespace)
+              ) ?
+                formatMissingTypeDoc(childPath)
+              : "";
+            return `${docs}${JSON.stringify(name)}: ${renderEventModel(child, childPath)};`;
+          }),
+        )};`,
+      ]);
       break;
   }
 
@@ -267,18 +253,11 @@ function renderEntry(entry: EntryModel): string {
   path: ${JSON.stringify(entry.path)};
   products: ${renderTuple(
     entry.products.map((product) => JSON.stringify(product)),
-    1,
     false,
   )};
   type: ${JSON.stringify(entry.type)};
   attributes: ${attributes};
 }`;
-}
-
-function sortedChildren(node: TypeTreeNode): Array<[string, TypeTreeNode]> {
-  return Object.entries(node.children ?? {}).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
 }
 
 function renderNodeDoc(node: TypeTreeNode): string {
@@ -296,7 +275,6 @@ function renderNodeDoc(node: TypeTreeNode): string {
 function renderCommandArgsObject(
   path: string,
   params: readonly ParamModel[],
-  depth: number,
 ): string {
   if (!params.length) {
     return "{}";
@@ -308,29 +286,19 @@ function renderCommandArgsObject(
     return `${docs}${JSON.stringify(param.name)}${optional}: ${valueType(param.valuespace)};`;
   });
 
-  return renderObject(fields, depth);
+  return renderObject(fields);
 }
 
 function renderCommandCallableFields(
   path: string,
   params: readonly ParamModel[],
-  multiline: boolean,
-  depth: number,
   returnTypeName: string,
 ): string[] {
   const hasParams = params.length > 0;
-  const hasRequiredParams = params.some((param) => isTruthyFlag(param.required));
-  const argsObject = renderCommandArgsObject(path, params, depth + 1);
-
-  if (!multiline) {
-    if (!hasParams) {
-      return [`(): ${returnTypeName};`];
-    }
-
-    return [
-      `${hasRequiredParams ? "(args" : "(args?"}: ${argsObject}): ${returnTypeName};`,
-    ];
-  }
+  const hasRequiredParams = params.some((param) =>
+    isTruthyFlag(param.required),
+  );
+  const argsObject = renderCommandArgsObject(path, params);
 
   if (!hasParams) {
     return [`(): ${returnTypeName};`, `(body: string): ${returnTypeName};`];
@@ -354,16 +322,16 @@ function renderCommandCallableFields(
 function renderCommandCallableType(
   path: string,
   params: readonly ParamModel[],
-  multiline: boolean,
-  depth: number,
   returnTypeName: string,
   forceObject = false,
 ): string {
   const hasParams = params.length > 0;
-  const hasRequiredParams = params.some((param) => isTruthyFlag(param.required));
-  const argsObject = renderCommandArgsObject(path, params, depth + 1);
+  const hasRequiredParams = params.some((param) =>
+    isTruthyFlag(param.required),
+  );
+  const argsObject = renderCommandArgsObject(path, params);
 
-  if (!multiline && !forceObject) {
+  if (!forceObject) {
     if (!hasParams) {
       return `() => ${returnTypeName}`;
     }
@@ -374,33 +342,27 @@ function renderCommandCallableType(
   }
 
   return renderObject(
-    renderCommandCallableFields(path, params, multiline, depth, returnTypeName),
-    depth,
+    renderCommandCallableFields(path, params, returnTypeName),
   );
 }
 
 function renderTreeFields(
   node: TypeTreeNode,
-  depth: number,
-  returnTypeName: string,
+  returnTypeName: string | ((name: string, child: TypeTreeNode) => string),
 ): string[] {
   const fields: string[] = [];
 
-  if (node.callable !== undefined && node.source !== undefined) {
-    fields.push(
-      ...renderCommandCallableFields(
-        node.source.path,
-        node.callable.params,
-        node.callable.multiline === true,
-        depth,
-        returnTypeName,
-      ),
-    );
-  }
-
-  for (const [name, child] of sortedChildren(node)) {
+  for (const [name, child] of Object.entries(node.children ?? {})) {
+    if (!child) {
+      return fields;
+    }
     const docs = renderNodeDoc(child);
-    const value = renderTreeNode(child, depth + 1, returnTypeName);
+    const value = renderTreeNode(
+      child,
+      typeof returnTypeName === "function" ?
+        returnTypeName(name, child)
+      : returnTypeName,
+    );
     const wrappedValue = child.array ? `Array<${value}>` : value;
     fields.push(`${docs}${JSON.stringify(name)}: ${wrappedValue};`);
   }
@@ -408,23 +370,17 @@ function renderTreeFields(
   return fields;
 }
 
-function renderTreeNode(
-  node: TypeTreeNode,
-  depth: number,
-  returnTypeName: string,
-): string {
-  const hasChildren = sortedChildren(node).length > 0;
+function renderTreeNode(node: TypeTreeNode, returnTypeName: string): string {
+  const hasChildren = Object.keys(node.children ?? {}).length > 0;
 
   if (hasChildren) {
-    return renderObject(renderTreeFields(node, depth, returnTypeName), depth);
+    return renderObject(renderTreeFields(node, () => returnTypeName));
   }
 
   if (node.callable !== undefined && node.source !== undefined) {
     return renderCommandCallableType(
       node.source.path,
       node.callable.params,
-      node.callable.multiline === true,
-      depth,
       returnTypeName,
     );
   }
@@ -454,7 +410,7 @@ function renderInterface(
   }
 
   return `export interface ${name}${typeParameters}${extendsClause} {
-${fields.map((field) => indent(field, 1)).join("\n")}
+${fields.join("\n")}
 }`;
 }
 
@@ -466,12 +422,17 @@ function renderByProductInterface(
 ): string {
   return renderInterface(
     name,
-    allProducts.map((product) => `${JSON.stringify(product)}: ${valueForProduct(product)};`),
+    allProducts.map(
+      (product) => `${JSON.stringify(product)}: ${valueForProduct(product)};`,
+    ),
     { typeParameters },
   );
 }
 
-function renderCommandApiSection(section: GroupedTreeModel, allProducts: readonly string[]): string {
+function renderCommandApiSection(
+  section: GroupedTreeModel,
+  allProducts: readonly string[],
+): string {
   const setNames = section.sets.map((_, index) => `CommandApiSet_${index}`);
   const aliasesByProduct: Record<string, string[]> = Object.fromEntries(
     allProducts.map((product) => [product, []]),
@@ -488,8 +449,7 @@ function renderCommandApiSection(section: GroupedTreeModel, allProducts: readonl
   const output: string[] = [
     renderInterface(
       "CommandApiCommon",
-      renderTreeFields(section.common, 0, "ReturnType"),
-      { typeParameters: "<ReturnType = string>" },
+      renderTreeFields(section.common, `unknown`),
     ),
   ];
 
@@ -497,16 +457,15 @@ function renderCommandApiSection(section: GroupedTreeModel, allProducts: readonl
     output.push(
       renderInterface(
         setNames[index],
-        renderTreeFields(set.tree, 0, "ReturnType"),
-        { typeParameters: "<ReturnType = string>" },
+        renderTreeFields(set.tree, "unknown"),
       ),
     );
   });
 
   output.push(
-    `export type CommandApiAny<ReturnType = unknown> = Merge<${[
-      "CommandApiCommon<ReturnType>",
-      ...setNames.map((name) => `${name}<ReturnType>`),
+    `export type CommandApiAny = Merge<${[
+      "CommandApiCommon",
+      ...setNames.map((name) => `${name}`),
     ].join(" & ")}>;`,
   );
 
@@ -521,20 +480,18 @@ function renderCommandApiSection(section: GroupedTreeModel, allProducts: readonl
           return "{}";
         }
 
-        return aliases.map((alias) => `${alias}<ReturnType>`).join(" & ");
+        return aliases.map((alias) => `${alias}`).join(" & ");
       },
-      "<ReturnType = string>",
     ),
   );
 
   output.push(`export type CommandApi<
   TProduct extends ProductTarget = "any",
-  ReturnType = string,
-> = TProduct extends "any" ? CommandApiAny<ReturnType>
-  : TProduct extends Product ? Merge<CommandApiCommon<ReturnType> & CommandApiByProduct<ReturnType>[TProduct]>
+> = TProduct extends "any" ? CommandApiAny
+  : TProduct extends Product ? Merge<CommandApiCommon & CommandApiByProduct[TProduct]>
   : {};`);
 
-  return output.join("\n\n");
+  return output.join("\n");
 }
 
 function renderStateSection(
@@ -556,12 +513,15 @@ function renderStateSection(
   });
 
   const output: string[] = [
-    renderInterface(`${baseName}Common`, renderTreeFields(section.common, 0, "never")),
+    renderInterface(
+      `${baseName}Common`,
+      renderTreeFields(section.common, "never"),
+    ),
   ];
 
   section.sets.forEach((set, index) => {
     output.push(
-      renderInterface(setNames[index], renderTreeFields(set.tree, 0, "never")),
+      renderInterface(setNames[index], renderTreeFields(set.tree, "never")),
     );
   });
 
@@ -589,16 +549,18 @@ function renderStateSection(
   : TProduct extends Product ? Merge<${baseName}Common & ${baseName}ByProduct[TProduct]>
   : {};`);
 
-  return output.join("\n\n");
+  return output.join("\n");
 }
 
 function renderNamespace(model: GeneratedModel): string {
-  const objects = model.entries.map((entry) => `  | ${renderEntry(entry)}`).join("\n");
+  const objects = model.entries
+    .map((entry) => `  | ${renderEntry(entry)}`)
+    .join("\n");
 
   return [
     "export namespace GeneratedRoomOS {",
     "type Merge<T> = { [K in keyof T]: T[K] };",
-    `export type Object =\n${objects};`,
+    `export type Object = ${objects};`,
     `export type Product = ${model.products.map((product) => JSON.stringify(product)).join(" | ")};`,
     `export type Kind = ${model.kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,
     'export type ProductTarget = Product | "any";',

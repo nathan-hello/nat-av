@@ -10,7 +10,7 @@ export type State<
   internal: { subscriptions: Subscriptions };
 };
 
-export default class CiscoRoomOS<
+export class CiscoRoomOS<
   Product extends Generated.ProductTarget = "any",
   const Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
   const N extends string = string,
@@ -34,7 +34,11 @@ export default class CiscoRoomOS<
     super({ name, driverName: "cisco-room-devices-11-9" });
     this.socket = socket;
     this.output = output;
-    this.state.internal.subscriptions = subscriptions;
+
+    this.state.internal = {
+      // TSAS:
+      subscriptions: subscriptions as typeof this.state.internal.subscriptions,
+    };
   }
 
   // TSAS: The initial state is populated asynchronously from feedback subscriptions.

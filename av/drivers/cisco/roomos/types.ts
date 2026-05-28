@@ -11,7 +11,8 @@ type IsPlainObject<V> =
 type ArrayElement<V> = V extends readonly (infer Item)[] ? Item : never;
 
 type FeedbackSubscriptionValue<Tree> =
-  Tree extends readonly any[] ? true | FeedbackSubscriptionsFor<ArrayElement<Tree>>
+  Tree extends readonly any[] ?
+    true | FeedbackSubscriptionsFor<ArrayElement<Tree>>
   : IsPlainObject<Tree> extends true ? true | FeedbackSubscriptionsFor<Tree>
   : true;
 
@@ -28,8 +29,12 @@ type FeedbackStateFromSubscriptions<Tree, Subscriptions> =
     Simplify<{
       [K in keyof Subscriptions & keyof Tree]: Subscriptions[K] extends true ?
         Tree[K]
-      : Tree[K] extends readonly any[] ? Array<
-          FeedbackStateFromSubscriptions<ArrayElement<Tree[K]>, Subscriptions[K]>
+      : Tree[K] extends readonly any[] ?
+        Array<
+          FeedbackStateFromSubscriptions<
+            ArrayElement<Tree[K]>,
+            Subscriptions[K]
+          >
         >
       : IsPlainObject<Tree[K]> extends true ?
         FeedbackStateFromSubscriptions<Tree[K], Subscriptions[K]>
@@ -112,9 +117,7 @@ export namespace RoomOS {
     Product extends GeneratedRoomOS.ProductTarget = "any",
     State = FeedbackState<Product>,
   > = {
-    xCommand: ApiRecordify<
-      GeneratedRoomOS.CommandApi<Product, Promise<Result<any>>>
-    >;
+    xCommand: ApiRecordify<GeneratedRoomOS.CommandApi<Product>>;
     xConfiguration: ConfigurationApi<Product>;
     xStatus: StatusApi<Product>;
     xFeedback: ApiRecordify<Feedbackify<FeedbackState<Product>, State>>;
