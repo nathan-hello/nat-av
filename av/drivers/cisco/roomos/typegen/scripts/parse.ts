@@ -1,6 +1,7 @@
 import type {
   EventNode,
   Param,
+  ProductSetGroup,
   ReducedEntry,
   ReducedEventNode,
   ReducedParam,
@@ -415,61 +416,51 @@ function groupCommandEntriesByProductSet(
   allProducts: readonly string[],
 ): {
   common: ReducedEntry[];
-  sets: Array<{
-    key: string;
-    products: string[];
-    entries: ReducedEntry[];
-  }>;
+  sets: ProductSetGroup[];
 } {
   const { common } = groupEntriesByCommonAndProduct(entries, allProducts);
-  const commonSet = new Set(common);
-  const bySet = new Map<
-    string,
-    {
-      key: string;
-      products: string[];
-      entries: ReducedEntry[];
-    }
-  >();
+  const commonEntries = new Set(common);
+  const groupsByProductSet = new Map<string, ProductSetGroup>();
 
   for (const entry of entries) {
-    if (commonSet.has(entry)) {
+    if (commonEntries.has(entry)) {
       continue;
     }
 
-    const key = entry.products.join("\u001f");
-    const existing = bySet.get(key);
+    const key = JSON.stringify(entry.products.sort());
+    let group = groupsByProductSet.get(key);
 
-    if (existing !== undefined) {
-      existing.entries.push(entry);
-      continue;
+    if (group === undefined) {
+      group = {
+        key,
+        products: [...entry.products],
+        entries: [],
+      };
+
+      groupsByProductSet.set(key, group);
     }
 
-    bySet.set(key, {
-      key,
-      products: entry.products.slice(),
-      entries: [entry],
-    });
+    group.entries.push(entry);
   }
+
+  const sets = [...groupsByProductSet.values()].sort((left, right) => {
+    const sizeOrder = left.products.length - right.products.length;
+
+    if (sizeOrder !== 0) {
+      return sizeOrder;
+    }
+
+    return left.key.localeCompare(right.key);
+  });
 
   return {
     common,
-    sets: Array.from(bySet.values()).sort((left, right) => {
-      const sizeOrder = left.products.length - right.products.length;
-
-      if (sizeOrder !== 0) {
-        return sizeOrder;
-      }
-
-      return left.key.localeCompare(right.key);
-    }),
+    sets,
   };
 }
 
 function uniqueProducts(entries: readonly SchemaEntry[]): readonly string[] {
-  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort(
-    (a, b) => a.localeCompare(b),
-  );
+  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort();
 }
 
 function uniqueKinds(

@@ -105,3 +105,9 @@ export type CommandTreeNode = {
   children: Map<string, CommandTreeNode>;
   entry?: ReducedEntry;
 };
+
+export type ProductSetGroup = {
+  key: string;
+  products: string[];
+  entries: ReducedEntry[];
+};

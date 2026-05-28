@@ -282,7 +282,7 @@ function renderCommandApiSection(
   const allSetAliases = setAliases.map(({ alias }) => `${alias}<ReturnType>`);
 
   output.push(
-    `export type CommandApiAny<ReturnType = string> = CommandApiCommon<ReturnType>${allSetAliases.length ? ` & ${allSetAliases.join(" & ")}` : ""};`,
+    `export type CommandApiAny<ReturnType = unknown> = CommandApiCommon<ReturnType>${allSetAliases.length ? ` & ${allSetAliases.join(" & ")}` : ""};`,
   );
 
   output.push(
