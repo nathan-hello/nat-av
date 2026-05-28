@@ -455,10 +455,7 @@ function renderCommandApiSection(
 
   section.sets.forEach((set, index) => {
     output.push(
-      renderInterface(
-        setNames[index],
-        renderTreeFields(set.tree, "unknown"),
-      ),
+      renderInterface(setNames[index], renderTreeFields(set.tree, "unknown")),
     );
   });
 
@@ -470,19 +467,15 @@ function renderCommandApiSection(
   );
 
   output.push(
-    renderByProductInterface(
-      "CommandApiByProduct",
-      allProducts,
-      (product) => {
-        const aliases = aliasesByProduct[product];
+    renderByProductInterface("CommandApiByProduct", allProducts, (product) => {
+      const aliases = aliasesByProduct[product];
 
-        if (!aliases.length) {
-          return "{}";
-        }
+      if (!aliases.length) {
+        return "{}";
+      }
 
-        return aliases.map((alias) => `${alias}`).join(" & ");
-      },
-    ),
+      return aliases.map((alias) => `${alias}`).join(" & ");
+    }),
   );
 
   output.push(`export type CommandApi<

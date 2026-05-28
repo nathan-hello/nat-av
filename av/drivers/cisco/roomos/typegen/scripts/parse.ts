@@ -36,7 +36,10 @@ function literalValues(
     return undefined;
   }
 
-  return valuespace.Values ?? ("values" in valuespace ? valuespace.values : undefined);
+  return (
+    valuespace.Values ??
+    ("values" in valuespace ? valuespace.values : undefined)
+  );
 }
 
 function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
@@ -348,9 +351,7 @@ function entrySignature(entry: SchemaEntry): string {
   });
 }
 
-function mergeEntries(
-  entries: readonly SchemaEntry[],
-): readonly EntryModel[] {
+function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
   const groups = new Map<string, EntryModel>();
 
   for (const entry of entries) {

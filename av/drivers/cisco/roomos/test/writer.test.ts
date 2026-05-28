@@ -13,7 +13,7 @@ describe("roomos writer", () => {
       args: { Number: "12345" },
     });
 
-    assert.equal(command.ToTerminal(), "xCommand Dial Number: \"12345\"");
+    assert.equal(command.ToTerminal(), 'xCommand Dial Number: "12345"');
     assert.equal(
       command.ToJsonRpc(9),
       JSON.stringify({
@@ -43,7 +43,9 @@ describe("roomos writer", () => {
       JSON.stringify({
         jsonrpc: "2.0",
         method: "xFeedback/Subscribe",
-        params: { Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"] },
+        params: {
+          Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
+        },
         id: 1,
       }),
     );
@@ -59,18 +61,27 @@ describe("roomos writer", () => {
       ["xConfiguration"],
     );
 
-    assert.equal(api.Bluetooth.Allowed.get(), JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xGet",
-      params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
-      id: 5,
-    }));
+    assert.equal(
+      api.Bluetooth.Allowed.get(),
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xGet",
+        params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
+        id: 5,
+      }),
+    );
 
-    assert.equal(api.Bluetooth.set({ Allowed: "True" }), JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xSet",
-      params: { Path: ["Configuration", "Bluetooth"], Value: { Allowed: "True" } },
-      id: 5,
-    }));
+    assert.equal(
+      api.Bluetooth.set({ Allowed: "True" }),
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xSet",
+        params: {
+          Path: ["Configuration", "Bluetooth"],
+          Value: { Allowed: "True" },
+        },
+        id: 5,
+      }),
+    );
   });
 });
