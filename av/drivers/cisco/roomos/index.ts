@@ -35,7 +35,7 @@ export class CiscoRoomOS<
     product?: Product;
     subscriptions?: Subscriptions & RoomOS.FeedbackSubscriptions<Product>;
   }) {
-    super({ name, driverName: "cisco-room-devices-11-9" });
+    super({ name, driverName: "cisco-room-devices" });
     this.socket = socket;
 
     this.requests = new RequestManager({

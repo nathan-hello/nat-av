@@ -7,7 +7,7 @@
     "start": "sh ./scripts/commands.sh start",
     "dev:css": "sh ./scripts/commands.sh dev:css",
     "build:css": "sh ./scripts/commands.sh build:css",
-    "test": "sh ./scripts/commands.sh test",
+    "test": "NODE_ENV=testing sh ./scripts/commands.sh test",
     "typecheck": "sh ./scripts/commands.sh typecheck",
     "tsc": "sh ./scripts/commands.sh typecheck"
   },

@@ -6,7 +6,7 @@ import { StartLogging } from "@av/telemetry/sdk";
 import { Orchistrator } from "@av/lib/orch";
 import { Bus } from "@av/lib/bus";
 
-StartLogging([new ConsoleExporter()]);
+StartLogging([new ConsoleExporter("ERROR")]);
 
 export class TestDriver<const N extends string = string> extends Driver<N> {
   state = {

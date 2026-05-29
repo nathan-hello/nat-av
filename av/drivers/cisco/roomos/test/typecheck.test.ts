@@ -26,31 +26,31 @@ const roomos = new CiscoRoomOS({
 });
 
 if (false) {
-// Should be `unknown`
-roomos.state.UserInterface.ScreenShotStored.Type;
+  // Should be `unknown`
+  roomos.state.UserInterface.ScreenShotStored.Type;
 
-// Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-roomos.state.PresentationPreviewStarted.Cause;
+  // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
+  roomos.state.PresentationPreviewStarted.Cause;
 
-roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
+  roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
 
-roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
-  value.ProgressIndication.Progress;
-  state.Bluetooth;
-});
-roomos.state.UserInterface.WebView[0].Status;
+  roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
+    value.ProgressIndication.Progress;
+    state.Bluetooth;
+  });
+  roomos.state.UserInterface.WebView[0].Status;
 
-roomos.api.xCommand.Dial({ Number: "123445" });
+  roomos.api.xCommand.Dial({ Number: "123445" });
 
-roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
-  (value, state) => {
-    value.Position;
-    state.Bluetooth.Streaming.PlaybackPosition;
-  },
-);
+  roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
+    (value, state) => {
+      value.Position;
+      state.Bluetooth.Streaming.PlaybackPosition;
+    },
+  );
 
-roomos.state.Bluetooth.Streaming.PlaybackPosition;
-roomos.state.Bluetooth.Streaming.PlaybackPosition;
+  roomos.state.Bluetooth.Streaming.PlaybackPosition;
+  roomos.state.Bluetooth.Streaming.PlaybackPosition;
 
-const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();
+  const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();
 }

@@ -6,12 +6,11 @@ import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import { TestSocket } from "@av/test/socket";
 import { StartLogging } from "@av/telemetry/sdk";
+import { ConsoleExporter } from "@av/telemetry/exporters";
+import { Telemetry } from "@av/telemetry";
 
 StartLogging([
-  {
-    export() {},
-    async shutdown() {},
-  },
+  new ConsoleExporter("ERROR"),
 ]);
 
 describe("roomos writer", () => {

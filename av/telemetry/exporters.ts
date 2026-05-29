@@ -54,13 +54,19 @@ export class CustomExporter implements LogRecordExporter {
 }
 
 export class ConsoleExporter implements LogRecordExporter {
-  constructor() {}
+  private minimumSeverityNumber: number;
+
+  constructor(minimumSeverity: keyof typeof SeverityNumber) {
+    this.minimumSeverityNumber = SeverityNumber[minimumSeverity];
+  }
 
   export(
     logRecords: ReadableLogRecord[],
     resultCallback: (result: ExportResult) => void,
   ) {
     for (const record of logRecords) {
+      if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
+
       switch (record.severityNumber) {
         case SeverityNumber["DEBUG"]:
           console.debug(record);
@@ -87,13 +93,19 @@ export class ConsoleExporter implements LogRecordExporter {
 }
 
 export class SimpleConsoleExporter implements LogRecordExporter {
-  constructor() {}
+  private minimumSeverityNumber: number;
+
+  constructor(minimumSeverity: keyof typeof SeverityNumber) {
+    this.minimumSeverityNumber = SeverityNumber[minimumSeverity];
+  }
 
   export(
     logRecords: ReadableLogRecord[],
     resultCallback: (result: ExportResult) => void,
   ) {
     for (const record of logRecords) {
+      if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
+
       switch (record.severityNumber) {
         case SeverityNumber["DEBUG"]:
           console.debug(

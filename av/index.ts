@@ -28,8 +28,8 @@ if ((globalThis as any).__devices__) {
 }
 
 StartLogging([
-  new FileExporter("./logs/natav.jsonl", true),
-  new SimpleConsoleExporter(),
+  new FileExporter("./logs/natav.jsonl", true, "DEBUG"),
+  new SimpleConsoleExporter("DEBUG"),
   new CustomExporter((event) => {
     bus.dispatch("natav:opentelemetry:entry", event);
   }),

@@ -4,7 +4,7 @@ import { createRoot, run } from "remix/ui";
 import { HomePage } from "@/spa/home";
 import { DebugPage } from "@/spa/debug";
 
-StartLogging([new SimpleConsoleExporter()]);
+StartLogging([new SimpleConsoleExporter("DEBUG")]);
 
 const homeContainer = document.getElementById("spa-home");
 if (homeContainer) {
