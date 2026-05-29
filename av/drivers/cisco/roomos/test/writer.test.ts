@@ -7,7 +7,6 @@ import type { RoomOS } from "@av/drivers/cisco/roomos/types";
 import { TestSocket } from "@av/test/socket";
 import { StartLogging } from "@av/telemetry/sdk";
 import { ConsoleExporter } from "@av/telemetry/exporters";
-import { Telemetry } from "@av/telemetry";
 
 StartLogging([new ConsoleExporter("ERROR")]);
 

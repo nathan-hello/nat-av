@@ -34,7 +34,7 @@ export function getLoggerProvider(): LoggerProvider {
 
 export function StartLogging(exporters: LogRecordExporter[]) {
   if (loggerProvider) {
-    return;
+    throw Error("StartLogging was called twice.");
   }
   loggerProvider = new LoggerProvider(new MultiLogExporter(exporters));
 }
