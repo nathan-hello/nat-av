@@ -13,25 +13,17 @@ export class TestSocket<State = unknown>
 {
   name = "test-socket";
   writes: string[] = [];
-  private script?: {
-    scripts: TestSocketScriptStep<State>[];
-    config: { errorIfWriteNotFound: boolean };
-  };
+  private script?: TestSocketScriptStep<State>[];
+  config: { errorIfWriteNotFound: boolean };
   state: State | undefined;
 
-  constructor({
-    script,
-    state,
-  }: {
-    script?: {
-      scripts: TestSocketScriptStep<State>[];
-      config: { errorIfWriteNotFound: boolean };
-    };
-    state?: State;
-  } = {}) {
+  constructor(
+    scripts: TestSocketScriptStep<State>[],
+    config: { errorIfWriteNotFound: boolean },
+  ) {
     super();
-    this.script = script;
-    this.state = state;
+    this.script = scripts;
+    this.config = config;
   }
 
   start() {}
@@ -41,19 +33,19 @@ export class TestSocket<State = unknown>
     const buffer = toBuffer(data);
     this.writes.push(buffer.toString("utf8"));
 
-    if (this.script && this.script.scripts?.length > 0) {
-      const index = this.script.scripts.findIndex((step) =>
+    if (this.script && this.script?.length > 0) {
+      const index = this.script.findIndex((step) =>
         buffer.equals(toBuffer(step.onWrite)),
       );
 
       if (index === -1) {
-        if (this.script.config.errorIfWriteNotFound) {
+        if (this.config.errorIfWriteNotFound) {
           throw Error("unknown write received: " + data.toString("utf8"));
         }
         return buffer.length;
       }
 
-      const [step] = this.script.scripts.splice(index, 1);
+      const [step] = this.script.splice(index, 1);
 
       if (typeof step.sendBack === "function") {
         this.receive(step.sendBack(this.state));
@@ -72,5 +64,4 @@ export class TestSocket<State = unknown>
   receive(message: unknown) {
     this.dispatch("receive", toBuffer(message));
   }
-
 }

@@ -9,9 +9,7 @@ import { StartLogging } from "@av/telemetry/sdk";
 import { ConsoleExporter } from "@av/telemetry/exporters";
 import { Telemetry } from "@av/telemetry";
 
-StartLogging([
-  new ConsoleExporter("ERROR"),
-]);
+StartLogging([new ConsoleExporter("ERROR")]);
 
 describe("roomos writer", () => {
   it("serializes command, get, set, and listen operations", () => {
@@ -81,72 +79,68 @@ describe("roomos writer", () => {
   });
 
   it("builds api calls and writes jsonrpc payloads to the socket", async () => {
-    const socket = new TestSocket({
-      script: {
-        config: {
-          errorIfWriteNotFound: true,
+    const socket = new TestSocket(
+      [
+        {
+          onWrite: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "xGet",
+            params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
+            id: 0,
+          }),
+          sendBack: {
+            jsonrpc: "2.0",
+            result: { Allowed: "True" },
+            id: 0,
+          },
         },
-        scripts: [
-          {
-            onWrite: JSON.stringify({
-              jsonrpc: "2.0",
-              method: "xGet",
-              params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
-              id: 0,
-            }),
-            sendBack: {
-              jsonrpc: "2.0",
-              result: { Allowed: "True" },
-              id: 0,
+        {
+          onWrite: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "xSet",
+            params: {
+              Path: ["Configuration", "Bluetooth"],
+              Value: { Allowed: "True", Enabled: "False" },
             },
+            id: 1,
+          }),
+          sendBack: {
+            jsonrpc: "2.0",
+            result: { Allowed: "True", Enabled: "False" },
+            id: 1,
           },
-          {
-            onWrite: JSON.stringify({
-              jsonrpc: "2.0",
-              method: "xSet",
-              params: {
-                Path: ["Configuration", "Bluetooth"],
-                Value: { Allowed: "True", Enabled: "False" },
-              },
-              id: 1,
-            }),
-            sendBack: {
-              jsonrpc: "2.0",
-              result: { Allowed: "True", Enabled: "False" },
-              id: 1,
+        },
+        {
+          onWrite: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "xCommand/Dial",
+            params: { Number: "12345" },
+            id: 2,
+          }),
+          sendBack: {
+            jsonrpc: "2.0",
+            result: { Number: "12345" },
+            id: 2,
+          },
+        },
+        {
+          onWrite: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "xFeedback/Subscribe",
+            params: {
+              Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
             },
+            id: 3,
+          }),
+          sendBack: {
+            jsonrpc: "2.0",
+            result: {},
+            id: 3,
           },
-          {
-            onWrite: JSON.stringify({
-              jsonrpc: "2.0",
-              method: "xCommand/Dial",
-              params: { Number: "12345" },
-              id: 2,
-            }),
-            sendBack: {
-              jsonrpc: "2.0",
-              result: { Number: "12345" },
-              id: 2,
-            },
-          },
-          {
-            onWrite: JSON.stringify({
-              jsonrpc: "2.0",
-              method: "xFeedback/Subscribe",
-              params: {
-                Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-              },
-              id: 3,
-            }),
-            sendBack: {
-              jsonrpc: "2.0",
-              result: {},
-              id: 3,
-            },
-          },
-        ],
-      },
-    });
+        },
+      ],
+      { errorIfWriteNotFound: true },
+    );
 
     const roomos = new CiscoRoomOS({
       name: "roomos-writer-test",
@@ -156,11 +150,9 @@ describe("roomos writer", () => {
 
     assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
 
-    const asdf = await roomos.api.xConfiguration.Bluetooth.Allowed.get();
-    assert.deepEqual(asdf, {
-      jsonrpc: "2.0",
-      result: { Allowed: "True" },
-      id: 0,
+    assert.deepEqual(await roomos.api.xConfiguration.Bluetooth.Allowed.get(), {
+      ok: true,
+      data: { Allowed: "True" },
     });
     assert.deepEqual(
       await roomos.api.xConfiguration.Bluetooth.set({
@@ -168,22 +160,19 @@ describe("roomos writer", () => {
         Enabled: "False",
       }),
       {
-        jsonrpc: "2.0",
-        result: { Allowed: "True", Enabled: "False" },
-        id: 1,
+        ok: true,
+        data: { Allowed: "True", Enabled: "False" },
       },
     );
     assert.deepEqual(await roomos.api.xCommand.Dial({ Number: "12345" }), {
-      jsonrpc: "2.0",
-      result: { Number: "12345" },
-      id: 2,
+      ok: true,
+      data: { Number: "12345" },
     });
     assert.deepEqual(
       await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
       {
-        jsonrpc: "2.0",
-        result: {},
-        id: 3,
+        ok: true,
+        data: {},
       },
     );
 
