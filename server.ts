@@ -1,8 +1,7 @@
-import { serve } from "remix/node-serve";
-
-import { start } from "./av/index.ts";
-import { router } from "./app/router.ts";
+import { start } from "@av/index";
 import { Telemetry } from "@av/telemetry";
+import { router } from "./app/router.ts";
+import { serve } from "remix/node-serve";
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100;
 

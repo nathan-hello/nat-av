@@ -24,6 +24,8 @@ export class CiscoRoomOS<
   socket: Sockets.Socket;
   requests: RequestManager<RoomOS.WriteOperation & { id: number }, unknown>;
   highestId = 0;
+  private stateData: Record<string, unknown> = {};
+  private proxy = new RoomOSProxy(this.request.bind(this));
 
   constructor({
     name,
@@ -97,13 +99,16 @@ export class CiscoRoomOS<
     }
   }
 
-  // TSAS: The initial state is populated asynchronously from feedback subscriptions.
-  state: State<Product, Subscriptions> = {} as State<Product, Subscriptions>;
+  get state(): State<Product, Subscriptions> { return {} as State<Product, Subscriptions> }
+
+  set state(value: State<Product, Subscriptions>) {
+    this.stateData = value;
+  }
 
   api: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> = {
-    xCommand: RoomOSProxy.Command(this.request.bind(this)),
-    xConfiguration: RoomOSProxy.Configuration(this.request.bind(this)),
-    xStatus: RoomOSProxy.Status(this.request.bind(this)),
-    xFeedback: RoomOSProxy.Feedback(this.request.bind(this)),
+    xCommand: this.proxy.Command() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xCommand"],
+    xConfiguration: this.proxy.Configuration() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xConfiguration"],
+    xStatus: this.proxy.Status() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xStatus"],
+    xFeedback: this.proxy.Feedback() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xFeedback"],
   };
 }

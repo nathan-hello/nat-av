@@ -7,35 +7,42 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export class RoomOSProxy {
-  private static target() {
-    return () => undefined;
+  private static target<T>() {
+    return () => undefined as T;
   }
 
   private static childPath(path: readonly string[], prop: string) {
     return [...path, prop];
   }
 
-  static Command(
-    request: TRequest,
-    path: readonly string[] = ["xCommand"],
-  ): any {
+  private request: TRequest;
+
+  constructor(request: TRequest) {
+    this.request = request;
+  }
+
+
+
+  Command(path: readonly string[] = ["xCommand"]) {
     return new Proxy(RoomOSProxy.target(), {
-      get(_, prop: string | symbol) {
+      get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
 
-        return RoomOSProxy.Command(request, RoomOSProxy.childPath(path, prop));
+        return new RoomOSProxy(this.request).Command(
+          RoomOSProxy.childPath(path, prop),
+        );
       },
-      apply(_, __, args: unknown[]) {
+      apply: (_, __, args: unknown[]) => {
         if (args.length === 0) {
-          return request({ kind: "command", root: "xCommand", path });
+          return this.request({ kind: "command", root: "xCommand", path });
         }
 
         const [first, second] = args;
 
         if (typeof first === "string") {
-          return request({
+          return this.request({
             kind: "command",
             root: "xCommand",
             path,
@@ -46,7 +53,7 @@ export class RoomOSProxy {
 
         if (isPlainRecord(first)) {
           if (typeof second === "string") {
-            return request({
+            return this.request({
               kind: "command",
               root: "xCommand",
               path,
@@ -55,7 +62,7 @@ export class RoomOSProxy {
             });
           }
 
-          return request({
+          return this.request({
             kind: "command",
             root: "xCommand",
             path,
@@ -68,12 +75,9 @@ export class RoomOSProxy {
     });
   }
 
-  static Configuration(
-    request: TRequest,
-    path: readonly string[] = ["xConfiguration"],
-  ): any {
+  Configuration(path: readonly string[] = ["xConfiguration"]) {
     return new Proxy(RoomOSProxy.target(), {
-      get(_, prop: string | symbol) {
+      get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
@@ -86,11 +90,15 @@ export class RoomOSProxy {
         ) {
           return (...args: unknown[]) => {
             if (prop === "get") {
-              return request({ kind: "get", root: "xConfiguration", path });
+              return this.request({
+                kind: "get",
+                root: "xConfiguration",
+                path,
+              });
             }
 
             if (prop === "set") {
-              return request({
+              return this.request({
                 kind: "set",
                 root: "xConfiguration",
                 path,
@@ -98,21 +106,24 @@ export class RoomOSProxy {
               });
             }
 
-            return request({ kind: "listen", root: "xConfiguration", path });
+            return this.request({
+              kind: "listen",
+              root: "xConfiguration",
+              path,
+            });
           };
         }
 
-        return RoomOSProxy.Configuration(
-          request,
+        return new RoomOSProxy(this.request).Configuration(
           RoomOSProxy.childPath(path, prop),
         );
       },
     });
   }
 
-  static Status(request: TRequest, path: readonly string[] = ["xStatus"]): any {
+  Status(path: readonly string[] = ["xStatus"]) {
     return new Proxy(RoomOSProxy.target(), {
-      get(_, prop: string | symbol) {
+      get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
@@ -120,34 +131,44 @@ export class RoomOSProxy {
         if (prop === "get" || prop === "on" || prop === "once") {
           return () => {
             if (prop === "get") {
-              return request({ kind: "get", root: "xStatus", path });
+              return this.request({ kind: "get", root: "xStatus", path });
             }
 
-            return request({ kind: "listen", root: "xStatus", path });
+            return this.request({ kind: "listen", root: "xStatus", path });
           };
         }
 
-        return RoomOSProxy.Status(request, RoomOSProxy.childPath(path, prop));
+        return new RoomOSProxy(this.request).Status(
+          RoomOSProxy.childPath(path, prop),
+        );
       },
     });
   }
 
-  static Feedback(
-    request: TRequest,
-    path: readonly string[] = ["xFeedback"],
-  ): any {
+  Feedback(path: readonly string[] = ["xFeedback"]) {
     return new Proxy(RoomOSProxy.target(), {
-      get(_, prop: string | symbol) {
+      get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
 
         if (prop === "subscribe" || prop === "on" || prop === "once") {
-          return () => request({ kind: "listen", root: "xFeedback", path });
+          return () =>
+            this.request({ kind: "listen", root: "xFeedback", path });
         }
 
-        return RoomOSProxy.Feedback(request, RoomOSProxy.childPath(path, prop));
+        return new RoomOSProxy(this.request).Feedback(
+          RoomOSProxy.childPath(path, prop),
+        );
       },
     });
+  }
+
+  private realState = {};
+
+  State(path: readonly string[] = [""]) {
+
+    
+
   }
 }

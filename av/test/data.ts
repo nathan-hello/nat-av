@@ -1,4 +1,4 @@
-import type { Events, Rpc, Schema } from "@av/types";
+import type { DriverFor, Events, Rpc, Schema } from "@av/types";
 import { Driver } from "@av/drivers";
 import { Tcp } from "@av/sockets/tcp";
 import { ConsoleExporter } from "@av/telemetry/exporters";
@@ -125,3 +125,4 @@ export class AutomationEngine {
 export const system = new TestSystem({ natav });
 
 type Api = Rpc.Api<natav, "shim-1">;
+type Dri = DriverFor<typeof natav.configs, "shim-1">;

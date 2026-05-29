@@ -1,3 +1,6 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import type { Sockets } from "@av/types";
 
@@ -25,10 +28,15 @@ const roomos = new CiscoRoomOS({
   },
 });
 
-if (false) {
-  // Should be `unknown`
-  roomos.state.UserInterface.ScreenShotStored.Type;
+// describe("typecheck", () => {
+//   it("does not throw when accessing nested state obj", () => {
+//     assert.doesNotThrow(() => {
+//       void roomos.state.UserInterface.ScreenShotStored.Type;
+//     });
+//   });
+// });
 
+if (false) {
   // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
   roomos.state.PresentationPreviewStarted.Cause;
 

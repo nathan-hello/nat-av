@@ -1,4 +1,4 @@
-import type { Natav } from "@av/types";
+import type { DriverFor, Natav } from "@av/types";
 import type { natav } from "@av/index";
 import { AutomationEngine } from "@av/system/automation";
 
@@ -12,6 +12,8 @@ export class System<N extends Natav.Orch = natav> {
   constructor(args: { natav: N }) {
     this.natav = args.natav;
     new AutomationEngine();
+    type good = DriverFor<natav["configs"], "video-wall">;
+    const bad = this.natav.GetDriver("video-wall");
   }
 
   api = {

@@ -144,8 +144,11 @@ describe("roomos writer", () => {
     const roomos = new CiscoRoomOS({
       name: "roomos-writer-test",
       socket,
-      subscriptions: {},
+      subscriptions: {
+        UserInterface: true,
+      },
     });
+
 
     assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
 
