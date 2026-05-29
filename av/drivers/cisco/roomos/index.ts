@@ -24,8 +24,9 @@ export class CiscoRoomOS<
   socket: Sockets.Socket;
   requests: RequestManager<RoomOS.WriteOperation & { id: number }, unknown>;
   highestId = 0;
-  private stateData: Record<string, unknown> = {};
   private proxy = new RoomOSProxy(this.request.bind(this));
+  state = this.proxy.State();
+
 
   constructor({
     name,
@@ -59,11 +60,16 @@ export class CiscoRoomOS<
       delimiter: Delimiters.json,
     });
 
+    this.socket.on("connected", () => {
+      this.socket.write("xPreferences OutputMode json");
+    })
+
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", toBuffer(message));
     });
 
     this.state.internal = {
+      highestId: this.highestId,
       // TSAS:
       subscriptions: subscriptions as typeof this.state.internal.subscriptions,
     };
@@ -79,8 +85,6 @@ export class CiscoRoomOS<
       throw new RPCErrorData({ code: 400, message: result.error });
     }
 
-    this.dispatch("driver:delimited", Buffer.from(JSON.stringify(result.data)));
-
     if ("error" in result) {
       return {
         ok: false,
@@ -92,6 +96,7 @@ export class CiscoRoomOS<
       typeof result.data === "object" &&
       (result.data === null || "result" in result.data)
     ) {
+      // Update state here
       return {
         ok: true,
         data: result.data ? result.data.result : null,
@@ -99,16 +104,23 @@ export class CiscoRoomOS<
     }
   }
 
-  get state(): State<Product, Subscriptions> { return {} as State<Product, Subscriptions> }
-
-  set state(value: State<Product, Subscriptions>) {
-    this.stateData = value;
-  }
 
   api: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> = {
-    xCommand: this.proxy.Command() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xCommand"],
-    xConfiguration: this.proxy.Configuration() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xConfiguration"],
-    xStatus: this.proxy.Status() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xStatus"],
-    xFeedback: this.proxy.Feedback() as RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>>["xFeedback"],
+    xCommand: this.proxy.Command() as RoomOS.Api<
+      Product,
+      RoomOS.State<Product, Subscriptions>
+    >["xCommand"],
+    xConfiguration: this.proxy.Configuration() as RoomOS.Api<
+      Product,
+      RoomOS.State<Product, Subscriptions>
+    >["xConfiguration"],
+    xStatus: this.proxy.Status() as RoomOS.Api<
+      Product,
+      RoomOS.State<Product, Subscriptions>
+    >["xStatus"],
+    xFeedback: this.proxy.Feedback() as RoomOS.Api<
+      Product,
+      RoomOS.State<Product, Subscriptions>
+    >["xFeedback"],
   };
 }

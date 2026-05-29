@@ -28,37 +28,21 @@ const roomos = new CiscoRoomOS({
   },
 });
 
-// describe("typecheck", () => {
-//   it("does not throw when accessing nested state obj", () => {
-//     assert.doesNotThrow(() => {
-//       void roomos.state.UserInterface.ScreenShotStored.Type;
-//     });
-//   });
-// });
-
-if (false) {
-  // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-  roomos.state.PresentationPreviewStarted.Cause;
-
-  roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
-
-  roomos.api.xFeedback.CallTransfer.subscribe((value, state) => {
-    value.ProgressIndication.Progress;
-    state.Bluetooth;
+describe("typecheck", () => {
+  it("does not throw when accessing nested state obj", () => {
+    assert.doesNotThrow(() => {
+      void roomos.state.UserInterface.ScreenShotStored.Type;
+    });
   });
-  roomos.state.UserInterface.WebView[0].Status;
+});
 
-  roomos.api.xCommand.Dial({ Number: "123445" });
+// Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
+roomos.state.PresentationPreviewStarted.Cause;
 
-  roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(
-    (value, state) => {
-      value.Position;
-      state.Bluetooth.Streaming.PlaybackPosition;
-    },
-  );
+roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
 
-  roomos.state.Bluetooth.Streaming.PlaybackPosition;
-  roomos.state.Bluetooth.Streaming.PlaybackPosition;
+roomos.state.UserInterface.WebView[0].Status;
 
-  const asdf = roomos.api.xConfiguration.SerialPort.LoginRequired.get();
-}
+roomos.state.Bluetooth.Streaming.PlaybackPosition;
+roomos.state.Bluetooth.Streaming.PlaybackPosition;
+

@@ -7,8 +7,8 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export class RoomOSProxy {
-  private static target<T>() {
-    return () => undefined as T;
+  private static target() {
+    return () => undefined;
   }
 
   private static childPath(path: readonly string[], prop: string) {
@@ -20,8 +20,6 @@ export class RoomOSProxy {
   constructor(request: TRequest) {
     this.request = request;
   }
-
-
 
   Command(path: readonly string[] = ["xCommand"]) {
     return new Proxy(RoomOSProxy.target(), {
@@ -82,41 +80,29 @@ export class RoomOSProxy {
           return undefined;
         }
 
-        if (
-          prop === "get" ||
-          prop === "set" ||
-          prop === "on" ||
-          prop === "once"
-        ) {
-          return (...args: unknown[]) => {
-            if (prop === "get") {
-              return this.request({
-                kind: "get",
-                root: "xConfiguration",
-                path,
-              });
-            }
+        switch (prop) {
+          case "get":
+            return (..._args: unknown[]) =>
+              this.request({ kind: "get", root: "xConfiguration", path });
 
-            if (prop === "set") {
-              return this.request({
+          case "set":
+            return (...args: unknown[]) =>
+              this.request({
                 kind: "set",
                 root: "xConfiguration",
                 path,
                 value: args[0],
               });
-            }
+          case "on":
+          case "once":
+            return () =>
+              this.request({ kind: "listen", root: "xConfiguration", path });
 
-            return this.request({
-              kind: "listen",
-              root: "xConfiguration",
-              path,
-            });
-          };
+          default:
+            return new RoomOSProxy(this.request).Configuration(
+              RoomOSProxy.childPath(path, prop),
+            );
         }
-
-        return new RoomOSProxy(this.request).Configuration(
-          RoomOSProxy.childPath(path, prop),
-        );
       },
     });
   }
@@ -164,11 +150,109 @@ export class RoomOSProxy {
     });
   }
 
-  private realState = {};
+  private realState: Record<string | symbol, any> = {};
 
-  State(path: readonly string[] = [""]) {
+  State(path: readonly string[] = []) {
+    return new Proxy(this.realState, {
+      get: (_, prop) => {
+        if (typeof prop === "symbol") {
+          return this.realState[prop];
+        }
 
-    
+        const currentPath = [...path, prop];
 
+        // Find leaf
+        const value = currentPath.reduce(
+          (target, key) => target?.[key],
+          this.realState,
+        );
+
+        if (value === undefined) {
+          return new RoomOSProxy(this.request).State(currentPath);
+        }
+
+        if (typeof value === "object" && value !== null) {
+          return new RoomOSProxy(this.request).State(currentPath);
+        }
+
+        return value;
+      },
+      set: (_, prop, value) => {
+        if (typeof prop === "symbol") {
+          this.realState[prop] = value;
+          return true;
+        }
+
+        const currentPath = [...path, prop];
+
+        // Dig down to parent node directly on the single class target
+        let parent = this.realState;
+        for (let i = 0; i < currentPath.length - 1; i++) {
+          const key = currentPath[i];
+          if (typeof parent[key] !== "object" || parent[key] === null) {
+            parent[key] = {};
+          }
+          parent = parent[key];
+        }
+
+        // parent is now set to currentPath[-1]
+        // .length is 1-based, so get the leaf and set the value
+        parent[currentPath[currentPath.length - 1]] = value;
+        return true;
+      },
+
+      // Returns the actual keys present at the current nested path
+      ownKeys: () => {
+        const value = path.reduce(
+          (target, key) => target?.[key],
+          this.realState,
+        );
+        if (typeof value === "object" && value !== null) {
+          return Reflect.ownKeys(value);
+        }
+        return [];
+      },
+
+      // Needed by JS engines to confirm keys returned by ownKeys are configurable
+      getOwnPropertyDescriptor: (_, prop) => {
+        const value = path.reduce(
+          (target, key) => target?.[key],
+          this.realState,
+        );
+        if (value && typeof value === "object" && prop in value) {
+          return {
+            enumerable: true,
+            configurable: true,
+            value: value[prop],
+          };
+        }
+        return undefined;
+      },
+    });
+  }
+
+  UpdateState(path: readonly string[], value: unknown): void {
+    if (path.length === 0) {
+      // If the path is empty, we overwrite the root state object
+      if (typeof value === "object" && value !== null) {
+        this.realState = { ...value };
+      }
+      return;
+    }
+
+    let parent = this.realState;
+
+    // Traverse to the parent of the leaf node
+    for (let i = 0; i < path.length - 1; i++) {
+      const key = path[i];
+      if (typeof parent[key] !== "object" || parent[key] === null) {
+        parent[key] = {};
+      }
+      parent = parent[key];
+    }
+
+    // Set the value on the leaf node
+    const leafKey = path[path.length - 1];
+    parent[leafKey] = value;
   }
 }
