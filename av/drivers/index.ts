@@ -10,7 +10,7 @@ export abstract class Driver<
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
-  Socket extends Partial<Sockets.Socket> | undefined = any,
+  Socket extends Partial<Sockets.Client> | undefined = any,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;

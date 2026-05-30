@@ -235,7 +235,10 @@ function ToJsonRpc(
       return JSON.stringify({
         jsonrpc: "2.0",
         method: "xFeedback/Subscribe",
-        params: { Query: asRpcPath(operation.root, operation.path) },
+        params: {
+          Query: asRpcPath(operation.root, operation.path), 
+          NotifyCurrentValue: true
+        },
         id,
       });
   }

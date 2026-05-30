@@ -14,7 +14,7 @@ const RETRY_DELAY = 5000;
 
 export class Tcp
   extends TypedEventTarget<Events.Socket.TcpMap>
-  implements Sockets.Socket
+  implements Sockets.Client
 {
   private socket: net.Socket | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;

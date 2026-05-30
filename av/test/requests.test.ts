@@ -10,7 +10,7 @@ import { Delimiters } from "@av/sockets/delimiters";
 
 class FakeSocket
   extends TypedEventTarget<Events.Socket.Map>
-  implements Sockets.Socket
+  implements Sockets.Client
 {
   name = "fake-socket";
   writes: Buffer[] = [];

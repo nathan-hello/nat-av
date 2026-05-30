@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import type { Sockets } from "@av/types";
 
-const socket: Sockets.Socket = {
+const socket: Sockets.Client = {
   name: "roomos-typecheck",
   start() {},
   end() {},

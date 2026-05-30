@@ -184,7 +184,9 @@ export class RpcDebugServer<N extends Natav.Orch = natav> {
   }
 
   private broadcastNotification(notification: Rpc.Debug.Notification) {
-    const message = JSON.stringify(new RPCNotification(notification));
+    const message = JSON.stringify(
+      new RPCNotification(Rpc.Methods.Notification, notification),
+    );
 
     this.clients.forEach((client) => {
       if (client.readyState !== 1) {

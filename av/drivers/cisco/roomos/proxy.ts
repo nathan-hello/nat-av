@@ -150,13 +150,13 @@ export class RoomOSProxy {
     });
   }
 
-  private realState: Record<string | symbol, any> = {};
+  private state: Record<string | symbol, any> = {};
 
   State(path: readonly string[] = []) {
-    return new Proxy(this.realState, {
+    return new Proxy(this.state, {
       get: (_, prop) => {
         if (typeof prop === "symbol") {
-          return this.realState[prop];
+          return this.state[prop];
         }
 
         const currentPath = [...path, prop];
@@ -164,7 +164,7 @@ export class RoomOSProxy {
         // Find leaf
         const value = currentPath.reduce(
           (target, key) => target?.[key],
-          this.realState,
+          this.state,
         );
 
         if (value === undefined) {
@@ -179,14 +179,14 @@ export class RoomOSProxy {
       },
       set: (_, prop, value) => {
         if (typeof prop === "symbol") {
-          this.realState[prop] = value;
+          this.state[prop] = value;
           return true;
         }
 
         const currentPath = [...path, prop];
 
         // Dig down to parent node directly on the single class target
-        let parent = this.realState;
+        let parent = this.state;
         for (let i = 0; i < currentPath.length - 1; i++) {
           const key = currentPath[i];
           if (typeof parent[key] !== "object" || parent[key] === null) {
@@ -205,7 +205,7 @@ export class RoomOSProxy {
       ownKeys: () => {
         const value = path.reduce(
           (target, key) => target?.[key],
-          this.realState,
+          this.state,
         );
         if (typeof value === "object" && value !== null) {
           return Reflect.ownKeys(value);
@@ -217,7 +217,7 @@ export class RoomOSProxy {
       getOwnPropertyDescriptor: (_, prop) => {
         const value = path.reduce(
           (target, key) => target?.[key],
-          this.realState,
+          this.state,
         );
         if (value && typeof value === "object" && prop in value) {
           return {
@@ -235,12 +235,13 @@ export class RoomOSProxy {
     if (path.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {
-        this.realState = { ...value };
+        this.state = { ...value };
       }
       return;
     }
 
-    let parent = this.realState;
+    // Reference root
+    let parent = this.state;
 
     // Traverse to the parent of the leaf node
     for (let i = 0; i < path.length - 1; i++) {
@@ -248,11 +249,14 @@ export class RoomOSProxy {
       if (typeof parent[key] !== "object" || parent[key] === null) {
         parent[key] = {};
       }
+      // Update reference to be a reference to sub-object
       parent = parent[key];
     }
 
     // Set the value on the leaf node
     const leafKey = path[path.length - 1];
+
+    // This is still a reference to some key within this.state
     parent[leafKey] = value;
   }
 }

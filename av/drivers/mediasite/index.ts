@@ -71,7 +71,7 @@ export default class Mediasite<
   };
 
   mock = undefined;
-  socket: Sockets.Socket;
+  socket: Sockets.Client;
 
   constructor({
     name,
@@ -79,7 +79,7 @@ export default class Mediasite<
     poll,
   }: {
     name: N;
-    socket: Sockets.Socket;
+    socket: Sockets.Client;
     poll?: { queries: PollQuery[]; intervalMs?: number };
   }) {
     super({ name, driverName: "mediasite" });

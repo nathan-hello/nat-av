@@ -15,7 +15,7 @@ const RETRY_DELAY = 5000;
 
 export class Udp
   extends TypedEventTarget<Events.Socket.UdpMap>
-  implements Sockets.Socket
+  implements Sockets.Client
 {
   private socket: dgram.Socket | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;

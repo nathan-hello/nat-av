@@ -21,12 +21,13 @@ export class CiscoRoomOS<
   const N extends string = string,
 > extends Driver<N> {
   schema = undefined;
-  socket: Sockets.Socket;
+  socket: Sockets.Client;
   requests: RequestManager<RoomOS.WriteOperation & { id: number }, unknown>;
   highestId = 0;
   private proxy = new RoomOSProxy(this.request.bind(this));
-  state = this.proxy.State();
-
+  state = this.proxy.State() as RoomOS.State<Product, Subscriptions> & {
+    internal: { highestId: number; subscriptions: Subscriptions };
+  };
 
   constructor({
     name,
@@ -34,7 +35,7 @@ export class CiscoRoomOS<
     subscriptions,
   }: {
     name: N;
-    socket: Sockets.Socket;
+    socket: Sockets.Client;
     product?: Product;
     subscriptions?: Subscriptions & RoomOS.FeedbackSubscriptions<Product>;
   }) {
@@ -62,7 +63,7 @@ export class CiscoRoomOS<
 
     this.socket.on("connected", () => {
       this.socket.write("xPreferences OutputMode json");
-    })
+    });
 
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", toBuffer(message));
@@ -103,7 +104,6 @@ export class CiscoRoomOS<
       };
     }
   }
-
 
   api: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> = {
     xCommand: this.proxy.Command() as RoomOS.Api<

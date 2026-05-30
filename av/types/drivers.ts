@@ -15,7 +15,7 @@ export namespace Drivers {
     string,
     ApiRecord,
     Record<string, any>,
-    Partial<Sockets.Socket> | undefined
+    Partial<Sockets.Client> | undefined
   >;
 
   export type Dependency = Record<string, AnyDriver>;

@@ -197,10 +197,11 @@ export class RPCErrorData extends Error {
 
 export class RPCNotification<T = any> {
   jsonrpc = "2.0" as const;
-  method = Rpc.Methods.Notification;
+  method : string;
   params: T;
 
-  constructor(params: T) {
+  constructor(method: string, params: T) {
+    this.method = method
     this.params = params;
   }
 
@@ -224,7 +225,7 @@ export class RPCNotification<T = any> {
       value.method === Rpc.Methods.Notification &&
       "params" in value
     ) {
-      return new RPCNotification(value.params);
+      return new RPCNotification(value.method, value.params);
     }
     return null;
   }

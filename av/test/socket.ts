@@ -9,7 +9,7 @@ export type TestSocketScriptStep<State = unknown> = {
 
 export class TestSocket<State = unknown>
   extends TypedEventTarget<Events.Socket.Map>
-  implements Sockets.Socket
+  implements Sockets.Client
 {
   name = "test-socket";
   writes: string[] = [];

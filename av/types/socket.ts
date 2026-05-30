@@ -1,19 +1,11 @@
 import type { Events } from "@av/types/events";
 
 export namespace Sockets {
-  export type Protocols = "tcp" | "udp" | "ssh" | "telnet" | "http" | "mock";
-
-  export type ParsedData<T = any> = {
-    data: T;
-    raw: Buffer;
-    timestamp: Date;
-  };
-
   export type WriteResult = {
     bytesWritten: number;
   };
 
-  export interface Socket {
+  export interface Client {
     start(): Promise<void> | void;
     end(): Promise<void> | void;
     write(data: string | Uint8Array | Buffer): Promise<number> | number;

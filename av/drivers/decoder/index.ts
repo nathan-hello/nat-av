@@ -31,10 +31,10 @@ export default class Decoder<
   private debug = false;
 
   mock = undefined;
-  socket: Sockets.Socket;
+  socket: Sockets.Client;
   private requests: RequestManager<DecoderRequest, DecoderMessage>;
 
-  constructor({ name, socket }: { name: N; socket: Sockets.Socket }) {
+  constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
     super({ name, driverName: "natalie-decoder" });
     this.socket = socket;
 

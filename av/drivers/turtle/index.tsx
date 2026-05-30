@@ -8,10 +8,10 @@ export default class ChazyControl<
   const N extends string = string,
 > extends Driver<N> {
   mock = undefined;
-  socket: Sockets.Socket;
+  socket: Sockets.Client;
   requests: RequestManager<string, string>;
 
-  constructor({ name, socket }: { name: N; socket: Sockets.Socket }) {
+  constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
     super({ name, driverName: "chazy-control" });
     this.socket = socket;
     this.requests = new RequestManager({

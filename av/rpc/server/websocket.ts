@@ -1,5 +1,5 @@
 import { bus } from "@av/lib/bus";
-import type { Events, Natav } from "@av/types";
+import  { type Events, type Natav, Rpc } from "@av/types";
 import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DecodeWebsocketError } from "@av/rpc/errors";
@@ -66,7 +66,7 @@ export class WebsocketHandler {
     event: E,
     payload: Events.System.Map[E],
   ) {
-    const notification = new RPCNotification({ type: event, ...payload });
+    const notification = new RPCNotification(Rpc.Methods.Notification,{ type: event, ...payload });
     this.broadcast(JSON.stringify(notification));
   }
 
@@ -120,7 +120,7 @@ export class WebsocketHandler {
 
   private pushInitialDeviceStates(ws: WebSocketConnection) {
     for (const name of this.natav.GetAllDriverNames()) {
-      let notification = new RPCNotification({
+      let notification = new RPCNotification(Rpc.Methods.Notification,{
         type: "natav:state:update",
         name,
         data: this.natav.GetDriverState(name),

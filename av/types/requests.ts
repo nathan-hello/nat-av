@@ -2,7 +2,7 @@ import type { TaskResult } from "@av/telemetry";
 import type { Sockets } from "@av/types/socket";
 
 export namespace Requests {
-  export type Socket = Pick<Sockets.Socket, "on" | "write">;
+  export type Socket = Pick<Sockets.Client, "on" | "write">;
 
   type Matcher<Request, Message> = (
     request: Request,

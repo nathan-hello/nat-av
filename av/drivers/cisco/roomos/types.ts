@@ -104,7 +104,7 @@ export namespace RoomOS {
   export type State<
     Product extends GeneratedRoomOS.ProductTarget,
     Subscriptions extends FeedbackSubscriptions<Product> = never,
-  > = FeedbackStateFromSubscriptions<FeedbackState<Product>, Subscriptions>;
+  > = FeedbackState<Product>;
 
   export type ConfigurationApi<
     Product extends GeneratedRoomOS.ProductTarget = "any",
@@ -152,4 +152,15 @@ export namespace RoomOS {
         path: readonly string[];
       };
 
+  export type ReadOperation = {
+    update: {
+      path: readonly string[];
+      value: unknown;
+    };
+  };
+
+  export type HeldSubscriptions = {
+    path: readonly string[];
+    id: number;
+  };
 }
