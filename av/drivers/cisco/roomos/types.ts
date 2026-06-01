@@ -156,7 +156,7 @@ export namespace RoomOS {
     update: {
       path: readonly string[];
       value: unknown;
-    };
+    }[];
   };
 
   export type HeldSubscriptions = {

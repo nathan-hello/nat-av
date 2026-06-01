@@ -26,13 +26,8 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     this.namespace = namespace;
   }
 
-  private get logger() {
-    return getLoggerProvider().getLogger(this.namespace);
-  }
-
   task<R>(name: string, fn: (span: Span) => Promise<R>): Promise<TaskResult<R>>;
   task<R>(name: string, fn: (span: Span) => R): TaskResult<R>;
-
   task<R>(
     name: string,
     fn: (span: Span) => R | Promise<R>,
@@ -124,7 +119,8 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     severityText: string,
     attributes?: any,
   ) {
-    this.logger.emit({
+    const logger = getLoggerProvider().getLogger(this.namespace);
+    logger.emit({
       hrTime: [Math.floor(Date.now() / 1000), 0],
       body,
       severityNumber,

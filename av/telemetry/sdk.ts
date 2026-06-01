@@ -15,7 +15,7 @@ class LoggerProvider {
           record.severityNumber &&
           record.severityNumber === SeverityNumber["ERROR"]
         ) {
-          throw Error("Logger got an error.\n" + JSON.stringify(record));
+          throw Error("a `tel.error()` was surfaced during testing!\n" + JSON.stringify(record));
         }
         this.exporter?.export([record], () => {});
       },

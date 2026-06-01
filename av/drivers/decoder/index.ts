@@ -84,7 +84,7 @@ export default class Decoder<
   private async request<Method extends keyof DecoderMap>(
     method: Method,
     params: DecoderMap[Method]["req"]["params"],
-  ): Promise<DecoderMap[Method]["res"]> {
+  ): Promise<DecoderMap[Method]["res"]["result"]> {
     const req = {
       jsonrpc: "2.0",
       method,
@@ -105,7 +105,7 @@ export default class Decoder<
       });
     }
 
-    return result.data;
+    return result.data.result;
   }
 
   api = {
@@ -114,7 +114,7 @@ export default class Decoder<
         const response = await this.request("debug_toggle", []);
         this.debug = !this.debug;
         this.dispatch("driver:state-updated", { data: { debug: this.debug } });
-        return response.result;
+        return response;
       }
       return 0;
     },
@@ -178,7 +178,7 @@ export default class Decoder<
       const response = await this.request("route", params);
       this.routes = next;
       this.dispatch("driver:state-updated", { data: { routes: next } });
-      return response.result;
+      return response;
     },
 
     moveRelative: async (v: MoveWindowArgs) => {
@@ -225,11 +225,11 @@ export default class Decoder<
         });
       }
       const response = await this.request("fetch_context", []);
-      this.context = response.result;
+      this.context = response;
       this.dispatch("driver:state-updated", {
         data: { context: this.context },
       });
-      return response.result;
+      return response;
     },
 
     fetchRoutes: async () => {
@@ -239,20 +239,20 @@ export default class Decoder<
         video: [],
       };
 
-      response.result.video.forEach((v) => {
+      response.video.forEach((v) => {
         if (routes.video[v.output] === undefined) {
           routes.video[v.output] = [];
         }
         routes.video[v.output][v.window] = v;
       });
 
-      response.result.audio.forEach((v) => {
+      response.audio.forEach((v) => {
         routes.audio[v.output] = v;
       });
 
       this.routes = routes;
       this.dispatch("driver:state-updated", { data: routes });
-      return response.result;
+      return response;
     },
 
     unroute: async (
@@ -272,7 +272,7 @@ export default class Decoder<
         this.dispatch("driver:state-updated", {
           data: { routes: this.routes },
         });
-        return response.result;
+        return response;
       }
       const response = await this.request("route_destroy", r);
       const next: DecoderRoutes = {
@@ -292,7 +292,7 @@ export default class Decoder<
 
       this.routes = next;
       this.dispatch("driver:state-updated", { data: { routes: next } });
-      return response.result;
+      return response;
     },
   };
 }

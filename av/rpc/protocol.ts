@@ -195,25 +195,25 @@ export class RPCErrorData extends Error {
   }
 }
 
-export class RPCNotification<T = any> {
+export class RPCNotification<Tc = Record<string, unknown>> {
   jsonrpc = "2.0" as const;
-  method : string;
-  params: T;
+  method: string;
+  params: Tc;
 
-  constructor(method: string, params: T) {
-    this.method = method
+  constructor(method: string, params: Tc) {
+    this.method = method;
     this.params = params;
   }
 
-  static is(value: unknown): RPCNotification<any> | null {
+  static is<Ti extends Record<string, unknown> = Record<string, unknown>>(
+    value: unknown,
+  ): RPCNotification<Ti> | null {
     if (typeof value === "string") {
       try {
         value = JSON.parse(value);
       } catch (e) {
         return null;
       }
-    } else if (!value || typeof value !== "object") {
-      return null;
     }
 
     if (
@@ -222,10 +222,13 @@ export class RPCNotification<T = any> {
       "jsonrpc" in value &&
       value.jsonrpc === "2.0" &&
       "method" in value &&
-      value.method === Rpc.Methods.Notification &&
-      "params" in value
+      typeof value.method === "string" &&
+      "params" in value &&
+      value.params &&
+      typeof value.params === "object"
     ) {
-      return new RPCNotification(value.method, value.params);
+      const paramsObj = value.params as Ti;
+      return new RPCNotification<Ti>(value.method, paramsObj);
     }
     return null;
   }

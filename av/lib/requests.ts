@@ -3,16 +3,16 @@ import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
 import type { Requests, Events } from "@av/types";
 
-export class RequestManager<Request, Message> extends TypedEventTarget<
-  Events.Request.Map<Request, Message>
+export class RequestManager<Tx, Rx> extends TypedEventTarget<
+  Events.Request.Map<Tx, Rx>
 > {
   private readonly tel: Telemetry;
   private readonly socket: Requests.Socket;
-  private readonly delimiter: DataDelimiter<Message>;
-  private readonly formatter?: DataFormatter<Request>;
+  private readonly delimiter: DataDelimiter<Rx>;
+  private readonly formatter?: DataFormatter<Tx>;
   private readonly timeoutMs: number;
-  private readonly responseStrategy?: Requests.Strategy<Request, Message>;
-  private readonly pending: Requests.Pending<Request, Message>[] = [];
+  private readonly responseStrategy?: Requests.Strategy<Tx, Rx>;
+  private readonly pending: Requests.Pending<Tx, Rx>[] = [];
   private readonly offReceive: () => void;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
   private nextSendAt = 0;
@@ -28,10 +28,10 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
   }: {
     tel: Telemetry;
     socket: Requests.Socket;
-    delimiter: DataDelimiter<Message>;
-    formatter?: DataFormatter<Request>;
+    delimiter: DataDelimiter<Rx>;
+    formatter?: DataFormatter<Tx>;
     timeoutMs?: number;
-    responseStrategy?: Requests.Strategy<Request, Message>;
+    responseStrategy?: Requests.Strategy<Tx, Rx>;
   }) {
     super();
     this.tel = tel;
@@ -64,18 +64,18 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     });
   }
 
-  request<Response extends Message = Message>(
-    request: Request,
-  ): Promise<TaskResult<Response>> {
+  request<ExpectedRx extends Rx = Rx>(
+    request: Tx,
+  ): Promise<TaskResult<ExpectedRx>> {
     if (this.ended) {
       return Promise.resolve({ ok: false, error: "requests-ended" });
     }
 
-    return new Promise<TaskResult<Response>>((resolve) => {
-      const entry: Requests.Pending<Request, Message> = {
+    return new Promise<TaskResult<ExpectedRx>>((resolve) => {
+      const entry: Requests.Pending<Tx, Rx> = {
         request,
         // TSAS:
-        resolve: resolve as (result: TaskResult<Message>) => void,
+        resolve: resolve as (result: TaskResult<Rx>) => void,
         sent: false,
       };
 
@@ -107,7 +107,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     });
   }
 
-  send(request: Request): Promise<TaskResult<number>> {
+  send(request: Tx): Promise<TaskResult<number>> {
     if (this.ended) {
       return Promise.resolve({ ok: false, error: "requests-ended" });
     }
@@ -184,7 +184,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     }
   }
 
-  private async sendPending(entry: Requests.Pending<Request, Message>) {
+  private async sendPending(entry: Requests.Pending<Tx, Rx>) {
     entry.sent = true;
 
     const result = await this.tel.task("REQUESTS_SEND", async () => {
@@ -211,7 +211,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     this.flush();
   }
 
-  private resolvePending(message: Message) {
+  private resolvePending(message: Rx) {
     const match = this.tel.task("REQUESTS_MATCH", () => {
       const strategy = this.responseStrategy;
       switch (strategy?.strategy) {
@@ -244,7 +244,7 @@ export class RequestManager<Request, Message> extends TypedEventTarget<
     return true;
   }
 
-  private removePending(entry: Requests.Pending<Request, Message>) {
+  private removePending(entry: Requests.Pending<Tx, Rx>) {
     const index = this.pending.indexOf(entry);
     if (index !== -1) {
       this.pending.splice(index, 1);

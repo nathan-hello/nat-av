@@ -62,17 +62,17 @@ function FromJsonRpcNotification(
 }
 
 function getLeaves(
-  obj: Record<string, unknown>,
+  obj: unknown,
   currentPath: string[] = [],
 ): {
   path: string[];
   value: unknown;
 }[] {
-  if (obj === null || typeof obj !== "object") {
+  if (typeof obj !== "object" || obj === null) {
     return [{ path: currentPath, value: obj }];
   }
 
-  return Object.keys(obj).flatMap((key) =>
-    getLeaves(obj[key], [...currentPath, key]),
+  return Object.entries(obj).flatMap(([key, value]) =>
+    getLeaves(value, [...currentPath, key]),
   );
 }
