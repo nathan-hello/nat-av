@@ -31,6 +31,7 @@ export class TypedEventTarget<
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
+    // TSAS: Assertion is tested above.
     this.listeners.get(type)!.add(listener);
 
     super.addEventListener(type, listener, options);
@@ -113,6 +114,7 @@ export class ProtectedTypedEventTarget<
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
+    // TSAS: Assertion is tested above.
     this.listeners.get(type)!.add(listener);
 
     super.addEventListener(type, listener, options);
@@ -136,7 +138,7 @@ export class ProtectedTypedEventTarget<
     type: K,
     payload: Events[K],
   ): void {
-    // TSAS:
+    // TSAS: Typscript thinks that type is string | number | symbol.
     const event = new CustomEvent(type as string, { detail: payload });
     super.dispatchEvent(event);
   }

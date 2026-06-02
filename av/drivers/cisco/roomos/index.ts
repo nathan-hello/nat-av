@@ -62,7 +62,7 @@ export class CiscoRoomOS<
     });
 
     this.socket.on("connected", () => {
-      this.socket.write("xPreferences OutputMode json");
+      this.socket.write("xPreferences OutputMode json\r");
     });
 
     this.requests.on("delimited", (message) => {
