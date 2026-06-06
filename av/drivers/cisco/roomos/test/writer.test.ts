@@ -69,10 +69,10 @@ describe("roomos writer", () => {
         method: "xFeedback/Subscribe",
         params: {
           Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
+          NotifyCurrentValue: true,
         },
         id: 1,
       }),
     );
   });
-
 });

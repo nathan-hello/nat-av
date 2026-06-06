@@ -8,7 +8,8 @@ import { ConsoleExporter } from "@av/telemetry/exporters";
 
 StartLogging([new ConsoleExporter("ERROR")]);
 
-it("builds api calls and writes jsonrpc payloads to the socket", async () => {
+it("api writes to socket, state gets updated on notification", async () => {
+  let highestId = 0;
   const socket = new TestSocket(
     [
       {
@@ -16,12 +17,12 @@ it("builds api calls and writes jsonrpc payloads to the socket", async () => {
           jsonrpc: "2.0",
           method: "xGet",
           params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
-          id: 0,
+          id: highestId++,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: { Allowed: "True" },
-          id: 0,
+          id: highestId,
         },
       },
       {
@@ -32,12 +33,12 @@ it("builds api calls and writes jsonrpc payloads to the socket", async () => {
             Path: ["Configuration", "Bluetooth"],
             Value: { Allowed: "True", Enabled: "False" },
           },
-          id: 1,
+          id: highestId++,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: { Allowed: "True", Enabled: "False" },
-          id: 1,
+          id: highestId,
         },
       },
       {
@@ -45,12 +46,12 @@ it("builds api calls and writes jsonrpc payloads to the socket", async () => {
           jsonrpc: "2.0",
           method: "xCommand/Dial",
           params: { Number: "12345" },
-          id: 2,
+          id: highestId++,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: { Number: "12345" },
-          id: 2,
+          id: highestId,
         },
       },
       {
@@ -59,17 +60,18 @@ it("builds api calls and writes jsonrpc payloads to the socket", async () => {
           method: "xFeedback/Subscribe",
           params: {
             Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
+            NotifyCurrentValue: true,
           },
-          id: 3,
+          id: highestId++,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: {},
-          id: 3,
+          id: highestId,
         },
       },
     ],
-    { errorIfWriteNotFound: true },
+    { throwIfWriteNotFound: true },
   );
 
   const roomos = new CiscoRoomOS({
@@ -147,6 +149,7 @@ it("builds api calls and writes jsonrpc payloads to the socket", async () => {
       method: "xFeedback/Subscribe",
       params: {
         Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
+        NotifyCurrentValue: true,
       },
       id: 3,
     }),

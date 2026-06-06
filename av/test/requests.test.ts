@@ -4,35 +4,12 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { RequestManager } from "@av/lib/requests";
 import { Telemetry } from "@av/telemetry";
-import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { Sockets, Events } from "@av/types";
 import { Delimiters } from "@av/sockets/delimiters";
-
-class FakeSocket
-  extends TypedEventTarget<Events.Socket.Map>
-  implements Sockets.Client
-{
-  name = "fake-socket";
-  writes: Buffer[] = [];
-
-  start() {}
-  end() {}
-
-  write(data: string | Uint8Array | Buffer) {
-    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    this.writes.push(buffer);
-    return buffer.length;
-  }
-
-  receive(data: string | Buffer) {
-    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data, "utf8");
-    this.dispatch("receive", buffer);
-  }
-}
+import { TestSocket } from "@av/test/socket";
 
 describe("requests", () => {
   it("queues serial requests when no matcher is provided", async () => {
-    const socket = new FakeSocket();
+    const socket = new TestSocket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Serial"),
       socket,
@@ -52,7 +29,7 @@ describe("requests", () => {
     const third = requests.request("third\n");
 
     assert.equal(socket.writes.length, 1);
-    assert.equal(socket.writes[0]?.toString("utf8"), "one\n");
+    assert.equal(socket.writes[0]?.toString(), "one\n");
 
     socket.receive("first\n");
     assert.deepEqual(await first, { ok: true, data: "first" });
@@ -71,7 +48,7 @@ describe("requests", () => {
   });
 
   it("matches responses out of order when a matcher is provided", async () => {
-    const socket = new FakeSocket();
+    const socket = new TestSocket();
     const requests = new RequestManager<
       { id: number; command: string },
       { id: number; result: string }
@@ -112,7 +89,7 @@ describe("requests", () => {
   });
 
   it("paces matched requests without dropping queued work", async () => {
-    const socket = new FakeSocket();
+    const socket = new TestSocket();
     const requests = new RequestManager<
       { id: number; command: string },
       { id: number; result: string }
@@ -165,7 +142,7 @@ describe("requests", () => {
   });
 
   it("blocks later requests until earlier responses arrive in blocking queue mode", async () => {
-    const socket = new FakeSocket();
+    const socket = new TestSocket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::BlockingQueue"),
       socket,
@@ -198,7 +175,7 @@ describe("requests", () => {
   });
 
   it("emits unmatched messages", async () => {
-    const socket = new FakeSocket();
+    const socket = new TestSocket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Messages"),
       socket,

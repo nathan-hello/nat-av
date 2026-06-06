@@ -7,18 +7,21 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export class RoomOSProxy {
+  private request: TRequest;
+  private state: {
+    subscriptions: { path: string[]; id: number }[];
+  } = { subscriptions: [] };
+
+  constructor(request: TRequest) {
+    this.request = request;
+  }
+
   private static target() {
     return () => undefined;
   }
 
   private static childPath(path: readonly string[], prop: string) {
     return [...path, prop];
-  }
-
-  private request: TRequest;
-
-  constructor(request: TRequest) {
-    this.request = request;
   }
 
   Command(path: readonly string[] = ["xCommand"]) {
@@ -203,10 +206,7 @@ export class RoomOSProxy {
 
       // Returns the actual keys present at the current nested path
       ownKeys: () => {
-        const value = path.reduce(
-          (target, key) => target?.[key],
-          this.state,
-        );
+        const value = path.reduce((target, key) => target?.[key], this.state);
         if (typeof value === "object" && value !== null) {
           return Reflect.ownKeys(value);
         }
@@ -215,10 +215,7 @@ export class RoomOSProxy {
 
       // Needed by JS engines to confirm keys returned by ownKeys are configurable
       getOwnPropertyDescriptor: (_, prop) => {
-        const value = path.reduce(
-          (target, key) => target?.[key],
-          this.state,
-        );
+        const value = path.reduce((target, key) => target?.[key], this.state);
         if (value && typeof value === "object" && prop in value) {
           return {
             enumerable: true,

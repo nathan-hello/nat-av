@@ -35,6 +35,10 @@ StartLogging([
   }),
 ]);
 
+const chazy = new ChazyControl({
+  name: "ChazyControl",
+  socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
+});
 const natav = new Orchistrator([
   new DisplayManager("video-wall", [
     {
@@ -51,11 +55,10 @@ const natav = new Orchistrator([
       ],
     },
   ]),
-  // new ChazyControl({
-  //   name: "ChazyControl",
-  //   socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
-  // }),
+  chazy,
 ]);
+
+natav.GetDriver("ChazyControl");
 
 export type natav = typeof natav;
 

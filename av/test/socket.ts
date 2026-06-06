@@ -12,14 +12,14 @@ export class TestSocket<State = unknown>
   implements Sockets.Client
 {
   name = "test-socket";
-  writes: string[] = [];
+  writes: Buffer[] = [];
   private script?: TestSocketScriptStep<State>[];
-  config: { errorIfWriteNotFound: boolean };
+  config?: { throwIfWriteNotFound: boolean };
   state: State | undefined;
 
   constructor(
-    scripts: TestSocketScriptStep<State>[],
-    config: { errorIfWriteNotFound: boolean },
+    scripts?: TestSocketScriptStep<State>[],
+    config?: { throwIfWriteNotFound: boolean },
   ) {
     super();
     this.script = scripts;
@@ -31,7 +31,7 @@ export class TestSocket<State = unknown>
 
   write(data: string | Uint8Array | Buffer): number {
     const buffer = toBuffer(data);
-    this.writes.push(buffer.toString("utf8"));
+    this.writes.push(buffer);
 
     if (this.script && this.script?.length > 0) {
       const index = this.script.findIndex((step) =>
@@ -39,7 +39,7 @@ export class TestSocket<State = unknown>
       );
 
       if (index === -1) {
-        if (this.config.errorIfWriteNotFound) {
+        if (this.config?.throwIfWriteNotFound) {
           throw Error("unknown write received: " + data.toString("utf8"));
         }
         return buffer.length;
