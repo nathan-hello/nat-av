@@ -1,12 +1,13 @@
 import { Driver } from "@av/drivers";
 import type { Sockets } from "@av/types";
 import { RoomOSProxy } from "@av/drivers/cisco/roomos/proxy";
-import type { RoomOS, Generated } from "@av/drivers/cisco/roomos/types";
+import { RoomOS, type Generated } from "@av/drivers/cisco/roomos/types";
 import { RequestManager } from "@av/lib/requests";
 import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import { Delimiters } from "@av/sockets/delimiters";
-import { RPCErrorData } from "@av/rpc/protocol";
-import { toBuffer } from "@av/lib/buffer";
+import { RPCError, RPCResponse } from "@av/rpc/protocol";
+import { toBuffer, toString } from "@av/lib/buffer";
+import { reader } from "@av/drivers/cisco/roomos/reader";
 
 export type State<
   Product extends Generated.ProductTarget = "any",
@@ -20,14 +21,19 @@ export class CiscoRoomOS<
   const Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
   const N extends string = string,
 > extends Driver<N> {
-  schema = undefined;
-  socket: Sockets.Client;
-  requests: RequestManager<RoomOS.WriteOperation & { id: number }, unknown>;
-  highestId = 0;
-  private proxy = new RoomOSProxy(this.request.bind(this));
+  private requests: RequestManager<
+    RoomOS.WriteOperation & { id: number },
+    unknown
+  >;
+  private highestId = 0;
+  private proxy = new RoomOSProxy(this.tel, this.request.bind(this));
+  private subscriptions: RoomOS.HeldSubscription[] = [];
+
   state = this.proxy.State() as RoomOS.State<Product, Subscriptions> & {
     internal: { highestId: number; subscriptions: Subscriptions };
   };
+  schema = undefined;
+  socket: Sockets.Client;
 
   constructor({
     name,
@@ -67,6 +73,7 @@ export class CiscoRoomOS<
 
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", toBuffer(message));
+      this.tel.info("DELIMITED", { str: toString(message) });
     });
 
     this.state.internal = {
@@ -76,33 +83,90 @@ export class CiscoRoomOS<
     };
   }
 
-  private async request(operation: RoomOS.WriteOperation): Promise<unknown> {
-    const result = await this.requests.request({
+  private read(operation: RoomOS.ReadOperation): RoomOS.Result<unknown> {
+    this.tel.info("READ_OPERATION", operation);
+    switch (operation.kind) {
+      case "update":
+        this.tel.info("UPDATE_STATE", operation);
+        this.proxy.UpdateState(operation.data.path, operation.data.value);
+        return { ok: true, data: operation.data.value };
+      case "unsubscribed":
+        this.subscriptions = this.subscriptions.filter(
+          (s) => !operation.data.find((d) => d.id === s.id),
+        );
+        return { ok: true, data: operation.data };
+      case "subscribed":
+        if (Array.isArray(operation.data)) {
+          operation.data.forEach((op) => this.subscriptions.push(op));
+          break;
+        }
+        this.subscriptions.push(operation.data);
+        return { ok: true, data: operation.data };
+      case "error":
+        return { ok: false, error: operation.data };
+      case "command_response":
+        return { ok: true, data: operation.data };
+    }
+    return {
+      ok: false,
+      error: {
+        code: RoomOS.ErrorCodes.INVALID_READ_OPERATION,
+        data: operation,
+        message: "INVALID_READ_OPERATION",
+      },
+    };
+  }
+
+  private async request(
+    operation: RoomOS.WriteOperation,
+  ): Promise<RoomOS.Result<unknown>> {
+    this.tel.info("REQUEST", { op: operation, id: this.highestId + 1 });
+
+    const rx = await this.requests.request({
       ...operation,
       id: this.highestId++,
     });
 
-    if (!result.ok) {
-      throw new RPCErrorData({ code: 400, message: result.error });
-    }
+    this.tel.info("REQUEST_RESOLVED", rx);
 
-    if ("error" in result) {
+    if (!rx.ok) {
       return {
         ok: false,
-        error: result.error,
+        error: {
+          code: RoomOS.ErrorCodes.INVALID_WRITE_OPERATION,
+          data: rx,
+          message: toString(operation),
+        },
       };
     }
 
-    if (
-      typeof result.data === "object" &&
-      (result.data === null || "result" in result.data)
-    ) {
-      // Update state here
+    const err = RPCError.is(rx.data);
+    if (err) {
       return {
-        ok: true,
-        data: result.data ? result.data.result : null,
+        ok: false,
+        error: {
+          code: err.error.code,
+          message: err.error.message,
+          data: operation,
+        },
       };
     }
+
+    const resp = RPCResponse.is(rx.data);
+    if (resp) {
+      return this.read(
+        reader.JsonRpc.Response(operation, resp.result, this.subscriptions),
+      );
+    }
+
+    return {
+      ok: false,
+      error: {
+        code: RoomOS.ErrorCodes.INVALID_RESPONSE,
+        message: toString(rx),
+        data: operation,
+      },
+    };
   }
 
   api: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> = {

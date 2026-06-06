@@ -1,4 +1,5 @@
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
+import type { Telemetry } from "@av/telemetry";
 
 type TRequest = (operation: RoomOS.WriteOperation) => Promise<unknown>;
 
@@ -6,32 +7,43 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function normalizeStatePath(path: readonly string[]): string[] {
+  if (
+    path[0] === "xConfiguration" ||
+    path[0] === "xStatus" ||
+    path[0] === "xFeedback"
+  ) {
+    return path.slice(1);
+  }
+
+  return [...path];
+}
+
 export class RoomOSProxy {
   private request: TRequest;
-  private state: {
-    subscriptions: { path: string[]; id: number }[];
-  } = { subscriptions: [] };
+  private tel: Telemetry;
 
-  constructor(request: TRequest) {
+  constructor(tel: Telemetry, request: TRequest) {
     this.request = request;
+    this.tel = tel;
   }
 
   private static target() {
     return () => undefined;
   }
 
-  private static childPath(path: readonly string[], prop: string) {
+  private static childPath(path: string[], prop: string) {
     return [...path, prop];
   }
 
-  Command(path: readonly string[] = ["xCommand"]) {
+  Command(path: string[] = ["xCommand"]) {
     return new Proxy(RoomOSProxy.target(), {
       get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
 
-        return new RoomOSProxy(this.request).Command(
+        return new RoomOSProxy(this.tel, this.request).Command(
           RoomOSProxy.childPath(path, prop),
         );
       },
@@ -76,7 +88,7 @@ export class RoomOSProxy {
     });
   }
 
-  Configuration(path: readonly string[] = ["xConfiguration"]) {
+  Configuration(path: string[] = ["xConfiguration"]) {
     return new Proxy(RoomOSProxy.target(), {
       get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
@@ -96,13 +108,8 @@ export class RoomOSProxy {
                 path,
                 value: args[0],
               });
-          case "on":
-          case "once":
-            return () =>
-              this.request({ kind: "listen", root: "xConfiguration", path });
-
           default:
-            return new RoomOSProxy(this.request).Configuration(
+            return new RoomOSProxy(this.tel, this.request).Configuration(
               RoomOSProxy.childPath(path, prop),
             );
         }
@@ -110,43 +117,40 @@ export class RoomOSProxy {
     });
   }
 
-  Status(path: readonly string[] = ["xStatus"]) {
+  Status(path: string[] = ["xStatus"]) {
     return new Proxy(RoomOSProxy.target(), {
       get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
 
-        if (prop === "get" || prop === "on" || prop === "once") {
-          return () => {
-            if (prop === "get") {
-              return this.request({ kind: "get", root: "xStatus", path });
-            }
-
-            return this.request({ kind: "listen", root: "xStatus", path });
-          };
+        if (prop === "get") {
+          return () => this.request({ kind: "get", root: "xStatus", path });
         }
 
-        return new RoomOSProxy(this.request).Status(
+        return new RoomOSProxy(this.tel, this.request).Status(
           RoomOSProxy.childPath(path, prop),
         );
       },
     });
   }
 
-  Feedback(path: readonly string[] = ["xFeedback"]) {
+  Feedback(path: string[] = ["xFeedback"]) {
     return new Proxy(RoomOSProxy.target(), {
       get: (_, prop: string | symbol) => {
         if (typeof prop === "symbol" || prop === "then") {
           return undefined;
         }
 
-        if (prop === "subscribe" || prop === "on" || prop === "once") {
-          return () =>
-            this.request({ kind: "listen", root: "xFeedback", path });
+        if (prop === "subscribe") {
+          return () => this.request({ kind: "sub", root: "xFeedback", path });
         }
 
-        return new RoomOSProxy(this.request).Feedback(
+        if (prop === "unsubscribe") {
+          return () => this.request({ kind: "unsub", root: "xFeedback", path });
+        }
+
+        return new RoomOSProxy(this.tel, this.request).Feedback(
           RoomOSProxy.childPath(path, prop),
         );
       },
@@ -155,14 +159,18 @@ export class RoomOSProxy {
 
   private state: Record<string | symbol, any> = {};
 
-  State(path: readonly string[] = []) {
+  State(path: string[] = []) {
     return new Proxy(this.state, {
       get: (_, prop) => {
         if (typeof prop === "symbol") {
           return this.state[prop];
         }
 
+        this.tel.info("Proxy.State.get(): this.state", { state: this.state });
+
         const currentPath = [...path, prop];
+
+        this.tel.info("Proxy.State.get(): currentPath", { currentPath });
 
         // Find leaf
         const value = currentPath.reduce(
@@ -171,13 +179,14 @@ export class RoomOSProxy {
         );
 
         if (value === undefined) {
-          return new RoomOSProxy(this.request).State(currentPath);
+          return this.State(currentPath);
         }
 
         if (typeof value === "object" && value !== null) {
-          return new RoomOSProxy(this.request).State(currentPath);
+          return this.State(currentPath);
         }
 
+        this.tel.info("Proxy.State.get(): returned real value", { value });
         return value;
       },
       set: (_, prop, value) => {
@@ -186,7 +195,11 @@ export class RoomOSProxy {
           return true;
         }
 
+        this.tel.info("Proxy.State.set(): this.state", { state: this.state });
+
         const currentPath = [...path, prop];
+
+        this.tel.info("Proxy.State.set(): currentPath", { currentPath });
 
         // Dig down to parent node directly on the single class target
         let parent = this.state;
@@ -198,9 +211,17 @@ export class RoomOSProxy {
           parent = parent[key];
         }
 
+        this.tel.info("Proxy.State.set(): parent", { parent });
+        this.tel.info(
+          "Proxy.State.set(): parent[currentPath[currentPath.length - 1]]",
+          { value: parent[currentPath[currentPath.length - 1]] },
+        );
+        this.tel.info("Proxy.State.set(): value", { value });
+
         // parent is now set to currentPath[-1]
         // .length is 1-based, so get the leaf and set the value
         parent[currentPath[currentPath.length - 1]] = value;
+
         return true;
       },
 
@@ -228,8 +249,10 @@ export class RoomOSProxy {
     });
   }
 
-  UpdateState(path: readonly string[], value: unknown): void {
-    if (path.length === 0) {
+  UpdateState(path: string[], value: unknown): void {
+    const normalizedPath = normalizeStatePath(path);
+
+    if (normalizedPath.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {
         this.state = { ...value };
@@ -241,8 +264,8 @@ export class RoomOSProxy {
     let parent = this.state;
 
     // Traverse to the parent of the leaf node
-    for (let i = 0; i < path.length - 1; i++) {
-      const key = path[i];
+    for (let i = 0; i < normalizedPath.length - 1; i++) {
+      const key = normalizedPath[i];
       if (typeof parent[key] !== "object" || parent[key] === null) {
         parent[key] = {};
       }
@@ -251,7 +274,7 @@ export class RoomOSProxy {
     }
 
     // Set the value on the leaf node
-    const leafKey = path[path.length - 1];
+    const leafKey = normalizedPath[normalizedPath.length - 1];
 
     // This is still a reference to some key within this.state
     parent[leafKey] = value;

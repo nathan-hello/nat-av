@@ -44,29 +44,23 @@ type FeedbackStateFromSubscriptions<Tree, Subscriptions> =
 
 type Gettable<Value> = { get: () => Promise<RoomOS.Result<Value>> };
 type Settable<Value> = { set: (value: Value) => Promise<RoomOS.Result<Value>> };
-type Listenable<Value> = {
-  on: (handler: (value: Value) => void) => () => void;
-  once: (handler: (value: Value) => void) => Promise<Value>;
-};
 
 type FeedbackNode<Value, State> = {
   subscribe: (
     callback?: (value: Value, state: State) => void,
   ) => Promise<RoomOS.Result<void>>;
-} & Listenable<Value>;
+};
 
 type Configify<Value> =
   IsPlainObject<Value> extends true ?
     { [K in keyof Value]: Configify<Value[K]> } & Gettable<Value> &
-      Settable<Value> &
-      Listenable<Value>
-  : Gettable<Value> & Settable<Value> & Listenable<Value>;
+      Settable<Value>
+  : Gettable<Value> & Settable<Value>;
 
 type Statusify<Value> =
   IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: Statusify<Value[K]> } & Gettable<Value> &
-      Listenable<Value>
-  : Gettable<Value> & Listenable<Value>;
+    { [K in keyof Value]: Statusify<Value[K]> } & Gettable<Value>
+  : Gettable<Value>;
 
 type Feedbackify<Value, State> =
   IsPlainObject<Value> extends true ?
@@ -104,7 +98,7 @@ export namespace RoomOS {
   export type State<
     Product extends GeneratedRoomOS.ProductTarget,
     Subscriptions extends FeedbackSubscriptions<Product> = never,
-  > = FeedbackState<Product>;
+  > = FeedbackStateFromSubscriptions<FeedbackState<Product>, Subscriptions>;
 
   export type ConfigurationApi<
     Product extends GeneratedRoomOS.ProductTarget = "any",
@@ -123,44 +117,78 @@ export namespace RoomOS {
     xFeedback: ApiRecordify<Feedbackify<FeedbackState<Product>, State>>;
   };
 
+  type TError = { code: number; message: string; data?: any };
+
   export type Result<T = any> =
     | { ok: true; data: T }
-    | { ok: false; error: string };
+    | { ok: false; error: TError };
 
   export type WriteOperation =
     | {
         kind: "command";
         root: "xCommand";
-        path: readonly string[];
+        path: string[];
         args?: Record<string, unknown>;
         body?: string;
       }
     | {
         kind: "get";
         root: "xConfiguration" | "xStatus";
-        path: readonly string[];
+        path: string[];
       }
     | {
         kind: "set";
         root: "xConfiguration";
-        path: readonly string[];
+        path: string[];
         value: unknown;
       }
     | {
-        kind: "listen";
+        kind: "sub";
         root: "xConfiguration" | "xStatus" | "xFeedback";
-        path: readonly string[];
+        path: string[];
+      }
+    | {
+        kind: "unsub";
+        root: "xConfiguration" | "xStatus" | "xFeedback";
+        subId: number;
+        path: string[];
       };
 
-  export type ReadOperation = {
-    update: {
-      path: readonly string[];
-      value: unknown;
-    }[];
-  };
+  export type ReadOperation =
+    | { kind: "update"; data: { path: string[]; value: unknown } }
+    | { kind: "subscribed"; data: HeldSubscription }
+    | { kind: "unsubscribed"; data: HeldSubscription[] }
+    | { kind: "command_response"; data: unknown }
+    | { kind: "error"; data: TError };
 
-  export type HeldSubscriptions = {
-    path: readonly string[];
+  export type HeldSubscription = {
+    path: string[];
     id: number;
   };
+
+  export const ErrorCodes = {
+    InvalidRequest: -32600,
+    MethodNotFound: -32601,
+    InvalidParams: -32602,
+    InternalError: -32603,
+    ParseError: -32700,
+    CommandError: 1,
+    PermissionDenied: -31999,
+    SubscriberCountExceeded: -31998,
+    NotReady: -31997,
+    CODE_NOT_FOUND: -90001,
+    INVALID_RESPONSE: -90002,
+    XSET_RETURNED_FALSE: -90003,
+    INVALID_NOTIFICATION: -90004,
+    INVALID_WRITE_OPERATION: -90005,
+    INVALID_READ_OPERATION: -90006,
+  } as const;
+
+  export type ErrorCode = keyof typeof ErrorCodes;
+
+  export namespace Rx {
+    export type RegisterFeedback = {
+      Id: number;
+    };
+  }
 }

@@ -1,15 +1,9 @@
 import assert from "node:assert/strict";
-import { it } from "node:test";
-
+import { describe, it } from "node:test";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import { TestSocket } from "@av/test/socket";
-import { StartLogging } from "@av/telemetry/sdk";
-import { ConsoleExporter } from "@av/telemetry/exporters";
-
-StartLogging([new ConsoleExporter("ERROR")]);
 
 it("api writes to socket, state gets updated on notification", async () => {
-  let highestId = 0;
   const socket = new TestSocket(
     [
       {
@@ -17,12 +11,12 @@ it("api writes to socket, state gets updated on notification", async () => {
           jsonrpc: "2.0",
           method: "xGet",
           params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
-          id: highestId++,
+          id: 0,
         }),
         sendBack: {
           jsonrpc: "2.0",
-          result: { Allowed: "True" },
-          id: highestId,
+          result: "True",
+          id: 0,
         },
       },
       {
@@ -33,12 +27,12 @@ it("api writes to socket, state gets updated on notification", async () => {
             Path: ["Configuration", "Bluetooth"],
             Value: { Allowed: "True", Enabled: "False" },
           },
-          id: highestId++,
+          id: 1,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: { Allowed: "True", Enabled: "False" },
-          id: highestId,
+          id: 1,
         },
       },
       {
@@ -46,12 +40,12 @@ it("api writes to socket, state gets updated on notification", async () => {
           jsonrpc: "2.0",
           method: "xCommand/Dial",
           params: { Number: "12345" },
-          id: highestId++,
+          id: 2,
         }),
         sendBack: {
           jsonrpc: "2.0",
           result: { Number: "12345" },
-          id: highestId,
+          id: 2,
         },
       },
       {
@@ -62,12 +56,12 @@ it("api writes to socket, state gets updated on notification", async () => {
             Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
             NotifyCurrentValue: true,
           },
-          id: highestId++,
+          id: 3,
         }),
         sendBack: {
           jsonrpc: "2.0",
-          result: {},
-          id: highestId,
+          result: { Id: 1 },
+          id: 3,
         },
       },
     ],
@@ -78,80 +72,105 @@ it("api writes to socket, state gets updated on notification", async () => {
     name: "roomos-writer-test",
     socket,
     subscriptions: {
-      UserInterface: true,
+      Bluetooth: true,
     },
   });
 
-  assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
-
-  assert.deepEqual(await roomos.api.xConfiguration.Bluetooth.Allowed.get(), {
-    ok: true,
-    data: { Allowed: "True" },
+  it("xConfiguration.then is undefined", () => {
+    assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
   });
 
-  assert.deepEqual(roomos.state.Bluetooth.Allowed, {
-    Allowed: "True",
-    Enabled: null,
+  it("api.Bluetooth.Allowed.get() === RoomOS.Result<'True'>", async () => {
+    assert.deepEqual(await roomos.api.xConfiguration.Bluetooth.Allowed.get(), {
+      ok: true,
+      data: "True",
+    });
   });
 
-  assert.deepEqual(
-    await roomos.api.xConfiguration.Bluetooth.set({
+  it("state.Bluetooth.Allowed === 'True'", () => {
+    assert.deepEqual(roomos.state.Bluetooth.Allowed, "True");
+  });
+
+  it("api.xConfiguration.Bluetooth.set()", async () => {
+    assert.deepEqual(
+      await roomos.api.xConfiguration.Bluetooth.set({
+        Allowed: "True",
+        Enabled: "False",
+      }),
+      {
+        ok: true,
+        data: { Allowed: "True", Enabled: "False" },
+      },
+    );
+  });
+
+  it("state.Bluetooth === obj", () => {
+    assert.deepEqual(roomos.state.Bluetooth, {
       Allowed: "True",
       Enabled: "False",
-    }),
-    {
-      ok: true,
-      data: { Allowed: "True", Enabled: "False" },
-    },
-  );
-
-  assert.deepEqual(roomos.state.Bluetooth.Allowed, {
-    Allowed: "True",
-    Enabled: "False",
+    });
   });
 
-  assert.deepEqual(await roomos.api.xCommand.Dial({ Number: "12345" }), {
-    ok: true,
-    data: { Number: "12345" },
-  });
-  assert.deepEqual(
-    await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
-    {
+  it("Dial", async () => {
+    assert.deepEqual(await roomos.api.xCommand.Dial({ Number: "12345" }), {
       ok: true,
-      data: {},
-    },
-  );
+      data: { Number: "12345" },
+    });
+  });
 
-  assert.deepEqual(socket.writes, [
-    JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xGet",
-      params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
-      id: 0,
-    }),
-    JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xSet",
-      params: {
-        Path: ["Configuration", "Bluetooth"],
-        Value: { Allowed: "True", Enabled: "False" },
+  it("subscription", async () => {
+    assert.deepEqual(
+      await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
+      {
+        ok: true,
+        data: {
+          id: 1,
+          path: ["xFeedback", "Bluetooth", "Streaming", "PlaybackPosition"],
+        },
       },
-      id: 1,
-    }),
-    JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xCommand/Dial",
-      params: { Number: "12345" },
-      id: 2,
-    }),
-    JSON.stringify({
-      jsonrpc: "2.0",
-      method: "xFeedback/Subscribe",
-      params: {
-        Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-        NotifyCurrentValue: true,
-      },
-      id: 3,
-    }),
-  ]);
+    );
+  });
+
+  it("writes line up", () => {
+    assert.deepEqual(socket.writes, [
+      Buffer.from(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xGet",
+          params: { Path: ["Configuration", "Bluetooth", "Allowed"] },
+          id: 0,
+        }),
+      ),
+      Buffer.from(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xSet",
+          params: {
+            Path: ["Configuration", "Bluetooth"],
+            Value: { Allowed: "True", Enabled: "False" },
+          },
+          id: 1,
+        }),
+      ),
+      Buffer.from(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xCommand/Dial",
+          params: { Number: "12345" },
+          id: 2,
+        }),
+      ),
+      Buffer.from(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xFeedback/Subscribe",
+          params: {
+            Query: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
+            NotifyCurrentValue: true,
+          },
+          id: 3,
+        }),
+      ),
+    ]);
+  });
 });

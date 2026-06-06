@@ -89,7 +89,7 @@ export namespace Rpc {
   type JSONPrimitive = string | number | boolean | null;
   type JSONObject = { [key: string]: JSONValue };
   type JSONArray = JSONValue[];
-  type JSONValue = JSONPrimitive | JSONObject | JSONArray;
+  export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
 
   type IsJSONValue<T> =
     T extends JSONValue ?

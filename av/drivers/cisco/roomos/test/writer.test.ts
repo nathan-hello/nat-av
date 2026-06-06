@@ -3,10 +3,6 @@ import { describe, it } from "node:test";
 
 import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import type { RoomOS } from "@av/drivers/cisco/roomos/types";
-import { StartLogging } from "@av/telemetry/sdk";
-import { ConsoleExporter } from "@av/telemetry/exporters";
-
-StartLogging([new ConsoleExporter("ERROR")]);
 
 describe("roomos writer", () => {
   it("serializes command, get, set, and listen operations", () => {
@@ -53,7 +49,7 @@ describe("roomos writer", () => {
     );
 
     const listen: RoomOS.WriteOperation = {
-      kind: "listen",
+      kind: "sub",
       root: "xFeedback",
       path: ["xFeedback", "Bluetooth", "Streaming", "PlaybackPosition"],
     };

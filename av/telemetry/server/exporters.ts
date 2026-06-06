@@ -2,10 +2,12 @@ import type { ExportResult, LogRecordExporter } from "@av/telemetry/exporters";
 import {
   type ReadableLogRecord,
   ReadableLogRecordStringify,
-  ReadableLogRecordToLogEntry,
   SeverityNumber,
 } from "@av/telemetry/types";
 import fs from "node:fs";
+import node_util from "node:util";
+
+node_util.inspect.defaultOptions.depth = null;
 
 export class FileExporter implements LogRecordExporter {
   private minimumSeverityNumber: number;

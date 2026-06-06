@@ -107,7 +107,7 @@ export class RPCRequest {
   }
 }
 
-export class RPCResponse<T = any> {
+export class RPCResponse<T = Rpc.JSONValue> {
   jsonrpc = "2.0" as const;
 
   constructor(
@@ -135,7 +135,8 @@ export class RPCResponse<T = any> {
       value.id !== undefined &&
       typeof value.id === "number" &&
       "result" in value &&
-      typeof value.result !== "undefined"
+      typeof value.result !== "undefined" &&
+      isJSONValue(value.result)
     ) {
       return new RPCResponse(value.id, value.result);
     }
@@ -195,7 +196,7 @@ export class RPCErrorData extends Error {
   }
 }
 
-export class RPCNotification<Tc = Record<string, unknown>> {
+export class RPCNotification<Tc = Record<string, Rpc.JSONValue>> {
   jsonrpc = "2.0" as const;
   method: string;
   params: Tc;
@@ -205,9 +206,9 @@ export class RPCNotification<Tc = Record<string, unknown>> {
     this.params = params;
   }
 
-  static is<Ti extends Record<string, unknown> = Record<string, unknown>>(
-    value: unknown,
-  ): RPCNotification<Ti> | null {
+  static is<
+    Ti extends Record<string, Rpc.JSONValue> = Record<string, Rpc.JSONValue>,
+  >(value: unknown): RPCNotification<Ti> | null {
     if (typeof value === "string") {
       try {
         value = JSON.parse(value);
@@ -248,3 +249,24 @@ export const RPCErrors = {
       data,
     }),
 };
+
+export function isJSONValue(value: unknown): value is Rpc.JSONValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJSONValue);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).every(isJSONValue);
+  }
+
+  return false;
+}

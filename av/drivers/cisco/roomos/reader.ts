@@ -1,78 +1,206 @@
-import type { RoomOS } from "@av/drivers/cisco/roomos/types";
-import { RPCNotification, RPCResponse } from "@av/rpc/protocol";
-import type { Format } from "@av/types";
+import { RoomOS } from "@av/drivers/cisco/roomos/types";
+import { RPCError, RPCNotification } from "@av/rpc/protocol";
+import { toString } from "@av/lib/buffer";
+import type { JsonValue } from "@av/drivers/cisco/roomos/typegen/scripts/types";
 
-const JsonRpc = {
-  N: {
-    xFeedbackEvent: {
-      method: "xFeedback/Event",
-      params: {
-        id: "Id",
-      },
+function FromJsonRpcError(err: RPCError): RoomOS.ReadOperation {
+  const code: RoomOS.ErrorCode =
+    // TSAS: Object.keys takes out the string definitions
+    (Object.keys(RoomOS.ErrorCodes) as RoomOS.ErrorCode[]).find(
+      (key) => RoomOS.ErrorCodes[key] === err.error.code,
+    ) ?? "CODE_NOT_FOUND";
+
+  return {
+    kind: "error",
+    data: {
+      message: err.error.message ?? code,
+      code: err.error.code,
     },
-  },
-  E: {
-    Codes: {
-      InvalidRequest: -32600,
-      MethodNotFound: -32601,
-      InvalidParams: -32602,
-      InternalError: -32603,
-      ParseError: -32700,
-      CommandError: 1,
-      PermissionDenied: -31999,
-      SubscriberCountExceeded: -31998,
-      NotReady: -31997,
-    },
-  },
-};
+  };
+}
 
 function FromJsonRpcResponse(
-  request: RoomOS.WriteOperation & { id: number },
-  data: unknown,
-  subscriptions: RoomOS.HeldSubscriptions,
-): RoomOS.ReadOperation | null {
-  const response = RPCResponse.is(data);
-  if (!response) {
-    return null;
+  request: RoomOS.WriteOperation,
+  data: JsonValue,
+  subscriptions: RoomOS.HeldSubscription[],
+): RoomOS.ReadOperation {
+  switch (request.kind) {
+    case "sub":
+      const psub = parse.SubOrUnsubFeedback(data);
+      if (!psub) {
+        return {
+          kind: "error",
+          data: {
+            code: RoomOS.ErrorCodes.INVALID_RESPONSE,
+
+            message: toString(data),
+          },
+        };
+      }
+      return {
+        kind: "subscribed",
+        data: {
+          id: psub.Id,
+          path: request.path,
+        },
+      };
+    /**
+     * Expected shape of `xGet` request:
+     * request:
+     * { "jsonrpc": "2.0", "id": 103, "method": "xGet", "params": { "Path": ["Status", "SystemUnit", "State"] }
+     * response:
+     * { "jsonrpc": "2.0", "id": 103, "result": { "NumberOfActiveCalls": 0, "NumberOfInProgressCalls": 0, "NumberOfSuspendedCalls": 0 } }
+     */
+    case "get":
+      return { kind: "update", data: { path: request.path, value: data } };
+    /**
+     * Expected shape of an `xSet` request:
+     * { "jsonrpc": "2.0", "id": 110, "result": true }
+     */
+    case "set":
+      if (data === false) {
+        return {
+          kind: "error",
+          data: {
+            code: RoomOS.ErrorCodes.XSET_RETURNED_FALSE,
+            message: toString(request),
+
+            data: toString(data),
+          },
+        };
+      }
+      return {
+        kind: "update",
+        data: { path: request.path, value: request.value },
+      };
+    case "unsub":
+      const punsub = parse.SubOrUnsubFeedback(data);
+      if (!punsub) {
+        return {
+          kind: "error",
+          data: {
+            code: RoomOS.ErrorCodes.INVALID_RESPONSE,
+            message: toString(request),
+            data: toString(data),
+          },
+        };
+      }
+      return {
+        kind: "unsubscribed",
+        data: subscriptions
+          .flatMap((s) => {
+            if (s.id === punsub.Id) {
+              return s;
+            }
+            return findSubTrees(request.path, subscriptions);
+          })
+          .filter((s) => s !== undefined),
+      };
+    case "command":
+      return { kind: "command_response", data: data };
   }
-
-  response.id;
-
-  return null;
 }
 
 function FromJsonRpcNotification(
-  data: unknown,
-  subscriptions: RoomOS.HeldSubscriptions,
+  notification: RPCNotification,
 ): RoomOS.ReadOperation | null {
-  const notification = RPCNotification.is(data);
-  if (!notification) {
-    return null;
-  }
-
-  if (notification.method === JsonRpc.N.xFeedbackEvent.method) {
-    if (JsonRpc.N.xFeedbackEvent.params.id in notification.params) {
-      const ret: RoomOS.ReadOperation = {
-        update: getLeaves(notification.params),
+  if (notification.method === "xFeedback/Event") {
+    const params = parse.xFeedbackEvent(notification.params);
+    if (!params) {
+      return {
+        kind: "error",
+        data: {
+          data: { method: notification.method, params: notification.params },
+          message: "INVALID_NOTIFICATION",
+          code: RoomOS.ErrorCodes.INVALID_NOTIFICATION,
+        },
       };
     }
+
+    const { Id, ...rest } = { ...params };
+
+    const data = getLeaves(rest);
+    return { kind: "update", data: { path: data.path, value: data.value } };
   }
 
   return null;
 }
 
+const parse = {
+  Is: {
+    SubOrUnsubFeedback: (
+      value: JsonValue,
+    ): value is RoomOS.Rx.RegisterFeedback => {
+      return (
+        value !== null &&
+        typeof value === "object" &&
+        "Id" in value &&
+        typeof value.Id === "number"
+      );
+    },
+    xFeedbackEvent: (
+      value: JsonValue,
+    ): value is { Id: number & Record<string, JsonValue> } => {
+      return (
+        value !== null &&
+        typeof value === "object" &&
+        "Id" in value &&
+        typeof value.Id === "number"
+      );
+    },
+  },
+
+  SubOrUnsubFeedback: (value: JsonValue): RoomOS.Rx.RegisterFeedback | null => {
+    if (parse.Is.SubOrUnsubFeedback(value)) {
+      return value;
+    }
+    return null;
+  },
+  xFeedbackEvent: (
+    value: JsonValue,
+  ): { Id: number & Record<string, JsonValue> } | null => {
+    if (parse.Is.xFeedbackEvent(value)) {
+      return value;
+    }
+    return null;
+  },
+};
+
+function findSubTrees(
+  targetPath: string[],
+  subscriptions: RoomOS.HeldSubscription[],
+): RoomOS.HeldSubscription[] {
+  return subscriptions.filter(
+    (sub) =>
+      sub.path.length >= targetPath.length &&
+      targetPath.every((segment, i) => segment === sub.path[i]),
+  );
+}
+
 function getLeaves(
-  obj: unknown,
+  obj: JsonValue,
   currentPath: string[] = [],
 ): {
   path: string[];
-  value: unknown;
-}[] {
+  value: JsonValue;
+} {
   if (typeof obj !== "object" || obj === null) {
-    return [{ path: currentPath, value: obj }];
+    return { path: currentPath, value: obj };
   }
 
-  return Object.entries(obj).flatMap(([key, value]) =>
-    getLeaves(value, [...currentPath, key]),
-  );
+  const entries = Object.entries(obj);
+  if (entries.length === 0) {
+    return { path: currentPath, value: obj };
+  }
+
+  const [key, value] = entries[0];
+  return getLeaves(value, [...currentPath, key]);
 }
+
+export const reader = {
+  JsonRpc: {
+    Response: FromJsonRpcResponse,
+    Notification: FromJsonRpcNotification,
+    Error: FromJsonRpcError,
+  },
+};

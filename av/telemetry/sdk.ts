@@ -1,5 +1,6 @@
 import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types";
 import { type LogRecordExporter, MultiLogExporter } from "./exporters";
+import { SimpleConsoleExporter } from "@av/telemetry/server/exporters";
 
 class LoggerProvider {
   constructor(private exporter: LogRecordExporter | null) {}
@@ -15,7 +16,10 @@ class LoggerProvider {
           record.severityNumber &&
           record.severityNumber === SeverityNumber["ERROR"]
         ) {
-          throw Error("a `tel.error()` was surfaced during testing!\n" + JSON.stringify(record));
+          throw Error(
+            "a `tel.error()` was surfaced during testing!\n" +
+              JSON.stringify(record),
+          );
         }
         this.exporter?.export([record], () => {});
       },
@@ -26,6 +30,15 @@ class LoggerProvider {
 let loggerProvider: LoggerProvider | null = null;
 
 export function getLoggerProvider(): LoggerProvider {
+  if (
+    !loggerProvider &&
+    typeof process === "object" &&
+    typeof process.env === "object" &&
+    typeof process.env.NODE_ENV === "string" &&
+    process.env.NODE_ENV === "testing"
+  ) {
+    StartLogging([new SimpleConsoleExporter("INFO")]);
+  }
   if (!loggerProvider) {
     throw new Error("LoggerProvider not initialized. Call StartLogging first.");
   }

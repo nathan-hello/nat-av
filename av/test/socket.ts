@@ -1,5 +1,6 @@
 import { toBuffer } from "@av/lib/buffer";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
 
 export type TestSocketScriptStep<State = unknown> = {
@@ -16,6 +17,7 @@ export class TestSocket<State = unknown>
   private script?: TestSocketScriptStep<State>[];
   config?: { throwIfWriteNotFound: boolean };
   state: State | undefined;
+  tel: Telemetry;
 
   constructor(
     scripts?: TestSocketScriptStep<State>[],
@@ -24,6 +26,7 @@ export class TestSocket<State = unknown>
     super();
     this.script = scripts;
     this.config = config;
+    this.tel = new Telemetry(`test-socket`);
   }
 
   start() {}
@@ -32,6 +35,11 @@ export class TestSocket<State = unknown>
   write(data: string | Uint8Array | Buffer): number {
     const buffer = toBuffer(data);
     this.writes.push(buffer);
+
+    this.tel.info("WROTE", {
+      str: buffer.toString("utf8"),
+      hex: buffer.toString("hex"),
+    });
 
     if (this.script && this.script?.length > 0) {
       const index = this.script.findIndex((step) =>
@@ -62,6 +70,11 @@ export class TestSocket<State = unknown>
   }
 
   receive(message: unknown) {
-    this.dispatch("receive", toBuffer(message));
+    const buffer = toBuffer(message);
+    this.dispatch("receive", buffer);
+    this.tel.info("RECIEVE", {
+      str: buffer.toString("utf8"),
+      hex: buffer.toString("hex"),
+    });
   }
 }

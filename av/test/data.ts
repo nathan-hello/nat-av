@@ -1,12 +1,8 @@
 import type { DriverFor, Events, Rpc, Schema } from "@av/types";
 import { Driver } from "@av/drivers";
 import { Tcp } from "@av/sockets/tcp";
-import { ConsoleExporter } from "@av/telemetry/exporters";
-import { StartLogging } from "@av/telemetry/sdk";
 import { Orchistrator } from "@av/lib/orch";
 import { Bus } from "@av/lib/bus";
-
-StartLogging([new ConsoleExporter("ERROR")]);
 
 export class TestDriver<const N extends string = string> extends Driver<N> {
   state = {
