@@ -199,7 +199,10 @@ function ToTerminal(
       return withResultId(`xfeedback register ${query}`, resultId);
     }
     case "unsub": {
-      return withResultId(`xfeedback register ${operation.root}/${operation.path}`, resultId);
+      return withResultId(
+        `xfeedback register ${operation.root}/${operation.path}`,
+        resultId,
+      );
     }
   }
 }
@@ -239,19 +242,19 @@ function ToJsonRpc(
         jsonrpc: "2.0",
         method: "xFeedback/Subscribe",
         params: {
-          Query: asRpcPath(operation.root, operation.path), 
-          NotifyCurrentValue: true
+          Query: asRpcPath(operation.root, operation.path),
+          NotifyCurrentValue: true,
         },
         id,
       });
-      case "unsub":
-        return JSON.stringify({
+    case "unsub":
+      return JSON.stringify({
         jsonrpc: "2.0",
         method: "xFeedback/Unsubscribe",
         params: {
-          Id: operation
-        }
-      })
+          Id: operation,
+        },
+      });
   }
 }
 

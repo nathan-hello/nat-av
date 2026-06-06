@@ -7,7 +7,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-
 export class RoomOSProxy {
   private request: TRequest;
   private tel: Telemetry;
@@ -239,7 +238,6 @@ export class RoomOSProxy {
   }
 
   UpdateState(path: string[], value: unknown): void {
-
     if (path.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {

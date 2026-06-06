@@ -28,7 +28,6 @@ export type StateFor<
   N extends NamesOf<C>,
 > = DriverFor<C, N>["state"];
 
-
 type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   [M in keyof DriverFor<C, N>["api"]]: DriverFor<C, N>["api"][M] extends (
     (...args: infer Args) => infer R

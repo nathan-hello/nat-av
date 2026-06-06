@@ -45,4 +45,3 @@ roomos.state.UserInterface.WebView[0].Status;
 
 roomos.state.Bluetooth.Streaming.PlaybackPosition;
 roomos.state.Bluetooth.Streaming.PlaybackPosition;
-
