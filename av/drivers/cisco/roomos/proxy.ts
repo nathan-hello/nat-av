@@ -7,17 +7,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeStatePath(path: readonly string[]): string[] {
-  if (
-    path[0] === "xConfiguration" ||
-    path[0] === "xStatus" ||
-    path[0] === "xFeedback"
-  ) {
-    return path.slice(1);
-  }
-
-  return [...path];
-}
 
 export class RoomOSProxy {
   private request: TRequest;
@@ -166,11 +155,11 @@ export class RoomOSProxy {
           return this.state[prop];
         }
 
-        this.tel.info("Proxy.State.get(): this.state", { state: this.state });
+        // this.tel.info("Proxy.State.get(): this.state", { state: this.state });
 
         const currentPath = [...path, prop];
 
-        this.tel.info("Proxy.State.get(): currentPath", { currentPath });
+        // this.tel.info("Proxy.State.get(): currentPath", { currentPath });
 
         // Find leaf
         const value = currentPath.reduce(
@@ -186,7 +175,7 @@ export class RoomOSProxy {
           return this.State(currentPath);
         }
 
-        this.tel.info("Proxy.State.get(): returned real value", { value });
+        // this.tel.info("Proxy.State.get(): returned real value", { value });
         return value;
       },
       set: (_, prop, value) => {
@@ -195,11 +184,11 @@ export class RoomOSProxy {
           return true;
         }
 
-        this.tel.info("Proxy.State.set(): this.state", { state: this.state });
+        // this.tel.info("Proxy.State.set(): this.state", { state: this.state });
 
         const currentPath = [...path, prop];
 
-        this.tel.info("Proxy.State.set(): currentPath", { currentPath });
+        // this.tel.info("Proxy.State.set(): currentPath", { currentPath });
 
         // Dig down to parent node directly on the single class target
         let parent = this.state;
@@ -211,12 +200,12 @@ export class RoomOSProxy {
           parent = parent[key];
         }
 
-        this.tel.info("Proxy.State.set(): parent", { parent });
-        this.tel.info(
-          "Proxy.State.set(): parent[currentPath[currentPath.length - 1]]",
-          { value: parent[currentPath[currentPath.length - 1]] },
-        );
-        this.tel.info("Proxy.State.set(): value", { value });
+        // this.tel.info("Proxy.State.set(): parent", { parent });
+        // this.tel.info(
+        //   "Proxy.State.set(): parent[currentPath[currentPath.length - 1]]",
+        //   { value: parent[currentPath[currentPath.length - 1]] },
+        // );
+        // this.tel.info("Proxy.State.set(): value", { value });
 
         // parent is now set to currentPath[-1]
         // .length is 1-based, so get the leaf and set the value
@@ -250,9 +239,8 @@ export class RoomOSProxy {
   }
 
   UpdateState(path: string[], value: unknown): void {
-    const normalizedPath = normalizeStatePath(path);
 
-    if (normalizedPath.length === 0) {
+    if (path.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {
         this.state = { ...value };
@@ -264,8 +252,8 @@ export class RoomOSProxy {
     let parent = this.state;
 
     // Traverse to the parent of the leaf node
-    for (let i = 0; i < normalizedPath.length - 1; i++) {
-      const key = normalizedPath[i];
+    for (let i = 0; i < path.length - 1; i++) {
+      const key = path[i];
       if (typeof parent[key] !== "object" || parent[key] === null) {
         parent[key] = {};
       }
@@ -274,7 +262,7 @@ export class RoomOSProxy {
     }
 
     // Set the value on the leaf node
-    const leafKey = normalizedPath[normalizedPath.length - 1];
+    const leafKey = path[path.length - 1];
 
     // This is still a reference to some key within this.state
     parent[leafKey] = value;

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { it } from "node:test";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import { TestSocket } from "@av/test/socket";
 
@@ -125,10 +125,28 @@ it("api writes to socket, state gets updated on notification", async () => {
         ok: true,
         data: {
           id: 1,
-          path: ["xFeedback", "Bluetooth", "Streaming", "PlaybackPosition"],
+          path: ["Bluetooth", "Streaming", "PlaybackPosition"],
         },
       },
     );
+  });
+
+  it("notification turns state.Bluetooth.Allowed false", () => {
+    socket.receive(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "xFeedback/Event",
+        params: {
+          Id: 1,
+          Configuration: {
+            Bluetooth: {
+              Allowed: "False",
+            },
+          },
+        },
+      }),
+    );
+    assert.equal(roomos.state.Bluetooth.Allowed, "False");
   });
 
   it("writes line up", () => {

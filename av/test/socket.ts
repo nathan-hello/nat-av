@@ -72,9 +72,5 @@ export class TestSocket<State = unknown>
   receive(message: unknown) {
     const buffer = toBuffer(message);
     this.dispatch("receive", buffer);
-    this.tel.info("RECIEVE", {
-      str: buffer.toString("utf8"),
-      hex: buffer.toString("hex"),
-    });
   }
 }

@@ -41,7 +41,7 @@ function FromJsonRpcResponse(
         kind: "subscribed",
         data: {
           id: psub.Id,
-          path: request.path,
+          path: normalizeStatePath(request.path),
         },
       };
     /**
@@ -52,7 +52,10 @@ function FromJsonRpcResponse(
      * { "jsonrpc": "2.0", "id": 103, "result": { "NumberOfActiveCalls": 0, "NumberOfInProgressCalls": 0, "NumberOfSuspendedCalls": 0 } }
      */
     case "get":
-      return { kind: "update", data: { path: request.path, value: data } };
+      return {
+        kind: "update",
+        data: { path: normalizeStatePath(request.path), value: data },
+      };
     /**
      * Expected shape of an `xSet` request:
      * { "jsonrpc": "2.0", "id": 110, "result": true }
@@ -71,7 +74,7 @@ function FromJsonRpcResponse(
       }
       return {
         kind: "update",
-        data: { path: request.path, value: request.value },
+        data: { path: normalizeStatePath(request.path), value: request.value },
       };
     case "unsub":
       const punsub = parse.SubOrUnsubFeedback(data);
@@ -120,7 +123,10 @@ function FromJsonRpcNotification(
     const { Id, ...rest } = { ...params };
 
     const data = getLeaves(rest);
-    return { kind: "update", data: { path: data.path, value: data.value } };
+    return {
+      kind: "update",
+      data: { path: normalizeStatePath(data.path), value: data.value },
+    };
   }
 
   return null;
@@ -195,6 +201,21 @@ function getLeaves(
 
   const [key, value] = entries[0];
   return getLeaves(value, [...currentPath, key]);
+}
+
+function normalizeStatePath(path: readonly string[]): string[] {
+  if (
+    path[0] === "Configuration" ||
+    path[0] === "Status" ||
+    path[0] === "Event" ||
+    path[0] === "xConfiguration" ||
+    path[0] === "xStatus" ||
+    path[0] === "xFeedback"
+  ) {
+    return path.slice(1);
+  }
+
+  return [...path];
 }
 
 export const reader = {

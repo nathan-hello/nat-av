@@ -5,7 +5,7 @@ import { RoomOS, type Generated } from "@av/drivers/cisco/roomos/types";
 import { RequestManager } from "@av/lib/requests";
 import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import { Delimiters } from "@av/sockets/delimiters";
-import { RPCError, RPCResponse } from "@av/rpc/protocol";
+import { RPCError, RPCNotification, RPCResponse } from "@av/rpc/protocol";
 import { toBuffer, toString } from "@av/lib/buffer";
 import { reader } from "@av/drivers/cisco/roomos/reader";
 
@@ -74,6 +74,14 @@ export class CiscoRoomOS<
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", toBuffer(message));
       this.tel.info("DELIMITED", { str: toString(message) });
+      const notification = RPCNotification.is(message);
+      if (notification) {
+        const read = reader.JsonRpc.Notification(notification);
+        this.tel.debug("READ_NOTIFICATION", { read });
+        if (read) {
+          this.read(read);
+        }
+      }
     });
 
     this.state.internal = {
@@ -188,3 +196,4 @@ export class CiscoRoomOS<
     >["xFeedback"],
   };
 }
+
