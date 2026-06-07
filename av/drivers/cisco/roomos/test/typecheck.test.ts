@@ -32,16 +32,13 @@ describe("typecheck", () => {
   it("does not throw when accessing nested state obj", () => {
     assert.doesNotThrow(() => {
       void roomos.state.UserInterface.ScreenShotStored.Type;
+      // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
+      void roomos.state.PresentationPreviewStarted.Cause;
+
+      void roomos.state.UserInterface.WebView[0].Status;
+
+      // Should be 'number'
+      void roomos.state.Bluetooth.Streaming.PlaybackPosition.Position;
     });
   });
 });
-
-// Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-roomos.state.PresentationPreviewStarted.Cause;
-
-roomos.state.Conference.ParticipantList.AddToRemoteConferenceStarted.CallId;
-
-roomos.state.UserInterface.WebView[0].Status;
-
-roomos.state.Bluetooth.Streaming.PlaybackPosition;
-roomos.state.Bluetooth.Streaming.PlaybackPosition;

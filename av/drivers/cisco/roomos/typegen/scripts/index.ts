@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import fs from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -208,12 +208,12 @@ function generateSource(schema: SchemaJson): string {
 }
 
 async function main(): Promise<void> {
-  const raw = await readFile(FILE_INPUT, "utf8");
+  const raw = await fs.readFile(FILE_INPUT, "utf8");
   const schema: SchemaJson = JSON.parse(raw);
   const contents = generateSource(schema);
 
-  await mkdir(new URL(".", FILE_OUTPUT), { recursive: true });
-  await writeFile(FILE_OUTPUT, `${contents}\n`, "utf8");
+  await fs.mkdir(new URL(".", FILE_OUTPUT), { recursive: true });
+  await fs.writeFile(FILE_OUTPUT, `${contents}\n`, "utf8");
 }
 
 if (
