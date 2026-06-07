@@ -122,7 +122,7 @@ describe("requests", () => {
     const second = requests.request({ id: 2, command: "second" });
 
     assert.equal(socket.writes.length, 1);
-    assert.match(socket.writes[0]!.toString("utf8"), /"id":1/);
+    assert.match(socket.writes[0].toString("utf8"), /"id":1/);
 
     socket.receive(`${JSON.stringify({ id: 1, result: "one" })}\n`);
     assert.deepEqual(await first, { ok: true, data: { id: 1, result: "one" } });

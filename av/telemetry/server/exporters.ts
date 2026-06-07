@@ -7,8 +7,6 @@ import {
 import fs from "node:fs";
 import node_util from "node:util";
 
-node_util.inspect.defaultOptions.depth = null;
-
 export class FileExporter implements LogRecordExporter {
   private minimumSeverityNumber: number;
 
@@ -59,26 +57,32 @@ export class SimpleConsoleExporter implements LogRecordExporter {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
       const scopeName = `${ANSI_PURPLE}${record.instrumentationScope.name}${ANSI_RESET}`;
+      const body = node_util.inspect(record.body, { depth: null, colors: true });
+      const attributes = node_util.inspect(record.attributes, {
+        depth: null,
+        colors: true,
+      });
+
       switch (record.severityNumber) {
-        case SeverityNumber["DEBUG"]:
-          console.debug(scopeName, record.body, record.attributes);
+        case SeverityNumber.DEBUG:
+          console.debug(scopeName, body, attributes);
           break;
-        case SeverityNumber["INFO"]:
-          console.info(scopeName, record.body, record.attributes);
+        case SeverityNumber.INFO:
+          console.info(scopeName, body, attributes);
           break;
-        case SeverityNumber["WARN"]:
-          console.warn(scopeName, record.body, record.attributes);
+        case SeverityNumber.WARN:
+          console.warn(scopeName, body, attributes);
           break;
-        case SeverityNumber["ERROR"]:
-          console.error(scopeName, record.body, record.attributes);
+        case SeverityNumber.ERROR:
+          console.error(scopeName, body, attributes);
           break;
         default:
-          console.log(scopeName, record.body, record.attributes);
+          console.log(scopeName, body, attributes);
           break;
       }
-    }
 
-    resultCallback({ code: 0 });
+      resultCallback({ code: 0 });
+    }
   }
 
   async shutdown() {}
