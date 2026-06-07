@@ -51,7 +51,7 @@ describe("roomos writer", () => {
     const listen: RoomOS.WriteOperation = {
       kind: "sub",
       root: "xFeedback",
-      path: ["xFeedback", "Bluetooth", "Streaming", "PlaybackPosition"],
+      path: ["xFeedback", "Event", "Bluetooth", "Streaming", "PlaybackPosition"],
     };
 
     assert.equal(

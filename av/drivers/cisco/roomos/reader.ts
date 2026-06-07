@@ -205,9 +205,6 @@ function getLeaves(
 
 function normalizeStatePath(path: readonly string[]): string[] {
   if (
-    path[0] === "Configuration" ||
-    path[0] === "Status" ||
-    path[0] === "Event" ||
     path[0] === "xConfiguration" ||
     path[0] === "xStatus" ||
     path[0] === "xFeedback"

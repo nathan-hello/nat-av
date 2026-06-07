@@ -98,11 +98,20 @@ function escapeXml(value: string): string {
     .replaceAll("'", "&apos;");
 }
 
-function asRpcPath(
-  root: "xCommand" | "xConfiguration" | "xStatus" | "xFeedback",
-  path: readonly string[],
-) {
-  return [rootPathName(root), ...toRpcPath(path.slice(1))];
+function asRpcPath(path: readonly string[]) {
+  return toRpcPath(path.slice(1));
+}
+
+function renderTerminalPath(operation: RoomOS.WriteOperation): string {
+  switch (operation.root) {
+    case "xCommand":
+      return renderPath(operation.path.slice(1));
+    case "xConfiguration":
+    case "xStatus":
+      return renderPath(operation.path.slice(2));
+    case "xFeedback":
+      return renderPath(operation.path.slice(1));
+  }
 }
 
 function renderXmlPrimitive(value: unknown): string {
@@ -148,21 +157,6 @@ function withResultId(command: string, resultId: number): string {
   return `${command} | resultId="${resultId}"`;
 }
 
-export function rootPathName(
-  root: "xCommand" | "xConfiguration" | "xStatus" | "xFeedback",
-): string {
-  switch (root) {
-    case "xCommand":
-      return "Command";
-    case "xConfiguration":
-      return "Configuration";
-    case "xStatus":
-      return "Status";
-    case "xFeedback":
-      return "Event";
-  }
-}
-
 function wrapBody(command: string, body: string, resultId: number): string {
   const payload = `${withResultId(command, resultId)}\n${body}\n`;
   return `{${Buffer.byteLength(payload, "utf8")}} \n${payload}`;
@@ -174,8 +168,7 @@ function ToTerminal(
 ): string {
   switch (operation.kind) {
     case "command": {
-      const head =
-        `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
+      const head = `${operation.root} ${renderTerminalPath(operation)}`.trim();
       const args = operation.args ? formatParamObject(operation.args) : "";
       const command = [head, args].filter(Boolean).join(" ");
       return operation.body !== undefined ?
@@ -183,24 +176,20 @@ function ToTerminal(
         : withResultId(command, resultId);
     }
     case "get": {
-      const command =
-        `${operation.root} ${renderPath(operation.path.slice(1))}`.trim();
+      const command = `${operation.root} ${renderTerminalPath(operation)}`.trim();
       return withResultId(command, resultId);
     }
     case "set": {
-      const command = `${operation.root} ${renderPath(operation.path.slice(1))}: ${formatValue(operation.value)}`;
+      const command = `${operation.root} ${renderTerminalPath(operation)}: ${formatValue(operation.value)}`;
       return withResultId(command, resultId);
     }
     case "sub": {
-      const query = renderQueryPath([
-        rootPathName(operation.root),
-        ...operation.path.slice(1),
-      ]);
+      const query = renderQueryPath(operation.path.slice(1));
       return withResultId(`xfeedback register ${query}`, resultId);
     }
     case "unsub": {
       return withResultId(
-        `xfeedback register ${operation.root}/${operation.path}`,
+        `xfeedback register ${renderQueryPath(operation.path.slice(1))}`,
         resultId,
       );
     }
@@ -224,7 +213,7 @@ function ToJsonRpc(
       return JSON.stringify({
         jsonrpc: "2.0",
         method: "xGet",
-        params: { Path: asRpcPath(operation.root, operation.path) },
+        params: { Path: asRpcPath(operation.path) },
         id,
       });
     case "set":
@@ -232,7 +221,7 @@ function ToJsonRpc(
         jsonrpc: "2.0",
         method: "xSet",
         params: {
-          Path: asRpcPath(operation.root, operation.path),
+          Path: asRpcPath(operation.path),
           Value: operation.value,
         },
         id,
@@ -242,7 +231,7 @@ function ToJsonRpc(
         jsonrpc: "2.0",
         method: "xFeedback/Subscribe",
         params: {
-          Query: asRpcPath(operation.root, operation.path),
+          Query: asRpcPath(operation.path),
           NotifyCurrentValue: true,
         },
         id,
@@ -270,13 +259,13 @@ function ToXml(operation: RoomOS.WriteOperation, id: number): string {
       return `<Command id="${escapeXml(String(id ?? ""))}" method="${escapeXml(method)}">${args}${body}</Command>`;
     }
     case "get":
-      return `<Get id="${escapeXml(String(id ?? ""))}"><Path>${escapeXml(asRpcPath(operation.root, operation.path).join("/"))}</Path></Get>`;
+      return `<Get id="${escapeXml(String(id ?? ""))}"><Path>${escapeXml(asRpcPath(operation.path).join("/"))}</Path></Get>`;
     case "set":
-      return `<Set id="${escapeXml(String(id ?? ""))}"><Path>${escapeXml(asRpcPath(operation.root, operation.path).join("/"))}</Path><Value>${escapeXml(String(operation.value))}</Value></Set>`;
+      return `<Set id="${escapeXml(String(id ?? ""))}"><Path>${escapeXml(asRpcPath(operation.path).join("/"))}</Path><Value>${escapeXml(String(operation.value))}</Value></Set>`;
     case "sub":
-      return `<Subscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.root, operation.path).join("/"))}</Query></Subscribe>`;
+      return `<Subscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
     case "unsub":
-      return `<Unsubscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.root, operation.path).join("/"))}</Query></Subscribe>`;
+      return `<Unsubscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
   }
 }
 

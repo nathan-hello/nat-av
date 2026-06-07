@@ -72,7 +72,9 @@ it("api writes to socket, state gets updated on notification", async () => {
     name: "roomos-writer-test",
     socket,
     subscriptions: {
-      Bluetooth: true,
+      Configuration: {
+        Bluetooth: true,
+      },
     },
   });
 
@@ -80,20 +82,23 @@ it("api writes to socket, state gets updated on notification", async () => {
     assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
   });
 
-  it("api.Bluetooth.Allowed.get() === RoomOS.Result<'True'>", async () => {
-    assert.deepEqual(await roomos.api.xConfiguration.Bluetooth.Allowed.get(), {
-      ok: true,
-      data: "True",
-    });
+  it("api.Configuration.Bluetooth.Allowed.get() === RoomOS.Result<'True'>", async () => {
+    assert.deepEqual(
+      await roomos.api.xConfiguration.Configuration.Bluetooth.Allowed.get(),
+      {
+        ok: true,
+        data: "True",
+      },
+    );
   });
 
   it("state.Bluetooth.Allowed === 'True'", () => {
-    assert.deepEqual(roomos.state.Bluetooth.Allowed, "True");
+    assert.deepEqual(roomos.state.Configuration.Bluetooth.Allowed, "True");
   });
 
-  it("api.xConfiguration.Bluetooth.set()", async () => {
+  it("api.xConfiguration.Configuration.Bluetooth.set()", async () => {
     assert.deepEqual(
-      await roomos.api.xConfiguration.Bluetooth.set({
+      await roomos.api.xConfiguration.Configuration.Bluetooth.set({
         Allowed: "True",
         Enabled: "False",
       }),
@@ -104,8 +109,8 @@ it("api writes to socket, state gets updated on notification", async () => {
     );
   });
 
-  it("state.Bluetooth === obj", () => {
-    assert.deepEqual(roomos.state.Bluetooth, {
+  it("state.Configuration.Bluetooth === obj", () => {
+    assert.deepEqual(roomos.state.Configuration.Bluetooth, {
       Allowed: "True",
       Enabled: "False",
     });
@@ -120,33 +125,37 @@ it("api writes to socket, state gets updated on notification", async () => {
 
   it("subscription", async () => {
     assert.deepEqual(
-      await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
+      await roomos.api.xFeedback.Event.Bluetooth.Streaming.PlaybackPosition.subscribe(),
       {
         ok: true,
         data: {
           id: 1,
-          path: ["Bluetooth", "Streaming", "PlaybackPosition"],
+          path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
         },
       },
     );
   });
 
-  it("notification turns state.Bluetooth.Allowed false", () => {
+  it("notification turns state.Configuration.Bluetooth.Allowed false", () => {
     socket.receive(
       JSON.stringify({
         jsonrpc: "2.0",
         method: "xFeedback/Event",
         params: {
           Id: 1,
-          Configuration: {
+          Event: {
             Bluetooth: {
-              Allowed: "False",
+              Streaming: {
+                PlaybackPosition: {
+                  Position: 5,
+                },
+              },
             },
           },
         },
       }),
     );
-    assert.equal(roomos.state.Bluetooth.Allowed, "False");
+    assert.equal(roomos.state.Configuration.Bluetooth.Allowed, "False");
   });
 
   it("writes line up", () => {

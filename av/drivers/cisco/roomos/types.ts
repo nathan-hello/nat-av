@@ -147,10 +147,10 @@ export namespace RoomOS {
         root: "xConfiguration" | "xStatus" | "xFeedback";
         path: string[];
       }
-    | {
+      | {
         kind: "unsub";
         root: "xConfiguration" | "xStatus" | "xFeedback";
-        subId: number;
+        subId?: number;
         path: string[];
       };
 

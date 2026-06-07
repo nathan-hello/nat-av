@@ -20,25 +20,22 @@ const roomos = new CiscoRoomOS({
   name: "roomos-typecheck",
   socket,
   subscriptions: {
-    Audio: true,
-    Bluetooth: true,
-    Conference: true,
-    PresentationPreviewStarted: true,
-    UserInterface: true,
+    Event: true,
+    Status: true,
   },
 });
 
 describe("typecheck", () => {
   it("does not throw when accessing nested state obj", () => {
     assert.doesNotThrow(() => {
-      void roomos.state.UserInterface.ScreenShotStored.Type;
+      void roomos.state.Event.UserInterface.ScreenShotStored.Type;
       // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-      void roomos.state.PresentationPreviewStarted.Cause;
+      void roomos.state.Event.PresentationPreviewStarted.Cause;
 
-      void roomos.state.UserInterface.WebView[0].Status;
+      void roomos.state.Status.UserInterface.WebView[0].Status;
 
       // Should be 'number'
-      void roomos.state.Bluetooth.Streaming.PlaybackPosition.Position;
+      void roomos.state.Event.Bluetooth.Streaming.PlaybackPosition.Position;
     });
   });
 });

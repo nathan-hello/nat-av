@@ -73,7 +73,6 @@ export class CiscoRoomOS<
 
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", toBuffer(message));
-      this.tel.info("DELIMITED", { str: toString(message) });
       const notification = RPCNotification.is(message);
       if (notification) {
         const read = reader.JsonRpc.Notification(notification);
