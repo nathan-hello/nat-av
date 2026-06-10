@@ -25,7 +25,6 @@ export class CiscoRoomOS<
     RoomOS.WriteOperation & { id: number },
     unknown
   >;
-  private highestId = 0;
   private proxy = new RoomOSProxy(this.tel, this.request.bind(this));
   private subscriptions: RoomOS.HeldSubscription[] = [];
 
@@ -84,7 +83,7 @@ export class CiscoRoomOS<
     });
 
     this.state.internal = {
-      highestId: this.highestId,
+      highestId: 0,
       // TSAS:
       subscriptions: subscriptions as typeof this.state.internal.subscriptions,
     };
@@ -127,11 +126,11 @@ export class CiscoRoomOS<
   private async request(
     operation: RoomOS.WriteOperation,
   ): Promise<RoomOS.Result<unknown>> {
-    this.tel.info("REQUEST", { op: operation, id: this.highestId + 1 });
+    this.tel.info("REQUEST", { op: operation, id: this.state.internal.highestId + 1 });
 
     const rx = await this.requests.request({
       ...operation,
-      id: this.highestId++,
+      id: this.state.internal.highestId++,
     });
 
     this.tel.info("REQUEST_RESOLVED", rx);
