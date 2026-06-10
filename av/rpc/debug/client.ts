@@ -73,12 +73,10 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
 
   connect() {
     this.transport.connect();
-    return this;
   }
 
   close(code?: number, reason?: string) {
     this.transport.close(code, reason);
-    return this;
   }
 
   get isOnline() {

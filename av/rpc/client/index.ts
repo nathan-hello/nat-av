@@ -69,50 +69,15 @@ export class ClientRpc<
   connect() {
     this.transport.connect();
     this.debug.connect();
-    return this;
   }
 
   close(code?: number, reason?: string) {
     this.transport.close(code, reason);
     this.debug.close(code, reason);
-    return this;
   }
 
   get isOnline() {
     return this.transport.readyState === WebSocket.OPEN;
-  }
-
-  private async init() {
-    await this.waitForOpen();
-
-    const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([this.systemHandle.state]);
-    });
-
-    if (!initial.ok) {
-      this.dispatch("error", {
-        reason: "init-promises-threw",
-        error: new Error(initial.error),
-      });
-
-      this.close();
-      setTimeout(() => {
-        this.connect();
-      }, 2000);
-      return;
-    }
-
-    this.tel.info("successfully resolved promises");
-
-    this.dispatch("ready", true);
-  }
-
-  private async waitForOpen() {
-    if (this.transport.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    await this.transport.once("open");
   }
 
   device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
@@ -139,6 +104,35 @@ export class ClientRpc<
 
   get system() {
     return this.systemHandle;
+  }
+
+  private async init() {
+    if (this.transport.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    await this.transport.once("open");
+
+    const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
+      return await Promise.all([this.systemHandle.state]);
+    });
+
+    if (!initial.ok) {
+      this.dispatch("error", {
+        reason: "init-promises-threw",
+        error: new Error(initial.error),
+      });
+
+      this.close();
+      setTimeout(() => {
+        this.connect();
+      }, 2000);
+      return;
+    }
+
+    this.tel.info("successfully resolved promises");
+
+    this.dispatch("ready", true);
   }
 
   private onMessage(raw: string) {

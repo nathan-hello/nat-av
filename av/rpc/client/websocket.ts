@@ -46,7 +46,7 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
       this.dispatch("close", event);
 
       if (this.closedExplicitly || !this.options.reconnect) {
-        return this;
+        return;
       }
 
       this.reconnectTimer = setTimeout(
@@ -58,7 +58,6 @@ export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
         this.options.retryDelay * Math.min(this.retryCount + 1, 10),
       );
     });
-    return this;
   }
 
   close(code?: number, reason?: string) {
