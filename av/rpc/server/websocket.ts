@@ -11,24 +11,20 @@ export type WebSocketApp = {
   ws(
     path: string,
     handlers: {
-      open(ws: unknown): void;
-      message(ws: unknown, message: ArrayBuffer, isBinary: boolean): void;
-      close(ws: unknown, code: number, message: ArrayBuffer): void;
-      error(ws: unknown): void;
+      open(ws: WebSocketPeer): void;
+      message(ws: WebSocketPeer, message: ArrayBuffer, isBinary: boolean): void;
+      close(ws: WebSocketPeer, code: number, message: ArrayBuffer): void;
+      error(ws: WebSocketPeer): void;
     },
   ): void;
 };
 
-type WebSocketPeer = {
+export type WebSocketPeer = {
+  addr: string;
+  readonly readyState: number;
   send(message: string): void;
   close(code?: number, reason?: string): void;
 };
-
-export interface WebSocketConnection {
-  readyState: number;
-  send(message: string): void;
-  close(code?: number, reason?: string): void;
-}
 
 function readMessage(data: MessageEvent["data"]): string {
   if (typeof data === "string") {
@@ -41,7 +37,7 @@ function readMessage(data: MessageEvent["data"]): string {
 }
 
 export class WebsocketHandler {
-  private clients = new Set<WebSocketConnection>();
+  private clients = new Set<WebSocketPeer>();
   private rpc: RPCServer<Natav.Orch>;
   private natav: Natav.Orch;
   private tel = new Telemetry("Server::WS");
@@ -83,28 +79,28 @@ export class WebsocketHandler {
     });
   }
 
-  WsOpenHandler = (_: Event, ws: WebSocketConnection) => {
-    this.clients.add(ws);
-    this.pushInitialDeviceStates(ws);
+  WsOpenHandler = (_: Event, peer: WebSocketPeer) => {
+    this.clients.add(peer);
+    this.pushInitialDeviceStates(peer);
   };
 
-  WsCloseHandler = (_: CloseEvent, ws: WebSocketConnection) => {
-    this.clients.delete(ws);
+  WsCloseHandler = (_: CloseEvent, peer: WebSocketPeer) => {
+    this.clients.delete(peer);
   };
 
-  WsMessageHandler = async (event: MessageEvent, ws: WebSocketConnection) => {
+  WsMessageHandler = async (event: MessageEvent, peer: WebSocketPeer) => {
     const message = this.tel.task("WS_MSG_JSON_PARSE", () => {
       return JSON.parse(readMessage(event.data));
     });
 
     if (!message.ok) {
-      ws.send(JSON.stringify(RPCErrors.JsonParse()));
+      peer.send(JSON.stringify(RPCErrors.JsonParse()));
     }
 
     const req = RPCRequest.is(message.data);
 
     if (!req) {
-      ws.send(
+      peer.send(
         JSON.stringify(
           RPCErrors.RequestInvalid(
             "id" in message.data ? message.data.id : null,
@@ -114,14 +110,14 @@ export class WebsocketHandler {
       );
       return;
     }
-    const response = await this.rpc.handleRequest(req);
+    const response = await this.rpc.handleRequest(req, peer);
 
-    ws.send(JSON.stringify(response));
+    peer.send(JSON.stringify(response));
   };
 
-  WsErrorHandler = (_: Event, __: WebSocketConnection) => {};
+  WsErrorHandler = (_: Event, __: WebSocketPeer) => {};
 
-  private pushInitialDeviceStates(ws: WebSocketConnection) {
+  private pushInitialDeviceStates(ws: WebSocketPeer) {
     for (const name of this.natav.GetAllDriverNames()) {
       let notification = new RPCNotification(Rpc.Methods.Notification, {
         type: "natav:state:update",
@@ -134,18 +130,6 @@ export class WebsocketHandler {
   }
 }
 
-function toWebSocketConnection(ws: WebSocketPeer): WebSocketConnection {
-  return {
-    readyState: 1,
-    send(message: string) {
-      ws.send(message);
-    },
-    close(code?: number, reason?: string) {
-      ws.close(code, reason);
-    },
-  };
-}
-
 export function bindHttpToWs(
   app: WebSocketApp,
   path: string,
@@ -155,36 +139,23 @@ export function bindHttpToWs(
   >,
   tel: Telemetry,
 ) {
-  const connections = new WeakMap<object, WebSocketConnection>();
+  const connections = new Set<WebSocketPeer>();
 
   app.ws(path, {
-    open(ws) {
-      // TSAS:
-      const connection = toWebSocketConnection(ws as WebSocketPeer);
-      // TSAS:
-      connections.set(ws as object, connection);
-      handlers.WsOpenHandler(new Event("open"), connection);
+    open(peer) {
+      connections.add(peer);
+      handlers.WsOpenHandler(new Event("open"), peer);
     },
-    message(ws, message, isBinary) {
-      // TSAS:
-      const connection = connections.get(ws as object);
-      if (!connection) return;
-
+    message(peer, message, isBinary) {
       handlers.WsMessageHandler(
         new MessageEvent("message", {
           data: isBinary ? message : decoder.decode(message),
         }),
-        connection,
+        peer,
       );
     },
-    close(ws, code, message) {
-      // TSAS:
-      const connection = connections.get(ws as object);
-      if (!connection) return;
-
-      connection.readyState = 3;
-      // TSAS:
-      connections.delete(ws as object);
+    close(peer, code, message) {
+      connections.delete(peer);
 
       tel.info("websocket closed", {
         code,
@@ -197,15 +168,11 @@ export function bindHttpToWs(
           code,
           reason: decoder.decode(message),
         }),
-        connection,
+        peer,
       );
     },
-    error(ws) {
-      // TSAS:
-      const connection = connections.get(ws as object);
-      if (!connection) return;
-
-      handlers.WsErrorHandler(new Event("error"), connection);
+    error(peer) {
+      handlers.WsErrorHandler(new Event("error"), peer);
     },
   });
 }

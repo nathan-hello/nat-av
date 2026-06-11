@@ -6,6 +6,7 @@ import { Telemetry } from "@av/telemetry";
 import { RPCErrorCodes } from "@av/rpc/protocol";
 import type { Driver } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { WebSocketPeer } from "@av/rpc/server/websocket";
 
 function hasJsonEventTarget(
   value: unknown,
@@ -30,7 +31,10 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     super();
   }
 
-  async handle(message: RPCRequest): Promise<RPCResponse | RPCError> {
+  async handle(
+    message: RPCRequest,
+    peer: WebSocketPeer,
+  ): Promise<RPCResponse | RPCError> {
     const params = message.deviceCallParams();
     if (!params) {
       return new RPCError(message.id, {

@@ -9,6 +9,7 @@ import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { WebSocketPeer } from "@av/rpc/server/websocket";
 
 export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
   Events.System.Map<N>
@@ -24,11 +25,7 @@ export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
     ]);
   }
 
-  sendNotification(name: Natav.Names<N>, event: string, data: Rpc.JSONValue) {
-    this.dispatch("natav:device:event", { name, event, data });
-  }
-
-  async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
+  async handleRequest(message: RPCRequest, peer: WebSocketPeer): Promise<RPCResponse | RPCError> {
     const result = await this.tel.task(
       "server-rpc:handle-request",
       async (span) => {
@@ -43,7 +40,7 @@ export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
           "rpc.method": message.method,
         });
 
-        return this.router.handle(message);
+        return this.router.handle(message, peer);
       },
     );
 
