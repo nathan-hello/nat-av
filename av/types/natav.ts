@@ -36,6 +36,11 @@ type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   : never;
 };
 
+export type EventsFor<
+  C extends readonly Driver[],
+  N extends NamesOf<C>,
+> = DriverFor<C, N>["events"];
+
 type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<
   C,
   N
@@ -61,6 +66,7 @@ type DepNames<Deps> = IsAny<Deps> extends true ? never : keyof Deps & string;
 type DriverHandle<D extends Driver> = {
   api: PromisifyApi<D["api"]>;
   state: D["state"];
+  events: D["events"];
 } & DriverDepMixin<D["deps"]>;
 
 type DriverDepMixin<Deps> =
@@ -80,7 +86,13 @@ export namespace Natav {
     ConfigsOf<N>,
     Name
   >;
+
   export type State<N extends Orchistrator, Name extends Names<N>> = StateFor<
+    ConfigsOf<N>,
+    Name
+  >;
+
+  export type Events<N extends Orchistrator, Name extends Names<N>> = EventsFor<
     ConfigsOf<N>,
     Name
   >;
@@ -111,6 +123,11 @@ export namespace Natav {
     Name extends Names<N>,
     DepName extends DepNames<N, Name>,
   > = Dep<N, Name, DepName>["state"];
+  export type DepEvents<
+    N extends Orchistrator,
+    Name extends Names<N>,
+    DepName extends DepNames<N, Name>,
+  > = Dep<N, Name, DepName>["events"];
   export type DepApi<
     N extends Orchistrator,
     Name extends Names<N>,

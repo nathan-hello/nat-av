@@ -38,7 +38,14 @@ export namespace Events {
   }
 
   export namespace System {
-    type StateEventFor<N extends Natav.Orch = any> = {
+    type EventsFor<N extends Natav.Orch> = {
+      [Name in Natav.Names<N>]: {
+        name: Name;
+        event: string;
+        data: NRpc.JSONValue;
+      };
+    }[Natav.Names<N>];
+    type StateEventFor<N extends Natav.Orch> = {
       [Name in Natav.Names<N>]: {
         name: Name;
         data: Partial<Natav.State<N, Name>>;
@@ -46,6 +53,7 @@ export namespace Events {
     }[Natav.Names<N>];
 
     export type Map<N extends Natav.Orch = natav> = {
+      "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
       "natav:device:connected": { name: Natav.Names<N> };

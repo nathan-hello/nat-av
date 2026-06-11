@@ -157,19 +157,21 @@ export class ClientRpc<
         data?: unknown;
       };
 
-      if (
-        params.type === "natav:state:update" &&
-        typeof params.name === "string"
-      ) {
+      if (typeof params.name === "string") {
         // TSAS: The notification payload carries the device name as an untyped string.
         const deviceName = params.name as Natav.Names<N>;
         const device = this.device(deviceName);
-        device.handleStateUpdate(
-          // TSAS: The server sends partial device state updates.
-          (params.data ?? {}) as Partial<Natav.State<N, typeof deviceName>>,
-        );
+        switch (params.type) {
+          case "natav:state:update":
+            device.handleStateUpdate(
+              // TSAS: The server sends partial device state updates.
+              (params.data ?? {}) as Partial<Natav.State<N, typeof deviceName>>,
+            );
+            break;
+          default:
+            break;
+        }
       }
-
       return;
     }
 

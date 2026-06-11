@@ -1,4 +1,4 @@
-import type { Natav } from "@av/types";
+import type { Events, Natav, Rpc } from "@av/types";
 import type { System } from "@av/system";
 import { RPCResponse, RPCError, RPCRequest } from "@av/rpc/protocol";
 import { RPCErrorCodes } from "@av/rpc/protocol";
@@ -8,16 +8,24 @@ import type { natav } from "@av/index";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 
-export class RPCServer<N extends Natav.Orch = natav> {
+export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
+  Events.System.Map<N>
+> {
   private tel = new Telemetry("Rpc");
-  private router: RPCRequestRouter;
+  private router: RPCRequestRouter<N>;
 
   constructor(args: { system: System<N>; natav: N }) {
-    this.router = new RPCRequestRouter([
+    super();
+    this.router = new RPCRequestRouter<N>([
       new SystemRpcRouter(args.system),
       new DeviceRpcRouter(args.natav),
     ]);
+  }
+
+  sendNotification(name: Natav.Names<N>, event: string, data: Rpc.JSONValue) {
+    this.dispatch("natav:device:event", { name, event, data });
   }
 
   async handleRequest(message: RPCRequest): Promise<RPCResponse | RPCError> {
@@ -35,7 +43,6 @@ export class RPCServer<N extends Natav.Orch = natav> {
           "rpc.method": message.method,
         });
 
-        this.tel.info("RPC_VALIDATED", { message });
         return this.router.handle(message);
       },
     );

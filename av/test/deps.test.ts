@@ -12,7 +12,7 @@ class Leaf<const N extends string> extends Driver<
   "leaf",
   {},
   { online: boolean },
-  undefined
+  null
 > {
   state = { online: true };
   api = {};
@@ -30,7 +30,7 @@ class Leaf<const N extends string> extends Driver<
 class Parent<
   const N extends string,
   const D extends Record<string, Leaf<string>>,
-> extends Driver<N, D, "parent", {}, { ready: boolean }, undefined> {
+> extends Driver<N, D, "parent", {}, { ready: boolean }, null> {
   state = { ready: true };
   api = {};
   socket = undefined;

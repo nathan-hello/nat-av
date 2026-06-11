@@ -40,7 +40,15 @@ export namespace Rpc {
   export namespace Device {
     export const Methods = {
       DeviceCall: "device.call",
+      DeviceSubscribe: "device.events.subscribe",
+      DeviceUnsubscribe: "device.events.unsubscribe",
     } as const;
+
+    export type CallParams = {
+      device: string;
+      method: (typeof Rpc.Device.Methods)[keyof typeof Rpc.Device.Methods];
+      args: any[];
+    };
   }
 
   export namespace Debug {

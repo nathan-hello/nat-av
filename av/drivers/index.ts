@@ -1,7 +1,10 @@
-import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
+import {
+  ProtectedTypedEventTarget,
+  TypedEventTarget,
+} from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { bus } from "@av/lib/bus";
-import type { Sockets, Schema, Events } from "@av/types";
+import type { Sockets, Schema, Events, Rpc } from "@av/types";
 import type { Drivers } from "@av/types/drivers";
 
 export abstract class Driver<
@@ -10,6 +13,7 @@ export abstract class Driver<
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
+  Events extends TypedEventTarget<{ [x: string]: Rpc.JSONValue }> | null = null,
   Socket extends Partial<Sockets.Client> | undefined = any,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
@@ -18,6 +22,9 @@ export abstract class Driver<
   public abstract schema?: () =>
     | Schema.Schema<Api>
     | Promise<Schema.Schema<Api>>;
+
+  // TSAS:
+  public events: Events = null as Events;
 
   // TSAS:
   public deps: Deps = {} as Deps;

@@ -43,7 +43,7 @@ export class ClientRpcRequests {
     }
   }
 
-  async request<T = any>(message: RPCRequest) {
+  async request<T = any>(message: RPCRequest): Promise<T> {
     await this.waitForOpen();
 
     return new Promise<T>((resolve, reject) => {

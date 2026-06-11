@@ -1,5 +1,6 @@
 import type { Driver } from "@av/drivers";
 import type { Sockets } from "@av/types/socket";
+import type { TypedEventTarget } from "@av/lib/eventtarget";
 
 // This namespace is not allowed to import Natav namespace.
 // The Natav namespace uses Driver for inference, so trying
@@ -15,6 +16,7 @@ export namespace Drivers {
     string,
     ApiRecord,
     Record<string, any>,
+    TypedEventTarget<{ [x: string]: any }> | null,
     Partial<Sockets.Client> | undefined
   >;
 

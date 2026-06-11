@@ -45,7 +45,7 @@ export class RPCRequest {
     return { method, args: Array.isArray(args) ? args : [] };
   }
 
-  deviceCallParams(): { device: string; method: string; args: any[] } | null {
+  deviceCallParams(): Rpc.Device.CallParams  | null {
     if (
       this.method !== Rpc.Methods.DeviceCall ||
       !this.params ||
@@ -63,6 +63,14 @@ export class RPCRequest {
     if (
       typeof params.device !== "string" ||
       typeof params.method !== "string"
+    ) {
+      return null;
+    }
+
+    if (
+      params.method !== "device.call" &&
+      params.method !== "device.events.subscribe" &&
+      params.method !== "device.events.unsubscribe"
     ) {
       return null;
     }

@@ -1,18 +1,22 @@
 import type { natav } from "@av/index";
-import { Rpc, type Natav } from "@av/types";
+import { Rpc, type Natav, type Events } from "@av/types";
 import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { RPCErrorCodes } from "@av/rpc/protocol";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 
-export class SystemRpcRouter<
-  N extends Natav.Orch = natav,
-> implements RPCRequestHandler {
+export class SystemRpcRouter<N extends Natav.Orch = natav>
+  extends TypedEventTarget<Events.System.Map<N>>
+  implements RPCRequestHandler<N>
+{
   prefix = "system.";
   private tel = new Telemetry("Rpc::Router::System");
 
-  constructor(private system: System<N>) {}
+  constructor(private system: System<N>) {
+    super();
+  }
 
   async handle(message: RPCRequest): Promise<RPCResponse | RPCError> {
     switch (message.method) {
