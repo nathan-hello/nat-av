@@ -1,7 +1,7 @@
 import type { RemixNode } from "remix/ui";
 import { renderToStream } from "remix/ui/server";
 
-import { router } from "../router.ts";
+import { router } from "@/router";
 
 export function render(node: RemixNode, request: Request, init?: ResponseInit) {
   let stream = renderToStream(node, {

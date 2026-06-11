@@ -1,8 +1,7 @@
 import * as assert from "remix/assert";
 import { describe, it } from "remix/test";
-
-import { router } from "../app/router.ts";
-import { routes } from "../app/routes.ts";
+import { router } from "@/router";
+import { routes } from "@/routes";
 
 describe("app routes", () => {
   it("renders the home page", async () => {

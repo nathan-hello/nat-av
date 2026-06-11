@@ -72,6 +72,7 @@ it("api writes to socket, state gets updated on notification", async () => {
     name: "roomos-writer-test",
     socket,
     subscriptions: {
+      Event: true,
       Configuration: {
         Bluetooth: true,
       },
@@ -136,7 +137,7 @@ it("api writes to socket, state gets updated on notification", async () => {
     );
   });
 
-  it("notification turns state.Configuration.Bluetooth.Allowed false", () => {
+  it("notification updates the subscribed feedback state", () => {
     socket.receive(
       JSON.stringify({
         jsonrpc: "2.0",
@@ -155,7 +156,10 @@ it("api writes to socket, state gets updated on notification", async () => {
         },
       }),
     );
-    assert.equal(roomos.state.Configuration.Bluetooth.Allowed, "False");
+    assert.equal(
+      roomos.state.Event.Bluetooth.Streaming.PlaybackPosition.Position,
+      5,
+    );
   });
 
   it("writes line up", () => {

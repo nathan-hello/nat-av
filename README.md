@@ -7,7 +7,7 @@ A minimal Remix application starter with a home page and an auth page.
 - `app/controllers/home.tsx` owns the home page.
 - `app/controllers/auth.tsx` owns the auth page.
 - `app/routes.ts` defines the route contract.
-- `app/router.ts` wires routes to handlers.
+- `app/router.tsx` wires routes to handlers.
 - `app/ui/` holds the shared document and layout wrappers.
 - `app/utils/render.tsx` centralizes HTML response rendering.
 
