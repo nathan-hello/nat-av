@@ -46,7 +46,7 @@ export namespace Rpc {
 
     export type CallParams = {
       device: string;
-      method: (typeof Rpc.Device.Methods)[keyof typeof Rpc.Device.Methods];
+      method: string;
       args: any[];
     };
   }

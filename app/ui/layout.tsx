@@ -1,16 +1,16 @@
-import type { RemixNode } from "remix/ui";
+import type { Handle, RemixNode } from "remix/ui";
 
-import { routes } from "../routes.ts";
-import { Document } from "./document.tsx";
+import { routes } from "@/routes";
+import { Document } from "@/ui/document";
 
 export interface LayoutProps {
   children?: RemixNode;
   title?: string;
 }
 
-export function Layout() {
-  return ({ title, children }: LayoutProps) => (
-    <Document title={title}>
+export function Layout(handle: Handle<LayoutProps>) {
+  return () => (
+    <Document title={handle.props.title}>
       <header>
         <nav>
           <a href={routes.home.href()}>Home</a>{" "}
@@ -18,7 +18,7 @@ export function Layout() {
           <a href={routes.auth.href()}>Auth</a>
         </nav>
       </header>
-      <main>{children}</main>
+      <main>{handle.props.children}</main>
     </Document>
   );
 }

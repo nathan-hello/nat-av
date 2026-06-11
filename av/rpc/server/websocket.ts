@@ -86,6 +86,7 @@ export class WebsocketHandler {
 
   WsCloseHandler = (_: CloseEvent, peer: WebSocketPeer) => {
     this.clients.delete(peer);
+    this.closePeer(peer);
   };
 
   WsMessageHandler = async (event: MessageEvent, peer: WebSocketPeer) => {
@@ -116,6 +117,10 @@ export class WebsocketHandler {
   };
 
   WsErrorHandler = (_: Event, __: WebSocketPeer) => {};
+
+  closePeer(peer: WebSocketPeer) {
+    this.rpc.closePeer(peer);
+  }
 
   private pushInitialDeviceStates(ws: WebSocketPeer) {
     for (const name of this.natav.GetAllDriverNames()) {

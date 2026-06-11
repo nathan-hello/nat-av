@@ -12,6 +12,7 @@ export interface RPCRequestHandler<N extends Natav.Orch = Natav.Orch> {
     options?: boolean | AddEventListenerOptions,
   ): () => void;
   handle(message: RPCRequest, peer: WebSocketPeer): Promise<RPCResponse | RPCError>;
+  closePeer?(peer: WebSocketPeer): void;
 }
 
 export class RPCRequestRouter<N extends Natav.Orch> extends TypedEventTarget<
@@ -39,5 +40,9 @@ export class RPCRequestRouter<N extends Natav.Orch> extends TypedEventTarget<
     }
 
     return handler.handle(message, peer);
+  }
+
+  closePeer(peer: WebSocketPeer) {
+    this.handlers.forEach((handler) => handler.closePeer?.(peer));
   }
 }

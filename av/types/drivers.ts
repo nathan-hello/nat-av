@@ -16,7 +16,7 @@ export namespace Drivers {
     string,
     ApiRecord,
     Record<string, any>,
-    TypedEventTarget<{ [x: string]: any }> | null,
+    TypedEventTarget<{ [x: string]: any }> | undefined,
     Partial<Sockets.Client> | undefined
   >;
 

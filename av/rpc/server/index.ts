@@ -59,4 +59,8 @@ export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
       message: result.error,
     });
   }
+
+  closePeer(peer: WebSocketPeer) {
+    this.router.closePeer(peer);
+  }
 }

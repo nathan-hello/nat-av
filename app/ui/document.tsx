@@ -1,6 +1,6 @@
-import type { RemixNode } from "remix/ui";
+import type { Handle, RemixNode } from "remix/ui";
 
-import { routes } from "../routes.ts";
+import { routes } from "@/routes";
 
 export interface DocumentProps {
   children?: RemixNode;
@@ -9,25 +9,29 @@ export interface DocumentProps {
 
 const DEFAULT_TITLE = decodeURIComponent("Natav%20Remix");
 
-export function Document() {
-  return ({ title = DEFAULT_TITLE, children }: DocumentProps) => (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{title}</title>
-        <link
-          rel="stylesheet"
-          href={routes.assets.href({ path: "app/assets/tailwind.css" })}
-        />
-      </head>
-      <body>
-        {children}
-        <script
-          type="module"
-          src={routes.assets.href({ path: "app/assets/entry.tsx" })}
-        ></script>
-      </body>
-    </html>
-  );
+export function Document(handle: Handle<DocumentProps>) {
+  return () => {
+    let { title = DEFAULT_TITLE, children } = handle.props;
+
+    return (
+      <html lang="en">
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>{title}</title>
+          <link
+            rel="stylesheet"
+            href={routes.assets.href({ path: "app/assets/tailwind.css" })}
+          />
+        </head>
+        <body>
+          {children}
+          <script
+            type="module"
+            src={routes.assets.href({ path: "app/assets/entry.tsx" })}
+          ></script>
+        </body>
+      </html>
+    );
+  };
 }

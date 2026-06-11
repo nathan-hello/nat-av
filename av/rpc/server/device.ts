@@ -1,6 +1,11 @@
 import type { natav } from "@av/index";
-import type { Natav, Rpc, Events } from "@av/types";
-import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
+import { type Natav, Rpc, type Events } from "@av/types";
+import {
+  RPCRequest,
+  RPCError,
+  RPCResponse,
+  RPCNotification,
+} from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import { Telemetry } from "@av/telemetry";
 import { RPCErrorCodes } from "@av/rpc/protocol";
@@ -26,6 +31,10 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
 {
   prefix = "device.";
   private tel = new Telemetry("Rpc::Router::Device");
+  private subscriptions = new Map<
+    WebSocketPeer,
+    Map<string, Array<() => void>>
+  >();
 
   constructor(private natav: N) {
     super();
@@ -35,12 +44,14 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     message: RPCRequest,
     peer: WebSocketPeer,
   ): Promise<RPCResponse | RPCError> {
-    const params = message.deviceCallParams();
+    const params = message.DeviceParams();
+    const err = new RPCError(message.id, {
+      code: RPCErrorCodes.InvalidParams,
+      message: "Invalid device call params",
+    });
+
     if (!params) {
-      return new RPCError(message.id, {
-        code: RPCErrorCodes.InvalidParams,
-        message: "Invalid device call params",
-      });
+      return err;
     }
 
     const result = await this.tel.task(
@@ -59,11 +70,13 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
             data: { availableDevices: this.natav.GetAllDriverNames() },
           });
         }
-        switch (params.method) {
-          case "device.call":
+        switch (message.method) {
+          case Rpc.Methods.DeviceCall:
             return await this.call(device, message, params);
-          case "device.events.subscribe":
-            return this.subscribe(device, message, params);
+          case Rpc.Methods.DeviceSubscribe:
+            return this.subscribe(device, message, params, peer);
+          case Rpc.Methods.DeviceUnsubscribe:
+            return this.unsubscribe(message, params, peer);
           default:
             return new RPCError(message.id, {
               code: RPCErrorCodes.InvalidParams,
@@ -91,15 +104,9 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     device: Driver,
     message: RPCRequest,
     params: Rpc.Device.CallParams,
+    peer: WebSocketPeer,
   ): RPCResponse | RPCError {
-    const eventName = params.args[0];
-
-    if (typeof eventName !== "string") {
-      return new RPCError(message.id, {
-        code: RPCErrorCodes.InvalidParams,
-        message: "Invalid device call params",
-      });
-    }
+    const eventName = params.method;
 
     const events: unknown = device.events;
 
@@ -113,13 +120,52 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     // TSAS: FindDriver guarantees the runtime name belongs to this natav instance.
     const deviceName = device.name as Natav.Names<N>;
 
-    events.on(eventName, (data) => {
-      this.dispatch("natav:device:event", {
-        name: deviceName,
-        event: eventName,
-        data,
-      });
+    const cleanup = events.on(eventName, (data) => {
+      if (peer.readyState !== 1) {
+        return;
+      }
+
+      peer.send(
+        JSON.stringify(
+          new RPCNotification(Rpc.Methods.Notification, {
+            type: "natav:device:event",
+            name: deviceName,
+            event: eventName,
+            data,
+          }),
+        ),
+      );
     });
+
+    const peerSubscriptions =
+      this.subscriptions.get(peer) ?? new Map<string, Array<() => void>>();
+    const handlers = peerSubscriptions.get(eventName) ?? [];
+    handlers.push(cleanup);
+    peerSubscriptions.set(eventName, handlers);
+    this.subscriptions.set(peer, peerSubscriptions);
+
+    return new RPCResponse(message.id, null);
+  }
+
+  private unsubscribe(
+    message: RPCRequest,
+    params: Rpc.Device.CallParams,
+    peer: WebSocketPeer,
+  ): RPCResponse | RPCError {
+    const eventName = params.method;
+
+    const peerSubscriptions = this.subscriptions.get(peer);
+    const handlers = peerSubscriptions?.get(eventName);
+    const cleanup = handlers?.pop();
+    if (cleanup) {
+      cleanup();
+      if (handlers && handlers.length === 0) {
+        peerSubscriptions?.delete(eventName);
+      }
+      if (peerSubscriptions && peerSubscriptions.size === 0) {
+        this.subscriptions.delete(peer);
+      }
+    }
 
     return new RPCResponse(message.id, null);
   }
@@ -165,5 +211,17 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
       message.id,
       callResult === undefined ? null : callResult,
     );
+  }
+
+  closePeer(peer: WebSocketPeer) {
+    const peerSubscriptions = this.subscriptions.get(peer);
+    if (!peerSubscriptions) {
+      return;
+    }
+
+    peerSubscriptions.forEach((cleanups) =>
+      cleanups.forEach((cleanup) => cleanup()),
+    );
+    this.subscriptions.delete(peer);
   }
 }

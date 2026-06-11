@@ -13,7 +13,8 @@ export abstract class Driver<
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
-  Events extends TypedEventTarget<{ [x: string]: Rpc.JSONValue }> | null = null,
+  Events extends TypedEventTarget<{ [x: string]: Rpc.JSONValue }> | undefined =
+    TypedEventTarget<{ [x: string]: Rpc.JSONValue }>,
   Socket extends Partial<Sockets.Client> | undefined = any,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
@@ -24,7 +25,7 @@ export abstract class Driver<
     | Promise<Schema.Schema<Api>>;
 
   // TSAS:
-  public events: Events = null as Events;
+  public events: Events = undefined as Events;
 
   // TSAS:
   public deps: Deps = {} as Deps;
@@ -52,9 +53,7 @@ export abstract class Driver<
   }
 
   setDependencies(v: Drivers.DependencyInput) {
-    function unwrapDriver(
-      v: Drivers.DependencyInput[number],
-    ): Drivers.AnyDriver {
+    function unwrapDriver(v: Drivers.DependencyInput[number]) {
       return "driver" in v ? v.driver : v;
     }
 
