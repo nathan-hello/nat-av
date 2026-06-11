@@ -2,7 +2,20 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "@av/types";
 
-export class ClientWebsocket extends TypedEventTarget<WebSocketEventMap> {
+export type ClientRpcTransport = Pick<
+  TypedEventTarget<WebSocketEventMap>,
+  "on" | "once"
+> & {
+  connect(): void;
+  close(code?: number, reason?: string): void;
+  send(message: string): void;
+  readonly readyState: number;
+};
+
+export class ClientWebsocket
+  extends TypedEventTarget<WebSocketEventMap>
+  implements ClientRpcTransport
+{
   private tel = new Telemetry("ClientWebsocket");
   private socket: WebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;

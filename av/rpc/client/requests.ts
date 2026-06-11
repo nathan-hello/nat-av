@@ -1,6 +1,6 @@
 import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 import type { Rpc } from "@av/types";
-import type { ClientWebsocket } from "@av/rpc/client/websocket";
+import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 
 export class ClientRpcRequests {
@@ -10,7 +10,7 @@ export class ClientRpcRequests {
   private timeout = 30000;
 
   constructor(
-    private transport: ClientWebsocket,
+    private transport: ClientRpcTransport,
     private emitChange: () => void,
   ) {}
 

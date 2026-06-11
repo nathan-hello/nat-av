@@ -1,6 +1,28 @@
 import type { Natav, Events } from "@av/types";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpc } from "@av/rpc/client";
+import { RPCRequest } from "@av/rpc/protocol";
+import { Rpc } from "@av/types";
+
+type DeviceEventCallback<
+  N extends Natav.Orch,
+  Name extends Natav.Names<N>,
+  K extends keyof Natav.Events<N, Name> & string,
+> = (payload: Natav.Events<N, Name>[K]) => void;
+
+type DeviceEventHandle<N extends Natav.Orch, Name extends Natav.Names<N>> = {
+  on<K extends keyof Natav.Events<N, Name> & string>(
+    event: K,
+    callback: DeviceEventCallback<N, Name, K>,
+  ): Promise<() => Promise<void>>;
+};
+
+type DeviceEventState = {
+  callbacks: Set<(payload: any) => void>;
+  subscribed: boolean;
+  pendingSubscribe: Promise<void> | undefined;
+  pendingUnsubscribe: Promise<void> | undefined;
+};
 
 export class ClientRpcDevice<
   N extends Natav.Orch,
@@ -9,6 +31,16 @@ export class ClientRpcDevice<
   private apiProxy: Natav.Handle<N, Name>["api"];
   private stateValue: Natav.State<N, Name> | undefined;
   private pendingCounts = new Map<string, number>();
+  private eventState = new Map<string, DeviceEventState>();
+
+  readonly event: DeviceEventHandle<N, Name> = {
+    on: async (event, callback) => {
+      await this.subscribeToEvent(event, callback);
+      return async () => {
+        await this.unsubscribeFromEvent(event, callback);
+      };
+    },
+  };
 
   constructor(
     private client: ClientRpc<N>,
@@ -73,11 +105,97 @@ export class ClientRpcDevice<
     this.dispatchChange();
   }
 
+  handleEvent(event: string, payload: unknown) {
+    const state = this.eventState.get(event);
+    if (!state) {
+      return;
+    }
+
+    state.callbacks.forEach((callback) => callback(payload));
+  }
+
   dispatchChange() {
     this.dispatch("change", {
       name: this.name,
       state: this.state,
     });
+  }
+
+  private async subscribeToEvent<
+    K extends keyof Natav.Events<N, Name> & string,
+  >(event: K, callback: DeviceEventCallback<N, Name, K>) {
+    const state = this.eventState.get(event) ?? {
+      callbacks: new Set<(payload: any) => void>(),
+      subscribed: false,
+      pendingSubscribe: undefined,
+      pendingUnsubscribe: undefined,
+    };
+
+    state.callbacks.add(callback);
+    this.eventState.set(event, state);
+
+    if (!state.subscribed) {
+      state.pendingSubscribe ??= this.client
+        .request(
+          new RPCRequest(
+            this.client.nextRequestId(),
+            Rpc.Device.Methods.DeviceSubscribe,
+            {
+              device: this.name,
+              method: event,
+              args: [],
+            },
+          ),
+        )
+        .then(() => {
+          state.subscribed = true;
+          state.pendingSubscribe = undefined;
+        });
+
+      await state.pendingSubscribe;
+    }
+  }
+
+  private async unsubscribeFromEvent<
+    K extends keyof Natav.Events<N, Name> & string,
+  >(event: K, callback: DeviceEventCallback<N, Name, K>) {
+    const state = this.eventState.get(event);
+    if (!state) {
+      return;
+    }
+
+    state.callbacks.delete(callback);
+
+    if (state.callbacks.size > 0) {
+      return;
+    }
+
+    await (state.pendingSubscribe ?? Promise.resolve());
+
+    if (!state.subscribed) {
+      this.eventState.delete(event);
+      return;
+    }
+
+    state.pendingUnsubscribe ??= this.client
+      .request(
+        new RPCRequest(
+          this.client.nextRequestId(),
+          Rpc.Device.Methods.DeviceUnsubscribe,
+          {
+            device: this.name,
+            method: event,
+            args: [],
+          },
+        ),
+      )
+      .then(() => {
+        state.subscribed = false;
+        state.pendingUnsubscribe = undefined;
+        this.eventState.delete(event);
+      });
+
+    await state.pendingUnsubscribe;
   }
 
   private incrementPending(method: string) {

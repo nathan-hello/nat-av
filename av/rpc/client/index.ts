@@ -12,6 +12,7 @@ import {
   RPCResponse,
 } from "@av/rpc/protocol";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
+import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 
@@ -19,18 +20,20 @@ export class ClientRpc<
   N extends Natav.Orch = natav,
 > extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
-  private transport: ClientWebsocket;
+  private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private systemHandle: ClientRpcSystem<N>;
   public debug: RpcDebugClient;
 
-  constructor() {
+  constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
-    this.transport = new ClientWebsocket("/ws", {
-      reconnect: true,
-      retryDelay: 1000,
-    });
+    this.transport =
+      args.transport ??
+      new ClientWebsocket("/ws", {
+        reconnect: true,
+        retryDelay: 1000,
+      });
     this.debug = new RpcDebugClient(this);
     this.requests = new ClientRpcRequests(this.transport, () =>
       this.emitChange(),
@@ -102,17 +105,19 @@ export class ClientRpc<
     );
   }
 
+  request<T = any>(message: RPCRequest): Promise<T> {
+    return this.requests.request<T>(message);
+  }
+
+  nextRequestId() {
+    return this.requests.nextRequestId();
+  }
+
   get system() {
     return this.systemHandle;
   }
 
   private async init() {
-    if (this.transport.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    await this.transport.once("open");
-
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
       return await Promise.all([this.systemHandle.state]);
     });
@@ -151,17 +156,23 @@ export class ClientRpc<
       // TSAS: Casting as unknown so we are forced to actually
       // parse through the types. Otherwise this object will be
       // typed as `any`
-      const params = parsed.data.params as {
-        type?: unknown;
-        name?: unknown;
-        data?: unknown;
-      };
+        const params = parsed.data.params as {
+          type?: unknown;
+          name?: unknown;
+          event?: unknown;
+          data?: unknown;
+        };
 
       if (typeof params.name === "string") {
         // TSAS: The notification payload carries the device name as an untyped string.
         const deviceName = params.name as Natav.Names<N>;
         const device = this.device(deviceName);
         switch (params.type) {
+          case "natav:device:event":
+            if (typeof params.event === "string") {
+              device.handleEvent(params.event, params.data);
+            }
+            break;
           case "natav:state:update":
             device.handleStateUpdate(
               // TSAS: The server sends partial device state updates.

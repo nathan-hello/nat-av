@@ -1,4 +1,5 @@
 import type { Driver } from "@av/drivers";
+import type { TypedEventTarget } from "@av/lib/eventtarget";
 import type { Orchistrator } from "@av/lib/orch";
 
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -36,10 +37,10 @@ type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
   : never;
 };
 
-export type EventsFor<
-  C extends readonly Driver[],
-  N extends NamesOf<C>,
-> = DriverFor<C, N>["events"];
+type EventsFor<N extends Natav.Orch, Name extends Natav.Names<N>> =
+  Natav.Driver<N, Name>["events"] extends TypedEventTarget<infer Events> ?
+    Events
+  : never;
 
 type DepsOf<C extends readonly Driver[], N extends NamesOf<C>> = DriverFor<
   C,
@@ -93,7 +94,7 @@ export namespace Natav {
   >;
 
   export type Events<N extends Orchistrator, Name extends Names<N>> = EventsFor<
-    ConfigsOf<N>,
+    N,
     Name
   >;
 
