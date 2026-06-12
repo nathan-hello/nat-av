@@ -1,11 +1,10 @@
 import type {
-  EntryModel,
-  EventNodeModel,
   EventNode,
   ParamModel,
   Param,
   ProductSetGroup,
   SchemaEntry,
+  Tree,
   ValuespaceModel,
   Valuespace,
 } from "./types.ts";
@@ -27,6 +26,17 @@ function hasMultiplicity(value: unknown): boolean {
 
 function sortStrings(values: readonly string[]): string[] {
   return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
+function makeTree(source: SchemaEntry): Tree {
+  return {
+    array: false,
+    isPath: false,
+    source,
+    params: [],
+    valuespace: null,
+    children: {},
+  };
 }
 
 function literalValues(
@@ -97,9 +107,9 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
 }
 
 function valueType(
-  valuespace: Valuespace | ValuespaceModel | undefined,
+  valuespace: Valuespace | ValuespaceModel | null | undefined,
 ): string {
-  if (valuespace === undefined) {
+  if (valuespace === undefined || valuespace === null) {
     return "JSONValue";
   }
 
@@ -170,20 +180,21 @@ function normalizeParam(param: Param): ParamModel {
 
 function normalizeChildren(
   children: Record<string, EventNode>,
-): Record<string, EventNodeModel> {
-  const normalized: Record<string, EventNodeModel> = {};
+  source: SchemaEntry,
+): Record<string, Tree> {
+  const normalized: Record<string, Tree> = {};
 
   for (const [name, child] of Object.entries(children).sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
-    normalized[name] = normalizeEventNode(child);
+    normalized[name] = normalizeEventNode(child, source);
   }
 
   return normalized;
 }
 
-function normalizeEventNode(node: EventNode): EventNodeModel {
-  const normalized: EventNodeModel = {};
+function normalizeEventNode(node: EventNode, source: SchemaEntry): Tree {
+  const normalized = makeTree(source);
 
   if (node.valuespace !== undefined) {
     normalized.valuespace = normalizeValuespace(node.valuespace);
@@ -200,27 +211,21 @@ function normalizeEventNode(node: EventNode): EventNodeModel {
   }
 
   if (hasMultiplicity(node.multiple)) {
-    normalized.multiple = true;
+    normalized.array = true;
   }
 
-  if (isTruthyFlag(node.required)) {
-    normalized.required = true;
-  }
+  normalized.isPath = true;
 
   if (node.children !== undefined) {
-    normalized.children = normalizeChildren(node.children);
+    normalized.children = normalizeChildren(node.children, source);
   }
 
   return normalized;
 }
 
-function normalizeEntry(entry: SchemaEntry): EntryModel {
-  const normalized: EntryModel = {
-    source: entry,
-    path: entry.path,
-    products: sortStrings(entry.products),
-    type: entry.type,
-  };
+function normalizeEntry(entry: SchemaEntry): Tree {
+  const normalized = makeTree(entry);
+  normalized.isPath = true;
 
   switch (entry.type) {
     case "Command": {
@@ -233,15 +238,14 @@ function normalizeEntry(entry: SchemaEntry): EntryModel {
     }
     case "Configuration":
     case "Status": {
-      if (entry.attributes.valuespace === undefined) {
-        throw new Error(`Missing valuespace for ${entry.type} ${entry.path}`);
-      }
-
-      normalized.valuespace = normalizeValuespace(entry.attributes.valuespace);
+      normalized.valuespace =
+        entry.attributes.valuespace !== undefined ?
+          normalizeValuespace(entry.attributes.valuespace)
+        : null;
       break;
     }
     case "Event": {
-      normalized.children = normalizeChildren(entry.attributes.children ?? {});
+      normalized.children = normalizeChildren(entry.attributes.children ?? {}, entry);
       break;
     }
   }
@@ -284,17 +288,17 @@ function signatureParam(param: Param): unknown {
 }
 
 function isCommonEntry(
-  entry: EntryModel,
+  entry: Tree,
   allProducts: readonly string[],
 ): boolean {
-  return allProducts.every((product) => entry.products.includes(product));
+  return allProducts.every((product) => entry.source.products.includes(product));
 }
 
 function groupEntriesByProductSet(
-  entries: readonly EntryModel[],
+  entries: readonly Tree[],
   allProducts: readonly string[],
 ): {
-  common: EntryModel[];
+  common: Tree[];
   sets: ProductSetGroup[];
 } {
   const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
@@ -306,13 +310,13 @@ function groupEntriesByProductSet(
       continue;
     }
 
-    const key = JSON.stringify(entry.products.sort());
+    const key = JSON.stringify([...entry.source.products].sort());
     let group = groupsByProductSet.get(key);
 
     if (group === undefined) {
       group = {
         key,
-        products: [...entry.products],
+        products: [...entry.source.products],
         entries: [],
       };
 

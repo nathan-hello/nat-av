@@ -12,8 +12,8 @@ import {
 } from "./tree.ts";
 
 import type {
-  EntryModel,
   GeneratedModel,
+  Tree,
   SchemaEntry,
   SchemaJson,
 } from "./types.ts";
@@ -27,30 +27,29 @@ const FILE_OUTPUT = new URL("../schemas/11.33.1.ts", import.meta.url);
 function generateSource(schema: SchemaJson): string {
   const entries = mergeEntries(schema.objects);
   const products = Array.from(
-    new Set(entries.flatMap((entry) => entry.products)),
+    new Set(entries.flatMap((entry) => entry.source.products)),
   ).sort();
   const kinds = ["Command", "Configuration", "Status", "Event"] as const;
   const model: GeneratedModel = {
-    entries,
     products,
     kinds,
     commandApi: buildGroupedTree(
-      entries.filter((entry) => entry.type === "Command"),
+      entries.filter((entry) => entry.source.type === "Command"),
       products,
       buildCommandTree,
     ),
     configuration: buildGroupedTree(
-      entries.filter((entry) => entry.type === "Configuration"),
+      entries.filter((entry) => entry.source.type === "Configuration"),
       products,
       buildValueTree,
     ),
     status: buildGroupedTree(
-      entries.filter((entry) => entry.type === "Status"),
+      entries.filter((entry) => entry.source.type === "Status"),
       products,
       buildValueTree,
     ),
     event: buildGroupedTree(
-      entries.filter((entry) => entry.type === "Event"),
+      entries.filter((entry) => entry.source.type === "Event"),
       products,
       buildFeedbackTree,
     ),
@@ -59,14 +58,14 @@ function generateSource(schema: SchemaJson): string {
   return renderSource(model);
 }
 
-function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
-  const groups = new Map<string, EntryModel>();
+function mergeEntries(entries: readonly SchemaEntry[]): readonly Tree[] {
+  const groups = new Map<string, Tree>();
 
   for (const entry of entries) {
     const reduced = normalizeEntry(entry);
     const signature = JSON.stringify({
-      path: reduced.path,
-      type: reduced.type,
+      path: reduced.source.path,
+      type: reduced.source.type,
       params: reduced.params,
       valuespace: reduced.valuespace,
       children: reduced.children,
@@ -75,10 +74,13 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
     const existing = groups.get(signature);
 
     if (existing !== undefined) {
-      existing.products = sortStrings([
-        ...existing.products,
-        ...reduced.products,
-      ]);
+      existing.source = {
+        ...existing.source,
+        products: sortStrings([
+          ...existing.source.products,
+          ...reduced.source.products,
+        ]),
+      };
       continue;
     }
 
@@ -86,13 +88,13 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
   }
 
   return Array.from(groups.values()).sort((left, right) => {
-    const typeOrder = left.type.localeCompare(right.type);
+    const typeOrder = left.source.type.localeCompare(right.source.type);
 
     if (typeOrder !== 0) {
       return typeOrder;
     }
 
-    const pathOrder = left.path.localeCompare(right.path);
+    const pathOrder = left.source.path.localeCompare(right.source.path);
 
     if (pathOrder !== 0) {
       return pathOrder;

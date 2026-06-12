@@ -74,7 +74,7 @@ export type ValuespaceModel =
       multiple?: true;
     };
 
-type ParamModel = {
+export type ParamModel = {
   name: string;
   required?: boolean;
   valuespace: ValuespaceModel;
@@ -84,10 +84,7 @@ export type Tree = {
   // Number in the case that the schema specifies how many
   // of the item is in the structure. This way we can render
   // a tuple.
-  type: SchemaEntry["type"];
-  products: string[];
-  isArray: boolean | number;
-  required: boolean;
+  array: boolean | number;
   isPath: boolean;
   source: SchemaEntry;
   params: ParamModel[];
@@ -98,7 +95,7 @@ export type Tree = {
 export type ProductSetGroup = {
   key: string;
   products: string[];
-  entries: Tree;
+  entries: Tree[];
 };
 
 export type Ancestry = {

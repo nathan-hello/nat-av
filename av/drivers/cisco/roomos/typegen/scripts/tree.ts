@@ -1,11 +1,6 @@
-import {
-  groupEntriesByProductSet,
-  removeBrackets,
-} from "./parse.ts";
+import { groupEntriesByProductSet, removeBrackets } from "./parse.ts";
 
 import type {
-  EntryModel,
-  EventNodeModel,
   Ancestry,
   SchemaEntry,
   Tree,
@@ -21,12 +16,20 @@ const EMPTY_SOURCE: SchemaEntry = {
 
 function createTree(source: SchemaEntry): Tree {
   return {
-    isArray: false,
+    array: false,
     isPath: false,
     source,
     params: [],
     valuespace: null,
     children: {},
+  };
+}
+
+function sourceForPath(source: SchemaEntry, path: string): SchemaEntry {
+  return {
+    ...source,
+    path,
+    normPath: path,
   };
 }
 
@@ -38,15 +41,13 @@ function getOrCreateChild(node: Tree, name: string, source: SchemaEntry): Tree {
 }
 
 function mergeTree(target: Tree, source: Tree): void {
-  if (typeof source.isArray === "number") {
-    target.isArray = source.isArray;
-  } else if (source.isArray) {
-    target.isArray = true;
+  if (typeof source.array === "number") {
+    target.array = source.array;
+  } else if (source.array) {
+    target.array = true;
   }
 
-  if (source.isPath) {
-    target.isPath = true;
-  }
+  target.isPath ||= source.isPath;
 
   if (source.params.length > 0) {
     target.params = source.params;
@@ -56,20 +57,26 @@ function mergeTree(target: Tree, source: Tree): void {
     target.valuespace = source.valuespace;
   }
 
-  for (const [name, child] of Object.entries(source.children ?? {})) {
+  for (const [name, child] of Object.entries(source.children)) {
     mergeTree(getOrCreateChild(target, name, child.source), child);
   }
 }
 
 function walkPath(root: Tree, path: string, source: SchemaEntry): Tree {
   let node = root;
+  let currentPath = "";
 
   for (const segment of path.split(" ")) {
+    currentPath = currentPath ? `${currentPath} ${segment}` : segment;
     const name = removeBrackets(segment);
-    const child = getOrCreateChild(node, name, source);
+    const child = getOrCreateChild(
+      node,
+      name,
+      sourceForPath(source, currentPath),
+    );
 
     if (name !== segment) {
-      child.isArray = true;
+      child.array = true;
     }
 
     node = child;
@@ -78,40 +85,28 @@ function walkPath(root: Tree, path: string, source: SchemaEntry): Tree {
   return node;
 }
 
-function sourceForPath(source: SchemaEntry, path: string): SchemaEntry {
-  return {
-    ...source,
-    path,
-    normPath: path,
-  };
-}
-
-function buildCommandTree(entries: readonly EntryModel[]): Tree {
+function buildCommandTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
 
   for (const entry of entries) {
-    const node = walkPath(root, entry.path, entry.source);
+    const node = walkPath(root, entry.source.path, entry.source);
     node.source = entry.source;
     node.isPath = true;
-    node.params = entry.params ?? [];
+    node.params = entry.params;
+    node.valuespace = entry.valuespace;
   }
 
   return root;
 }
 
-function buildValueTree(entries: readonly EntryModel[]): Tree {
+function buildValueTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
 
   for (const entry of entries) {
-    const rootNode = getOrCreateChild(root, entry.type, entry.source);
-    const node = walkPath(rootNode, entry.path, entry.source);
+    const rootNode = getOrCreateChild(root, entry.source.type, entry.source);
+    const node = walkPath(rootNode, entry.source.path, entry.source);
     node.source = entry.source;
     node.isPath = true;
-
-    if (entry.valuespace === undefined) {
-      throw new Error(`Missing valuespace for ${entry.type} ${entry.path}`);
-    }
-
     node.valuespace = entry.valuespace;
   }
 
@@ -119,7 +114,7 @@ function buildValueTree(entries: readonly EntryModel[]): Tree {
 }
 
 function buildEventSubtree(
-  children: Record<string, EventNodeModel>,
+  children: Record<string, Tree>,
   source: SchemaEntry,
   path: string,
 ): Tree {
@@ -129,21 +124,12 @@ function buildEventSubtree(
     const childPath = `${path} ${name}`;
     const node = createTree(sourceForPath(source, childPath));
 
-    if (child.multiple) {
-      node.isArray = true;
-    }
+    node.array = child.array;
+    node.isPath = child.isPath || child.valuespace !== null || child.children !== undefined;
+    node.valuespace = child.valuespace;
+    node.params = child.params;
 
-    node.isPath =
-      child.valuespace !== undefined ||
-      child.multiple !== undefined ||
-      child.required !== undefined ||
-      child.children === undefined;
-
-    if (child.valuespace !== undefined) {
-      node.valuespace = child.valuespace;
-    }
-
-    if (child.children !== undefined) {
+    if (Object.keys(child.children).length > 0) {
       node.children = buildEventSubtree(child.children, source, childPath).children;
     }
 
@@ -153,22 +139,18 @@ function buildEventSubtree(
   return root;
 }
 
-function buildFeedbackTree(entries: readonly EntryModel[]): Tree {
+function buildFeedbackTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
 
   for (const entry of entries) {
-    const rootNode = getOrCreateChild(root, entry.type, entry.source);
-    const node = walkPath(rootNode, entry.path, entry.source);
+    const rootNode = getOrCreateChild(root, entry.source.type, entry.source);
+    const node = walkPath(rootNode, entry.source.path, entry.source);
     node.source = entry.source;
     node.isPath = true;
 
-    if (entry.type === "Event") {
-      mergeTree(node, buildEventSubtree(entry.children ?? {}, entry.source, entry.path));
+    if (entry.source.type === "Event") {
+      mergeTree(node, buildEventSubtree(entry.children, entry.source, entry.source.path));
       continue;
-    }
-
-    if (entry.valuespace === undefined) {
-      throw new Error(`Missing valuespace for ${entry.type} ${entry.path}`);
     }
 
     node.valuespace = entry.valuespace;
@@ -178,9 +160,9 @@ function buildFeedbackTree(entries: readonly EntryModel[]): Tree {
 }
 
 function buildGroupedTree(
-  entries: readonly EntryModel[],
+  entries: readonly Tree[],
   allProducts: readonly string[],
-  buildTree: (entries: readonly EntryModel[]) => Tree,
+  buildTree: (entries: readonly Tree[]) => Tree,
 ): Ancestry {
   const { common, sets } = groupEntriesByProductSet(entries, allProducts);
 
