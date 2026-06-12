@@ -9,7 +9,7 @@ import {
 import type {
   EntryModel,
   GeneratedModel,
-  GroupedTreeModel,
+  Ancestry,
   Param,
   ParamModel,
   SchemaEntry,
@@ -318,7 +318,7 @@ function renderByProductInterface(
 }
 
 function renderCommandApiSection(
-  section: GroupedTreeModel,
+  section: Ancestry,
   allProducts: readonly string[],
 ): string {
   const setNames = section.sets.map((_, index) => `CommandApiSet_${index}`);
@@ -377,7 +377,7 @@ function renderCommandApiSection(
 
 function renderEventSection(
   baseName: "Event",
-  section: GroupedTreeModel,
+  section: Ancestry,
   entries: readonly EntryModel[],
   allProducts: readonly string[],
 ) {
@@ -441,7 +441,7 @@ function renderEventSection(
 
 function renderStateSection(
   baseName: "Configuration" | "Status",
-  section: GroupedTreeModel,
+  section: Ancestry,
   allProducts: readonly string[],
 ): string {
   const setNames = section.sets.map((_, index) => `${baseName}Set_${index}`);

@@ -6,7 +6,7 @@ import {
 import type {
   EntryModel,
   EventNodeModel,
-  GroupedTreeModel,
+  Ancestry,
   SchemaEntry,
   Tree,
 } from "./types.ts";
@@ -181,7 +181,7 @@ function buildGroupedTree(
   entries: readonly EntryModel[],
   allProducts: readonly string[],
   buildTree: (entries: readonly EntryModel[]) => Tree,
-): GroupedTreeModel {
+): Ancestry {
   const { common, sets } = groupEntriesByProductSet(entries, allProducts);
 
   return {

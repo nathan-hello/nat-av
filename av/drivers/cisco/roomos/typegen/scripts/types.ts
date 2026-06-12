@@ -74,34 +74,20 @@ export type ValuespaceModel =
       multiple?: true;
     };
 
-export type ParamModel = {
+type ParamModel = {
   name: string;
   required?: boolean;
   valuespace: ValuespaceModel;
-};
-
-export type EventNodeModel = {
-  children?: Record<string, EventNodeModel>;
-  valuespace?: ValuespaceModel;
-  multiple?: true;
-  required?: true;
-};
-
-export type EntryModel = {
-  source: SchemaEntry;
-  path: string;
-  products: string[];
-  type: SchemaEntry["type"];
-  params?: ParamModel[];
-  valuespace?: ValuespaceModel;
-  children?: Record<string, EventNodeModel>;
 };
 
 export type Tree = {
   // Number in the case that the schema specifies how many
   // of the item is in the structure. This way we can render
   // a tuple.
+  type: SchemaEntry["type"];
+  products: string[];
   isArray: boolean | number;
+  required: boolean;
   isPath: boolean;
   source: SchemaEntry;
   params: ParamModel[];
@@ -112,10 +98,10 @@ export type Tree = {
 export type ProductSetGroup = {
   key: string;
   products: string[];
-  entries: EntryModel[];
+  entries: Tree;
 };
 
-export type GroupedTreeModel = {
+export type Ancestry = {
   common: Tree;
   sets: Array<{
     products: string[];
@@ -124,11 +110,10 @@ export type GroupedTreeModel = {
 };
 
 export type GeneratedModel = {
-  entries: readonly EntryModel[];
   products: readonly string[];
   kinds: readonly SchemaEntry["type"][];
-  commandApi: GroupedTreeModel;
-  configuration: GroupedTreeModel;
-  status: GroupedTreeModel;
-  event: GroupedTreeModel;
+  commandApi: Ancestry;
+  configuration: Ancestry;
+  status: Ancestry;
+  event: Ancestry;
 };
