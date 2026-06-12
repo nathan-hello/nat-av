@@ -8,6 +8,7 @@ import { Delimiters } from "@av/sockets/delimiters";
 import { RPCError, RPCNotification, RPCResponse } from "@av/rpc/protocol";
 import { toBuffer, toString } from "@av/lib/buffer";
 import { reader } from "@av/drivers/cisco/roomos/reader";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 
 export type State<
   Product extends Generated.ProductTarget = "any",
@@ -27,6 +28,7 @@ export class CiscoRoomOS<
   >;
   private proxy = new RoomOSProxy(this.tel, this.request.bind(this));
   private subscriptions: RoomOS.HeldSubscription[] = [];
+  events = new TypedEventTarget<RoomOS.EventState>();
 
   state = this.proxy.State() as RoomOS.State<Product, Subscriptions> & {
     internal: { highestId: number; subscriptions: Subscriptions };

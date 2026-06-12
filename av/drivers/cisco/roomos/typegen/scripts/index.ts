@@ -11,10 +11,7 @@ import {
   buildValueTree,
 } from "./tree.ts";
 
-import type {
-  GeneratedModel,
-  SchemaJson,
-} from "./types.ts";
+import type { GeneratedModel, SchemaJson } from "./types.ts";
 
 const FILE_INPUT = new URL(
   "../schemas/11.33.1 October 2025.json",
@@ -35,23 +32,18 @@ function generateSource(schema: SchemaJson): string {
       products,
       buildCommandTree,
     ),
-    configurationState: buildGroupedTree(
+    configuration: buildGroupedTree(
       entries.filter((entry) => entry.type === "Configuration"),
       products,
       buildValueTree,
     ),
-    statusState: buildGroupedTree(
+    status: buildGroupedTree(
       entries.filter((entry) => entry.type === "Status"),
       products,
       buildValueTree,
     ),
-    feedbackState: buildGroupedTree(
-      entries.filter(
-        (entry) =>
-          entry.type === "Event" ||
-          entry.type === "Status" ||
-          entry.type === "Configuration",
-      ),
+    event: buildGroupedTree(
+      entries.filter((entry) => entry.type === "Event"),
       products,
       buildFeedbackTree,
     ),

@@ -81,24 +81,28 @@ export type { GeneratedRoomOS as Generated };
 export namespace RoomOS {
   export type ConfigurationState<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.ConfigurationState<Product>;
+  > = GeneratedRoomOS.Configuration<Product>;
 
   export type StatusState<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.StatusState<Product>;
+  > = GeneratedRoomOS.Status<Product>;
 
-  export type FeedbackState<
+  export type EventState<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.FeedbackState<Product>;
+  > = GeneratedRoomOS.Event<Product>;
 
   export type FeedbackSubscriptions<
     Product extends GeneratedRoomOS.ProductTarget,
-  > = FeedbackSubscriptionsFor<FeedbackState<Product>>;
+  > = FeedbackSubscriptionsFor<EventState<Product>>;
 
   export type State<
     Product extends GeneratedRoomOS.ProductTarget,
     Subscriptions extends FeedbackSubscriptions<Product> = never,
-  > = FeedbackStateFromSubscriptions<FeedbackState<Product>, Subscriptions>;
+  > = FeedbackStateFromSubscriptions<
+    ConfigurationState<Product>,
+    Subscriptions
+  > &
+    FeedbackStateFromSubscriptions<StatusState<Product>, Subscriptions>;
 
   export type ConfigurationApi<
     Product extends GeneratedRoomOS.ProductTarget = "any",
@@ -109,12 +113,12 @@ export namespace RoomOS {
 
   export type Api<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-    State = FeedbackState<Product>,
+    State = EventState<Product>,
   > = {
     xCommand: ApiRecordify<GeneratedRoomOS.CommandApi<Product>>;
     xConfiguration: ConfigurationApi<Product>;
     xStatus: StatusApi<Product>;
-    xFeedback: ApiRecordify<Feedbackify<FeedbackState<Product>, State>>;
+    xFeedback: ApiRecordify<Feedbackify<EventState<Product>, State>>;
   };
 
   type TError = { code: number; message: string; data?: any };
@@ -147,7 +151,7 @@ export namespace RoomOS {
         root: "xConfiguration" | "xStatus" | "xFeedback";
         path: string[];
       }
-      | {
+    | {
         kind: "unsub";
         root: "xConfiguration" | "xStatus" | "xFeedback";
         subId?: number;

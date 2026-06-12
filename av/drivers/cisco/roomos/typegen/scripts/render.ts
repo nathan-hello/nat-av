@@ -2,6 +2,7 @@ import {
   hasMultiplicity,
   isLiteralWithoutValues,
   isTruthyFlag,
+  groupEntriesByProductSet,
   valueType,
 } from "./parse.ts";
 
@@ -449,13 +450,13 @@ function renderCommandApiSection(
   const output: string[] = [
     renderInterface(
       "CommandApiCommon",
-      renderTreeFields(section.common, `unknown`),
+      renderTreeFields(section.common, `JSONValue`),
     ),
   ];
 
   section.sets.forEach((set, index) => {
     output.push(
-      renderInterface(setNames[index], renderTreeFields(set.tree, "unknown")),
+      renderInterface(setNames[index], renderTreeFields(set.tree, "JSONValue")),
     );
   });
 
@@ -487,8 +488,69 @@ function renderCommandApiSection(
   return output.join("\n");
 }
 
+function renderEventSection(
+  baseName: "Event",
+  section: GroupedTreeModel,
+  entries: readonly EntryModel[],
+  allProducts: readonly string[],
+) {
+  const { common, sets } = groupEntriesByProductSet(entries, allProducts);
+
+  const setNames = sets.map((_, index) => `${baseName}Set_${index}`);
+  const aliasesByProduct: Record<string, string[]> = Object.fromEntries(
+    allProducts.map((product) => [product, []]),
+  );
+
+  sets.forEach((set, index) => {
+    const name = setNames[index];
+
+    for (const product of set.products) {
+      aliasesByProduct[product].push(name);
+    }
+  });
+
+  const output: string[] = [
+    renderInterface(`${baseName}Common`, renderEventFields(common, section.common)),
+  ];
+
+  sets.forEach((set, index) => {
+    output.push(
+      renderInterface(
+        setNames[index],
+        renderEventFields(set.entries, section.sets[index]?.tree ?? {}),
+      ),
+    );
+  });
+
+  output.push(
+    `export type ${baseName}Any = Merge<${[
+      `${baseName}Common`,
+      ...setNames,
+    ].join(" & ")}>;`,
+  );
+
+  output.push(
+    renderByProductInterface(`${baseName}ByProduct`, allProducts, (product) => {
+      const aliases = aliasesByProduct[product];
+
+      if (!aliases.length) {
+        return "{}";
+      }
+
+      return aliases.join(" & ");
+    }),
+  );
+
+  output.push(`export type ${baseName}<TProduct extends ProductTarget = "any"> =
+  TProduct extends "any" ? ${baseName}Any
+  : TProduct extends Product ? Merge<${baseName}Common & ${baseName}ByProduct[TProduct]>
+  : {};`);
+
+  return output.join("\n");
+}
+
 function renderStateSection(
-  baseName: "ConfigurationState" | "StatusState" | "FeedbackState",
+  baseName: "Configuration" | "Status",
   section: GroupedTreeModel,
   allProducts: readonly string[],
 ): string {
@@ -545,6 +607,37 @@ function renderStateSection(
   return output.join("\n");
 }
 
+function findEventTreeNode(
+  root: TypeTreeNode,
+  path: string,
+): TypeTreeNode | undefined {
+  let node: TypeTreeNode | undefined = root.children?.Event ?? root;
+
+  for (const segment of path.split(" ")) {
+    node = node?.children?.[segment];
+
+    if (node === undefined) {
+      return undefined;
+    }
+  }
+
+  return node;
+}
+
+function renderEventFields(
+  entries: readonly EntryModel[],
+  root: TypeTreeNode,
+): string[] {
+  return entries.map((entry) => {
+    const key = entry.source.normPath ?? entry.path;
+    const docs = formatEntryDoc(entry.source);
+    const node = findEventTreeNode(root, entry.path);
+    const value = node ? renderObject(renderTreeFields(node, "never")) : "{}";
+
+    return `${docs}${JSON.stringify(key)}: ${value};`;
+  });
+}
+
 function renderNamespace(model: GeneratedModel): string {
   const objects = model.entries
     .map((entry) => `  | ${renderEntry(entry)}`)
@@ -553,6 +646,10 @@ function renderNamespace(model: GeneratedModel): string {
   return [
     "export namespace GeneratedRoomOS {",
     "type Merge<T> = { [K in keyof T]: T[K] };",
+    "type JSONPrimitive = string | number | boolean | null;",
+    "type JSONObject = { [key: string]: JSONValue }",
+    "type JSONArray = JSONValue[]",
+    "export type JSONValue = JSONPrimitive | JSONObject | JSONArray",
     `export type Object = ${objects};`,
     `export type Product = ${model.products.map((product) => JSON.stringify(product)).join(" | ")};`,
     `export type Kind = ${model.kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,
@@ -560,13 +657,14 @@ function renderNamespace(model: GeneratedModel): string {
     'export type Root = "xCommand" | "xConfiguration" | "xStatus" | "xFeedback";',
     "export type xCommandReturnDefault = null;",
     renderCommandApiSection(model.commandApi, model.products),
-    renderStateSection(
-      "ConfigurationState",
-      model.configurationState,
+    renderStateSection("Configuration", model.configuration, model.products),
+    renderStateSection("Status", model.status, model.products),
+    renderEventSection(
+      "Event",
+      model.event,
+      model.entries.filter((entry) => entry.type === "Event"),
       model.products,
     ),
-    renderStateSection("StatusState", model.statusState, model.products),
-    renderStateSection("FeedbackState", model.feedbackState, model.products),
     "}",
   ].join("\n\n");
 }

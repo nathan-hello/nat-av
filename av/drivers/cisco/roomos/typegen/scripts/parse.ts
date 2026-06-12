@@ -52,9 +52,9 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
       case "string":
         return "string";
       case "literal":
-        return "unknown";
+        return "JSONValue";
       default:
-        return "unknown";
+        return "JSONValue";
     }
   }
 
@@ -70,7 +70,7 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "unknown";
+        : "JSONValue";
     case "IntegerArray":
       return "number";
     case "StringArray":
@@ -80,19 +80,19 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "unknown";
+        : "JSONValue";
     case "literal":
       return literalValues(valuespace)?.length ?
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "unknown";
+        : "JSONValue";
     case "int":
       return "number";
     case "string":
       return "string";
     default:
-      return "unknown";
+      return "JSONValue";
   }
 }
 
@@ -100,7 +100,7 @@ function valueType(
   valuespace: Valuespace | ValuespaceModel | undefined,
 ): string {
   if (valuespace === undefined) {
-    return "unknown";
+    return "JSONValue";
   }
 
   const isArrayType =

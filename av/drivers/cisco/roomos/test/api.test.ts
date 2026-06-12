@@ -72,7 +72,6 @@ it("api writes to socket, state gets updated on notification", async () => {
     name: "roomos-writer-test",
     socket,
     subscriptions: {
-      Event: true,
       Configuration: {
         Bluetooth: true,
       },

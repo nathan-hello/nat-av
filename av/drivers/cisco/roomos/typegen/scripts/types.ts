@@ -129,7 +129,7 @@ export type GeneratedModel = {
   products: readonly string[];
   kinds: readonly SchemaEntry["type"][];
   commandApi: GroupedTreeModel;
-  configurationState: GroupedTreeModel;
-  statusState: GroupedTreeModel;
-  feedbackState: GroupedTreeModel;
+  configuration: GroupedTreeModel;
+  status: GroupedTreeModel;
+  event: GroupedTreeModel;
 };
