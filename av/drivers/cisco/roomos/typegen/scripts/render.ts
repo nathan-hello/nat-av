@@ -2,7 +2,7 @@ import { isLiteralWithoutValues, isTruthyFlag, valueType } from "./parse.ts";
 
 import type {
   GeneratedModel,
-  Ancestry,
+  TreesByProduct,
   Param,
   ParamModel,
   SchemaEntry,
@@ -262,7 +262,7 @@ function renderTreeNode(node: Tree, returnTypeName: string): string {
     return valueType(node.valuespace);
   }
 
-  return "JSONValue";
+  return "JsonValue";
 }
 
 function renderInterface(
@@ -303,7 +303,7 @@ function renderByProductInterface(
 }
 
 function renderCommandApiSection(
-  section: Ancestry,
+  section: TreesByProduct,
   allProducts: readonly string[],
 ): string {
   const setNames = section.sets.map((_, index) => `CommandApiSet_${index}`);
@@ -322,13 +322,13 @@ function renderCommandApiSection(
   const output: string[] = [
     renderInterface(
       "CommandApiCommon",
-      renderTreeFields(section.common, `JSONValue`),
+      renderTreeFields(section.common, `JsonValue`),
     ),
   ];
 
   section.sets.forEach((set, index) => {
     output.push(
-      renderInterface(setNames[index], renderTreeFields(set.tree, "JSONValue")),
+      renderInterface(setNames[index], renderTreeFields(set.tree, "JsonValue")),
     );
   });
 
@@ -362,7 +362,7 @@ function renderCommandApiSection(
 
 function renderEventSection(
   baseName: "Event",
-  section: Ancestry,
+  section: TreesByProduct,
   allProducts: readonly string[],
 ) {
   const eventRoot = (tree: Tree): Tree => tree.children.Event ?? tree;
@@ -382,7 +382,7 @@ function renderEventSection(
   const output: string[] = [
     renderInterface(
       `${baseName}Common`,
-      renderTreeFields(eventRoot(section.common), "JSONValue"),
+      renderTreeFields(eventRoot(section.common), "JsonValue"),
     ),
   ];
 
@@ -390,7 +390,7 @@ function renderEventSection(
     output.push(
       renderInterface(
         setNames[index],
-        renderTreeFields(eventRoot(set.tree), "JSONValue"),
+        renderTreeFields(eventRoot(set.tree), "JsonValue"),
       ),
     );
   });
@@ -424,7 +424,7 @@ function renderEventSection(
 
 function renderStateSection(
   baseName: "Configuration" | "Status",
-  section: Ancestry,
+  section: TreesByProduct,
   allProducts: readonly string[],
 ): string {
   const setNames = section.sets.map((_, index) => `${baseName}Set_${index}`);
@@ -484,10 +484,7 @@ function renderNamespace(model: GeneratedModel): string {
   return [
     "export namespace GeneratedRoomOS {",
     "type Merge<T> = { [K in keyof T]: T[K] };",
-    "type JSONPrimitive = string | number | boolean | null;",
-    "type JSONObject = { [key: string]: JSONValue }",
-    "type JSONArray = JSONValue[]",
-    "export type JSONValue = JSONPrimitive | JSONObject | JSONArray",
+    "export type JsonValue = | null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }",
     `export type Product = ${model.products.map((product) => JSON.stringify(product)).join(" | ")};`,
     `export type Kind = ${model.kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,
     'export type ProductTarget = Product | "any";',

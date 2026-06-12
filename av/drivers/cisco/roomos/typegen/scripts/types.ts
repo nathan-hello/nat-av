@@ -98,7 +98,7 @@ export type ProductSetGroup = {
   entries: Tree[];
 };
 
-export type Ancestry = {
+export type TreesByProduct = {
   common: Tree;
   sets: Array<{
     products: string[];
@@ -109,8 +109,8 @@ export type Ancestry = {
 export type GeneratedModel = {
   products: readonly string[];
   kinds: readonly SchemaEntry["type"][];
-  commandApi: Ancestry;
-  configuration: Ancestry;
-  status: Ancestry;
-  event: Ancestry;
+  commandApi: TreesByProduct;
+  configuration: TreesByProduct;
+  status: TreesByProduct;
+  event: TreesByProduct;
 };

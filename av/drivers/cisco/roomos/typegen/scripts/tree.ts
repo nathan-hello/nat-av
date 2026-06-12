@@ -1,6 +1,6 @@
 import { groupEntriesByProductSet, removeBrackets } from "./parse.ts";
 
-import type { Ancestry, SchemaEntry, Tree } from "./types.ts";
+import type { TreesByProduct, SchemaEntry, Tree } from "./types.ts";
 
 const EMPTY_SOURCE: SchemaEntry = {
   id: -1,
@@ -167,7 +167,7 @@ function buildGroupedTree(
   entries: readonly Tree[],
   allProducts: readonly string[],
   buildTree: (entries: readonly Tree[]) => Tree,
-): Ancestry {
+): TreesByProduct {
   const { common, sets } = groupEntriesByProductSet(entries, allProducts);
 
   return {
