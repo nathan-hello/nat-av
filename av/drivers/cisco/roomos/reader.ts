@@ -209,6 +209,17 @@ function getEventUpdate(
 }
 
 function normalizeStatePath(path: readonly string[]): string[] {
+  if (path.length === 1) {
+    switch (path[0]) {
+      case "xConfiguration":
+        return ["Configuration"];
+      case "xStatus":
+        return ["Status"];
+      case "xFeedback":
+        return ["Event"];
+    }
+  }
+
   if (path[0] === "xConfiguration" || path[0] === "xStatus") {
     return path.slice(1);
   }

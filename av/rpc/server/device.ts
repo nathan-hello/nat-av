@@ -175,10 +175,9 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     message: RPCRequest,
     params: Rpc.Device.CallParams,
   ) {
-    // FIXME: this does not recurse through the api shape
-    const method = device.api?.[params.method];
+    const method = this.resolveApiMethod(device.api, params.method);
 
-    if (typeof method !== "function") {
+    if (!method) {
       return new RPCError(message.id, {
         code: RPCErrorCodes.DeviceMethodNotFound,
         message: `Method \"${params.method}\" not found on device \"${params.device}\"`,
@@ -186,7 +185,7 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
       });
     }
 
-    const callResult = await Reflect.apply(method, device.api, params.args);
+    const callResult = await Reflect.apply(method.fn, method.target, params.args);
     if (callResult && typeof callResult === "object" && "error" in callResult) {
       // TSAS:
       const error = (
@@ -207,10 +206,42 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
       }
     }
 
-    return new RPCResponse(
-      message.id,
-      callResult === undefined ? null : callResult,
-    );
+    // TSAS: Device RPC responses are JSON payloads from the driver API.
+    const jsonValue = callResult === undefined ? null : (callResult as Rpc.JSONValue);
+
+    return new RPCResponse(message.id, jsonValue);
+  }
+
+  private resolveApiMethod(
+    api: unknown,
+    methodPath: string,
+  ): { fn: (...args: unknown[]) => unknown; target: unknown } | null {
+    const segments = methodPath.split("/").filter(Boolean);
+    let target: any = api;
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i]!;
+      if (target === null || target === undefined) {
+        return null;
+      }
+
+      const next = target[segment];
+      if (next === undefined) {
+        return null;
+      }
+
+      if (i === segments.length - 1) {
+        if (typeof next !== "function") {
+          return null;
+        }
+
+        return { fn: next, target };
+      }
+
+      target = next;
+    }
+
+    return null;
   }
 
   closePeer(peer: WebSocketPeer) {

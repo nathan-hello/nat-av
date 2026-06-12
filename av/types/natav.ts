@@ -30,11 +30,7 @@ export type StateFor<
 > = DriverFor<C, N>["state"];
 
 type ApiFor<C extends readonly Driver[], N extends NamesOf<C>> = {
-  [M in keyof DriverFor<C, N>["api"]]: DriverFor<C, N>["api"][M] extends (
-    (...args: infer Args) => infer R
-  ) ?
-    (...args: Args) => Promise<Awaited<R>>
-  : never;
+  [M in keyof DriverFor<C, N>["api"]]: PromisifyApi<DriverFor<C, N>["api"][M]>;
 };
 
 type EventsFor<N extends Natav.Orch, Name extends Natav.Names<N>> =
@@ -59,7 +55,9 @@ type DepFor<
 type PromisifyApi<Api> = {
   [M in keyof Api]: Api[M] extends (...args: infer Args) => infer R ?
     (...args: Args) => Promise<Awaited<R>>
-  : never;
+  : Api[M] extends readonly any[] ? Api[M]
+  : Api[M] extends object ? PromisifyApi<Api[M]>
+  : Api[M];
 };
 
 type DepNames<Deps> = IsAny<Deps> extends true ? never : keyof Deps & string;

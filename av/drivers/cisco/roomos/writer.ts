@@ -99,6 +99,19 @@ function escapeXml(value: string): string {
 }
 
 function asRpcPath(path: readonly string[]) {
+  if (path.length === 1) {
+    switch (path[0]) {
+      case "xConfiguration":
+        return ["Configuration"];
+      case "xStatus":
+        return ["Status"];
+      case "xFeedback":
+        return ["Event"];
+      default:
+        return [];
+    }
+  }
+
   return toRpcPath(path.slice(1));
 }
 

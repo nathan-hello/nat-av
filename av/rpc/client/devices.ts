@@ -48,19 +48,8 @@ export class ClientRpcDevice<
   ) {
     super();
 
-    // TSAS: Proxies are used to mirror the device API shape at runtime.
-    this.apiProxy = new Proxy(
-      {},
-      {
-        get: (_, methodName: string | symbol) => {
-          if (typeof methodName !== "string") {
-            return undefined;
-          }
-
-          return (...args: any[]) => this.call(methodName, args);
-        },
-      },
-    ) as Natav.Handle<N, Name>["api"];
+    // TSAS: Proxies are used to mirror the nested device API shape at runtime.
+    this.apiProxy = this.createApiProxy() as Natav.Handle<N, Name>["api"];
 
     this.on("change", () => this.client.emitChange(this.name));
   }
@@ -71,6 +60,22 @@ export class ClientRpcDevice<
 
   get state() {
     return this.stateValue;
+  }
+
+  private createApiProxy(path: string[] = []) {
+    return new Proxy(
+      () => undefined,
+      {
+        get: (_, methodName: string | symbol) => {
+          if (typeof methodName !== "string" || methodName === "then") {
+            return undefined;
+          }
+
+          return this.createApiProxy([...path, methodName]);
+        },
+        apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
+      },
+    );
   }
 
   async call(method: string, args: any[] = []) {

@@ -280,3 +280,183 @@ it("api writes to socket, state gets updated on notification", async () => {
     ]);
   });
 });
+
+
+it("hydrates camera arrays and runs newer async commands", async () => {
+  const socket = new TestSocket(
+    [
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xGet",
+          params: { Path: ["Status"] },
+          id: 0,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: {
+            Camera: [
+              {
+                DetectedConnector: 1,
+                Flip: "Off",
+                HardwareID: "cam-1",
+                MacAddress: "aa:bb:cc:dd:ee:01",
+                Position: { Focus: 10, Lens: "Wide" },
+                SerialNumber: "S1",
+              },
+              {
+                DetectedConnector: 2,
+                Flip: "On",
+                HardwareID: "cam-2",
+                MacAddress: "aa:bb:cc:dd:ee:02",
+                Position: { Focus: 20, Lens: "Tele" },
+                SerialNumber: "S2",
+              },
+            ],
+          },
+          id: 0,
+        },
+      },
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xCommand/Bookings/Get",
+          params: { Id: "booking-123" },
+          id: 1,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: {
+            Id: "booking-123",
+            Title: "Design Review",
+          },
+          id: 1,
+        },
+      },
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xCommand/Provisioning/RoomType/Activate",
+          params: { Name: "Standard" },
+          id: 2,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: { Activated: true },
+          id: 2,
+        },
+      },
+    ],
+    { throwIfWriteNotFound: true },
+  );
+
+  const roomos = new CiscoRoomOS({
+    name: "roomos-e2e",
+    socket,
+    strict: true,
+    subscriptions: {
+      xStatus: {
+        Cameras: {
+          Camera: true,
+        },
+      },
+    },
+  });
+
+  assert.notEqual(roomos.state.xStatus.Cameras, undefined);
+
+  const cameras = await roomos.api.xStatus.get();
+  assert.deepEqual(cameras, {
+    ok: true,
+    data: {
+      Camera: [
+        {
+          DetectedConnector: 1,
+          Flip: "Off",
+          HardwareID: "cam-1",
+          MacAddress: "aa:bb:cc:dd:ee:01",
+          Position: { Focus: 10, Lens: "Wide" },
+          SerialNumber: "S1",
+        },
+        {
+          DetectedConnector: 2,
+          Flip: "On",
+          HardwareID: "cam-2",
+          MacAddress: "aa:bb:cc:dd:ee:02",
+          Position: { Focus: 20, Lens: "Tele" },
+          SerialNumber: "S2",
+        },
+      ],
+    },
+  });
+
+  assert.notEqual(roomos.state.xStatus.Cameras.Camera, undefined);
+
+  const booking = await roomos.api.xCommand.Bookings.Get({ Id: "booking-123" });
+  assert.deepEqual(booking, {
+    ok: true,
+    data: {
+      Id: "booking-123",
+      Title: "Design Review",
+    },
+  });
+
+  const roomType = await roomos.api.xCommand.Provisioning.RoomType.Activate({
+    Name: "Standard",
+  });
+  assert.deepEqual(roomType, {
+    ok: true,
+    data: { Activated: true },
+  });
+});
+
+it("returns an RPCError when a status fetch fails", async () => {
+  const socket = new TestSocket(
+    [
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xGet",
+          params: { Path: ["Status"] },
+          id: 0,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          error: {
+            code: 1234,
+            message: "camera fetch failed",
+          },
+          id: 0,
+        },
+      },
+    ],
+    { throwIfWriteNotFound: true },
+  );
+
+  const roomos = new CiscoRoomOS({
+    name: "roomos-e2e-error",
+    socket,
+    strict: true,
+    subscriptions: {
+      xStatus: {
+        Cameras: {
+          Camera: true,
+        },
+      },
+    },
+  });
+
+  const result = await roomos.api.xStatus.get();
+  assert.deepEqual(result, {
+    ok: false,
+    error: {
+      code: 1234,
+      message: "camera fetch failed",
+      data: {
+        kind: "get",
+        root: "xStatus",
+        path: ["xStatus"],
+      },
+    },
+  });
+});

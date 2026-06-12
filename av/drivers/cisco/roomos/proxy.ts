@@ -386,7 +386,11 @@ export class RoomOSProxy {
     if (path.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {
-        this.state = { ...value };
+        for (const key of Reflect.ownKeys(this.state)) {
+          delete this.state[key];
+        }
+
+        Object.assign(this.state, value);
       }
       return;
     }
