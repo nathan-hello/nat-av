@@ -110,7 +110,7 @@ it("api writes to socket, state gets updated on notification", async () => {
   });
 
   it("state.Configuration.Bluetooth === obj", () => {
-    assert.deepEqual(roomos.state.Configuration.Bluetooth, {
+    assert.deepEqual(roomos.state.xConfiguration.Bluetooth, {
       Allowed: "True",
       Enabled: "False",
     });
@@ -125,7 +125,7 @@ it("api writes to socket, state gets updated on notification", async () => {
 
   it("subscription", async () => {
     assert.deepEqual(
-      await roomos.api.xFeedback.Event.Bluetooth.Streaming.PlaybackPosition.subscribe(),
+      await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
       {
         ok: true,
         data: {
@@ -156,9 +156,40 @@ it("api writes to socket, state gets updated on notification", async () => {
       }),
     );
     assert.equal(
-      roomos.state.Event.Bluetooth.Streaming.PlaybackPosition.Position,
+      roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.Position.get(),
       5,
     );
+  });
+
+  it("subscription via roomos.events.on()", async () => {
+    assert.doesNotThrow(async () => {
+      const foo = await new Promise<{ Position: number }>((res, rej) => {
+        roomos.events.on("Bluetooth Streaming PlaybackPosition", (data) => {
+          res(data);
+        });
+        socket.receive({
+          jsonrpc: "2.0",
+          method: "xFeedback/Event",
+          params: {
+            Id: 1,
+            Event: {
+              Bluetooth: {
+                Streaming: {
+                  PlaybackPosition: {
+                    Position: 6,
+                  },
+                },
+              },
+            },
+          },
+        });
+        setTimeout(() => {
+          rej("timed out");
+        }, 1000);
+      });
+
+      assert.deepEqual(foo, { Position: 6 });
+    });
   });
 
   it("writes line up", () => {

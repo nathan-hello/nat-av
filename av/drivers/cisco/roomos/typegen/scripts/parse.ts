@@ -308,130 +308,11 @@ function signatureEventNode(node: EventNode | undefined): unknown {
   };
 }
 
-function entrySignature(entry: SchemaEntry): string {
-  const attributes =
-    entry.type === "Command" ?
-      {
-        params: (entry.attributes.params ?? [])
-          .slice()
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((param) => signatureParam(param)),
-        multiline: hasMultiplicity(entry.attributes.multiline),
-      }
-    : entry.type === "Configuration" || entry.type === "Status" ?
-      {
-        valuespace: signatureValuespace(entry.attributes.valuespace),
-      }
-    : {
-        children:
-          entry.attributes.children ?
-            Object.fromEntries(
-              Object.entries(entry.attributes.children)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([name, child]) => [name, signatureEventNode(child)]),
-            )
-          : null,
-      };
-
-  return JSON.stringify({
-    path: entry.path,
-    normPath: entry.normPath ?? null,
-    type: entry.type,
-    docs: {
-      access: entry.attributes.access ?? null,
-      backend: entry.attributes.backend ?? null,
-      description: entry.attributes.description ?? null,
-      privacyimpact: entry.attributes.privacyimpact ?? null,
-      role: entry.attributes.role ?? null,
-      state_dependent: entry.attributes.state_dependent ?? null,
-      unavailableStates: entry.attributes.unavailableStates ?? null,
-      multiline: hasMultiplicity(entry.attributes.multiline),
-    },
-    attributes,
-  });
-}
-
-function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
-  const groups = new Map<string, EntryModel>();
-
-  for (const entry of entries) {
-    const reduced = normalizeEntry(entry);
-    const signature = JSON.stringify({
-      path: reduced.path,
-      type: reduced.type,
-      params: reduced.params,
-      valuespace: reduced.valuespace,
-      children: reduced.children,
-      multiline: reduced.multiline,
-    });
-
-    const existing = groups.get(signature);
-
-    if (existing !== undefined) {
-      existing.products = sortStrings([
-        ...existing.products,
-        ...reduced.products,
-      ]);
-      continue;
-    }
-
-    groups.set(signature, reduced);
-  }
-
-  return Array.from(groups.values()).sort((left, right) => {
-    const typeOrder = left.type.localeCompare(right.type);
-
-    if (typeOrder !== 0) {
-      return typeOrder;
-    }
-
-    const pathOrder = left.path.localeCompare(right.path);
-
-    if (pathOrder !== 0) {
-      return pathOrder;
-    }
-
-    return JSON.stringify({
-      params: left.params,
-      valuespace: left.valuespace,
-      children: left.children,
-      multiline: left.multiline,
-    }).localeCompare(
-      JSON.stringify({
-        params: right.params,
-        valuespace: right.valuespace,
-        children: right.children,
-        multiline: right.multiline,
-      }),
-    );
-  });
-}
-
 function isCommonEntry(
   entry: EntryModel,
   allProducts: readonly string[],
 ): boolean {
   return allProducts.every((product) => entry.products.includes(product));
-}
-
-function groupEntriesByCommonAndProduct(
-  entries: readonly EntryModel[],
-  allProducts: readonly string[],
-): {
-  common: EntryModel[];
-  byProduct: Record<string, EntryModel[]>;
-} {
-  const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
-  const byProduct: Record<string, EntryModel[]> = {};
-
-  for (const product of allProducts) {
-    byProduct[product] = entries.filter(
-      (entry) =>
-        !isCommonEntry(entry, allProducts) && entry.products.includes(product),
-    );
-  }
-
-  return { common, byProduct };
 }
 
 function groupEntriesByProductSet(
@@ -441,7 +322,7 @@ function groupEntriesByProductSet(
   common: EntryModel[];
   sets: ProductSetGroup[];
 } {
-  const { common } = groupEntriesByCommonAndProduct(entries, allProducts);
+  const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
   const commonEntries = new Set(common);
   const groupsByProductSet = new Map<string, ProductSetGroup>();
 
@@ -482,22 +363,6 @@ function groupEntriesByProductSet(
   };
 }
 
-function uniqueProducts(entries: readonly SchemaEntry[]): readonly string[] {
-  return Array.from(new Set(entries.flatMap((entry) => entry.products))).sort();
-}
-
-function uniqueKinds(
-  entries: readonly SchemaEntry[],
-): readonly SchemaEntry["type"][] {
-  const kinds: SchemaEntry["type"][] = [];
-
-  for (const kind of new Set(entries.map((entry) => entry.type))) {
-    kinds.push(kind);
-  }
-
-  return kinds.sort((a, b) => a.localeCompare(b));
-}
-
 function removeBrackets(segment: string): string {
   let out = "";
   let depth = 0;
@@ -525,15 +390,12 @@ function removeBrackets(segment: string): string {
 
 export {
   baseValueType,
-  entrySignature,
-  groupEntriesByCommonAndProduct,
   groupEntriesByProductSet,
   hasMultiplicity,
   isCommonEntry,
   isLiteralWithoutValues,
   isTruthyFlag,
   literalValues,
-  mergeEntries,
   normalizeChildren,
   normalizeEntry,
   normalizeEventNode,
@@ -543,8 +405,6 @@ export {
   signatureParam,
   signatureValuespace,
   sortStrings,
-  uniqueKinds,
-  uniqueProducts,
   valueType,
   removeBrackets,
 };
