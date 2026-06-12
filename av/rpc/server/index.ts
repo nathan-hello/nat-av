@@ -25,7 +25,10 @@ export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
     ]);
   }
 
-  async handleRequest(message: RPCRequest, peer: WebSocketPeer): Promise<RPCResponse | RPCError> {
+  async handleRequest(
+    message: RPCRequest,
+    peer: WebSocketPeer,
+  ): Promise<RPCResponse | RPCError> {
     const result = await this.tel.task(
       "server-rpc:handle-request",
       async (span) => {

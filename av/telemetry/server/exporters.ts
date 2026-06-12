@@ -57,7 +57,10 @@ export class SimpleConsoleExporter implements LogRecordExporter {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
       const scopeName = `${ANSI_PURPLE}${record.instrumentationScope.name}${ANSI_RESET}`;
-      const body = node_util.inspect(record.body, { depth: null, colors: true });
+      const body = node_util.inspect(record.body, {
+        depth: null,
+        colors: true,
+      });
       const attributes = node_util.inspect(record.attributes, {
         depth: null,
         colors: true,

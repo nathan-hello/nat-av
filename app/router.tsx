@@ -11,14 +11,17 @@ router.get(routes.assets, async ({ request }) => {
   return response ?? new Response("Not Found", { status: 404 });
 });
 
-router.map(routes.home, createAction(routes.home, ({ request }) => {
-  return render(
-    <Document title="Home Page">
-      <div id="spa-home" />
-    </Document>,
-    request,
-  );
-}));
+router.map(
+  routes.home,
+  createAction(routes.home, ({ request }) => {
+    return render(
+      <Document title="Home Page">
+        <div id="spa-home" />
+      </Document>,
+      request,
+    );
+  }),
+);
 
 router.map(
   routes.debug,

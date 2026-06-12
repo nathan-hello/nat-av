@@ -156,12 +156,12 @@ export class ClientRpc<
       // TSAS: Casting as unknown so we are forced to actually
       // parse through the types. Otherwise this object will be
       // typed as `any`
-        const params = parsed.data.params as {
-          type?: unknown;
-          name?: unknown;
-          event?: unknown;
-          data?: unknown;
-        };
+      const params = parsed.data.params as {
+        type?: unknown;
+        name?: unknown;
+        event?: unknown;
+        data?: unknown;
+      };
 
       if (typeof params.name === "string") {
         // TSAS: The notification payload carries the device name as an untyped string.

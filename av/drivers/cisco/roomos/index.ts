@@ -128,7 +128,10 @@ export class CiscoRoomOS<
   private async request(
     operation: RoomOS.WriteOperation,
   ): Promise<RoomOS.Result<unknown>> {
-    this.tel.info("REQUEST", { op: operation, id: this.state.internal.highestId + 1 });
+    this.tel.info("REQUEST", {
+      op: operation,
+      id: this.state.internal.highestId + 1,
+    });
 
     const rx = await this.requests.request({
       ...operation,

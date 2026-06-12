@@ -1,8 +1,4 @@
-import {
-  isLiteralWithoutValues,
-  isTruthyFlag,
-  valueType,
-} from "./parse.ts";
+import { isLiteralWithoutValues, isTruthyFlag, valueType } from "./parse.ts";
 
 import type {
   GeneratedModel,
@@ -143,7 +139,6 @@ function renderArrayValue(value: string, array: boolean | number): string {
 
   return array ? `Array<${value}>` : value;
 }
-
 
 function renderNodeDoc(node: Tree): string {
   if (node.isPath) {

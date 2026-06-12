@@ -34,7 +34,7 @@ describe("typecheck", () => {
 
       void roomos.state.Status.UserInterface.WebView[0].Status;
 
-      void roomos.state.Event.IncomingCallIndication
+      void roomos.state.Event.IncomingCallIndication;
 
       // Should be 'number'
       void roomos.state.Event.Bluetooth.Streaming.PlaybackPosition.Position;

@@ -1,10 +1,6 @@
 import { groupEntriesByProductSet, removeBrackets } from "./parse.ts";
 
-import type {
-  Ancestry,
-  SchemaEntry,
-  Tree,
-} from "./types.ts";
+import type { Ancestry, SchemaEntry, Tree } from "./types.ts";
 
 const EMPTY_SOURCE: SchemaEntry = {
   id: -1,
@@ -125,12 +121,17 @@ function buildEventSubtree(
     const node = createTree(sourceForPath(source, childPath));
 
     node.array = child.array;
-    node.isPath = child.isPath || child.valuespace !== null || child.children !== undefined;
+    node.isPath =
+      child.isPath || child.valuespace !== null || child.children !== undefined;
     node.valuespace = child.valuespace;
     node.params = child.params;
 
     if (Object.keys(child.children).length > 0) {
-      node.children = buildEventSubtree(child.children, source, childPath).children;
+      node.children = buildEventSubtree(
+        child.children,
+        source,
+        childPath,
+      ).children;
     }
 
     root.children[name] = node;
@@ -149,7 +150,10 @@ function buildFeedbackTree(entries: readonly Tree[]): Tree {
     node.isPath = true;
 
     if (entry.source.type === "Event") {
-      mergeTree(node, buildEventSubtree(entry.children, entry.source, entry.source.path));
+      mergeTree(
+        node,
+        buildEventSubtree(entry.children, entry.source, entry.source.path),
+      );
       continue;
     }
 
@@ -175,4 +179,9 @@ function buildGroupedTree(
   };
 }
 
-export { buildCommandTree, buildFeedbackTree, buildGroupedTree, buildValueTree };
+export {
+  buildCommandTree,
+  buildFeedbackTree,
+  buildGroupedTree,
+  buildValueTree,
+};

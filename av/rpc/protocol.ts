@@ -47,9 +47,9 @@ export class RPCRequest {
 
   DeviceParams(): Rpc.Device.CallParams | null {
     if (
-      this.method !== Rpc.Methods.DeviceCall &&
-      this.method !== Rpc.Methods.DeviceSubscribe &&
-      this.method !== Rpc.Methods.DeviceUnsubscribe ||
+      (this.method !== Rpc.Methods.DeviceCall &&
+        this.method !== Rpc.Methods.DeviceSubscribe &&
+        this.method !== Rpc.Methods.DeviceUnsubscribe) ||
       !this.params ||
       typeof this.params !== "object"
     ) {

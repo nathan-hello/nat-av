@@ -176,7 +176,8 @@ function ToTerminal(
         : withResultId(command, resultId);
     }
     case "get": {
-      const command = `${operation.root} ${renderTerminalPath(operation)}`.trim();
+      const command =
+        `${operation.root} ${renderTerminalPath(operation)}`.trim();
       return withResultId(command, resultId);
     }
     case "set": {

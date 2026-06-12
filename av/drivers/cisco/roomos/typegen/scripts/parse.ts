@@ -245,7 +245,10 @@ function normalizeEntry(entry: SchemaEntry): Tree {
       break;
     }
     case "Event": {
-      normalized.children = normalizeChildren(entry.attributes.children ?? {}, entry);
+      normalized.children = normalizeChildren(
+        entry.attributes.children ?? {},
+        entry,
+      );
       break;
     }
   }
@@ -287,11 +290,10 @@ function signatureParam(param: Param): unknown {
   };
 }
 
-function isCommonEntry(
-  entry: Tree,
-  allProducts: readonly string[],
-): boolean {
-  return allProducts.every((product) => entry.source.products.includes(product));
+function isCommonEntry(entry: Tree, allProducts: readonly string[]): boolean {
+  return allProducts.every((product) =>
+    entry.source.products.includes(product),
+  );
 }
 
 function groupEntriesByProductSet(
