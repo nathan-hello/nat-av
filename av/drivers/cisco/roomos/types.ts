@@ -10,45 +10,43 @@ type IsPlainObject<V> =
 
 type ArrayElement<V> = V extends readonly (infer Item)[] ? Item : never;
 
-type FeedbackSubscriptionValue<Tree> =
-  Tree extends readonly any[] ?
-    true | FeedbackSubscriptionsFor<ArrayElement<Tree>>
-  : IsPlainObject<Tree> extends true ? true | FeedbackSubscriptionsFor<Tree>
-  : true;
+type UnwrapStateRoot<Tree, Root extends string> =
+  Root extends keyof Tree ? Tree[Root] : Tree;
 
-type FeedbackSubscriptionsFor<Tree> =
-  IsPlainObject<Tree> extends true ?
-    {
-      [K in keyof Tree]?: FeedbackSubscriptionValue<Tree[K]>;
-    }
+type JoinPath<Prefix extends string, Segment extends string> =
+  Prefix extends "" ? Segment : `${Prefix} ${Segment}`;
+
+type EventNamesWithPrefix<Prefix extends string> =
+  Extract<GeneratedRoomOS.EventName, Prefix | `${Prefix} ${string}`>;
+
+type SelectedSubscriptionPaths<Selected, Prefix extends string = ""> =
+  IsPlainObject<Selected> extends true ?
+  {
+    [K in keyof Selected & string]: Selected[K] extends true ?
+      JoinPath<Prefix, K>
+    : SelectedSubscriptionPaths<Selected[K], JoinPath<Prefix, K>>;
+  }[keyof Selected & string]
   : never;
 
-type FeedbackStateFromSubscriptions<Tree, Subscriptions> =
-  [Subscriptions] extends [never] ? {}
-  : Subscriptions extends Record<string, any> ?
-    Simplify<{
-      [K in keyof Subscriptions & keyof Tree]: Subscriptions[K] extends true ?
-        Tree[K]
-      : Tree[K] extends readonly any[] ?
-        Array<
-          FeedbackStateFromSubscriptions<
-            ArrayElement<Tree[K]>,
-            Subscriptions[K]
-          >
-        >
-      : IsPlainObject<Tree[K]> extends true ?
-        FeedbackStateFromSubscriptions<Tree[K], Subscriptions[K]>
-      : Tree[K];
-    }>
-  : {};
+type EventNamesFromSubscriptions<Selected> =
+  SelectedSubscriptionPaths<Selected> extends infer Path extends string ?
+    Path extends GeneratedRoomOS.EventName ?
+      Extract<GeneratedRoomOS.EventName, Path>
+    : EventNamesWithPrefix<Path>
+  : never;
+
+type PickMap<Map, Keys extends keyof Map> = {
+  [K in Keys]: Map[K];
+};
 
 type Gettable<Value> = { get: () => Promise<RoomOS.Result<Value>> };
 type Settable<Value> = { set: (value: Value) => Promise<RoomOS.Result<Value>> };
 
 type FeedbackNode<Value, State> = {
+  get: () => Value;
   subscribe: (
     callback?: (value: Value, state: State) => void,
-  ) => Promise<RoomOS.Result<void>>;
+  ) => Promise<RoomOS.Result<RoomOS.HeldSubscription>>;
 };
 
 type Configify<Value> =
@@ -91,18 +89,38 @@ export namespace RoomOS {
     Product extends GeneratedRoomOS.ProductTarget = "any",
   > = GeneratedRoomOS.Event<Product>;
 
+  export type EventMap<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = GeneratedRoomOS.EventByNormPath;
+
+  export type EventName<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = keyof EventMap<Product>;
+
   export type FeedbackSubscriptions<
-    Product extends GeneratedRoomOS.ProductTarget,
-  > = FeedbackSubscriptionsFor<EventState<Product>>;
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = GeneratedRoomOS.EventSubscriptions;
+
+  export type SubscribedEventName<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+    Subscriptions extends FeedbackSubscriptions<Product> = never,
+  > = EventNamesFromSubscriptions<Subscriptions>;
+
+  export type SubscribedEventMap<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+    Subscriptions extends FeedbackSubscriptions<Product> = never,
+  > = PickMap<
+    EventMap<Product>,
+    Extract<SubscribedEventName<Product, Subscriptions>, EventName<Product>>
+  >;
 
   export type State<
     Product extends GeneratedRoomOS.ProductTarget,
-    Subscriptions extends FeedbackSubscriptions<Product> = never,
-  > = FeedbackStateFromSubscriptions<
-    ConfigurationState<Product>,
-    Subscriptions
-  > &
-    FeedbackStateFromSubscriptions<StatusState<Product>, Subscriptions>;
+  > = {
+    xConfiguration: UnwrapStateRoot<ConfigurationState<Product>, "Configuration">;
+    xStatus: UnwrapStateRoot<StatusState<Product>, "Status">;
+    xFeedback: EventState<Product>;
+  };
 
   export type ConfigurationApi<
     Product extends GeneratedRoomOS.ProductTarget = "any",

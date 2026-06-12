@@ -87,7 +87,6 @@ function walkPath(root: Tree, path: string, source: SchemaEntry): Tree {
 
 function buildCommandTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
-
   for (const entry of entries) {
     const node = walkPath(root, entry.source.path, entry.source);
     node.source = entry.source;
@@ -101,7 +100,6 @@ function buildCommandTree(entries: readonly Tree[]): Tree {
 
 function buildValueTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
-
   for (const entry of entries) {
     const rootNode = getOrCreateChild(root, entry.source.type, entry.source);
     const node = walkPath(rootNode, entry.source.path, entry.source);

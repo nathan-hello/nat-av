@@ -13,7 +13,7 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 export type State<
   Product extends Generated.ProductTarget = "any",
   Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
-> = RoomOS.State<Product, Subscriptions> & {
+> = RoomOS.State<Product> & {
   internal: { subscriptions: Subscriptions };
 };
 
@@ -28,9 +28,9 @@ export class CiscoRoomOS<
   >;
   private proxy = new RoomOSProxy(this.tel, this.request.bind(this));
   private subscriptions: RoomOS.HeldSubscription[] = [];
-  events = new TypedEventTarget<RoomOS.EventState>();
+  events = new TypedEventTarget<RoomOS.SubscribedEventMap<Product, Subscriptions>>();
 
-  state = this.proxy.State() as RoomOS.State<Product, Subscriptions> & {
+  state = this.proxy.State() as RoomOS.State<Product> & {
     internal: { highestId: number; subscriptions: Subscriptions };
   };
   schema = undefined;
@@ -44,7 +44,7 @@ export class CiscoRoomOS<
     name: N;
     socket: Sockets.Client;
     product?: Product;
-    subscriptions?: Subscriptions & RoomOS.FeedbackSubscriptions<Product>;
+    subscriptions?: Subscriptions;
   }) {
     super({ name, driverName: "cisco-room-devices" });
     this.socket = socket;
@@ -97,6 +97,26 @@ export class CiscoRoomOS<
       case "update":
         this.tel.info("UPDATE_STATE", operation);
         this.proxy.UpdateState(operation.data.path, operation.data.value);
+
+        if (operation.data.path[0] === "Event") {
+          const eventName = operation.data.path.slice(1).join(" ");
+          // TSAS: Event notifications are emitted from schema-backed Event paths.
+          const typedEventName =
+            eventName as keyof RoomOS.SubscribedEventMap<Product, Subscriptions> &
+              string;
+          // TSAS: The emitted payload is stored at the same schema-backed event path.
+          const typedEventPayload =
+            operation.data.value as RoomOS.SubscribedEventMap<
+              Product,
+              Subscriptions
+            >[typeof typedEventName];
+
+          this.events.dispatch(
+            typedEventName,
+            typedEventPayload,
+          );
+        }
+
         return { ok: true, data: operation.data.value };
       case "unsubscribed":
         this.subscriptions = this.subscriptions.filter(
@@ -180,22 +200,22 @@ export class CiscoRoomOS<
     };
   }
 
-  api: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions>> = {
+  api: RoomOS.Api<Product, RoomOS.State<Product>> = {
     xCommand: this.proxy.Command() as RoomOS.Api<
       Product,
-      RoomOS.State<Product, Subscriptions>
+      RoomOS.State<Product>
     >["xCommand"],
     xConfiguration: this.proxy.Configuration() as RoomOS.Api<
       Product,
-      RoomOS.State<Product, Subscriptions>
+      RoomOS.State<Product>
     >["xConfiguration"],
     xStatus: this.proxy.Status() as RoomOS.Api<
       Product,
-      RoomOS.State<Product, Subscriptions>
+      RoomOS.State<Product>
     >["xStatus"],
     xFeedback: this.proxy.Feedback() as RoomOS.Api<
       Product,
-      RoomOS.State<Product, Subscriptions>
+      RoomOS.State<Product>
     >["xFeedback"],
   };
 }

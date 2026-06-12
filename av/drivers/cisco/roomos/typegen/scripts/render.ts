@@ -422,6 +422,110 @@ function renderEventSection(
   return output.join("\n");
 }
 
+function renderEventMapSection(entries: readonly Tree[]): string {
+  const fieldsByNormPath = new Map<string, Set<string>>();
+
+  // RoomOS events are consumed by their normalized schema path string.
+  for (const entry of entries) {
+    const normPath = entry.source.normPath ?? entry.source.path;
+    const value = renderTreeNode(entry, "JsonValue");
+    let fields = fieldsByNormPath.get(normPath);
+
+    if (fields === undefined) {
+      fields = new Set<string>();
+      fieldsByNormPath.set(normPath, fields);
+    }
+
+    fields.add(value);
+  }
+
+  const renderedFields = [...fieldsByNormPath.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([normPath, values]) => {
+      const value = [...values].sort((left, right) => left.localeCompare(right));
+      return `${JSON.stringify(normPath)}: ${value.join(" | ")};`;
+    });
+
+  return [
+    "/** Maps RoomOS event normPath strings to their payload shape. */",
+    renderInterface("EventByNormPath", renderedFields),
+    'export type EventName = keyof EventByNormPath;',
+  ].join("\n");
+}
+
+function renderEventSubscriptionShapeSection(entries: readonly Tree[]): string {
+  type SubscriptionNode = true | SubscriptionNodeMap;
+
+  type SubscriptionNodeMap = {
+    [key: string]: SubscriptionNode;
+  };
+
+  const root: SubscriptionNodeMap = {};
+
+  for (const entry of entries) {
+    const normPath = entry.source.normPath ?? entry.source.path;
+    let node = root;
+    const segments = normPath.split(" ");
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i]!;
+
+      if (i === segments.length - 1) {
+        node[segment] = true;
+        continue;
+      }
+
+      const child = node[segment];
+
+      if (child === undefined || child === true) {
+        node[segment] = {};
+      }
+
+      // TSAS: This branch only continues after ensuring the segment holds an object node.
+      node = node[segment] as SubscriptionNodeMap;
+    }
+  }
+
+  function renderSubscriptionShapeFields(
+    node: SubscriptionNodeMap,
+  ): string[] {
+    return Object.entries(node)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([name, child]) => {
+        const value =
+          child === true ? "true" : renderObject(renderSubscriptionShapeFields(child));
+        return `${JSON.stringify(name)}: ${value};`;
+      });
+  }
+
+  function renderSubscriptionInputFields(
+    node: SubscriptionNodeMap,
+  ): string[] {
+    return Object.entries(node)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([name, child]) => {
+        const value =
+          child === true ?
+            "true"
+          : `true | ${renderObject(renderSubscriptionInputFields(child))}`;
+        return `${JSON.stringify(name)}?: ${value};`;
+      });
+  }
+
+  return [
+    "/** Describes which feedback paths terminate at a RoomOS event normPath. */",
+    renderInterface(
+      "EventSubscriptionShape",
+      renderSubscriptionShapeFields(root),
+    ),
+    "/** Public RoomOS feedback subscription tree. */",
+    renderInterface(
+      "EventSubscriptions",
+      renderSubscriptionInputFields(root),
+    ),
+  ].join("\n");
+}
+
 function renderStateSection(
   baseName: "Configuration" | "Status",
   section: TreesByProduct,
@@ -494,6 +598,8 @@ function render(model: GeneratedModel): string {
     renderStateSection("Configuration", model.configuration, model.products),
     renderStateSection("Status", model.status, model.products),
     renderEventSection("Event", model.event, model.products),
+    renderEventMapSection(model.eventEntries),
+    renderEventSubscriptionShapeSection(model.eventEntries),
     "}",
   ].join("\n\n");
 }

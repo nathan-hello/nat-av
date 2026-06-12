@@ -102,6 +102,26 @@ function asRpcPath(path: readonly string[]) {
   return toRpcPath(path.slice(1));
 }
 
+function asFeedbackRpcPath(path: readonly string[]) {
+  const queryPath = toRpcPath(path.slice(1));
+
+  if (queryPath[0] === "Event") {
+    return queryPath;
+  }
+
+  return ["Event", ...queryPath];
+}
+
+function asFeedbackPath(path: readonly string[]): string[] {
+  const queryPath = path.slice(1);
+
+  if (queryPath[0] === "Event") {
+    return queryPath;
+  }
+
+  return ["Event", ...queryPath];
+}
+
 function renderTerminalPath(operation: RoomOS.WriteOperation): string {
   switch (operation.root) {
     case "xCommand":
@@ -185,12 +205,12 @@ function ToTerminal(
       return withResultId(command, resultId);
     }
     case "sub": {
-      const query = renderQueryPath(operation.path.slice(1));
+      const query = renderQueryPath(asFeedbackPath(operation.path));
       return withResultId(`xfeedback register ${query}`, resultId);
     }
     case "unsub": {
       return withResultId(
-        `xfeedback register ${renderQueryPath(operation.path.slice(1))}`,
+        `xfeedback register ${renderQueryPath(asFeedbackPath(operation.path))}`,
         resultId,
       );
     }
@@ -232,7 +252,7 @@ function ToJsonRpc(
         jsonrpc: "2.0",
         method: "xFeedback/Subscribe",
         params: {
-          Query: asRpcPath(operation.path),
+          Query: asFeedbackRpcPath(operation.path),
           NotifyCurrentValue: true,
         },
         id,
@@ -264,9 +284,9 @@ function ToXml(operation: RoomOS.WriteOperation, id: number): string {
     case "set":
       return `<Set id="${escapeXml(String(id ?? ""))}"><Path>${escapeXml(asRpcPath(operation.path).join("/"))}</Path><Value>${escapeXml(String(operation.value))}</Value></Set>`;
     case "sub":
-      return `<Subscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
+      return `<Subscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asFeedbackRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
     case "unsub":
-      return `<Unsubscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
+      return `<Unsubscribe id="${escapeXml(String(id ?? ""))}"><Query>${escapeXml(asFeedbackRpcPath(operation.path).join("/"))}</Query></Subscribe>`;
   }
 }
 

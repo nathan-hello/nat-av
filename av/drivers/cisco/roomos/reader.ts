@@ -122,7 +122,7 @@ function FromJsonRpcNotification(
 
     const { Id, ...rest } = { ...params };
 
-    const data = getLeaves(rest);
+    const data = getEventUpdate(rest);
     return {
       kind: "update",
       data: { path: normalizeStatePath(data.path), value: data.value },
@@ -183,33 +183,38 @@ function findSubTrees(
   );
 }
 
-function getLeaves(
+function getEventUpdate(
   obj: JsonValue,
   currentPath: string[] = [],
 ): {
   path: string[];
   value: JsonValue;
 } {
-  if (typeof obj !== "object" || obj === null) {
+  if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
     return { path: currentPath, value: obj };
   }
 
   const entries = Object.entries(obj);
-  if (entries.length === 0) {
+  if (entries.length !== 1) {
     return { path: currentPath, value: obj };
   }
 
   const [key, value] = entries[0];
-  return getLeaves(value, [...currentPath, key]);
+
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { path: currentPath, value: obj };
+  }
+
+  return getEventUpdate(value, [...currentPath, key]);
 }
 
 function normalizeStatePath(path: readonly string[]): string[] {
-  if (
-    path[0] === "xConfiguration" ||
-    path[0] === "xStatus" ||
-    path[0] === "xFeedback"
-  ) {
+  if (path[0] === "xConfiguration" || path[0] === "xStatus") {
     return path.slice(1);
+  }
+
+  if (path[0] === "xFeedback") {
+    return ["Event", ...path.slice(1)];
   }
 
   return [...path];

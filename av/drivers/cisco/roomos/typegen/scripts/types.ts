@@ -109,6 +109,7 @@ export type TreesByProduct = {
 export type GeneratedModel = {
   products: readonly string[];
   kinds: readonly SchemaEntry["type"][];
+  eventEntries: readonly Tree[];
   commandApi: TreesByProduct;
   configuration: TreesByProduct;
   status: TreesByProduct;

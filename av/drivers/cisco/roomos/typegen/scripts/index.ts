@@ -25,6 +25,7 @@ function generateSource(schema: SchemaJson): string {
   const model: GeneratedModel = {
     products,
     kinds,
+    eventEntries: entries.filter((entry) => entry.source.type === "Event"),
     commandApi: buildGroupedTree(
       entries.filter((entry) => entry.source.type === "Command"),
       products,

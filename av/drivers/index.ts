@@ -13,8 +13,9 @@ export abstract class Driver<
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
-  Events extends TypedEventTarget<{ [x: string]: Rpc.JSONValue }> | undefined =
-    TypedEventTarget<{ [x: string]: Rpc.JSONValue }>,
+  Events extends TypedEventTarget<any> | undefined = TypedEventTarget<
+    { [x: string]: Rpc.JSONValue }
+  >,
   Socket extends Partial<Sockets.Client> | undefined = any,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;

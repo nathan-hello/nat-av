@@ -20,24 +20,34 @@ const roomos = new CiscoRoomOS({
   name: "roomos-typecheck",
   socket,
   subscriptions: {
-    Event: true,
-    Status: true,
+    Bluetooth: {
+      Streaming: {
+        PlaybackPosition: true,
+      },
+    },
+    IncomingCallIndication: true,
+    PresentationPreviewStarted: true,
+    UserInterface: {
+      ScreenShotStored: true,
+    },
   },
 });
 
 describe("typecheck", () => {
   it("does not throw when accessing nested state obj", () => {
     assert.doesNotThrow(() => {
-      void roomos.state.Event.UserInterface.ScreenShotStored.Type;
       // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
-      void roomos.state.Event.PresentationPreviewStarted.Cause;
+      void roomos.state.xFeedback.PresentationPreviewStarted.Cause;
 
-      void roomos.state.Status.UserInterface.WebView[0].Status;
-
-      void roomos.state.Event.IncomingCallIndication;
+      void roomos.state.xStatus.UserInterface.WebView[0].Status;
+      void roomos.state.xFeedback.IncomingCallIndication;
 
       // Should be 'number'
-      void roomos.state.Event.Bluetooth.Streaming.PlaybackPosition.Position;
+      void roomos.state.xFeedback.Bluetooth.Streaming.PlaybackPosition.Position;
+
+      roomos.events.on("Bluetooth Streaming PlaybackPosition", (data) => {
+        void data.Position;
+      });
     });
   });
 });

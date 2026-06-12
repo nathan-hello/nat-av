@@ -72,8 +72,11 @@ it("api writes to socket, state gets updated on notification", async () => {
     name: "roomos-writer-test",
     socket,
     subscriptions: {
-      Configuration: {
-        Bluetooth: true,
+      Bluetooth: {
+
+        Streaming: {
+          PlaybackPosition: true,
+        },
       },
     },
   });
@@ -93,7 +96,7 @@ it("api writes to socket, state gets updated on notification", async () => {
   });
 
   it("state.Bluetooth.Allowed === 'True'", () => {
-    assert.deepEqual(roomos.state.Configuration.Bluetooth.Allowed, "True");
+    assert.deepEqual(roomos.state.xConfiguration.Bluetooth.Allowed, "True");
   });
 
   it("api.xConfiguration.Configuration.Bluetooth.set()", async () => {

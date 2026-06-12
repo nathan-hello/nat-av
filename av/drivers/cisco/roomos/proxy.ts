@@ -10,10 +10,16 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 export class RoomOSProxy {
   private request: TRequest;
   private tel: Telemetry;
+  private state: Record<string | symbol, any>;
 
-  constructor(tel: Telemetry, request: TRequest) {
+  constructor(
+    tel: Telemetry,
+    request: TRequest,
+    state: Record<string | symbol, any> = {},
+  ) {
     this.request = request;
     this.tel = tel;
+    this.state = state;
   }
 
   private static target() {
@@ -24,6 +30,33 @@ export class RoomOSProxy {
     return [...path, prop];
   }
 
+  private child(): RoomOSProxy {
+    return new RoomOSProxy(this.tel, this.request, this.state);
+  }
+
+  private static normalizeStateAlias(segment: string): string {
+    switch (segment) {
+      case "xConfiguration":
+        return "Configuration";
+      case "xStatus":
+        return "Status";
+      case "xFeedback":
+        return "Event";
+      default:
+        return segment;
+    }
+  }
+
+  private static normalizeStatePath(path: string[]): string[] {
+    return path.map((segment, index) =>
+      index === 0 ? RoomOSProxy.normalizeStateAlias(segment) : segment,
+    );
+  }
+
+  private readState(path: string[]): unknown {
+    return path.reduce((target, key) => target?.[key], this.state);
+  }
+
   Command(path: string[] = ["xCommand"]) {
     return new Proxy(RoomOSProxy.target(), {
       get: (_, prop: string | symbol) => {
@@ -31,7 +64,7 @@ export class RoomOSProxy {
           return undefined;
         }
 
-        return new RoomOSProxy(this.tel, this.request).Command(
+        return this.child().Command(
           RoomOSProxy.childPath(path, prop),
         );
       },
@@ -97,7 +130,7 @@ export class RoomOSProxy {
                 value: args[0],
               });
           default:
-            return new RoomOSProxy(this.tel, this.request).Configuration(
+            return this.child().Configuration(
               RoomOSProxy.childPath(path, prop),
             );
         }
@@ -116,7 +149,7 @@ export class RoomOSProxy {
           return () => this.request({ kind: "get", root: "xStatus", path });
         }
 
-        return new RoomOSProxy(this.tel, this.request).Status(
+        return this.child().Status(
           RoomOSProxy.childPath(path, prop),
         );
       },
@@ -134,18 +167,20 @@ export class RoomOSProxy {
           return () => this.request({ kind: "sub", root: "xFeedback", path });
         }
 
+        if (prop === "get") {
+          return () => this.readState(["Event", ...path.slice(1)]);
+        }
+
         if (prop === "unsubscribe") {
           return () => this.request({ kind: "unsub", root: "xFeedback", path });
         }
 
-        return new RoomOSProxy(this.tel, this.request).Feedback(
+        return this.child().Feedback(
           RoomOSProxy.childPath(path, prop),
         );
       },
     });
   }
-
-  private state: Record<string | symbol, any> = {};
 
   State(path: string[] = []) {
     return new Proxy(this.state, {
@@ -156,7 +191,7 @@ export class RoomOSProxy {
 
         // this.tel.info("Proxy.State.get(): this.state", { state: this.state });
 
-        const currentPath = [...path, prop];
+         const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
 
         // this.tel.info("Proxy.State.get(): currentPath", { currentPath });
 
@@ -185,7 +220,7 @@ export class RoomOSProxy {
 
         // this.tel.info("Proxy.State.set(): this.state", { state: this.state });
 
-        const currentPath = [...path, prop];
+         const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
 
         // this.tel.info("Proxy.State.set(): currentPath", { currentPath });
 
@@ -215,7 +250,10 @@ export class RoomOSProxy {
 
       // Returns the actual keys present at the current nested path
       ownKeys: () => {
-        const value = path.reduce((target, key) => target?.[key], this.state);
+        const value = RoomOSProxy.normalizeStatePath(path).reduce(
+          (target, key) => target?.[key],
+          this.state,
+        );
         if (typeof value === "object" && value !== null) {
           return Reflect.ownKeys(value);
         }
@@ -224,7 +262,10 @@ export class RoomOSProxy {
 
       // Needed by JS engines to confirm keys returned by ownKeys are configurable
       getOwnPropertyDescriptor: (_, prop) => {
-        const value = path.reduce((target, key) => target?.[key], this.state);
+        const value = RoomOSProxy.normalizeStatePath(path).reduce(
+          (target, key) => target?.[key],
+          this.state,
+        );
         if (value && typeof value === "object" && prop in value) {
           return {
             enumerable: true,
