@@ -131,10 +131,6 @@ function formatParamDoc(path: string, param: Param | ParamModel): string {
   return emitDoc(docs);
 }
 
-function formatMissingTypeDoc(path: string): string {
-  return emitDoc([`Cisco schema does not specify a type for ${path}`]);
-}
-
 function renderObject(fields: readonly string[]): string {
   if (!fields.length) {
     return "{}";
@@ -143,14 +139,22 @@ function renderObject(fields: readonly string[]): string {
   return `{ ${fields.join(" ")} }`;
 }
 
+function renderArrayValue(value: string, array: boolean | number): string {
+  if (typeof array === "number") {
+    if (array <= 0) {
+      return "[]";
+    }
 
-function renderNodeDoc(node: Tree): string {
-  if (node.source !== undefined) {
-    return formatEntryDoc(node.source);
+    return `[${Array.from({ length: array }, () => value).join(", ")}]`;
   }
 
-  if (node.missingTypePath !== undefined) {
-    return formatMissingTypeDoc(node.missingTypePath);
+  return array ? `Array<${value}>` : value;
+}
+
+
+function renderNodeDoc(node: Tree): string {
+  if (node.isPath) {
+    return formatEntryDoc(node.source);
   }
 
   return "";
@@ -247,7 +251,7 @@ function renderTreeFields(
         returnTypeName(name, child)
       : returnTypeName,
     );
-    const wrappedValue = child.array ? `Array<${value}>` : value;
+    const wrappedValue = renderArrayValue(value, child.isArray);
     fields.push(`${docs}${JSON.stringify(name)}: ${wrappedValue};`);
   }
 
@@ -261,19 +265,19 @@ function renderTreeNode(node: Tree, returnTypeName: string): string {
     return renderObject(renderTreeFields(node, () => returnTypeName));
   }
 
-  if (node.callable !== undefined && node.source !== undefined) {
+  if (node.params.length > 0) {
     return renderCommandCallableType(
       node.source.path,
-      node.callable.params,
+      node.params,
       returnTypeName,
     );
   }
 
-  if (node.valuespace !== undefined) {
+  if (node.valuespace !== null) {
     return valueType(node.valuespace);
   }
 
-  return "{}";
+  return "JSONValue";
 }
 
 function renderInterface(
@@ -403,7 +407,7 @@ function renderEventSection(
     output.push(
       renderInterface(
         setNames[index],
-        renderEventFields(set.entries, section.sets[index]?.tree ?? {}),
+        renderEventFields(set.entries, section.sets[index].tree),
       ),
     );
   });

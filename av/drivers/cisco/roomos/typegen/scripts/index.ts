@@ -70,7 +70,6 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
       params: reduced.params,
       valuespace: reduced.valuespace,
       children: reduced.children,
-      multiline: reduced.multiline,
     });
 
     const existing = groups.get(signature);
@@ -103,13 +102,11 @@ function mergeEntries(entries: readonly SchemaEntry[]): readonly EntryModel[] {
       params: left.params,
       valuespace: left.valuespace,
       children: left.children,
-      multiline: left.multiline,
     }).localeCompare(
       JSON.stringify({
         params: right.params,
         valuespace: right.valuespace,
         children: right.children,
-        multiline: right.multiline,
       }),
     );
   });

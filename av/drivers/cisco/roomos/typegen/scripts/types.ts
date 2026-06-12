@@ -95,19 +95,18 @@ export type EntryModel = {
   params?: ParamModel[];
   valuespace?: ValuespaceModel;
   children?: Record<string, EventNodeModel>;
-  multiline?: true;
 };
 
 export type Tree = {
-  array?: true;
-  source?: SchemaEntry;
-  missingTypePath?: string;
-  callable?: {
-    params: ParamModel[];
-    multiline?: true;
-  };
-  valuespace?: ValuespaceModel;
-  children?: Record<string, Tree>;
+  // Number in the case that the schema specifies how many
+  // of the item is in the structure. This way we can render
+  // a tuple.
+  isArray: boolean | number;
+  isPath: boolean;
+  source: SchemaEntry;
+  params: ParamModel[];
+  valuespace: ValuespaceModel | null;
+  children: Record<string, Tree>;
 };
 
 export type ProductSetGroup = {

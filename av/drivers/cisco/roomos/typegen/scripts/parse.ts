@@ -229,10 +229,6 @@ function normalizeEntry(entry: SchemaEntry): EntryModel {
       params.sort((a, b) => a.name.localeCompare(b.name));
       normalized.params = params;
 
-      if (hasMultiplicity(entry.attributes.multiline)) {
-        normalized.multiline = true;
-      }
-
       break;
     }
     case "Configuration":
