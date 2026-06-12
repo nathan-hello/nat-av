@@ -16,6 +16,10 @@ type UnwrapStateRoot<Tree, Root extends string> =
 type JoinPath<Prefix extends string, Segment extends string> =
   Prefix extends "" ? Segment : `${Prefix} ${Segment}`;
 
+type SubscriptionTree<Value> = IsPlainObject<Value> extends true ?
+  { [K in keyof Value]?: true | SubscriptionTree<Value[K]> }
+  : true;
+
 type EventNamesWithPrefix<Prefix extends string> =
   Extract<GeneratedRoomOS.EventName, Prefix | `${Prefix} ${string}`>;
 
@@ -29,24 +33,57 @@ type SelectedSubscriptionPaths<Selected, Prefix extends string = ""> =
   : never;
 
 type EventNamesFromSubscriptions<Selected> =
-  SelectedSubscriptionPaths<Selected> extends infer Path extends string ?
-    Path extends GeneratedRoomOS.EventName ?
-      Extract<GeneratedRoomOS.EventName, Path>
-    : EventNamesWithPrefix<Path>
+  [Selected] extends [never] ? never
+  : Selected extends { xFeedback?: infer Feedback } ?
+    SelectedSubscriptionPaths<Feedback> extends infer Path extends string ?
+      Path extends GeneratedRoomOS.EventName ?
+        Extract<GeneratedRoomOS.EventName, Path>
+      : EventNamesWithPrefix<Path>
+    : never
   : never;
 
 type PickMap<Map, Keys extends keyof Map> = {
   [K in Keys]: Map[K];
 };
 
-type Gettable<Value> = { get: () => Promise<RoomOS.Result<Value>> };
-type Settable<Value> = { set: (value: Value) => Promise<RoomOS.Result<Value>> };
+type RemoteResult<Value> = Promise<RoomOS.Result<Value>>;
+
+type Gettable<Value> = { get: () => RemoteResult<Value> };
+type Settable<Value> = { set: (value: Value) => RemoteResult<Value> };
 
 type FeedbackNode<Value, State> = {
   get: () => Value;
   subscribe: (
     callback?: (value: Value, state: State) => void,
-  ) => Promise<RoomOS.Result<RoomOS.HeldSubscription>>;
+  ) => RemoteResult<RoomOS.HeldSubscription>;
+};
+
+type RootState<Product extends GeneratedRoomOS.ProductTarget> = {
+  xConfiguration: UnwrapStateRoot<GeneratedRoomOS.Configuration<Product>, "Configuration">;
+  xStatus: UnwrapStateRoot<GeneratedRoomOS.Status<Product>, "Status">;
+  xFeedback: GeneratedRoomOS.Event<Product>;
+};
+
+type PruneBySubscriptions<Value, Subscriptions> =
+  [Subscriptions] extends [true] ? Value
+  : IsPlainObject<Value> extends true ?
+    Subscriptions extends object ? {
+      [K in keyof Subscriptions & keyof Value]: PruneBySubscriptions<
+        Value[K],
+        NonNullable<Subscriptions[K]>
+      >;
+    }
+    : never
+  : Value;
+
+type StateFromSubscriptions<
+  Product extends GeneratedRoomOS.ProductTarget,
+  Subscriptions,
+> = {
+  [K in keyof Subscriptions & keyof RootState<Product>]: PruneBySubscriptions<
+    RootState<Product>[K],
+    NonNullable<Subscriptions[K]>
+  >;
 };
 
 type Configify<Value> =
@@ -59,6 +96,13 @@ type Statusify<Value> =
   IsPlainObject<Value> extends true ?
     { [K in keyof Value]: Statusify<Value[K]> } & Gettable<Value>
   : Gettable<Value>;
+
+type CommandRecordify<Value> =
+  Value extends (...args: infer Args) => infer Return ?
+    (...args: Args) => RemoteResult<Return>
+  : IsPlainObject<Value> extends true ?
+    { [K in keyof Value]: CommandRecordify<Value[K]> } & Drivers.ApiRecord
+  : () => RemoteResult<Value>;
 
 type Feedbackify<Value, State> =
   IsPlainObject<Value> extends true ?
@@ -77,6 +121,24 @@ type ApiRecordify<Value> =
 export type { GeneratedRoomOS as Generated };
 
 export namespace RoomOS {
+  export type ConfigurationSubscriptionTree<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = SubscriptionTree<UnwrapStateRoot<ConfigurationState<Product>, "Configuration">>;
+
+  export type StatusSubscriptionTree<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = SubscriptionTree<UnwrapStateRoot<StatusState<Product>, "Status">>;
+
+  export type FeedbackSubscriptionTree = SubscriptionTree<GeneratedRoomOS.EventSubscriptionShape>;
+
+  export type Subscriptions<
+    Product extends GeneratedRoomOS.ProductTarget = "any",
+  > = {
+    xConfiguration?: ConfigurationSubscriptionTree<Product>;
+    xStatus?: StatusSubscriptionTree<Product>;
+    xFeedback?: FeedbackSubscriptionTree;
+  };
+
   export type ConfigurationState<
     Product extends GeneratedRoomOS.ProductTarget = "any",
   > = GeneratedRoomOS.Configuration<Product>;
@@ -99,16 +161,16 @@ export namespace RoomOS {
 
   export type FeedbackSubscriptions<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.EventSubscriptions;
+  > = Subscriptions<Product>;
 
   export type SubscribedEventName<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-    Subscriptions extends FeedbackSubscriptions<Product> = never,
+    Subscriptions extends FeedbackSubscriptions<Product> = FeedbackSubscriptions<Product>,
   > = EventNamesFromSubscriptions<Subscriptions>;
 
   export type SubscribedEventMap<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-    Subscriptions extends FeedbackSubscriptions<Product> = never,
+    Subscriptions extends FeedbackSubscriptions<Product> = FeedbackSubscriptions<Product>,
   > = PickMap<
     EventMap<Product>,
     Extract<SubscribedEventName<Product, Subscriptions>, EventName<Product>>
@@ -116,11 +178,11 @@ export namespace RoomOS {
 
   export type State<
     Product extends GeneratedRoomOS.ProductTarget,
-  > = {
-    xConfiguration: UnwrapStateRoot<ConfigurationState<Product>, "Configuration">;
-    xStatus: UnwrapStateRoot<StatusState<Product>, "Status">;
-    xFeedback: EventState<Product>;
-  };
+    Subscriptions extends FeedbackSubscriptions<Product> = FeedbackSubscriptions<Product>,
+    StrictState extends boolean = false,
+  > = StrictState extends true ?
+    StateFromSubscriptions<Product, Subscriptions>
+  : RootState<Product>;
 
   export type ConfigurationApi<
     Product extends GeneratedRoomOS.ProductTarget = "any",
@@ -133,7 +195,7 @@ export namespace RoomOS {
     Product extends GeneratedRoomOS.ProductTarget = "any",
     State = EventState<Product>,
   > = {
-    xCommand: ApiRecordify<GeneratedRoomOS.CommandApi<Product>>;
+    xCommand: CommandRecordify<GeneratedRoomOS.CommandApi<Product>>;
     xConfiguration: ConfigurationApi<Product>;
     xStatus: StatusApi<Product>;
     xFeedback: ApiRecordify<Feedbackify<EventState<Product>, State>>;

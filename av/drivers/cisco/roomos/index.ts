@@ -12,27 +12,34 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 
 export type State<
   Product extends Generated.ProductTarget = "any",
-  Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
-> = RoomOS.State<Product> & {
+  StrictState extends boolean = boolean,
+  Subscriptions extends RoomOS.Subscriptions<Product> =
+    RoomOS.Subscriptions<Product>,
+> = RoomOS.State<Product, Subscriptions, StrictState> & {
   internal: { subscriptions: Subscriptions };
 };
 
 export class CiscoRoomOS<
   Product extends Generated.ProductTarget = "any",
-  const Subscriptions extends RoomOS.FeedbackSubscriptions<Product> = never,
+  const StrictState extends boolean = true,
+  const Subscriptions extends RoomOS.Subscriptions<Product> =
+    RoomOS.Subscriptions<Product>,
   const N extends string = string,
 > extends Driver<N> {
   private requests: RequestManager<
     RoomOS.WriteOperation & { id: number },
     unknown
   >;
-  private proxy = new RoomOSProxy(this.tel, this.request.bind(this));
+  private proxy!: RoomOSProxy;
   private subscriptions: RoomOS.HeldSubscription[] = [];
-  events = new TypedEventTarget<RoomOS.SubscribedEventMap<Product, Subscriptions>>();
+  events = new TypedEventTarget<
+    RoomOS.SubscribedEventMap<Product, Subscriptions>
+  >();
 
-  state = this.proxy.State() as RoomOS.State<Product> & {
+  state: RoomOS.State<Product, Subscriptions, StrictState> & {
     internal: { highestId: number; subscriptions: Subscriptions };
   };
+
   schema = undefined;
   socket: Sockets.Client;
 
@@ -40,14 +47,27 @@ export class CiscoRoomOS<
     name,
     socket,
     subscriptions,
+    strict,
   }: {
     name: N;
     socket: Sockets.Client;
     product?: Product;
-    subscriptions?: Subscriptions;
+    subscriptions?: RoomOS.Subscriptions<Product> & Subscriptions;
+    strict: StrictState;
   }) {
     super({ name, driverName: "cisco-room-devices" });
     this.socket = socket;
+
+    this.proxy = new RoomOSProxy(this.tel, this.request.bind(this), {}, strict);
+
+    // TSAS: The proxy returns the runtime state surface, which is narrowed by the generic State type.
+    this.state = this.proxy.State() as RoomOS.State<
+      Product,
+      Subscriptions,
+      StrictState
+    > & {
+      internal: { highestId: number; subscriptions: Subscriptions };
+    };
 
     this.requests = new RequestManager({
       socket,
@@ -89,6 +109,8 @@ export class CiscoRoomOS<
       // TSAS:
       subscriptions: subscriptions as typeof this.state.internal.subscriptions,
     };
+
+    this.initApi();
   }
 
   private read(operation: RoomOS.ReadOperation): RoomOS.Result<unknown> {
@@ -101,20 +123,19 @@ export class CiscoRoomOS<
         if (operation.data.path[0] === "Event") {
           const eventName = operation.data.path.slice(1).join(" ");
           // TSAS: Event notifications are emitted from schema-backed Event paths.
-          const typedEventName =
-            eventName as keyof RoomOS.SubscribedEventMap<Product, Subscriptions> &
-              string;
+          const typedEventName = eventName as keyof RoomOS.SubscribedEventMap<
+            Product,
+            Subscriptions
+          > &
+            string;
           // TSAS: The emitted payload is stored at the same schema-backed event path.
-          const typedEventPayload =
-            operation.data.value as RoomOS.SubscribedEventMap<
-              Product,
-              Subscriptions
-            >[typeof typedEventName];
+          const typedEventPayload = operation.data
+            .value as RoomOS.SubscribedEventMap<
+            Product,
+            Subscriptions
+          >[typeof typedEventName];
 
-          this.events.dispatch(
-            typedEventName,
-            typedEventPayload,
-          );
+          this.events.dispatch(typedEventName, typedEventPayload);
         }
 
         return { ok: true, data: operation.data.value };
@@ -200,22 +221,30 @@ export class CiscoRoomOS<
     };
   }
 
-  api: RoomOS.Api<Product, RoomOS.State<Product>> = {
-    xCommand: this.proxy.Command() as RoomOS.Api<
-      Product,
-      RoomOS.State<Product>
-    >["xCommand"],
-    xConfiguration: this.proxy.Configuration() as RoomOS.Api<
-      Product,
-      RoomOS.State<Product>
-    >["xConfiguration"],
-    xStatus: this.proxy.Status() as RoomOS.Api<
-      Product,
-      RoomOS.State<Product>
-    >["xStatus"],
-    xFeedback: this.proxy.Feedback() as RoomOS.Api<
-      Product,
-      RoomOS.State<Product>
-    >["xFeedback"],
-  };
+  api!: RoomOS.Api<Product, RoomOS.State<Product, Subscriptions, StrictState>>;
+
+  private initApi() {
+    this.api = {
+      // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
+      xCommand: this.proxy.Command() as unknown as RoomOS.Api<
+        Product,
+        RoomOS.State<Product, Subscriptions, StrictState>
+      >["xCommand"],
+      // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
+      xConfiguration: this.proxy.Configuration() as RoomOS.Api<
+        Product,
+        RoomOS.State<Product, Subscriptions, StrictState>
+      >["xConfiguration"],
+      // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
+      xStatus: this.proxy.Status() as RoomOS.Api<
+        Product,
+        RoomOS.State<Product, Subscriptions, StrictState>
+      >["xStatus"],
+      // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
+      xFeedback: this.proxy.Feedback() as RoomOS.Api<
+        Product,
+        RoomOS.State<Product, Subscriptions, StrictState>
+      >["xFeedback"],
+    };
+  }
 }

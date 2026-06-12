@@ -40,22 +40,28 @@ The payload type for each event name must match the event object at that
 
 ## Subscription Tree
 
-The RoomOS subscription tree is for event subscriptions and should be rooted at
-the event namespace without an `Event` wrapper.
+The RoomOS subscriptions object should be rooted at the public state roots:
+
+- `xConfiguration`
+- `xStatus`
+- `xFeedback`
+
+`xFeedback` is the event subscription tree and should use RoomOS event
+`normPath` strings beneath that root.
 
 Examples:
 
-- `{ Bluetooth: true }`
-- `{ Bluetooth: { Streaming: true } }`
-- `{ Bluetooth: { Streaming: { PlaybackPosition: true } } }`
+- `{ xFeedback: { Bluetooth: true } }`
+- `{ xFeedback: { Bluetooth: { Streaming: true } } }`
+- `{ xFeedback: { Bluetooth: { Streaming: { PlaybackPosition: true } } } }`
 
 Rules:
 
-- allow subscribing at any level above a `normPath`
+- allow subscribing at any level above a `normPath` within `xFeedback`
 - stop the tree at `normPath` boundaries
 - do not allow subscribing to payload fields inside a `normPath`
 - `roomos.events.on(...)` autocomplete should be limited to the event names
-  permitted by the provided subscription tree
+  permitted by `subscriptions.xFeedback`
 
 ## Generator Expectations
 

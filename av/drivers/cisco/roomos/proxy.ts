@@ -11,15 +11,18 @@ export class RoomOSProxy {
   private request: TRequest;
   private tel: Telemetry;
   private state: Record<string | symbol, any>;
+  private strictState: boolean;
 
   constructor(
     tel: Telemetry,
     request: TRequest,
     state: Record<string | symbol, any> = {},
+    strictState = false,
   ) {
     this.request = request;
     this.tel = tel;
     this.state = state;
+    this.strictState = strictState;
   }
 
   private static target() {
@@ -31,7 +34,7 @@ export class RoomOSProxy {
   }
 
   private child(): RoomOSProxy {
-    return new RoomOSProxy(this.tel, this.request, this.state);
+    return new RoomOSProxy(this.tel, this.request, this.state, this.strictState);
   }
 
   private static normalizeStateAlias(segment: string): string {
@@ -51,6 +54,101 @@ export class RoomOSProxy {
     return path.map((segment, index) =>
       index === 0 ? RoomOSProxy.normalizeStateAlias(segment) : segment,
     );
+  }
+
+  private static subscriptionRootForStateRoot(root: string):
+    | keyof RoomOS.Subscriptions
+    | null {
+    switch (root) {
+      case "Configuration":
+        return "xConfiguration";
+      case "Status":
+        return "xStatus";
+      case "Event":
+        return "xFeedback";
+      default:
+        return null;
+    }
+  }
+
+  private static isPlainSubscriptionNode(
+    value: unknown,
+  ): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  private getSubscriptionNode(path: string[]): true | Record<string, unknown> | undefined {
+    if (path[0] === "internal") {
+      return true;
+    }
+
+    const root = RoomOSProxy.subscriptionRootForStateRoot(path[0] ?? "");
+    // TSAS: The state proxy stores the constructor-provided subscriptions tree on internal.
+    const subscriptions = this.state.internal?.subscriptions as
+      | RoomOS.Subscriptions
+      | undefined;
+
+    if (root === null || subscriptions === undefined) {
+      return undefined;
+    }
+
+    let node: any = subscriptions[root];
+    if (node === undefined) {
+      return undefined;
+    }
+
+    for (const segment of path.slice(1)) {
+      if (node === true) {
+        return true;
+      }
+
+      if (!RoomOSProxy.isPlainSubscriptionNode(node)) {
+        return undefined;
+      }
+
+      // TSAS: We only continue traversal when the subscription node is either true or a nested object.
+      node = node[segment];
+
+      if (node === undefined) {
+        return undefined;
+      }
+    }
+
+    return node;
+  }
+
+  private isStatePathAllowed(path: string[]): boolean {
+    if (!this.strictState) {
+      return true;
+    }
+
+    return this.getSubscriptionNode(path) !== undefined;
+  }
+
+  private allowedOwnKeys(path: string[]): string[] {
+    const current = RoomOSProxy.normalizeStatePath(path).reduce(
+      (target, key) => target?.[key],
+      this.state,
+    );
+
+    if (typeof current !== "object" || current === null) {
+      return [];
+    }
+
+    if (!this.strictState) {
+      return Reflect.ownKeys(current).filter((key): key is string => typeof key === "string");
+    }
+
+    const subscriptionNode = this.getSubscriptionNode(RoomOSProxy.normalizeStatePath(path));
+    if (subscriptionNode === undefined) {
+      return [];
+    }
+
+    if (subscriptionNode === true) {
+      return Reflect.ownKeys(current).filter((key): key is string => typeof key === "string");
+    }
+
+    return Object.keys(current).filter((key) => key in subscriptionNode);
   }
 
   private readState(path: string[]): unknown {
@@ -191,7 +289,11 @@ export class RoomOSProxy {
 
         // this.tel.info("Proxy.State.get(): this.state", { state: this.state });
 
-         const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
+        const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
+
+        if (!this.isStatePathAllowed(currentPath)) {
+          return undefined;
+        }
 
         // this.tel.info("Proxy.State.get(): currentPath", { currentPath });
 
@@ -220,7 +322,11 @@ export class RoomOSProxy {
 
         // this.tel.info("Proxy.State.set(): this.state", { state: this.state });
 
-         const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
+        const currentPath = RoomOSProxy.normalizeStatePath([...path, prop]);
+
+        if (!this.isStatePathAllowed(currentPath)) {
+          return true;
+        }
 
         // this.tel.info("Proxy.State.set(): currentPath", { currentPath });
 
@@ -250,27 +356,21 @@ export class RoomOSProxy {
 
       // Returns the actual keys present at the current nested path
       ownKeys: () => {
-        const value = RoomOSProxy.normalizeStatePath(path).reduce(
-          (target, key) => target?.[key],
-          this.state,
-        );
-        if (typeof value === "object" && value !== null) {
-          return Reflect.ownKeys(value);
-        }
-        return [];
+        return this.allowedOwnKeys(path);
       },
 
       // Needed by JS engines to confirm keys returned by ownKeys are configurable
       getOwnPropertyDescriptor: (_, prop) => {
-        const value = RoomOSProxy.normalizeStatePath(path).reduce(
-          (target, key) => target?.[key],
-          this.state,
-        );
-        if (value && typeof value === "object" && prop in value) {
+        const allowedKeys = this.allowedOwnKeys(path);
+        if (typeof prop === "string" && allowedKeys.includes(prop)) {
+          const value = RoomOSProxy.normalizeStatePath(path).reduce(
+            (target, key) => target?.[key],
+            this.state,
+          );
           return {
             enumerable: true,
             configurable: true,
-            value: value[prop],
+            value: value?.[prop],
           };
         }
         return undefined;
@@ -279,6 +379,10 @@ export class RoomOSProxy {
   }
 
   UpdateState(path: string[], value: unknown): void {
+    if (!this.isStatePathAllowed(path)) {
+      return;
+    }
+
     if (path.length === 0) {
       // If the path is empty, we overwrite the root state object
       if (typeof value === "object" && value !== null) {

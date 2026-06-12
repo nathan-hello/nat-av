@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import { TestSocket } from "@av/test/socket";
+import type { Sockets } from "@av/types";
 
 it("api writes to socket, state gets updated on notification", async () => {
   const socket = new TestSocket(
@@ -71,11 +72,50 @@ it("api writes to socket, state gets updated on notification", async () => {
   const roomos = new CiscoRoomOS({
     name: "roomos-writer-test",
     socket,
+    strict: true,
     subscriptions: {
-      Bluetooth: {
+      xConfiguration: {
+        Bluetooth: {
+          Allowed: true,
+        },
+      },
+      xStatus: {
+        UserInterface: {
+          WebView: true,
+        },
+      },
+      xFeedback: {
+        Bluetooth: {
+          Streaming: {
+            PlaybackPosition: true,
+          },
+        },
+      },
+    },
+  });
 
-        Streaming: {
-          PlaybackPosition: true,
+  const strictSocket: Sockets.Client = {
+    name: "roomos-strict-state",
+    start() {},
+    end() {},
+    write() {
+      return 0;
+    },
+    on() {
+      return () => {};
+    },
+  };
+
+  const strictRoomos = new CiscoRoomOS({
+    name: "roomos-strict-state",
+    socket: strictSocket,
+    strict: true,
+    subscriptions: {
+      xFeedback: {
+        Bluetooth: {
+          Streaming: {
+            PlaybackPosition: true,
+          },
         },
       },
     },
@@ -113,10 +153,7 @@ it("api writes to socket, state gets updated on notification", async () => {
   });
 
   it("state.Configuration.Bluetooth === obj", () => {
-    assert.deepEqual(roomos.state.xConfiguration.Bluetooth, {
-      Allowed: "True",
-      Enabled: "False",
-    });
+    assert.equal(roomos.state.xConfiguration.Bluetooth.Allowed, "True");
   });
 
   it("Dial", async () => {
@@ -193,6 +230,11 @@ it("api writes to socket, state gets updated on notification", async () => {
 
       assert.deepEqual(foo, { Position: 6 });
     });
+  });
+
+  it("strict state omits unsubscribed roots", () => {
+    assert.equal(Reflect.get(strictRoomos.state, "xConfiguration"), undefined);
+    assert.equal(Reflect.get(strictRoomos.state, "xStatus"), undefined);
   });
 
   it("writes line up", () => {
