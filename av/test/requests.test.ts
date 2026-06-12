@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { RequestManager } from "@av/lib/requests";
 import { Delimiters } from "@av/sockets/delimiters";
 import { Telemetry } from "@av/telemetry";
-import { TestSocket } from "@av/test/socket";
+import { TestSocket } from "@av/test/data";
 
 describe("requests", () => {
   it("queues serial requests when no matcher is provided", async () => {

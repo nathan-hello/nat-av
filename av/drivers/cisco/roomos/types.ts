@@ -1,14 +1,10 @@
 import type { GeneratedRoomOS } from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
 import type { Drivers } from "@av/types/drivers";
 
-type Simplify<T> = { [K in keyof T]: T[K] } & {};
-
 type IsPlainObject<V> =
   [V] extends [readonly any[]] ? false
   : [V] extends [object] ? true
   : false;
-
-type ArrayElement<V> = V extends readonly (infer Item)[] ? Item : never;
 
 type UnwrapStateRoot<Tree, Root extends string> =
   Root extends keyof Tree ? Tree[Root] : Tree;
@@ -161,11 +157,9 @@ export namespace RoomOS {
     Product extends GeneratedRoomOS.ProductTarget = "any",
   > = GeneratedRoomOS.Event<Product>;
 
-  export type EventMap<Product extends GeneratedRoomOS.ProductTarget = "any"> =
-    GeneratedRoomOS.EventByNormPath;
+  export type EventMap = GeneratedRoomOS.EventByNormPath;
 
-  export type EventName<Product extends GeneratedRoomOS.ProductTarget = "any"> =
-    keyof EventMap<Product>;
+  export type EventName = keyof EventMap;
 
   export type FeedbackSubscriptions<
     Product extends GeneratedRoomOS.ProductTarget = "any",
@@ -182,8 +176,8 @@ export namespace RoomOS {
     Subscriptions extends FeedbackSubscriptions<Product> =
       FeedbackSubscriptions<Product>,
   > = PickMap<
-    EventMap<Product>,
-    Extract<SubscribedEventName<Product, Subscriptions>, EventName<Product>>
+    EventMap,
+    Extract<SubscribedEventName<Product, Subscriptions>, EventName>
   >;
 
   export type State<

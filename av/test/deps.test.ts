@@ -6,13 +6,7 @@ import { Orchistrator } from "@av/lib/orch";
 import type { Schema } from "@av/types";
 import { ClientRpcDevice } from "../rpc/client/devices";
 
-class Leaf<const N extends string> extends Driver<
-  N,
-  {},
-  "leaf",
-  {},
-  { online: boolean }
-> {
+class Leaf<const N extends string> extends Driver<N> {
   state = { online: true };
   api = {};
   socket = undefined;

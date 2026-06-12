@@ -1,35 +1,9 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-
-import { Driver } from "@av/drivers";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Orchistrator } from "@av/lib/orch";
 import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
-import { driver } from "./data.ts";
-
-class EventDriver<const N extends string = string> extends Driver<
-  N,
-  {},
-  "event-driver",
-  {},
-  { ready: boolean },
-  TypedEventTarget<{ tick: { count: number } }>
-> {
-  state = { ready: true };
-  api = {};
-  socket = undefined;
-  schema = undefined;
-  events = new TypedEventTarget<{ tick: { count: number } }>();
-
-  constructor(name: N) {
-    super({ name, driverName: "event-driver" });
-  }
-
-  emitTick(count: number) {
-    this.events.dispatch("tick", { count });
-  }
-}
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { driver, EventDriver } from "./data.ts";
 
 describe("test driver", () => {
   it("exposes the shim driver state and api", () => {

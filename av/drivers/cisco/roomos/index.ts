@@ -1,6 +1,7 @@
 import { Driver } from "@av/drivers";
 import { RoomOSProxy } from "@av/drivers/cisco/roomos/proxy";
 import { reader } from "@av/drivers/cisco/roomos/reader";
+import type { JsonValue } from "@av/drivers/cisco/roomos/typegen/scripts/types";
 import { RoomOS, type Generated } from "@av/drivers/cisco/roomos/types";
 import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
 import { toBuffer, toString } from "@av/lib/buffer";
@@ -88,8 +89,11 @@ export class CiscoRoomOS<
       delimiter: Delimiters.json,
     });
 
-    this.socket.on("connected", () => {
+    this.socket.on("connected", async () => {
       this.socket.write("xPreferences OutputMode json\r");
+      const all = await Promise.all(
+        this.RefeshSubscriptions(this.state.internal.subscriptions),
+      );
     });
 
     this.requests.on("delimited", (message) => {
@@ -164,6 +168,45 @@ export class CiscoRoomOS<
         message: "INVALID_READ_OPERATION",
       },
     };
+  }
+
+  private RefeshSubscriptions(
+    subscriptions: Subscriptions | NonNullable<JsonValue>,
+    path: string[] = [],
+  ): Promise<RoomOS.Result<unknown>>[] {
+    const requests: Promise<RoomOS.Result<unknown>>[] = [];
+
+    if (!subscriptions || typeof subscriptions !== "object") {
+      return requests;
+    }
+
+    for (const [key, value] of Object.entries(subscriptions)) {
+      const nextPath = [...path, key];
+
+      if (value === true) {
+        const root = nextPath[0];
+        if (
+          root === "xConfiguration" ||
+          root === "xStatus" ||
+          root === "xFeedback"
+        ) {
+          requests.push(
+            this.request({
+              kind: "sub",
+              root,
+              path: nextPath,
+            }),
+          );
+        }
+        continue;
+      }
+
+      if (value && typeof value === "object") {
+        requests.push(...this.RefeshSubscriptions(value, nextPath));
+      }
+    }
+
+    return requests;
   }
 
   private async request(

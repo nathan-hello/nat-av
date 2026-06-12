@@ -84,6 +84,8 @@ describe("typecheck", () => {
 
       void roomos.state.xStatus.Cameras.Camera[0].Position;
 
+      await roomos.api.xFeedback.get();
+
       strictRoomos.events.on("Bluetooth Streaming PlaybackPosition", () => {});
 
       strictRoomos.state.xFeedback.Bluetooth.Streaming.PlaybackPosition
