@@ -1,4 +1,4 @@
-import type { Natav, Rpc, Events } from "@av/types";
+import type { Events, Natav, Rpc } from "@av/types";
 
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RPCRequest } from "@av/rpc/protocol";

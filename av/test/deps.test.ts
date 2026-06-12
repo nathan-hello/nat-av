@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { Driver } from "@av/drivers";
-import { ClientRpcDevice } from "../rpc/client/devices";
-import type { Schema } from "@av/types";
 import { Orchistrator } from "@av/lib/orch";
+import type { Schema } from "@av/types";
+import { ClientRpcDevice } from "../rpc/client/devices";
 
 class Leaf<const N extends string> extends Driver<
   N,

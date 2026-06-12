@@ -1,7 +1,7 @@
-import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { natav } from "@av/index";
-import type { Natav, Rpc as NRpc } from "@av/types";
 import type { RPCError } from "@av/rpc/protocol";
+import type { ReadableLogRecord } from "@av/telemetry/types";
+import type { Natav, Rpc as NRpc } from "@av/types";
 
 export namespace Events {
   export namespace Socket {

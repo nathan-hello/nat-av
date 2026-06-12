@@ -1,19 +1,19 @@
-import { bus } from "@av/lib/bus";
 import type { natav } from "@av/index";
-import { Rpc } from "@av/types";
+import { bus } from "@av/lib/bus";
+import { DecodeWebsocketError } from "@av/rpc/errors";
 import {
   RPCError,
   RPCErrorCodes,
+  RPCErrors,
   RPCNotification,
   RPCRequest,
   RPCResponse,
-  RPCErrors,
 } from "@av/rpc/protocol";
-import { DecodeWebsocketError } from "@av/rpc/errors";
+import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
-import type { System } from "@av/system";
 import type { Events, Natav, Sockets } from "@av/types";
+import { Rpc } from "@av/types";
 
 const decoder = new TextDecoder();
 

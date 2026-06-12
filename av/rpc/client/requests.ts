@@ -1,7 +1,7 @@
-import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
-import type { Rpc } from "@av/types";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
+import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
+import type { Rpc } from "@av/types";
 
 export class ClientRpcRequests {
   private tel = new Telemetry("Rpc::Requests");

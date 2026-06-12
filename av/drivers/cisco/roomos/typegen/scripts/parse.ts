@@ -1,11 +1,11 @@
 import type {
   EventNode,
-  ParamModel,
   Param,
+  ParamModel,
   SchemaEntry,
   Tree,
-  ValuespaceModel,
   Valuespace,
+  ValuespaceModel,
 } from "./types.ts";
 
 function isTruthyFlag(value: unknown): boolean {
@@ -332,9 +332,9 @@ export {
   normalizeEventNode,
   normalizeParam,
   normalizeValuespace,
+  removeBrackets,
   signatureParam,
   signatureValuespace,
   sortStrings,
   valueType,
-  removeBrackets,
 };

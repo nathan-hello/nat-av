@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
-import { it } from "node:test";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
 import { TestSocket } from "@av/test/socket";
 import type { Sockets } from "@av/types";
+import assert from "node:assert/strict";
+import { it } from "node:test";
 
 it("api writes to socket, state gets updated on notification", async () => {
   const socket = new TestSocket(
@@ -280,7 +280,6 @@ it("api writes to socket, state gets updated on notification", async () => {
     ]);
   });
 });
-
 
 it("hydrates camera arrays and runs newer async commands", async () => {
   const socket = new TestSocket(

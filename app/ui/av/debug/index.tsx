@@ -1,7 +1,7 @@
+import { getRpc } from "@/state";
 import type { Rpc } from "@av/types";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
-import { getRpc } from "@/state";
 import { DebugSocketPanel } from "./socket";
 import { DebugDeviceTree } from "./tree";
 

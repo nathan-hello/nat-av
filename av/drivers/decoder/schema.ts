@@ -1,6 +1,6 @@
-import type { Schema } from "@av/types";
-import type * as T from "@av/drivers/decoder/types";
 import type Decoder from "@av/drivers/decoder";
+import type * as T from "@av/drivers/decoder/types";
+import type { Schema } from "@av/types";
 
 export const SchemaAudioRoute: Schema.Map<T.AudioRoute>["object"] = {
   type: "object",

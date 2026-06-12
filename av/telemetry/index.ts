@@ -1,12 +1,12 @@
+import { RPCErrorData } from "@av/rpc/protocol";
+import { createSpan, getActiveSpan, withSpan } from "./runtime";
+import { getLoggerProvider } from "./sdk";
 import {
   SeverityNumber,
   SpanStatusCode,
   type AttributeValue,
   type Span,
 } from "./types";
-import { getLoggerProvider } from "./sdk";
-import { RPCErrorData } from "@av/rpc/protocol";
-import { createSpan, getActiveSpan, withSpan } from "./runtime";
 
 export type TelemetryLogSchema = {
   info: [string, Record<string, AttributeValue>];

@@ -1,6 +1,6 @@
 import type { Driver } from "@av/drivers";
-import type { Sockets } from "@av/types/socket";
 import type { TypedEventTarget } from "@av/lib/eventtarget";
+import type { Sockets } from "@av/types/socket";
 
 // This namespace is not allowed to import Natav namespace.
 // The Natav namespace uses Driver for inference, so trying

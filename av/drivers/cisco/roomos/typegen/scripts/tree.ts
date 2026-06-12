@@ -1,9 +1,9 @@
 import { isCommonEntry, removeBrackets } from "./parse.ts";
 import type {
-  Tree,
-  SchemaEntry,
-  TreesByProduct,
   ProductSetGroup,
+  SchemaEntry,
+  Tree,
+  TreesByProduct,
 } from "./types.ts";
 
 const EMPTY_SOURCE: SchemaEntry = {

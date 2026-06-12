@@ -1,17 +1,17 @@
+import type { Driver } from "@av/drivers";
 import type { natav } from "@av/index";
-import { type Natav, Rpc, type Events } from "@av/types";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
-  RPCRequest,
   RPCError,
-  RPCResponse,
+  RPCErrorCodes,
   RPCNotification,
+  RPCRequest,
+  RPCResponse,
 } from "@av/rpc/protocol";
 import type { RPCRequestHandler } from "@av/rpc/server/router";
-import { Telemetry } from "@av/telemetry";
-import { RPCErrorCodes } from "@av/rpc/protocol";
-import type { Driver } from "@av/drivers";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
+import { Telemetry } from "@av/telemetry";
+import { Rpc, type Events, type Natav } from "@av/types";
 
 function hasJsonEventTarget(
   value: unknown,
@@ -185,7 +185,11 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
       });
     }
 
-    const callResult = await Reflect.apply(method.fn, method.target, params.args);
+    const callResult = await Reflect.apply(
+      method.fn,
+      method.target,
+      params.args,
+    );
     if (callResult && typeof callResult === "object" && "error" in callResult) {
       // TSAS:
       const error = (
@@ -207,7 +211,8 @@ export class DeviceRpcRouter<N extends Natav.Orch = natav>
     }
 
     // TSAS: Device RPC responses are JSON payloads from the driver API.
-    const jsonValue = callResult === undefined ? null : (callResult as Rpc.JSONValue);
+    const jsonValue =
+      callResult === undefined ? null : (callResult as Rpc.JSONValue);
 
     return new RPCResponse(message.id, jsonValue);
   }

@@ -2,11 +2,11 @@ import { isLiteralWithoutValues, isTruthyFlag, valueType } from "./parse.ts";
 
 import type {
   GeneratedModel,
-  TreesByProduct,
   Param,
   ParamModel,
   SchemaEntry,
   Tree,
+  TreesByProduct,
 } from "./types.ts";
 
 function escapeComment(value: string): string {
@@ -442,14 +442,16 @@ function renderEventMapSection(entries: readonly Tree[]): string {
   const renderedFields = [...fieldsByNormPath.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([normPath, values]) => {
-      const value = [...values].sort((left, right) => left.localeCompare(right));
+      const value = [...values].sort((left, right) =>
+        left.localeCompare(right),
+      );
       return `${JSON.stringify(normPath)}: ${value.join(" | ")};`;
     });
 
   return [
     "/** Maps RoomOS event normPath strings to their payload shape. */",
     renderInterface("EventByNormPath", renderedFields),
-    'export type EventName = keyof EventByNormPath;',
+    "export type EventName = keyof EventByNormPath;",
   ].join("\n");
 }
 
@@ -486,28 +488,26 @@ function renderEventSubscriptionShapeSection(entries: readonly Tree[]): string {
     }
   }
 
-  function renderSubscriptionShapeFields(
-    node: SubscriptionNodeMap,
-  ): string[] {
+  function renderSubscriptionShapeFields(node: SubscriptionNodeMap): string[] {
     return Object.entries(node)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([name, child]) => {
         const value =
-          child === true ? "true" : renderObject(renderSubscriptionShapeFields(child));
+          child === true ? "true" : (
+            renderObject(renderSubscriptionShapeFields(child))
+          );
         return `${JSON.stringify(name)}: ${value};`;
       });
   }
 
-  function renderSubscriptionInputFields(
-    node: SubscriptionNodeMap,
-  ): string[] {
+  function renderSubscriptionInputFields(node: SubscriptionNodeMap): string[] {
     return Object.entries(node)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([name, child]) => {
         const value =
-          child === true ?
-            "true"
-          : `true | ${renderObject(renderSubscriptionInputFields(child))}`;
+          child === true ? "true" : (
+            `true | ${renderObject(renderSubscriptionInputFields(child))}`
+          );
         return `${JSON.stringify(name)}?: ${value};`;
       });
   }
@@ -519,10 +519,7 @@ function renderEventSubscriptionShapeSection(entries: readonly Tree[]): string {
       renderSubscriptionShapeFields(root),
     ),
     "/** Public RoomOS feedback subscription tree. */",
-    renderInterface(
-      "EventSubscriptions",
-      renderSubscriptionInputFields(root),
-    ),
+    renderInterface("EventSubscriptions", renderSubscriptionInputFields(root)),
   ].join("\n");
 }
 

@@ -1,7 +1,7 @@
-import { RoomOS } from "@av/drivers/cisco/roomos/types";
-import { RPCError, RPCNotification } from "@av/rpc/protocol";
-import { toString } from "@av/lib/buffer";
 import type { JsonValue } from "@av/drivers/cisco/roomos/typegen/scripts/types";
+import { RoomOS } from "@av/drivers/cisco/roomos/types";
+import { toString } from "@av/lib/buffer";
+import { RPCError, RPCNotification } from "@av/rpc/protocol";
 
 function FromJsonRpcError(err: RPCError): RoomOS.ReadOperation {
   const code: RoomOS.ErrorCode =

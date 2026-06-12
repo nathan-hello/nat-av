@@ -1,7 +1,7 @@
-import type { Natav, Events } from "@av/types";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpc } from "@av/rpc/client";
 import { RPCRequest } from "@av/rpc/protocol";
+import type { Events, Natav } from "@av/types";
 import { Rpc } from "@av/types";
 
 type DeviceEventCallback<
@@ -63,19 +63,16 @@ export class ClientRpcDevice<
   }
 
   private createApiProxy(path: string[] = []) {
-    return new Proxy(
-      () => undefined,
-      {
-        get: (_, methodName: string | symbol) => {
-          if (typeof methodName !== "string" || methodName === "then") {
-            return undefined;
-          }
+    return new Proxy(() => undefined, {
+      get: (_, methodName: string | symbol) => {
+        if (typeof methodName !== "string" || methodName === "then") {
+          return undefined;
+        }
 
-          return this.createApiProxy([...path, methodName]);
-        },
-        apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
+        return this.createApiProxy([...path, methodName]);
       },
-    );
+      apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
+    });
   }
 
   async call(method: string, args: any[] = []) {

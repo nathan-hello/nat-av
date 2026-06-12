@@ -1,10 +1,10 @@
-import { start } from "@av/index";
-import { Telemetry } from "@av/telemetry";
-import type { WebSocketApp, WebSocketPeer } from "@av/rpc/server/websocket";
 import { router } from "@/router";
+import { start } from "@av/index";
+import type { WebSocketApp, WebSocketPeer } from "@av/rpc/server/websocket";
+import { Telemetry } from "@av/telemetry";
 import * as http from "node:http";
-import { WebSocketServer } from "ws";
 import { createRequestListener } from "remix/node-fetch-server";
+import { WebSocketServer } from "ws";
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100;
 

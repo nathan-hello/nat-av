@@ -1,5 +1,9 @@
-import { Delimiters } from "@av/sockets/delimiters";
+import { Driver } from "@av/drivers";
+import { DecoderSchema } from "@av/drivers/decoder/schema";
+import { toBuffer } from "@av/lib/buffer";
 import { RequestManager } from "@av/lib/requests";
+import { RPCErrorData } from "@av/rpc/protocol";
+import { Delimiters } from "@av/sockets/delimiters";
 import type { Sockets } from "@av/types";
 import {
   type AudioRoute,
@@ -7,15 +11,11 @@ import {
   type DecoderNotification,
   type DecoderRequest,
   type DecoderResponse,
+  type DecoderRoutes,
   type FetchContextResponse,
   type MoveWindowArgs,
   type VideoRoute,
-  type DecoderRoutes,
 } from "./types";
-import { Driver } from "@av/drivers";
-import { RPCErrorData } from "@av/rpc/protocol";
-import { DecoderSchema } from "@av/drivers/decoder/schema";
-import { toBuffer } from "@av/lib/buffer";
 
 type DecoderMessage = DecoderResponse | DecoderNotification;
 

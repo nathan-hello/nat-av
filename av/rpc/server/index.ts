@@ -1,14 +1,18 @@
-import type { Events, Natav, Rpc } from "@av/types";
-import type { System } from "@av/system";
-import { RPCResponse, RPCError, RPCRequest } from "@av/rpc/protocol";
-import { RPCErrorCodes } from "@av/rpc/protocol";
-import { Telemetry } from "@av/telemetry";
 import type { natav } from "@av/index";
+import {
+  RPCError,
+  RPCErrorCodes,
+  RPCRequest,
+  RPCResponse,
+} from "@av/rpc/protocol";
+import type { System } from "@av/system";
+import { Telemetry } from "@av/telemetry";
+import type { Events, Natav } from "@av/types";
 
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
 
 export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<

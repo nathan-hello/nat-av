@@ -34,7 +34,12 @@ export class RoomOSProxy {
   }
 
   private child(): RoomOSProxy {
-    return new RoomOSProxy(this.tel, this.request, this.state, this.strictState);
+    return new RoomOSProxy(
+      this.tel,
+      this.request,
+      this.state,
+      this.strictState,
+    );
   }
 
   private static normalizeStateAlias(segment: string): string {
@@ -56,9 +61,9 @@ export class RoomOSProxy {
     );
   }
 
-  private static subscriptionRootForStateRoot(root: string):
-    | keyof RoomOS.Subscriptions
-    | null {
+  private static subscriptionRootForStateRoot(
+    root: string,
+  ): keyof RoomOS.Subscriptions | null {
     switch (root) {
       case "Configuration":
         return "xConfiguration";
@@ -77,7 +82,9 @@ export class RoomOSProxy {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
-  private getSubscriptionNode(path: string[]): true | Record<string, unknown> | undefined {
+  private getSubscriptionNode(
+    path: string[],
+  ): true | Record<string, unknown> | undefined {
     if (path[0] === "internal") {
       return true;
     }
@@ -136,16 +143,22 @@ export class RoomOSProxy {
     }
 
     if (!this.strictState) {
-      return Reflect.ownKeys(current).filter((key): key is string => typeof key === "string");
+      return Reflect.ownKeys(current).filter(
+        (key): key is string => typeof key === "string",
+      );
     }
 
-    const subscriptionNode = this.getSubscriptionNode(RoomOSProxy.normalizeStatePath(path));
+    const subscriptionNode = this.getSubscriptionNode(
+      RoomOSProxy.normalizeStatePath(path),
+    );
     if (subscriptionNode === undefined) {
       return [];
     }
 
     if (subscriptionNode === true) {
-      return Reflect.ownKeys(current).filter((key): key is string => typeof key === "string");
+      return Reflect.ownKeys(current).filter(
+        (key): key is string => typeof key === "string",
+      );
     }
 
     return Object.keys(current).filter((key) => key in subscriptionNode);
@@ -162,9 +175,7 @@ export class RoomOSProxy {
           return undefined;
         }
 
-        return this.child().Command(
-          RoomOSProxy.childPath(path, prop),
-        );
+        return this.child().Command(RoomOSProxy.childPath(path, prop));
       },
       apply: (_, __, args: unknown[]) => {
         if (args.length === 0) {
@@ -247,9 +258,7 @@ export class RoomOSProxy {
           return () => this.request({ kind: "get", root: "xStatus", path });
         }
 
-        return this.child().Status(
-          RoomOSProxy.childPath(path, prop),
-        );
+        return this.child().Status(RoomOSProxy.childPath(path, prop));
       },
     });
   }
@@ -273,9 +282,7 @@ export class RoomOSProxy {
           return () => this.request({ kind: "unsub", root: "xFeedback", path });
         }
 
-        return this.child().Feedback(
-          RoomOSProxy.childPath(path, prop),
-        );
+        return this.child().Feedback(RoomOSProxy.childPath(path, prop));
       },
     });
   }

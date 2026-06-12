@@ -1,7 +1,7 @@
-import { css, type Handle } from "remix/ui";
 import { getRpc } from "@/state";
-import type { ClientRpc } from "@av/rpc/client";
 import { Wall } from "@/ui/av/wall";
+import type { ClientRpc } from "@av/rpc/client";
+import { css, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {
   let rpc: ClientRpc = getRpc(handle);

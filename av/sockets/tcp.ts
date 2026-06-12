@@ -1,8 +1,8 @@
-import * as net from "node:net";
 import { bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { Events, Sockets } from "@av/types";
 import { Telemetry } from "@av/telemetry";
+import type { Events, Sockets } from "@av/types";
+import * as net from "node:net";
 
 type TcpConfig = {
   addr: string;

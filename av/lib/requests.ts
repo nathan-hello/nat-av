@@ -1,7 +1,7 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
-import type { Requests, Events } from "@av/types";
+import type { Events, Requests } from "@av/types";
 
 export class RequestManager<Tx, Rx> extends TypedEventTarget<
   Events.Request.Map<Tx, Rx>

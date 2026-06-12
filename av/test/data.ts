@@ -1,8 +1,8 @@
-import type { DriverFor, Events, Rpc, Schema } from "@av/types";
 import { Driver } from "@av/drivers";
-import { Tcp } from "@av/sockets/tcp";
-import { Orchistrator } from "@av/lib/orch";
 import { Bus } from "@av/lib/bus";
+import { Orchistrator } from "@av/lib/orch";
+import { Tcp } from "@av/sockets/tcp";
+import type { DriverFor, Events, Rpc, Schema } from "@av/types";
 
 export class TestDriver<const N extends string = string> extends Driver<N> {
   state = {

@@ -1,10 +1,10 @@
-import config from "@av/drivers/decoder/config";
+import { Driver } from "@av/drivers";
 import type Decoder from "@av/drivers/decoder";
+import config from "@av/drivers/decoder/config";
+import { DisplaySchema } from "@av/drivers/decoder/display/schema";
+import { BUILTIN_TEMPLATES } from "@av/drivers/decoder/display/templates/1x1/templates";
 import type { GridTemplate } from "@av/drivers/decoder/display/templates/builder";
 import type { VideoRoute } from "@av/drivers/decoder/types";
-import { BUILTIN_TEMPLATES } from "@av/drivers/decoder/display/templates/1x1/templates";
-import { DisplaySchema } from "@av/drivers/decoder/display/schema";
-import { Driver } from "@av/drivers";
 
 /**
  * LogicalWindow is a type to describe a window as

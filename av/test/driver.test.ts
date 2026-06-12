@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { Driver } from "@av/drivers";
-import { Orchistrator } from "@av/lib/orch";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import { Orchistrator } from "@av/lib/orch";
 import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { driver } from "./data.ts";

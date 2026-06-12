@@ -1,8 +1,12 @@
-import { RPCRequest, RPCError, RPCResponse } from "@av/rpc/protocol";
-import { RPCErrorCodes } from "@av/rpc/protocol";
-import type { Events, Natav } from "@av/types";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import {
+  RPCError,
+  RPCErrorCodes,
+  RPCRequest,
+  RPCResponse,
+} from "@av/rpc/protocol";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
+import type { Events, Natav } from "@av/types";
 
 export interface RPCRequestHandler<N extends Natav.Orch = Natav.Orch> {
   prefix: string;

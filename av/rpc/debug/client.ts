@@ -1,5 +1,5 @@
-import type { ClientRpc } from "@av/rpc/client";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
+import type { ClientRpc } from "@av/rpc/client";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import {
   RPCError,
@@ -7,9 +7,9 @@ import {
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import { Rpc } from "@av/types";
 import { Telemetry } from "@av/telemetry";
 import type { LogEntry } from "@av/telemetry/types";
+import { Rpc } from "@av/types";
 
 type PendingRequest = {
   resolve: (result: any) => void;

@@ -8,7 +8,7 @@ import {
   buildGroupedTree,
   buildValueTree,
 } from "./tree.ts";
-import type { GeneratedModel, Tree, SchemaEntry, SchemaJson } from "./types.ts";
+import type { GeneratedModel, SchemaEntry, SchemaJson, Tree } from "./types.ts";
 
 const FILE_INPUT = new URL(
   "../schemas/11.33.1 October 2025.json",

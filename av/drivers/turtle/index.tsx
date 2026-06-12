@@ -2,7 +2,7 @@ import { Driver } from "@av/drivers";
 import { toBuffer } from "@av/lib/buffer";
 import { RequestManager } from "@av/lib/requests";
 import { Delimiters } from "@av/sockets/delimiters";
-import type { Sockets, Schema } from "@av/types";
+import type { Schema, Sockets } from "@av/types";
 
 export default class ChazyControl<
   const N extends string = string,

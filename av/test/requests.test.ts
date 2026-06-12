@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { RequestManager } from "@av/lib/requests";
-import { Telemetry } from "@av/telemetry";
 import { Delimiters } from "@av/sockets/delimiters";
+import { Telemetry } from "@av/telemetry";
 import { TestSocket } from "@av/test/socket";
 
 describe("requests", () => {

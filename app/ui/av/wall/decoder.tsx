@@ -1,10 +1,10 @@
-import { css, on, type Handle } from "remix/ui";
+import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
 import type { LogicalWindow } from "@av/drivers/decoder/display";
 import type {
   GridTemplate,
   RectangularRegion,
 } from "@av/drivers/decoder/display/templates/builder";
-import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
+import { css, on, type Handle } from "remix/ui";
 
 type CanvasGlobal = {
   resX: number;

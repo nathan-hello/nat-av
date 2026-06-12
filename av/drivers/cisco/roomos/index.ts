@@ -1,14 +1,14 @@
 import { Driver } from "@av/drivers";
-import type { Sockets } from "@av/types";
 import { RoomOSProxy } from "@av/drivers/cisco/roomos/proxy";
-import { RoomOS, type Generated } from "@av/drivers/cisco/roomos/types";
-import { RequestManager } from "@av/lib/requests";
-import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
-import { Delimiters } from "@av/sockets/delimiters";
-import { RPCError, RPCNotification, RPCResponse } from "@av/rpc/protocol";
-import { toBuffer, toString } from "@av/lib/buffer";
 import { reader } from "@av/drivers/cisco/roomos/reader";
+import { RoomOS, type Generated } from "@av/drivers/cisco/roomos/types";
+import { RoomOSFormatter } from "@av/drivers/cisco/roomos/writer";
+import { toBuffer, toString } from "@av/lib/buffer";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import { RequestManager } from "@av/lib/requests";
+import { RPCError, RPCNotification, RPCResponse } from "@av/rpc/protocol";
+import { Delimiters } from "@av/sockets/delimiters";
+import type { Sockets } from "@av/types";
 
 export type State<
   Product extends Generated.ProductTarget = "any",

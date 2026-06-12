@@ -1,9 +1,9 @@
 import { bus } from "@av/lib/bus";
-import { type Events, type Natav, Rpc } from "@av/types";
+import { DecodeWebsocketError } from "@av/rpc/errors";
 import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
-import { DecodeWebsocketError } from "@av/rpc/errors";
 import { Telemetry } from "@av/telemetry";
+import { type Events, type Natav, Rpc } from "@av/types";
 
 const decoder = new TextDecoder();
 

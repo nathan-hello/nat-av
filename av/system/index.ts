@@ -1,6 +1,6 @@
-import type { DriverFor, Natav } from "@av/types";
 import type { natav } from "@av/index";
 import { AutomationEngine } from "@av/system/automation";
+import type { DriverFor, Natav } from "@av/types";
 
 // This is the System class. It is not a socket-less driver because if
 // this were to be managed by the Natav.Orch Orchistrator, then we would

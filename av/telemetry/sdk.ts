@@ -1,6 +1,6 @@
-import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types";
-import { type LogRecordExporter, MultiLogExporter } from "./exporters";
 import { SimpleConsoleExporter } from "@av/telemetry/server/exporters";
+import { MultiLogExporter, type LogRecordExporter } from "./exporters";
+import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types";
 
 class LoggerProvider {
   constructor(private exporter: LogRecordExporter | null) {}

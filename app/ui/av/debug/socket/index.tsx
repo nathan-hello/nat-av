@@ -1,6 +1,6 @@
+import { getRpc } from "@/state";
 import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
-import { getRpc } from "@/state";
 
 type DebugClient = ReturnType<typeof getRpc>["debug"];
 

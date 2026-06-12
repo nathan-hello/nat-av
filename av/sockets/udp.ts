@@ -1,9 +1,9 @@
 import * as dgram from "node:dgram";
 
 import { bus } from "@av/lib/bus";
-import { TypedEventTarget } from "../lib/eventtarget";
-import type { Events, Sockets } from "@av/types";
 import { Telemetry } from "@av/telemetry";
+import type { Events, Sockets } from "@av/types";
+import { TypedEventTarget } from "../lib/eventtarget";
 
 type UdpConfig = {
   name: string;
