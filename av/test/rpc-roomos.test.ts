@@ -17,6 +17,7 @@ class InMemoryRpcTransport
 {
   readyState: number = WebSocket.CLOSED;
   sent: string[] = [];
+  received: string[] = [];
 
   private server: RPCServer;
   private peer: {
@@ -73,6 +74,7 @@ class InMemoryRpcTransport
   }
 
   private receive(message: string) {
+    this.received.push(message);
     this.dispatch("message", new MessageEvent("message", { data: message }));
   }
 }
@@ -332,6 +334,70 @@ describe("rpc roomos device", () => {
         },
         id: 6,
       },
+    ]);
+
+    assert.deepEqual(transport.received.map((message) => JSON.parse(message)), [
+      { jsonrpc: "2.0", result: null, id: 0 },
+      { jsonrpc: "2.0", result: null, id: 1 },
+      {
+        jsonrpc: "2.0",
+        result: {
+          ok: true,
+          data: {
+            Camera: [
+              {
+                DetectedConnector: 1,
+                Flip: "Off",
+                HardwareID: "cam-1",
+                MacAddress: "aa:bb:cc:dd:ee:01",
+                Position: { Focus: 10, Lens: "Wide" },
+                SerialNumber: "S1",
+              },
+              {
+                DetectedConnector: 2,
+                Flip: "On",
+                HardwareID: "cam-2",
+                MacAddress: "aa:bb:cc:dd:ee:02",
+                Position: { Focus: 20, Lens: "Tele" },
+                SerialNumber: "S2",
+              },
+            ],
+          },
+        },
+        id: 2,
+      },
+      {
+        jsonrpc: "2.0",
+        result: {
+          ok: true,
+          data: { Id: "booking-123", Title: "Design Review" },
+        },
+        id: 3,
+      },
+      {
+        jsonrpc: "2.0",
+        result: { ok: true, data: { Activated: true } },
+        id: 4,
+      },
+      {
+        jsonrpc: "2.0",
+        result: {
+          ok: true,
+          data: { id: 1, path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"] },
+        },
+        id: 5,
+      },
+      {
+        jsonrpc: "2.0",
+        method: "notification",
+        params: {
+          type: "natav:device:event",
+          name: "roomos-rpc",
+          event: "Bluetooth Streaming PlaybackPosition",
+          data: { Position: 6 },
+        },
+      },
+      { jsonrpc: "2.0", result: null, id: 6 },
     ]);
   });
 });
