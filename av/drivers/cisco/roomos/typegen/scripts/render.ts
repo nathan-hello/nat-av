@@ -13,7 +13,7 @@ import type {
   Param,
   ParamModel,
   SchemaEntry,
-  TypeTreeNode,
+  Tree,
 } from "./types.ts";
 
 function escapeComment(value: string): string {
@@ -144,7 +144,7 @@ function renderObject(fields: readonly string[]): string {
 }
 
 
-function renderNodeDoc(node: TypeTreeNode): string {
+function renderNodeDoc(node: Tree): string {
   if (node.source !== undefined) {
     return formatEntryDoc(node.source);
   }
@@ -231,8 +231,8 @@ function renderCommandCallableType(
 }
 
 function renderTreeFields(
-  node: TypeTreeNode,
-  returnTypeName: string | ((name: string, child: TypeTreeNode) => string),
+  node: Tree,
+  returnTypeName: string | ((name: string, child: Tree) => string),
 ): string[] {
   const fields: string[] = [];
 
@@ -254,7 +254,7 @@ function renderTreeFields(
   return fields;
 }
 
-function renderTreeNode(node: TypeTreeNode, returnTypeName: string): string {
+function renderTreeNode(node: Tree, returnTypeName: string): string {
   const hasChildren = Object.keys(node.children ?? {}).length > 0;
 
   if (hasChildren) {
@@ -494,10 +494,10 @@ function renderStateSection(
 }
 
 function findEventTreeNode(
-  root: TypeTreeNode,
+  root: Tree,
   path: string,
-): TypeTreeNode | undefined {
-  let node: TypeTreeNode | undefined = root.children?.Event ?? root;
+): Tree | undefined {
+  let node: Tree | undefined = root.children?.Event ?? root;
 
   for (const segment of path.split(" ")) {
     node = node?.children?.[segment];
@@ -512,7 +512,7 @@ function findEventTreeNode(
 
 function renderEventFields(
   entries: readonly EntryModel[],
-  root: TypeTreeNode,
+  root: Tree,
 ): string[] {
   return entries.map((entry) => {
     const key = entry.source.normPath ?? entry.path;

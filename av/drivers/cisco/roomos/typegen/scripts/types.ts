@@ -98,7 +98,7 @@ export type EntryModel = {
   multiline?: true;
 };
 
-export type TypeTreeNode = {
+export type Tree = {
   array?: true;
   source?: SchemaEntry;
   missingTypePath?: string;
@@ -107,7 +107,7 @@ export type TypeTreeNode = {
     multiline?: true;
   };
   valuespace?: ValuespaceModel;
-  children?: Record<string, TypeTreeNode>;
+  children?: Record<string, Tree>;
 };
 
 export type ProductSetGroup = {
@@ -117,10 +117,10 @@ export type ProductSetGroup = {
 };
 
 export type GroupedTreeModel = {
-  common: TypeTreeNode;
+  common: Tree;
   sets: Array<{
     products: string[];
-    tree: TypeTreeNode;
+    tree: Tree;
   }>;
 };
 

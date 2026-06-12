@@ -9,16 +9,16 @@ import type {
   EventNodeModel,
   GroupedTreeModel,
   SchemaEntry,
-  TypeTreeNode,
+  Tree,
 } from "./types.ts";
 
-function getOrCreateChild(node: TypeTreeNode, name: string): TypeTreeNode {
+function getOrCreateChild(node: Tree, name: string): Tree {
   node.children ??= {};
   node.children[name] ??= {};
   return node.children[name];
 }
 
-function mergeTree(target: TypeTreeNode, source: TypeTreeNode): void {
+function mergeTree(target: Tree, source: Tree): void {
   if (source.array) {
     target.array = true;
   }
@@ -44,7 +44,7 @@ function mergeTree(target: TypeTreeNode, source: TypeTreeNode): void {
   }
 }
 
-function walkPath(root: TypeTreeNode, path: string): TypeTreeNode {
+function walkPath(root: Tree, path: string): Tree {
   let node = root;
 
   for (const segment of path.split(" ")) {
@@ -69,8 +69,8 @@ function sourceForPath(source: SchemaEntry, path: string): SchemaEntry {
   };
 }
 
-function buildCommandTree(entries: readonly EntryModel[]): TypeTreeNode {
-  const root: TypeTreeNode = {};
+function buildCommandTree(entries: readonly EntryModel[]): Tree {
+  const root: Tree = {};
 
   for (const entry of entries) {
     const node = walkPath(root, entry.path);
@@ -84,8 +84,8 @@ function buildCommandTree(entries: readonly EntryModel[]): TypeTreeNode {
   return root;
 }
 
-function buildValueTree(entries: readonly EntryModel[]): TypeTreeNode {
-  const root: TypeTreeNode = {};
+function buildValueTree(entries: readonly EntryModel[]): Tree {
+  const root: Tree = {};
 
   for (const entry of entries) {
     const rootNode = getOrCreateChild(root, entry.type);
@@ -106,12 +106,12 @@ function buildEventSubtree(
   children: Record<string, EventNodeModel>,
   source: SchemaEntry,
   path: string,
-): TypeTreeNode {
-  const root: TypeTreeNode = {};
+): Tree {
+  const root: Tree = {};
 
   for (const [name, child] of Object.entries(children)) {
     const childPath = `${path} ${name}`;
-    const node: TypeTreeNode = {};
+    const node: Tree = {};
 
     node.source = sourceForPath(source, childPath);
 
@@ -138,8 +138,8 @@ function buildEventSubtree(
   return root;
 }
 
-function buildFeedbackTree(entries: readonly EntryModel[]): TypeTreeNode {
-  const root: TypeTreeNode = {};
+function buildFeedbackTree(entries: readonly EntryModel[]): Tree {
+  const root: Tree = {};
 
   for (const entry of entries) {
     const rootNode = getOrCreateChild(root, entry.type);
@@ -164,7 +164,7 @@ function buildFeedbackTree(entries: readonly EntryModel[]): TypeTreeNode {
 function buildGroupedTree(
   entries: readonly EntryModel[],
   allProducts: readonly string[],
-  buildTree: (entries: readonly EntryModel[]) => TypeTreeNode,
+  buildTree: (entries: readonly EntryModel[]) => Tree,
 ): GroupedTreeModel {
   const { common, sets } = groupEntriesByProductSet(entries, allProducts);
 

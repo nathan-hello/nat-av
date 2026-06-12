@@ -287,27 +287,6 @@ function signatureParam(param: Param): unknown {
   };
 }
 
-function signatureEventNode(node: EventNode | undefined): unknown {
-  if (node === undefined) {
-    return null;
-  }
-
-  return {
-    multiple: hasMultiplicity(node.multiple),
-    required: isTruthyFlag(node.required),
-    valuespace: signatureValuespace(node.valuespace),
-    values: node.values ? sortStrings(node.values) : null,
-    children:
-      node.children ?
-        Object.fromEntries(
-          Object.entries(node.children)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([name, child]) => [name, signatureEventNode(child)]),
-        )
-      : null,
-  };
-}
-
 function isCommonEntry(
   entry: EntryModel,
   allProducts: readonly string[],
@@ -401,7 +380,6 @@ export {
   normalizeEventNode,
   normalizeParam,
   normalizeValuespace,
-  signatureEventNode,
   signatureParam,
   signatureValuespace,
   sortStrings,
