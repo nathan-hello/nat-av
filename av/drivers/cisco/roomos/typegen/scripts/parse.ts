@@ -2,7 +2,6 @@ import type {
   EventNode,
   ParamModel,
   Param,
-  ProductSetGroup,
   SchemaEntry,
   Tree,
   ValuespaceModel,
@@ -62,9 +61,9 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
       case "string":
         return "string";
       case "literal":
-        return "JSONValue";
+        return "JsonValue";
       default:
-        return "JSONValue";
+        return "JsonValue";
     }
   }
 
@@ -80,7 +79,7 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "JSONValue";
+        : "JsonValue";
     case "IntegerArray":
       return "number";
     case "StringArray":
@@ -90,19 +89,19 @@ function baseValueType(valuespace: Valuespace | ValuespaceModel): string {
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "JSONValue";
+        : "JsonValue";
     case "literal":
       return literalValues(valuespace)?.length ?
           literalValues(valuespace)!
             .map((value) => JSON.stringify(value))
             .join(" | ")
-        : "JSONValue";
+        : "JsonValue";
     case "int":
       return "number";
     case "string":
       return "string";
     default:
-      return "JSONValue";
+      return "JsonValue";
   }
 }
 
@@ -110,7 +109,7 @@ function valueType(
   valuespace: Valuespace | ValuespaceModel | null | undefined,
 ): string {
   if (valuespace === undefined || valuespace === null) {
-    return "JSONValue";
+    return "JsonValue";
   }
 
   const isArrayType =
@@ -296,54 +295,6 @@ function isCommonEntry(entry: Tree, allProducts: readonly string[]): boolean {
   );
 }
 
-function groupEntriesByProductSet(
-  entries: readonly Tree[],
-  allProducts: readonly string[],
-): {
-  common: Tree[];
-  sets: ProductSetGroup[];
-} {
-  const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
-  const commonEntries = new Set(common);
-  const groupsByProductSet = new Map<string, ProductSetGroup>();
-
-  for (const entry of entries) {
-    if (commonEntries.has(entry)) {
-      continue;
-    }
-
-    const key = JSON.stringify([...entry.source.products].sort());
-    let group = groupsByProductSet.get(key);
-
-    if (group === undefined) {
-      group = {
-        key,
-        products: [...entry.source.products],
-        entries: [],
-      };
-
-      groupsByProductSet.set(key, group);
-    }
-
-    group.entries.push(entry);
-  }
-
-  const sets = [...groupsByProductSet.values()].sort((left, right) => {
-    const sizeOrder = left.products.length - right.products.length;
-
-    if (sizeOrder !== 0) {
-      return sizeOrder;
-    }
-
-    return left.key.localeCompare(right.key);
-  });
-
-  return {
-    common,
-    sets,
-  };
-}
-
 function removeBrackets(segment: string): string {
   let out = "";
   let depth = 0;
@@ -371,7 +322,6 @@ function removeBrackets(segment: string): string {
 
 export {
   baseValueType,
-  groupEntriesByProductSet,
   hasMultiplicity,
   isCommonEntry,
   isLiteralWithoutValues,

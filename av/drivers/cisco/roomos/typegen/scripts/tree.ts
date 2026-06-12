@@ -1,6 +1,10 @@
-import { groupEntriesByProductSet, removeBrackets } from "./parse.ts";
-
-import type { TreesByProduct, SchemaEntry, Tree } from "./types.ts";
+import { isCommonEntry, removeBrackets } from "./parse.ts";
+import type {
+  Tree,
+  SchemaEntry,
+  TreesByProduct,
+  ProductSetGroup,
+} from "./types.ts";
 
 const EMPTY_SOURCE: SchemaEntry = {
   id: -1,
@@ -115,17 +119,14 @@ function buildEventSubtree(
   path: string,
 ): Tree {
   const root = createTree(source);
-
   for (const [name, child] of Object.entries(children)) {
     const childPath = `${path} ${name}`;
     const node = createTree(sourceForPath(source, childPath));
-
     node.array = child.array;
     node.isPath =
       child.isPath || child.valuespace !== null || child.children !== undefined;
     node.valuespace = child.valuespace;
     node.params = child.params;
-
     if (Object.keys(child.children).length > 0) {
       node.children = buildEventSubtree(
         child.children,
@@ -133,22 +134,18 @@ function buildEventSubtree(
         childPath,
       ).children;
     }
-
     root.children[name] = node;
   }
-
   return root;
 }
 
 function buildFeedbackTree(entries: readonly Tree[]): Tree {
   const root = createTree(entries[0]?.source ?? EMPTY_SOURCE);
-
   for (const entry of entries) {
     const rootNode = getOrCreateChild(root, entry.source.type, entry.source);
     const node = walkPath(rootNode, entry.source.path, entry.source);
     node.source = entry.source;
     node.isPath = true;
-
     if (entry.source.type === "Event") {
       mergeTree(
         node,
@@ -156,10 +153,8 @@ function buildFeedbackTree(entries: readonly Tree[]): Tree {
       );
       continue;
     }
-
     node.valuespace = entry.valuespace;
   }
-
   return root;
 }
 
@@ -169,7 +164,6 @@ function buildGroupedTree(
   buildTree: (entries: readonly Tree[]) => Tree,
 ): TreesByProduct {
   const { common, sets } = groupEntriesByProductSet(entries, allProducts);
-
   return {
     common: buildTree(common),
     sets: sets.map((set) => ({
@@ -177,6 +171,42 @@ function buildGroupedTree(
       tree: buildTree(set.entries),
     })),
   };
+}
+
+function groupEntriesByProductSet(
+  entries: readonly Tree[],
+  allProducts: readonly string[],
+): {
+  common: Tree[];
+  sets: ProductSetGroup[];
+} {
+  const common = entries.filter((entry) => isCommonEntry(entry, allProducts));
+  const commonEntries = new Set(common);
+  const groupsByProductSet = new Map<string, ProductSetGroup>();
+  for (const entry of entries) {
+    if (commonEntries.has(entry)) {
+      continue;
+    }
+    const key = JSON.stringify([...entry.source.products].sort());
+    let group = groupsByProductSet.get(key);
+    if (group === undefined) {
+      group = {
+        key,
+        products: [...entry.source.products],
+        entries: [],
+      };
+      groupsByProductSet.set(key, group);
+    }
+    group.entries.push(entry);
+  }
+  const sets = [...groupsByProductSet.values()].sort((left, right) => {
+    const sizeOrder = left.products.length - right.products.length;
+    if (sizeOrder !== 0) {
+      return sizeOrder;
+    }
+    return left.key.localeCompare(right.key);
+  });
+  return { common, sets };
 }
 
 export {

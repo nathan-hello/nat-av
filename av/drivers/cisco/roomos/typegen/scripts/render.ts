@@ -480,7 +480,7 @@ function renderStateSection(
   return output.join("\n");
 }
 
-function renderNamespace(model: GeneratedModel): string {
+function render(model: GeneratedModel): string {
   return [
     "export namespace GeneratedRoomOS {",
     "type Merge<T> = { [K in keyof T]: T[K] };",
@@ -498,4 +498,4 @@ function renderNamespace(model: GeneratedModel): string {
   ].join("\n\n");
 }
 
-export { renderNamespace as renderSource };
+export { render };

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { normalizeEntry, sortStrings } from "./parse.ts";
-import { renderSource } from "./render.ts";
+import { render } from "./render.ts";
 import {
   buildCommandTree,
   buildFeedbackTree,
@@ -47,7 +47,7 @@ function generateSource(schema: SchemaJson): string {
     ),
   };
 
-  return renderSource(model);
+  return render(model);
 }
 
 function mergeEntries(entries: readonly SchemaEntry[]): readonly Tree[] {
