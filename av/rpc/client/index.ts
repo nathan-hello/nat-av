@@ -143,7 +143,9 @@ export class ClientRpc<
           case "natav:state:update":
             device.handleStateUpdate(
               // TSAS: The server sends partial device state updates.
-              (params.data ?? {}) as Partial<Drivers.State<N, typeof deviceName>>,
+              (params.data ?? {}) as Partial<
+                Drivers.State<N, typeof deviceName>
+              >,
             );
             break;
           default:

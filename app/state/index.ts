@@ -1,5 +1,5 @@
-import type { natav } from "@server/index";
 import { ClientRpc } from "@av/rpc/client";
+import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
 let rpcClient: ClientRpc<natav> | null = null;

@@ -26,7 +26,6 @@ describe("rpc device events", () => {
     transport.connect();
     await ready;
 
-
     const device = client.device("event-1");
     const received: Array<{ count: number }> = [];
     const off1 = await device.event.on("tick", (payload) => {

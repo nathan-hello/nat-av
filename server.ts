@@ -1,7 +1,7 @@
 import { router } from "@/router";
-import { start } from "@server/index";
 import type { WebSocketApp, WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
+import { start } from "@server/index";
 import * as http from "node:http";
 import { createRequestListener } from "remix/node-fetch-server";
 import { WebSocketServer } from "ws";
