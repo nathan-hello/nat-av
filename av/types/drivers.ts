@@ -11,6 +11,10 @@ type IsAny<T> = 0 extends 1 & T ? true : false;
 export namespace Drivers {
   export type Array = readonly Driver[];
 
+  export type PartialArray<T extends readonly unknown[]> =
+    | T
+    | readonly T[number][];
+
   export interface ManagerView<N extends Drivers.Array = Drivers.Array> {
     readonly configs: N;
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;

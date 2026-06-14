@@ -177,8 +177,17 @@ export class Manager<
     return this.configs.map((driver) => toNode(driver));
   }
 
-  async Start() {
-    const promises = this.configs.map(async (d) => {
+  async Start(
+    filter?: (
+      drivers: Drivers.Merged<D, S>,
+    ) => Drivers.PartialArray<Drivers.Merged<D, S>>,
+  ) {
+    let configs: Drivers.PartialArray<Drivers.Merged<D, S>> = this.configs;
+    if (filter) {
+      configs = filter(this.configs);
+    }
+
+    const promises = configs.map(async (d) => {
       d.on("driver:state-updated", (data) =>
         // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
