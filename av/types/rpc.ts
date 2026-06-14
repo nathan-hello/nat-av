@@ -1,4 +1,3 @@
-import type { System } from "@av/system";
 import type { LogEntry } from "@av/telemetry/types";
 import type { Drivers } from "@av/types/drivers";
 
@@ -38,29 +37,6 @@ export namespace Rpc {
         pendingUnsubscribe: Promise<void> | undefined;
       };
     }
-  }
-
-  export namespace System {
-    export type State = System["state"];
-    export type Api = {
-      [M in keyof System["api"]]: System["api"][M] extends (
-        (...args: infer Args) => infer R
-      ) ?
-        (...args: Args) => Promise<Awaited<R>>
-      : never;
-    };
-
-    export type ClientHandle = {
-      api: Api;
-      readonly state: Promise<State>;
-      isPending(method: keyof Api): boolean;
-      pendingCount(method: keyof Api): number;
-    };
-
-    export const Methods = {
-      SystemApi: "system.api",
-      SystemState: "system.state",
-    } as const;
   }
 
   export namespace Device {
@@ -165,14 +141,13 @@ export namespace Rpc {
   > = FilterState<Drivers.State<N, Name>>;
 
   export type Api<
-    N extends Drivers.Array,
-    Name extends Drivers.Names<N>,
+    N extends Drivers.Array = Drivers.Array,
+    Name extends Drivers.Names<N> = Drivers.Names<N>,
   > = Drivers.Api<N, Name>;
 
   export const Methods = {
     Notification: "notification",
     ...Device.Methods,
-    ...System.Methods,
     ...Debug.Methods,
   } as const;
 }

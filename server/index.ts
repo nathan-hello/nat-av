@@ -9,10 +9,10 @@ import {
   type WebSocketApp,
 } from "@av/rpc/server/websocket";
 import { Tcp } from "@av/sockets/tcp";
-import { System } from "@av/system";
+import { System } from "@server/system";
 
-import ChazyControl from "@av/drivers/turtle";
 import { Manager } from "@av/drivers";
+import ChazyControl from "@av/drivers/turtle";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
@@ -39,7 +39,8 @@ const chazy = new ChazyControl({
   name: "ChazyControl",
   socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
 });
-const natav = new Manager([
+
+const drivers = [
   new DisplayManager("video-wall", [
     {
       driver: new Decoder({
@@ -56,11 +57,11 @@ const natav = new Manager([
     },
   ]),
   chazy,
-]);
+];
 
-natav.GetDriver("ChazyControl");
+const natav = new Manager(drivers);
 
-export type natav = typeof natav["configs"];
+export type drivers = typeof drivers;
 
 const system = new System({ natav });
 

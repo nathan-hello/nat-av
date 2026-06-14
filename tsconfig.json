@@ -15,7 +15,8 @@
     "noEmit": true,
     "paths": {
       "@/*": ["./app/*"],
-      "@av/*": ["./av/*"]
+      "@av/*": ["./av/*"],
+      "@server/*": ["./server/*"]
     }
   },
   "exclude": ["dist"]

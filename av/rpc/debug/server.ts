@@ -1,5 +1,4 @@
 import type { Manager } from "@av/drivers";
-import { bus } from "@av/lib/bus";
 import { DecodeWebsocketError } from "@av/rpc/errors";
 import {
   RPCError,
@@ -9,7 +8,6 @@ import {
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
 import type { Events, Sockets } from "@av/types";
@@ -54,15 +52,15 @@ export class RpcDebugServer<N extends Manager> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
 
-  constructor(private args: { natav: N; system: System }) {
-    bus.on("natav:opentelemetry:entry", (payload) => {
+  constructor(private args: { natav: N }) {
+    args.natav.bus.on("natav:opentelemetry:entry", (payload) => {
       this.broadcastNotification({
         type: "debug:log",
         entry: ReadableLogRecordToLogEntry(payload.record),
       });
     });
 
-    bus.on("natav:debug:socket", (payload) => {
+    args.natav.bus.on("natav:debug:socket", (payload) => {
       for (const message of this.resolveSocketMessages(payload.data)) {
         this.broadcastNotification({
           type: "debug:socket:message",

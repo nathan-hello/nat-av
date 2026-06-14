@@ -8,9 +8,7 @@ import {
 } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
-import { SystemRpcRouter } from "@av/rpc/server/system";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
-import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import type { Drivers, Events } from "@av/types";
 
@@ -20,10 +18,10 @@ export class RPCServer<N extends Drivers.Array> extends TypedEventTarget<
   private tel = new Telemetry("Rpc");
   private router: RPCRequestRouter<N>;
 
-  constructor(args: { system: System; natav: Manager<N> }) {
+  constructor(args: { natav: Manager<N> }) {
     super();
     this.router = new RPCRequestRouter<N>([
-      new SystemRpcRouter(args.system),
+      // new SystemRpcRouter(args.system),
       new DeviceRpcRouter(args.natav),
     ]);
   }

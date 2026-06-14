@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
+import { Bus } from "@av/lib/bus";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
-import { System } from "@av/system";
 import { EventDriver, TestRpcClient } from "@av/test/data";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -9,11 +9,9 @@ import { describe, it } from "node:test";
 describe("rpc device events", () => {
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new EventDriver("event-1");
-    const natav = new Manager([eventDriver]);
-    // Gotta get rid of the system stuff in general
-    // @ts-expect-error 
-    const system = new System({ natav });
-    const server = new RPCServer({ system, natav });
+    const bus = new Bus();
+    const natav = new Manager({ bus, drivers: [eventDriver], deferred: [] });
+    const server = new RPCServer({ natav });
     const transport = new TestRpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 

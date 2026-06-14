@@ -1,14 +1,9 @@
-import { bus } from "@av/lib/bus";
+import type { Bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
 import * as net from "node:net";
 
-type TcpConfig = {
-  addr: string;
-  port: number;
-  keepAlive: boolean;
-};
 
 const RETRY_DELAY = 5000;
 
@@ -20,11 +15,12 @@ export class Tcp
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private retrying = false;
   private stopped = true;
-  private config: TcpConfig;
+  private config: Sockets.Args.Tcp;
   private tel: Telemetry;
+  private bus: Bus;
   name: string;
 
-  constructor(args: TcpConfig) {
+  constructor(args: Sockets.Args.Tcp) {
     const name = `TcpClient::${args.addr}:${args.port}`;
     const tel = new Telemetry(name);
     super(tel);
@@ -32,6 +28,7 @@ export class Tcp
     this.name = name;
     this.tel = tel;
     this.tel.info("INITALIZE", this.config);
+    this.bus = args.bus;
   }
 
   private async scheduleRetry(): Promise<void> {
@@ -66,7 +63,7 @@ export class Tcp
       bufferString: buffer.toString("utf8"),
     });
 
-    bus.dispatch("natav:debug:socket", {
+    this.bus.dispatch("natav:debug:socket", {
       data: {
         traceName: this.name,
         direction: "tx",
@@ -127,7 +124,7 @@ export class Tcp
         text: data.toString("utf8"),
         length: data.length,
       });
-      bus.dispatch("natav:debug:socket", {
+      this.bus.dispatch("natav:debug:socket", {
         data: {
           traceName: this.name,
           direction: "rx",

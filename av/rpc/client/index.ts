@@ -3,7 +3,6 @@ import type { Drivers, Events } from "@av/types";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
-import { ClientRpcSystem } from "@av/rpc/client/system";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { RpcDebugClient } from "@av/rpc/debug/client";
@@ -22,7 +21,6 @@ export class ClientRpc<
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
-  private systemHandle: ClientRpcSystem;
   public debug: RpcDebugClient<N>;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
@@ -38,13 +36,6 @@ export class ClientRpc<
       this.emitChange(),
     );
 
-    this.systemHandle = new ClientRpcSystem({
-      request: (message) => this.requests.request(message),
-      nextRequestId: () => this.requests.nextRequestId(),
-    });
-
-    this.systemHandle.on("change", () => this.emitChange("system"));
-
     this.transport.on("open", () => {
       void this.init();
     });
@@ -56,7 +47,6 @@ export class ClientRpc<
         ),
       );
       this.dispatch("close", event);
-      this.systemHandle.reset();
     });
 
     this.transport.on("error", (event) => {
@@ -112,13 +102,9 @@ export class ClientRpc<
     return this.requests.nextRequestId();
   }
 
-  get system() {
-    return this.systemHandle;
-  }
-
   private async init() {
     const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([this.systemHandle.state]);
+      return await Promise.all([]);
     });
 
     if (!initial.ok) {

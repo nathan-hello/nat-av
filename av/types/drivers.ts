@@ -1,4 +1,4 @@
-import type { Driver } from "@av/drivers";
+import type { Driver, Manager } from "@av/drivers";
 import type { TypedEventTarget } from "@av/lib/eventtarget";
 import type { Sockets } from "@av/types/socket";
 
@@ -38,8 +38,8 @@ export namespace Drivers {
   > = FromName<N, Name>["api"];
 
   export type State<
-    N extends Drivers.Array,
-    Name extends Drivers.Names<N>,
+    N extends Drivers.Array = Drivers.Array,
+    Name extends Drivers.Names<N> = Drivers.Names<N>,
   > = FromName<N, Name>["state"];
 
   export type Events<N extends Drivers.Array, Name extends Drivers.Names<N>> =
@@ -66,6 +66,8 @@ export namespace Drivers {
     events: D["state"];
     on: D["on"];
   };
+
+  export type Server = (manager: Manager) => Driver;
 
   export namespace Dep {
     export type TRecord = Record<string, AnyDriver>;

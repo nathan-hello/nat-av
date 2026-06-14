@@ -24,27 +24,6 @@ export class RPCRequest {
     public params?: unknown,
   ) {}
 
-  systemApiParams(): { method: string; args: any[] } | null {
-    if (
-      this.method !== Rpc.Methods.SystemApi ||
-      !this.params ||
-      typeof this.params !== "object"
-    ) {
-      return null;
-    }
-
-    // TSAS:
-    const { method, args } = this.params as {
-      method?: unknown;
-      args?: unknown;
-    };
-    if (typeof method !== "string") {
-      return null;
-    }
-
-    return { method, args: Array.isArray(args) ? args : [] };
-  }
-
   DeviceParams(): Rpc.Device.CallParams | null {
     if (
       (this.method !== Rpc.Methods.DeviceCall &&

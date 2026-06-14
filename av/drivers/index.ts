@@ -1,4 +1,4 @@
-import { bus } from "@av/lib/bus";
+import type { Bus } from "@av/lib/bus";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
@@ -38,18 +38,6 @@ export abstract class Driver<
     this.name = name;
     this._drivername = driverName;
     this.tel = new Telemetry(`Driver::${this.name}`);
-
-    bus.on("natav:state:override", (payload) => {
-      if (payload.name !== this.name) {
-        return;
-      }
-
-      this.state = { ...this.state, ...payload.data };
-
-      this.dispatch("driver:state-updated", {
-        data: this.state,
-      });
-    });
   }
 
   setDependencies(v: Drivers.Dep.Input) {
@@ -82,11 +70,18 @@ export abstract class Driver<
   }
 }
 
-export class Manager<const D extends Drivers.Array = Drivers.Array> {
+export class Manager<
+  const D extends Drivers.Array = Drivers.Array,
+  const S extends Drivers.Server[] = Drivers.Server[],
+> {
   readonly configs: D;
+  readonly servers: Driver[];
+  public readonly bus: Bus<D>;
 
-  constructor(configs: D) {
-    this.configs = configs;
+  constructor(args: { bus: Bus<D>; drivers: D; deferred: S }) {
+    this.bus = args.bus;
+    this.servers = args.deferred.map((d) => d(this));
+    this.configs = args.drivers;
   }
 
   private all(): Driver[] {
@@ -153,7 +148,7 @@ export class Manager<const D extends Drivers.Array = Drivers.Array> {
       );
 
       d.on("driver:delimited", (payload) => {
-        bus.dispatch("natav:debug:socket", {
+        this.bus.dispatch("natav:debug:socket", {
           data: {
             traceName: d.socket?.name ?? d.name,
             direction: "rx-delimited",

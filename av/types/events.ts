@@ -52,7 +52,7 @@ export namespace Events {
       };
     }[Drivers.Names<N>];
 
-    export type Map<N extends Drivers.Array> = {
+    export type Map<N extends Drivers.Array = Drivers.Array> = {
       "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
@@ -93,13 +93,9 @@ export namespace Events {
       change: { name?: string };
     };
 
-    export type SystemMap = {
-      change: { state: Promise<NRpc.System.State> | undefined };
-    };
-
     export type DeviceMap<
-      N extends Drivers.Array,
-      Name extends Drivers.Names<N>,
+      N extends Drivers.Array = Drivers.Array,
+      Name extends Drivers.Names<N> = Drivers.Names<N>,
     > = {
       change: {
         name: Name;

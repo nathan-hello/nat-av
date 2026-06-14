@@ -1,4 +1,4 @@
-import type { natav } from "@av/index";
+import type { natav } from "@server/index";
 import { bus } from "@av/lib/bus";
 import type { Events } from "@av/types";
 

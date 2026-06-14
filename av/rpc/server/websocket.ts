@@ -1,10 +1,9 @@
 import type { Manager } from "@av/drivers";
-import { bus } from "@av/lib/bus";
 import { DecodeWebsocketError } from "@av/rpc/errors";
 import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { Telemetry } from "@av/telemetry";
-import { type Events, Rpc, type Drivers } from "@av/types";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -46,15 +45,15 @@ export class WebsocketHandler<N extends Drivers.Array> {
   constructor(args: { rpc: RPCServer<Drivers.Array>; natav: Manager<N> }) {
     this.rpc = args.rpc;
     this.natav = args.natav;
-    bus.on("natav:state:update", (payload) => {
+    args.natav.bus.on("natav:state:update", (payload) => {
       this.BroadcastEvent("natav:state:update", payload);
     });
 
-    bus.on("natav:device:connected", (payload) => {
+    args.natav.bus.on("natav:device:connected", (payload) => {
       this.BroadcastEvent("natav:device:connected", payload);
     });
 
-    bus.on("natav:device:disconnected", (payload) => {
+    args.natav.bus.on("natav:device:disconnected", (payload) => {
       this.BroadcastEvent("natav:device:disconnected", payload);
     });
   }

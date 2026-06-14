@@ -1,5 +1,5 @@
 import { router } from "@/router";
-import { start } from "@av/index";
+import { start } from "@server/index";
 import type { WebSocketApp, WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
 import * as http from "node:http";
