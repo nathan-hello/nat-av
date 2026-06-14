@@ -15,7 +15,8 @@
     "noEmit": true,
     "paths": {
       "@/*": ["./app/*"],
-      "@av/*": ["./av/*"],
+      "@av/*": ["./vendor/av/*"],
+      "@av/drivers/*": ["./vendor/drivers/*"],
       "@server/*": ["./server/*"]
     }
   },
