@@ -1,5 +1,4 @@
 import { Manager } from "@av/drivers";
-import { Bus } from "@av/lib/bus";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { EventDriver, TestRpcClient } from "@av/test/data";
@@ -9,8 +8,7 @@ import { describe, it } from "node:test";
 describe("rpc device events", () => {
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new EventDriver("event-1");
-    const bus = new Bus();
-    const natav = new Manager({ bus, drivers: [eventDriver], deferred: [] });
+    const natav = new Manager({ drivers: [eventDriver], deferred: [] });
     const server = new RPCServer({ natav });
     const transport = new TestRpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
@@ -35,7 +33,6 @@ describe("rpc device events", () => {
     assert.deepEqual(
       transport.sent.map((message) => JSON.parse(message)),
       [
-        { jsonrpc: "2.0", method: "system.state", id: 0 },
         {
           jsonrpc: "2.0",
           method: "device.events.subscribe",
@@ -44,7 +41,7 @@ describe("rpc device events", () => {
             method: "tick",
             args: [],
           },
-          id: 1,
+          id: 0,
         },
       ],
     );
@@ -65,10 +62,19 @@ describe("rpc device events", () => {
     assert.deepEqual(
       transport.sent.map((message) => JSON.parse(message)),
       [
-        { jsonrpc: "2.0", method: "system.state", id: 0 },
         {
           jsonrpc: "2.0",
           method: "device.events.subscribe",
+          params: {
+            device: "event-1",
+            method: "tick",
+            args: [],
+          },
+          id: 0,
+        },
+        {
+          jsonrpc: "2.0",
+          method: "device.events.unsubscribe",
           params: {
             device: "event-1",
             method: "tick",
@@ -78,7 +84,7 @@ describe("rpc device events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.unsubscribe",
+          method: "device.events.subscribe",
           params: {
             device: "event-1",
             method: "tick",
@@ -88,23 +94,13 @@ describe("rpc device events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
-          params: {
-            device: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 3,
-        },
-        {
-          jsonrpc: "2.0",
           method: "device.events.unsubscribe",
           params: {
             device: "event-1",
             method: "tick",
             args: [],
           },
-          id: 4,
+          id: 3,
         },
       ],
     );

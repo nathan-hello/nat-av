@@ -24,6 +24,24 @@ export namespace Drivers {
     Partial<Sockets.Client> | undefined
   >;
 
+  export type Merged<
+    D extends Drivers.Array,
+    S extends readonly Drivers.Deferred[],
+  > = readonly [...D, ...Drivers.DeferredInstances<S>];
+
+  export type Deferred<T extends Driver = Driver> =
+    | ((natav: Manager<any, any>) => T)
+    | (new (natav: Manager<any, any>) => T);
+
+  export type DeferredReturn<T> =
+    T extends new (...args: any[]) => infer R ? R
+    : T extends (...args: any[]) => infer R ? R
+    : never;
+
+  export type DeferredInstances<S extends readonly Drivers.Deferred[]> = {
+    [K in keyof S]: Drivers.DeferredReturn<S[K]>;
+  };
+
   type PromisifyApi<Obj> = {
     [M in keyof Obj]: Obj[M] extends (...args: infer Args) => infer R ?
       (...args: Args) => Promise<Awaited<R>>
@@ -66,8 +84,6 @@ export namespace Drivers {
     events: D["state"];
     on: D["on"];
   };
-
-  export type Server = (manager: Manager) => Driver;
 
   export namespace Dep {
     export type TRecord = Record<string, AnyDriver>;

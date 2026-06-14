@@ -20,10 +20,7 @@ export class RPCServer<N extends Drivers.Array> extends TypedEventTarget<
 
   constructor(args: { natav: Manager<N> }) {
     super();
-    this.router = new RPCRequestRouter<N>([
-      // new SystemRpcRouter(args.system),
-      new DeviceRpcRouter(args.natav),
-    ]);
+    this.router = new RPCRequestRouter<N>([new DeviceRpcRouter(args.natav)]);
   }
 
   async handleRequest(

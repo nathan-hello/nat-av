@@ -1,9 +1,7 @@
-import type { Bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
 import * as net from "node:net";
-
 
 const RETRY_DELAY = 5000;
 
@@ -17,7 +15,6 @@ export class Tcp
   private stopped = true;
   private config: Sockets.Args.Tcp;
   private tel: Telemetry;
-  private bus: Bus;
   name: string;
 
   constructor(args: Sockets.Args.Tcp) {
@@ -28,7 +25,6 @@ export class Tcp
     this.name = name;
     this.tel = tel;
     this.tel.info("INITALIZE", this.config);
-    this.bus = args.bus;
   }
 
   private async scheduleRetry(): Promise<void> {
@@ -58,14 +54,9 @@ export class Tcp
 
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
 
-    this.tel.info("WRITE_DATA", {
-      bufferHex: buffer.toString("hex"),
-      bufferString: buffer.toString("utf8"),
-    });
-
-    this.bus.dispatch("natav:debug:socket", {
+    this.dispatch("debug", {
       data: {
-        traceName: this.name,
+        traceName: this.tel.namespace,
         direction: "tx",
         time: new Date().toISOString(),
         encoding: "utf8",
@@ -124,9 +115,10 @@ export class Tcp
         text: data.toString("utf8"),
         length: data.length,
       });
-      this.bus.dispatch("natav:debug:socket", {
+
+      this.dispatch("debug", {
         data: {
-          traceName: this.name,
+          traceName: this.tel.namespace,
           direction: "rx",
           time: new Date().toISOString(),
           encoding: "utf8",
@@ -135,6 +127,7 @@ export class Tcp
           length: data.length,
         },
       });
+
       this.dispatch(
         "receive",
         Buffer.isBuffer(data) ? data : Buffer.from(data),

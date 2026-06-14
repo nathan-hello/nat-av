@@ -1,10 +1,10 @@
-import type { natav } from "@server/index";
-import { bus } from "@av/lib/bus";
+import type { Bus } from "@av/lib/bus";
 import type { Events } from "@av/types";
+import type { natav } from "@server/index";
 
 export class AutomationEngine {
-  constructor() {
-    bus.on("natav:state:update", (update) => {
+  constructor(private bus: Bus<natav>) {
+    this.bus.on("natav:state:update", (update) => {
       this.handleStateChange(update);
     });
   }

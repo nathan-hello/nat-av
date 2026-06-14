@@ -213,7 +213,6 @@ describe("rpc roomos device", () => {
     assert.deepEqual(
       transport.sent.map((message) => JSON.parse(message)),
       [
-        { jsonrpc: "2.0", method: "system.state", id: 0 },
         {
           jsonrpc: "2.0",
           method: "device.events.subscribe",
@@ -222,7 +221,7 @@ describe("rpc roomos device", () => {
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
-          id: 1,
+          id: 0,
         },
         {
           jsonrpc: "2.0",
@@ -232,7 +231,7 @@ describe("rpc roomos device", () => {
             method: "xStatus/get",
             args: [],
           },
-          id: 2,
+          id: 1,
         },
         {
           jsonrpc: "2.0",
@@ -242,7 +241,7 @@ describe("rpc roomos device", () => {
             method: "xCommand/Bookings/Get",
             args: [{ Id: "booking-123" }],
           },
-          id: 3,
+          id: 2,
         },
         {
           jsonrpc: "2.0",
@@ -252,7 +251,7 @@ describe("rpc roomos device", () => {
             method: "xCommand/Provisioning/RoomType/Activate",
             args: [{ Name: "Standard" }],
           },
-          id: 4,
+          id: 3,
         },
         {
           jsonrpc: "2.0",
@@ -262,7 +261,7 @@ describe("rpc roomos device", () => {
             method: "xFeedback/Bluetooth/Streaming/PlaybackPosition/subscribe",
             args: [],
           },
-          id: 5,
+          id: 4,
         },
         {
           jsonrpc: "2.0",
@@ -272,7 +271,7 @@ describe("rpc roomos device", () => {
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
-          id: 6,
+          id: 5,
         },
       ],
     );
@@ -281,7 +280,6 @@ describe("rpc roomos device", () => {
       transport.received.map((message) => JSON.parse(message)),
       [
         { jsonrpc: "2.0", result: null, id: 0 },
-        { jsonrpc: "2.0", result: null, id: 1 },
         {
           jsonrpc: "2.0",
           result: {
@@ -307,7 +305,7 @@ describe("rpc roomos device", () => {
               ],
             },
           },
-          id: 2,
+          id: 1,
         },
         {
           jsonrpc: "2.0",
@@ -315,12 +313,12 @@ describe("rpc roomos device", () => {
             ok: true,
             data: { Id: "booking-123", Title: "Design Review" },
           },
-          id: 3,
+          id: 2,
         },
         {
           jsonrpc: "2.0",
           result: { ok: true, data: { Activated: true } },
-          id: 4,
+          id: 3,
         },
         {
           jsonrpc: "2.0",
@@ -331,7 +329,7 @@ describe("rpc roomos device", () => {
               path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
             },
           },
-          id: 5,
+          id: 4,
         },
         {
           jsonrpc: "2.0",
@@ -343,7 +341,7 @@ describe("rpc roomos device", () => {
             data: { Position: 6 },
           },
         },
-        { jsonrpc: "2.0", result: null, id: 6 },
+        { jsonrpc: "2.0", result: null, id: 5 },
       ],
     );
   });

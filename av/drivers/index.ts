@@ -1,4 +1,4 @@
-import type { Bus } from "@av/lib/bus";
+import { Bus } from "@av/lib/bus";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
@@ -15,7 +15,9 @@ export abstract class Driver<
   Events extends TypedEventTarget<any> | undefined = TypedEventTarget<{
     [x: string]: Rpc.JSONValue;
   }>,
-  Socket extends Partial<Sockets.Client> | undefined = any,
+  Socket extends Partial<Sockets.Client> | undefined =
+    | Partial<Sockets.Client>
+    | undefined,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;
@@ -72,16 +74,30 @@ export abstract class Driver<
 
 export class Manager<
   const D extends Drivers.Array = Drivers.Array,
-  const S extends Drivers.Server[] = Drivers.Server[],
+  const S extends readonly Drivers.Deferred[] = readonly Drivers.Deferred[],
 > {
-  readonly configs: D;
-  readonly servers: Driver[];
-  public readonly bus: Bus<D>;
+  readonly configs: Drivers.Merged<D, S>;
+  public readonly bus: Bus<Drivers.Merged<D, S>> = new Bus();
 
-  constructor(args: { bus: Bus<D>; drivers: D; deferred: S }) {
-    this.bus = args.bus;
-    this.servers = args.deferred.map((d) => d(this));
-    this.configs = args.drivers;
+  constructor(args: { drivers?: D; deferred?: S }) {
+    let configs: Driver[] = [];
+    if (args.drivers) {
+      configs = [...args.drivers];
+    }
+
+    this.configs = configs as unknown as Drivers.Merged<D, S>;
+
+    if (args.deferred) {
+      for (const deferred of args.deferred) {
+        // TSAS: Deferred entries are either constructors or factories returning drivers.
+        const driver =
+          "prototype" in deferred && typeof deferred.prototype === "object" ?
+            new (deferred as new (natav: Manager<any, any>) => Driver)(this)
+          : (deferred as (natav: Manager<any, any>) => Driver)(this);
+
+        configs.push(driver);
+      }
+    }
   }
 
   private all(): Driver[] {
@@ -95,13 +111,18 @@ export class Manager<
     return collect(this.configs);
   }
 
-  GetDriver<N extends Drivers.Names<D>>(name: N): Drivers.FromName<D, N> {
+  GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
+    name: N,
+  ): Drivers.FromName<Drivers.Merged<D, S>, N> {
     // TSAS:
-    return this.FindDriver(name) as Drivers.FromName<D, N>;
+    return this.FindDriver(name) as Drivers.FromName<Drivers.Merged<D, S>, N>;
   }
 
-  GetDriverState<N extends Drivers.Names<D>>(name: N): Drivers.State<D, N> {
-    return this.GetDriver(name).state;
+  GetDriverState<N extends Drivers.Names<Drivers.Merged<D, S>>>(
+    name: N,
+  ): Drivers.State<Drivers.Merged<D, S>, N> {
+    // TSAS: Runtime driver lookup guarantees the returned instance matches the merged configs tuple.
+    return this.GetDriver(name).state as Drivers.State<Drivers.Merged<D, S>, N>;
   }
 
   FindDriver(name: string): Driver | undefined {
@@ -143,9 +164,16 @@ export class Manager<
     this.configs.forEach((d) => {
       d.on("driver:state-updated", (data) =>
         // TS doesn't know about the Names/State impls within this class.
-        // @ts-ignore-next-line
-        bus.dispatch("natav:state:update", { name: d.name, data: data.data }),
+        // @ts-expect-error
+        this.bus.dispatch("natav:state:update", {
+          name: d.name,
+          data: data.data,
+        }),
       );
+
+      d.socket?.on?.("debug", (data) => {
+        this.bus.dispatch("natav:debug:socket", data);
+      });
 
       d.on("driver:delimited", (payload) => {
         this.bus.dispatch("natav:debug:socket", {

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { Driver } from "@av/drivers";
 import { Manager } from "@av/drivers";
+import { Bus } from "@av/lib/bus";
 import type { Schema } from "@av/types";
 import { ClientRpcDevice } from "../rpc/client/devices";
 
@@ -40,7 +41,7 @@ class Parent<
 
 const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child } as const);
-const graph = new Manager([parent] as const);
+const graph = new Manager({ bus: new Bus(), drivers: [parent] as const, deferred: [] as const });
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {

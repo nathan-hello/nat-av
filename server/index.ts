@@ -1,6 +1,6 @@
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/display";
-import { bus } from "@av/lib/bus";
+import { Bus } from "@av/lib/bus";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { RPCServer } from "@av/rpc/server";
 import {
@@ -21,6 +21,8 @@ import {
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
 
+const bus = new Bus();
+
 // TSAS:
 if ((globalThis as any).__devices__) {
   // TSAS:
@@ -37,7 +39,12 @@ StartLogging([
 
 const chazy = new ChazyControl({
   name: "ChazyControl",
-  socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
+  socket: new Tcp({
+    bus,
+    addr: "controller.local",
+    port: 23,
+    keepAlive: true,
+  }),
 });
 
 const drivers = [
@@ -46,6 +53,7 @@ const drivers = [
       driver: new Decoder({
         name: "decoder-1",
         socket: new Tcp({
+          bus,
           addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
@@ -59,14 +67,17 @@ const drivers = [
   chazy,
 ];
 
-const natav = new Manager(drivers);
+const natav = new Manager({
+  bus,
+  drivers,
+  deferred: [System],
+});
 
 export type drivers = typeof drivers;
+export type natav = typeof natav["configs"];
 
-const system = new System({ natav });
-
-const rpc = new RPCServer({ system, natav });
-const debug = new RpcDebugServer({ system, natav });
+const rpc = new RPCServer({ natav });
+const debug = new RpcDebugServer({ natav });
 
 const websocket = new WebsocketHandler({ rpc, natav });
 

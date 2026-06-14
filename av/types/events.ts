@@ -6,6 +6,7 @@ import type { Drivers } from "@av/types/drivers";
 export namespace Events {
   export namespace Socket {
     export type Map = {
+      debug: { data: Rpc.DebugMap };
       connected: void;
       disconnected: { error: string | undefined };
       receive: Buffer;

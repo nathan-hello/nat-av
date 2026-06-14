@@ -1,4 +1,3 @@
-import type { Bus } from "@av/lib/bus";
 import type { Events } from "@av/types/events";
 
 export namespace Sockets {
@@ -19,15 +18,13 @@ export namespace Sockets {
   }
 
   export namespace Args {
-    type Base = { bus: Bus };
-
-    export type Tcp = Base & {
+    export type Tcp = {
       addr: string;
       port: number;
       keepAlive: boolean;
     };
 
-    export type Udp = Base & {
+    export type Udp = {
       name: string;
       addr: string;
       port: number;

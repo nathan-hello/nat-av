@@ -8,15 +8,15 @@ import { AutomationEngine } from "@server/lib/automation";
 // have a circular type definition. We want the implementation of Natav.Orch
 // to be accessible to this class for custom work.
 
-export class System<const N extends string> extends Driver<N> {
+export class System extends Driver<"system"> {
   private natav: Manager<drivers>;
   socket = undefined;
   schema = undefined;
 
-  constructor(args: { name: N; natav: Manager<drivers> }) {
-    super({ name: args.name, driverName: "system" });
-    this.natav = args.natav;
-    new AutomationEngine();
+  constructor(natav: Manager<drivers>) {
+    super({ name: "system", driverName: "system" });
+    this.natav = natav;
+    new AutomationEngine(natav.bus);
     type good = Drivers.FromName<drivers, "video-wall">;
     const bad = this.natav.GetDriver("decoder-1");
     bad.api.route;

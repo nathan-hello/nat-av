@@ -1,8 +1,7 @@
-import * as dgram from "node:dgram";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
+import * as dgram from "node:dgram";
 import { TypedEventTarget } from "../lib/eventtarget";
-import type { Bus } from "@av/lib/bus";
 
 const RETRY_DELAY = 5000;
 
@@ -16,7 +15,6 @@ export class Udp
   private stopped = true;
   private config: Sockets.Args.Udp;
   private tel: Telemetry;
-  private bus: Bus;
   name: string;
 
   constructor(args: Sockets.Args.Udp) {
@@ -27,7 +25,6 @@ export class Udp
     this.tel = tel;
     this.config = args;
     this.tel.info("INITALIZE", this.config);
-    this.bus = args.bus;
   }
 
   private emit<EventName extends keyof Events.Socket.UdpMap>(
@@ -39,9 +36,9 @@ export class Udp
 
   private handleData(buf: Buffer): void {
     this.tel.info("HANDLER_DATA");
-    this.bus.dispatch("natav:debug:socket", {
+    this.dispatch("debug", {
       data: {
-        traceName: `UdpClient::${this.config.addr}:${this.config.port}`,
+        traceName: this.tel.namespace,
         direction: "rx",
         time: new Date().toISOString(),
         encoding: "utf8",
@@ -90,9 +87,9 @@ export class Udp
       bufferHex: buffer.toString("hex"),
       bufferString: buffer.toString("utf8"),
     });
-    this.bus.dispatch("natav:debug:socket", {
+    this.dispatch("debug", {
       data: {
-        traceName: `UdpClient::${this.config.addr}:${this.config.port}`,
+        traceName: this.tel.namespace,
         direction: "tx",
         time: new Date().toISOString(),
         encoding: "utf8",

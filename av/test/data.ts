@@ -1,8 +1,6 @@
-import { Driver } from "@av/drivers";
+import { Driver, Manager } from "@av/drivers";
 import { toBuffer } from "@av/lib/buffer";
-import { Bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import { Manager } from "@av/drivers";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { RPCRequest } from "@av/rpc/protocol";
 import type { RPCServer } from "@av/rpc/server";
@@ -90,7 +88,7 @@ export class TestDriver<const N extends string = string> extends Driver<N> {
     ping: async () => "pong",
     send: async (message: string) =>
       this.socket.write(Buffer.from(message, "utf8")),
-    invalid: async (cb: () => void) => {
+    invalid: async (_: () => void) => {
       return new Date();
     },
   };
@@ -161,20 +159,25 @@ export class EventDriver<const N extends string = string> extends Driver<N> {
 
 export const driver = new TestDriver({
   name: "shim-1",
-  socket: new Tcp({ addr: "127.0.0.1", port: 12345, keepAlive: true }),
+  socket: new Tcp({
+    addr: "127.0.0.1",
+    port: 12345,
+    keepAlive: true,
+  }),
 });
 
-export const natav = new Manager([driver]);
+export const natav = new Manager({ drivers: [driver], deferred: [] });
 
-export type natav = typeof natav["configs"];
-
-const bus = new Bus<natav>();
+export type natav = (typeof natav)["configs"];
 
 export class AutomationEngine {
   constructor() {
-    bus.on("natav:state:update", (update) => {
-      this.handleStateChange(update);
-    });
+    natav.bus.on(
+      "natav:state:update",
+      (update: Events.Natav.Map<natav>["natav:state:update"]) => {
+        this.handleStateChange(update);
+      },
+    );
   }
 
   private handleStateChange(
