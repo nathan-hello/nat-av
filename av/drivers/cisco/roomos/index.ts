@@ -41,9 +41,6 @@ export class CiscoRoomOS<
     internal: { highestId: number; subscriptions: Subscriptions };
   };
 
-  schema = undefined;
-  socket: Sockets.Client;
-
   constructor({
     name,
     socket,

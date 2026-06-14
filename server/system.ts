@@ -22,6 +22,8 @@ export class System extends Driver<"system"> {
     bad.api.route;
   }
 
+  public override async start() {}
+
   api = {
     asdf: () => {
       return null;

@@ -106,10 +106,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class ParentPeer extends Driver<
-    "parent-peer",
-    { "child-peer": ChildPeer }
-  > {
+  class ParentPeer extends Driver<"parent-peer", { "child-peer": ChildPeer }> {
     state = { ready: true };
     api = {};
     socket = undefined;
@@ -160,10 +157,9 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
   function expectManager(manager: Manager, names: string[], tree: unknown) {
     assert.deepEqual(manager.GetAllDriverNames(), names);
-    assert.equal(
-      manager.FindDriver(names[0] ?? ""),
-      manager.GetDriver(names[0] ?? ""),
-    );
+    names.forEach((n) => {
+      assert.equal(manager.FindDriver(n), manager.GetDriver(n));
+    });
     assert.deepEqual(manager.GetDebugTree(), tree);
   }
 
@@ -259,25 +255,32 @@ describe("typechecking that drivers can get Managers that have other drivers in 
       parentPeer;
       childPeer.api.bump();
 
-      expectManager(depManager, ["parent-peer", "child-peer"], [
-        {
-          name: "parent-peer",
-          driverName: "parent-peer",
-          children: [
-            {
-              name: "child-peer",
-              driverName: "child-peer",
-              children: [],
-            },
-          ],
-        },
-      ]);
+      expectManager(
+        depManager,
+        ["parent-peer", "child-peer"],
+        [
+          {
+            name: "parent-peer",
+            driverName: "parent-peer",
+            children: [
+              {
+                name: "child-peer",
+                driverName: "child-peer",
+                children: [],
+              },
+            ],
+          },
+        ],
+      );
 
       assert.equal(depManager.GetDriver("parent-peer").name, "parent-peer");
       assert.equal(depManager.GetDriver("child-peer").name, "child-peer");
       assert.equal(depManager.GetDriverState("child-peer").count, 1);
       assert.equal(depManager.FindDriver("child-peer"), childPeer);
-      assert.equal(depManager.GetDriver("parent-peer").deps.get("child-peer"), childPeer);
+      assert.equal(
+        depManager.GetDriver("parent-peer").deps.get("child-peer"),
+        childPeer,
+      );
     });
   });
 });
