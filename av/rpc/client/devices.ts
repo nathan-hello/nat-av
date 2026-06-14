@@ -42,6 +42,12 @@ export class ClientRpcDevice<
     return this.stateValue;
   }
 
+  readonly deps = {
+    get: <DepName extends Drivers.Dep.Names<N, Name>>(depName: DepName) => {
+      return this.client.device(depName);
+    },
+  };
+
   private createApiProxy(path: string[] = []): Rpc.Api<N, Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
@@ -71,10 +77,6 @@ export class ClientRpcDevice<
 
   pendingCount(method: string) {
     return this.pendingCounts.get(method) ?? 0;
-  }
-
-  dep<DepName extends Drivers.Dep.Names<N, Name>>(depName: DepName) {
-    return this.client.device(depName);
   }
 
   handleStateUpdate(patch: Partial<Rpc.State<N, Name>>) {

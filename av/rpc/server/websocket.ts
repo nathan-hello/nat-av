@@ -38,11 +38,11 @@ function readMessage(data: MessageEvent["data"]): string {
 
 export class WebsocketHandler<N extends Drivers.Array> {
   private clients = new Set<WebSocketPeer>();
-  private rpc: RPCServer<Drivers.Array>;
+  private rpc: RPCServer;
   private natav: Manager<Drivers.Array>;
   private tel = new Telemetry("Server::WS");
 
-  constructor(args: { rpc: RPCServer<Drivers.Array>; natav: Manager<N> }) {
+  constructor(args: { rpc: RPCServer; natav: Manager<N> }) {
     this.rpc = args.rpc;
     this.natav = args.natav;
     args.natav.bus.on("natav:state:update", (payload) => {

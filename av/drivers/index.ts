@@ -6,18 +6,17 @@ import {
 import { Telemetry } from "@av/telemetry";
 import type { Drivers, Events, Rpc, Schema, Sockets } from "@av/types";
 
+type EventsMaybe = TypedEventTarget<any> | undefined;
+type SocketMaybe = Partial<Sockets.Client> | undefined;
+
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Dep.TRecord = {},
+  DepsInput extends Drivers.Dep.Input = Drivers.Dep.Input,
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
-  Events extends TypedEventTarget<any> | undefined = TypedEventTarget<{
-    [x: string]: Rpc.JSONValue;
-  }>,
-  Socket extends Partial<Sockets.Client> | undefined =
-    | Partial<Sockets.Client>
-    | undefined,
+  Events extends EventsMaybe = EventsMaybe,
+  Socket extends SocketMaybe = SocketMaybe,
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;
@@ -26,13 +25,15 @@ export abstract class Driver<
     | Schema.Schema<Api>
     | Promise<Schema.Schema<Api>>;
 
-  // TSAS:
+  // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
-
-  // TSAS:
-  public deps: Deps = {} as Deps;
+  // TSAS: This declare is so we can have inferred types without going into the
+  // instance of DependencyManager in @av/types/drivers.ts. If that is the case
+  // then it says Type instantiation is excessively deep and possibly infinite.
+  declare public _deps: Drivers.Dep.FromInput<DepsInput>;
   public name: Name;
   public _drivername: DriverName;
+  public deps: Drivers.Dep.Handle<typeof this._deps> = new DependencyManager<typeof this._deps>();
   protected tel: Telemetry;
 
   constructor({ name, driverName }: { name: Name; driverName: DriverName }) {
@@ -40,26 +41,6 @@ export abstract class Driver<
     this.name = name;
     this._drivername = driverName;
     this.tel = new Telemetry(`Driver::${this.name}`);
-  }
-
-  setDependencies(v: Drivers.Dep.Input) {
-    function unwrapDriver(v: Drivers.Dep.Input[number]) {
-      return "driver" in v ? v.driver : v;
-    }
-
-    if (v.length === 0) {
-      return;
-    }
-
-    for (const d of v) {
-      const unwrapped = unwrapDriver(d);
-      // @ts-ignore-next-line
-      this.deps[unwrapped.name] = unwrapped;
-    }
-  }
-
-  dep<N extends keyof Deps & string>(name: N): Deps[N] {
-    return this.deps[name];
   }
 
   protected dispatch<K extends keyof Events.Driver.Map>(
@@ -72,9 +53,42 @@ export abstract class Driver<
   }
 }
 
+class DependencyManager<Deps extends Drivers.Dep.TRecord> implements Drivers.Dep
+  .Handle<Deps> {
+  // TSAS: Drivers start with no dependencies and fill this record during construction.
+  private _deps: Deps = {} as Deps;
+
+  constructor(input?: Drivers.Dep.Input) {
+    if (input) {
+      this.set(input);
+    }
+  }
+
+  public get(): Deps;
+  public get<N extends keyof Deps & string>(name: N): Deps[N];
+  public get(name?: string): any {
+    return name ? this._deps[name] : this._deps;
+  }
+
+  public set(vd: Drivers.Dep.Input): void {
+    if (!Array.isArray(vd)) {
+      // TSAS:
+      this._deps = vd as Deps;
+      return;
+    }
+
+    const nextDeps: Record<string, Drivers.AnyDriver> = { ...this._deps };
+    for (const entry of vd) {
+      const driver = "driver" in entry ? entry.driver : entry;
+      nextDeps[driver.name] = driver;
+    }
+    this._deps = nextDeps as Deps;
+  }
+}
 export class Manager<
   const D extends Drivers.Array = Drivers.Array,
-  const S extends readonly Drivers.Deferred[] = readonly Drivers.Deferred[],
+  const S extends readonly Drivers.AnyDeferred[] =
+    readonly Drivers.AnyDeferred[],
 > {
   readonly configs: Drivers.Merged<D, S>;
   public readonly bus: Bus<Drivers.Merged<D, S>> = new Bus();
@@ -102,11 +116,8 @@ export class Manager<
 
   private all(): Driver[] {
     const collect = (drivers: readonly Driver[]): Driver[] =>
-      // TSAS:
-      drivers.flatMap((d) => [
-        d,
-        ...collect(Object.values(d.deps) as readonly Driver[]),
-      ]);
+      // TSAS: Runtime dependency managers only store driver instances keyed by name.
+      drivers.flatMap((d) => [d, ...collect(Object.values(d.deps.get()))]);
 
     return collect(this.configs);
   }
@@ -142,9 +153,9 @@ export class Manager<
       return {
         name: driver.name,
         driverName: driver._drivername,
-        children: Object.values(driver.deps as Record<string, Driver>).map(
-          (child) => toNode(child),
-        ),
+        children: Object.values(
+          driver.deps.get() as Record<string, Driver>,
+        ).map((child) => toNode(child)),
         ...(typeof socket?.name === "string" ?
           {
             socket: {
@@ -163,10 +174,9 @@ export class Manager<
   async Start() {
     this.configs.forEach((d) => {
       d.on("driver:state-updated", (data) =>
-        // TS doesn't know about the Names/State impls within this class.
-        // @ts-expect-error
+        // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
-          name: d.name,
+          name: d.name as Drivers.Names<Drivers.Merged<D, S>>,
           data: data.data,
         }),
       );

@@ -16,6 +16,7 @@ import ChazyControl from "@av/drivers/turtle";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
+import type { Drivers } from "@av/types";
 import {
   FileExporter,
   SimpleConsoleExporter,
@@ -65,12 +66,20 @@ const drivers = [
   chazy,
 ];
 
+export type drivers = typeof drivers;
+export type systemDrivers = readonly [...drivers];
+
+const deferred = [
+  (natav: Drivers.ManagerView<systemDrivers>) => new System(natav),
+] as const;
+
+export type deferred = typeof deferred;
+
 const natav = new Manager({
   drivers,
-  deferred: [(natav) => new System(natav)],
+  deferred,
 });
 
-export type drivers = typeof drivers;
 export type natav = (typeof natav)["configs"];
 
 const rpc = new RPCServer({ natav });
@@ -91,3 +100,4 @@ export async function start(app: WebSocketApp) {
   // TSAS:
   (globalThis as any).__devices__ = natav;
 }
+

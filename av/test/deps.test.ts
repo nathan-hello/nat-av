@@ -32,7 +32,7 @@ class Parent<
 
   constructor(name: N, deps: D) {
     super({ name, driverName: "parent" });
-    this.deps = deps;
+    this.deps.set(deps);
   }
 }
 
@@ -45,7 +45,7 @@ const graph = new Manager({
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {
-    assert.equal(parent.dep("child-1"), child);
+    assert.equal(parent.deps.get("child-1"), child);
     assert.equal(graph.GetDriver("child-1"), child);
     assert.deepEqual(graph.GetAllDriverNames(), ["parent-1", "child-1"]);
   });
@@ -60,12 +60,12 @@ describe("driver deps", () => {
       emitChange() {},
     };
 
-    // TSAS:
     const device = new ClientRpcDevice<(typeof graph)["configs"], "parent-1">(
+      // TSAS: we are just testing the child-1 being inside of device.deps
       client as any,
       "parent-1",
     );
 
-    assert.deepEqual(device.dep("child-1"), { name: "child-1" });
+    assert.deepEqual(device.deps.get("child-1"), { name: "child-1" });
   });
 });

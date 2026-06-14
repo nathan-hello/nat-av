@@ -52,16 +52,12 @@ export type DisplayState = {
   template: { choices: typeof BUILTIN_TEMPLATES; state: GridTemplate };
 };
 
-type DecodersFromConfigs<C extends readonly DecoderConfig[]> = {
-  [K in C[number]["driver"]["name"]]: Extract<C[number]["driver"], { name: K }>;
-};
-
 type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 
 export default class DisplayManager<
   const N extends string = string,
   const C extends readonly DecoderConfig[] = readonly DecoderConfig[],
-> extends Driver<N, DecodersFromConfigs<C>> {
+> extends Driver<N, C> {
   private configs: C;
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];
@@ -92,7 +88,7 @@ export default class DisplayManager<
     this.computeCanvasDimensions();
     this.checkOverlaps();
     this.subscribeToDecoders();
-    this.setDependencies(this.configs);
+    this.deps.set(this.configs);
   }
 
   get state(): DisplayState {

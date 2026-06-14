@@ -1,5 +1,4 @@
 import type { Manager } from "@av/drivers";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
   RPCError,
   RPCErrorCodes,
@@ -7,20 +6,15 @@ import {
   RPCResponse,
 } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
-import { RPCRequestRouter } from "@av/rpc/server/router";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
-import type { Drivers, Events } from "@av/types";
 
-export class RPCServer<N extends Drivers.Array> extends TypedEventTarget<
-  Events.Natav.Map<N>
-> {
+export class RPCServer {
   private tel = new Telemetry("Rpc");
-  private router: RPCRequestRouter<N>;
+  private router: DeviceRpcRouter;
 
-  constructor(args: { natav: Manager<N> }) {
-    super();
-    this.router = new RPCRequestRouter<N>([new DeviceRpcRouter(args.natav)]);
+  constructor(args: { natav: Manager }) {
+    this.router = new DeviceRpcRouter(args.natav);
   }
 
   async handleRequest(
@@ -51,8 +45,7 @@ export class RPCServer<N extends Drivers.Array> extends TypedEventTarget<
 
     this.tel.error("RPC_INTERNAL_ERROR", {
       error: result.error,
-      // TSAS:
-      id: (message as any)?.id,
+      id: message.id,
     });
 
     return new RPCError(message?.id ?? null, {

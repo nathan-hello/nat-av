@@ -3,6 +3,11 @@ import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 import type { Rpc } from "@av/types";
 
+type RpcClientError = Error & {
+  code?: number;
+  data?: unknown;
+};
+
 export class ClientRpcRequests {
   private tel = new Telemetry("Rpc::Requests");
   private pendingRequests = new Map<string | number, Rpc.PendingRequest>();
@@ -29,11 +34,9 @@ export class ClientRpcRequests {
       return;
     }
 
-    const error = new Error(rpcError.error.message);
-    // TSAS:
-    (error as any).code = rpcError.error.code;
-    // TSAS:
-    (error as any).data = rpcError.error.data;
+    const error = new Error(rpcError.error.message) as RpcClientError;
+    error.code = rpcError.error.code;
+    error.data = rpcError.error.data;
     this.rejectPendingRequest(rpcError.id, error);
   }
 

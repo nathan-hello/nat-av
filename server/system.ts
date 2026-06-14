@@ -1,6 +1,6 @@
-import { Driver, type Manager } from "@av/drivers";
+import { Driver } from "@av/drivers";
 import type { Drivers } from "@av/types";
-import type { drivers } from "@server/index";
+import type { drivers, systemDrivers } from "@server/index";
 import { AutomationEngine } from "@server/lib/automation";
 
 // This is the System class. It is not a socket-less driver because if
@@ -9,11 +9,11 @@ import { AutomationEngine } from "@server/lib/automation";
 // to be accessible to this class for custom work.
 
 export class System extends Driver<"system"> {
-  private natav: Manager<drivers>;
+  private natav: Drivers.ManagerView<systemDrivers>;
   socket = undefined;
   schema = undefined;
 
-  constructor(natav: Manager<drivers>) {
+  constructor(natav: Drivers.ManagerView<systemDrivers>) {
     super({ name: "system", driverName: "system" });
     this.natav = natav;
     new AutomationEngine(natav.bus);

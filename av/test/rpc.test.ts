@@ -8,18 +8,24 @@ import { describe, it } from "node:test";
 describe("rpc device events", () => {
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new EventDriver("event-1");
-    const natav = new Manager({ drivers: [eventDriver], deferred: [] });
+    const natav = new Manager({
+      drivers: [eventDriver],
+      deferred: [(natav) => new EventDriver("defer")],
+    });
     const server = new RPCServer({ natav });
     const transport = new TestRpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
-    transport.connect();
-    await new Promise<void>((resolve) => {
+    const ready = new Promise<void>((resolve) => {
       const off = client.on("ready", () => {
         off();
         resolve();
       });
     });
+
+    transport.connect();
+    await ready;
+
 
     const device = client.device("event-1");
     const received: Array<{ count: number }> = [];
@@ -104,5 +110,7 @@ describe("rpc device events", () => {
         },
       ],
     );
+
+    client.close();
   });
 });

@@ -102,26 +102,8 @@ export class ClientRpc<
     return this.requests.nextRequestId();
   }
 
+  // FIXME: we should be getting state on connect
   private async init() {
-    const initial = await this.tel.task("GET_INITIAL_STATE", async () => {
-      return await Promise.all([]);
-    });
-
-    if (!initial.ok) {
-      this.dispatch("error", {
-        reason: "init-promises-threw",
-        error: new Error(initial.error),
-      });
-
-      this.close();
-      setTimeout(() => {
-        this.connect();
-      }, 2000);
-      return;
-    }
-
-    this.tel.info("successfully resolved promises");
-
     this.dispatch("ready", true);
   }
 

@@ -19,7 +19,7 @@ describe("test driver", () => {
   it("forwards driver events through the rpc server per subscription", async () => {
     const eventDriver = new EventDriver("event-1");
     const natav = new Manager({ drivers: [eventDriver], deferred: [] });
-    const router = new DeviceRpcRouter<typeof natav['configs']>(natav);
+    const router = new DeviceRpcRouter(natav);
     const makePeer = (addr: string) => {
       const sent: string[] = [];
       return {

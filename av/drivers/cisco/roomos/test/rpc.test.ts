@@ -117,13 +117,15 @@ describe("rpc roomos device", () => {
     const transport = new TestRpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
-    transport.connect();
-    await new Promise<void>((resolve) => {
+    const ready = new Promise<void>((resolve) => {
       const off = client.on("ready", () => {
         off();
         resolve();
       });
     });
+
+    transport.connect();
+    await ready;
 
     const device = client.device("roomos-rpc");
     const received: Array<{ Position: number }> = [];
@@ -342,5 +344,7 @@ describe("rpc roomos device", () => {
         { jsonrpc: "2.0", result: null, id: 5 },
       ],
     );
+
+    client.close();
   });
 });
