@@ -11,7 +11,7 @@ type SocketMaybe = Partial<Sockets.Client> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  DepsInput extends Drivers.Dep.Input = Drivers.Dep.Input,
+  Deps extends Drivers.Dep.TRecord = {},
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
@@ -27,13 +27,11 @@ export abstract class Driver<
 
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
-  // TSAS: This declare is so we can have inferred types without going into the
-  // instance of DependencyManager in @av/types/drivers.ts. If that is the case
-  // then it says Type instantiation is excessively deep and possibly infinite.
-  declare public _deps: Drivers.Dep.FromInput<DepsInput>;
+  // TSAS: This anchor keeps the resolved dependency record available for type recursion.
+  declare public _deps: Deps;
   public name: Name;
   public _drivername: DriverName;
-  public deps: Drivers.Dep.Handle<typeof this._deps> = new DependencyManager<typeof this._deps>();
+  public deps: Drivers.Dep.Handle<Deps> = new DependencyManager<Deps>();
   protected tel: Telemetry;
 
   constructor({ name, driverName }: { name: Name; driverName: DriverName }) {
@@ -72,7 +70,7 @@ class DependencyManager<Deps extends Drivers.Dep.TRecord> implements Drivers.Dep
 
   public set(vd: Drivers.Dep.Input): void {
     if (!Array.isArray(vd)) {
-      // TSAS:
+      // TSAS: Non-array dep inputs are already keyed dependency records.
       this._deps = vd as Deps;
       return;
     }
