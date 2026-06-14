@@ -20,10 +20,10 @@ export abstract class Driver<
 > extends ProtectedTypedEventTarget<Events.Driver.Map> {
   public abstract state: State;
   public abstract api: Api;
-  public abstract socket: Socket;
-  public abstract schema?: () =>
-    | Schema.Schema<Api>
-    | Promise<Schema.Schema<Api>>;
+  // TSAS:
+  public socket: Socket = undefined as Socket;
+  public schema?: () => Schema.Schema<Api> | Promise<Schema.Schema<Api>> =
+    undefined;
 
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
