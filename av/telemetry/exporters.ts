@@ -4,32 +4,9 @@ import {
   SeverityNumber,
 } from "./types";
 
-export type ExportResult = { code: 0 };
-
 export interface LogRecordExporter {
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ): void;
+  export(logRecords: ReadableLogRecord[]): void;
   shutdown(): Promise<void>;
-}
-
-export class MultiLogExporter implements LogRecordExporter {
-  constructor(private exporters: LogRecordExporter[]) {}
-
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
-    for (const exporter of this.exporters) {
-      exporter?.export(logRecords, () => {});
-    }
-    resultCallback({ code: 0 });
-  }
-
-  async shutdown() {
-    await Promise.all(this.exporters.map((e) => e?.shutdown()));
-  }
 }
 
 export class CustomExporter implements LogRecordExporter {
@@ -40,14 +17,10 @@ export class CustomExporter implements LogRecordExporter {
     }) => void,
   ) {}
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[]) {
     for (const record of logRecords) {
       this.callback({ record, asString: ReadableLogRecordStringify(record) });
     }
-    resultCallback({ code: 0 });
   }
 
   async shutdown() {}
@@ -60,10 +33,7 @@ export class ConsoleExporter implements LogRecordExporter {
     this.minimumSeverityNumber = SeverityNumber[minimumSeverity];
   }
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[]) {
     for (const record of logRecords) {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
@@ -85,8 +55,6 @@ export class ConsoleExporter implements LogRecordExporter {
           break;
       }
     }
-
-    resultCallback({ code: 0 });
   }
 
   async shutdown() {}
@@ -99,10 +67,7 @@ export class SimpleConsoleExporter implements LogRecordExporter {
     this.minimumSeverityNumber = SeverityNumber[minimumSeverity];
   }
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[]) {
     for (const record of logRecords) {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
@@ -140,8 +105,6 @@ export class SimpleConsoleExporter implements LogRecordExporter {
           break;
       }
     }
-
-    resultCallback({ code: 0 });
   }
 
   async shutdown() {}

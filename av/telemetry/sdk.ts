@@ -1,9 +1,20 @@
 import { SimpleConsoleExporter } from "@av/telemetry/server/exporters";
-import { MultiLogExporter, type LogRecordExporter } from "./exporters";
+import { type LogRecordExporter } from "./exporters";
 import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types";
 
 class LoggerProvider {
-  constructor(private exporter: LogRecordExporter | null) {}
+  public exporters: LogRecordExporter[] = [];
+
+  constructor(exporter: LogRecordExporter | LogRecordExporter[] | null) {
+    if (exporter === null) {
+      return;
+    }
+    if (Array.isArray(exporter)) {
+      exporter.forEach((e) => this.exporters.push(e));
+      return;
+    }
+    this.exporters.push(exporter);
+  }
 
   getLogger(_name: string): Logger {
     return {
@@ -21,7 +32,9 @@ class LoggerProvider {
               JSON.stringify(record),
           );
         }
-        this.exporter?.export([record], () => {});
+        this.exporters.forEach((e) => {
+          e.export([record]);
+        });
       },
     };
   }
@@ -37,7 +50,7 @@ export function getLoggerProvider(): LoggerProvider {
     typeof process.env.NODE_ENV === "string" &&
     process.env.NODE_ENV === "testing"
   ) {
-    StartLogging([new SimpleConsoleExporter("INFO")]);
+    AddExporters([new SimpleConsoleExporter("INFO")]);
   }
   if (!loggerProvider) {
     throw new Error("LoggerProvider not initialized. Call StartLogging first.");
@@ -45,9 +58,10 @@ export function getLoggerProvider(): LoggerProvider {
   return loggerProvider;
 }
 
-export function StartLogging(exporters: LogRecordExporter[]) {
+export function AddExporters(exporters: LogRecordExporter[]) {
   if (loggerProvider) {
-    throw Error("StartLogging was called twice.");
+    loggerProvider.exporters.push(...exporters);
+    return;
   }
-  loggerProvider = new LoggerProvider(new MultiLogExporter(exporters));
+  loggerProvider = new LoggerProvider(exporters);
 }

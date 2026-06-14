@@ -1,7 +1,6 @@
-import type { Driver, Manager } from "@av/drivers";
+import type { Driver } from "@av/drivers";
 import type { TypedEventTarget } from "@av/lib/eventtarget";
-import type { Rpc } from "@av/types/rpc";
-import type { Sockets } from "@av/types/socket";
+import type { Rpc, Sockets, Events as TEvents } from "@av/types";
 
 type IsAny<T> = 0 extends 1 & T ? true : false;
 
@@ -12,14 +11,28 @@ type IsAny<T> = 0 extends 1 & T ? true : false;
 export namespace Drivers {
   export type Array = readonly Driver[];
 
-  export type ManagerView<N extends Drivers.Array = Drivers.Array> = {
-    bus: Manager["bus"];
+  export interface ManagerView<
+    N extends Drivers.Array = Drivers.Array,
+  > {
+    readonly configs: N;
+    bus: TypedEventTarget<TEvents.Natav.Map<N>>;
     GetDriver<Name extends Drivers.Names<N>>(
       name: Name,
     ): Drivers.FromName<N, Name>;
+    GetDriverState<Name extends Drivers.Names<N>>(
+      name: Name,
+    ): Drivers.State<N, Name>;
     FindDriver(name: string): Driver | undefined;
     GetAllDriverNames(): string[];
-  };
+    GetDebugTree(): Rpc.Debug.Node[];
+    Start(): Promise<void>;
+    End(): Promise<void>;
+  }
+
+  export interface Manager<
+    D extends Drivers.Array = Drivers.Array,
+    S extends readonly Drivers.AnyDeferred[] = readonly Drivers.AnyDeferred[],
+  > extends ManagerView<Drivers.Merged<D, S>> {}
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -43,8 +56,8 @@ export namespace Drivers {
     N extends Drivers.Array = Drivers.Array,
     T extends Driver = Driver,
   > =
-    | ((natav: Drivers.ManagerView<N>) => T)
-    | (new (natav: Drivers.ManagerView<N>) => T);
+    | ((natav: Drivers.Manager<N>) => T)
+    | (new (natav: Drivers.Manager<N>) => T);
 
   export type AnyDeferred<T extends Driver = Driver> =
     | ((natav: any) => T)

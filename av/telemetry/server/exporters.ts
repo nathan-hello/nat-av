@@ -1,4 +1,4 @@
-import type { ExportResult, LogRecordExporter } from "@av/telemetry/exporters";
+import type { LogRecordExporter } from "@av/telemetry/exporters";
 import {
   type ReadableLogRecord,
   ReadableLogRecordStringify,
@@ -22,16 +22,12 @@ export class FileExporter implements LogRecordExporter {
     }
   }
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[]) {
     for (const record of logRecords) {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
       fs.appendFileSync(this.file, ReadableLogRecordStringify(record) + "\n");
     }
-    resultCallback({ code: 0 });
   }
 
   shutdown() {
@@ -49,10 +45,7 @@ export class SimpleConsoleExporter implements LogRecordExporter {
     this.minimumSeverityNumber = SeverityNumber[minimumSeverity];
   }
 
-  export(
-    logRecords: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
-  ) {
+  export(logRecords: ReadableLogRecord[]) {
     for (const record of logRecords) {
       if ((record.severityNumber ?? 0) < this.minimumSeverityNumber) continue;
 
@@ -83,8 +76,6 @@ export class SimpleConsoleExporter implements LogRecordExporter {
           console.log(scopeName, body, attributes);
           break;
       }
-
-      resultCallback({ code: 0 });
     }
   }
 

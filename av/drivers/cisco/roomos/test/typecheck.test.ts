@@ -1,20 +1,58 @@
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
-import type { Sockets } from "@av/types";
+import { TestSocket } from "@av/test/data";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 describe("typecheck", () => {
-  const socket: Sockets.Client = {
-    name: "roomos-typecheck",
-    start() {},
-    end() {},
-    write() {
-      return 0;
-    },
-    on() {
-      return () => {};
-    },
-  };
+  const socket = new TestSocket(
+    [
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xGet",
+          params: { Path: ["Status", "Cameras", "Camera"] },
+          id: 0,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: {
+            Camera: [],
+          },
+          id: 0,
+        },
+      },
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xCommand/Dial",
+          params: { Number: "asdf" },
+          id: 0,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: { Number: "asdf" },
+          id: 0,
+        },
+      },
+      {
+        onWrite: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "xFeedback/Subscribe",
+          params: {
+            Query: ["Event"],
+            NotifyCurrentValue: true,
+          },
+          id: 1,
+        }),
+        sendBack: {
+          jsonrpc: "2.0",
+          result: { Id: 1 },
+          id: 1,
+        },
+      },
+    ],
+    { throwIfWriteNotFound: true },
+  );
 
   const roomos = new CiscoRoomOS({
     name: "roomos-typecheck",
@@ -68,12 +106,15 @@ describe("typecheck", () => {
       void roomos.state.xStatus.UserInterface.WebView[0].Status;
       void roomos.state.xFeedback.IncomingCallIndication;
 
-      const asdf = await strictRoomos.api.xStatus.Status.Cameras.Camera.get();
-      if (asdf.ok) {
-        asdf.data[0].LightingConditions;
+      let test1 = await strictRoomos.api.xStatus.Status.Cameras.Camera.get();
+      if (!test1.ok) {
+        throw Error("asdf.ok");
       }
 
-      const fdsa = await roomos.api.xCommand.Dial({ Number: "asdf" });
+      let test2 = await roomos.api.xCommand.Dial({ Number: "asdf" });
+      if (!test2.ok) {
+        throw Error("asdf.ok");
+      }
 
       // Should be 'number'
       void roomos.state.xFeedback.Bluetooth.Streaming.PlaybackPosition.Position;
@@ -84,7 +125,8 @@ describe("typecheck", () => {
 
       void roomos.state.xStatus.Cameras.Camera[0].Position;
 
-      await roomos.api.xFeedback.get();
+      // xFeedback.get() is internal state, actually.
+      await roomos.api.xFeedback.subscribe();
 
       strictRoomos.events.on("Bluetooth Streaming PlaybackPosition", () => {});
 

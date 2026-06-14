@@ -1,6 +1,7 @@
+import { Manager } from "@av/drivers";
 import Decoder from "@av/drivers/decoder";
 import DisplayManager from "@av/drivers/decoder/display";
-import { Bus } from "@av/lib/bus";
+import ChazyControl from "@av/drivers/turtle";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { RPCServer } from "@av/rpc/server";
 import {
@@ -9,20 +10,15 @@ import {
   type WebSocketApp,
 } from "@av/rpc/server/websocket";
 import { Tcp } from "@av/sockets/tcp";
-import { System } from "@server/system";
-
-import { Manager } from "@av/drivers";
-import ChazyControl from "@av/drivers/turtle";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
-import { StartLogging } from "@av/telemetry/sdk";
-import type { Drivers } from "@av/types";
+import { AddExporters } from "@av/telemetry/sdk";
 import {
   FileExporter,
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
-
-const bus = new Bus();
+import type { Drivers } from "@av/types";
+import { System } from "@server/system";
 
 // TSAS:
 if ((globalThis as any).__devices__) {
@@ -30,12 +26,9 @@ if ((globalThis as any).__devices__) {
   await (globalThis as any).__devices__.End();
 }
 
-StartLogging([
+AddExporters([
   new FileExporter("./logs/natav.jsonl", true, "DEBUG"),
   new SimpleConsoleExporter("DEBUG"),
-  new CustomExporter((event) => {
-    bus.dispatch("natav:opentelemetry:entry", event);
-  }),
 ]);
 
 const chazy = new ChazyControl({
@@ -80,6 +73,12 @@ const natav = new Manager({
   deferred,
 });
 
+AddExporters([
+  new CustomExporter((event) => {
+    natav.bus.dispatch("natav:opentelemetry:entry", event);
+  }),
+]);
+
 export type natav = (typeof natav)["configs"];
 
 const rpc = new RPCServer({ natav });
@@ -100,4 +99,3 @@ export async function start(app: WebSocketApp) {
   // TSAS:
   (globalThis as any).__devices__ = natav;
 }
-

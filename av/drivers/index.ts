@@ -1,4 +1,3 @@
-import { Bus } from "@av/lib/bus";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
@@ -49,6 +48,13 @@ export abstract class Driver<
 
     this.tel.info("EVENT_DISPATCHED", { type });
   }
+
+  public async start() {
+    await this.socket?.start?.();
+  }
+  public async end() {
+    await this.socket?.end?.();
+  }
 }
 
 class DependencyManager<Deps extends Drivers.Dep.TRecord> implements Drivers.Dep
@@ -87,9 +93,11 @@ export class Manager<
   const D extends Drivers.Array = Drivers.Array,
   const S extends readonly Drivers.AnyDeferred[] =
     readonly Drivers.AnyDeferred[],
-> {
+> implements Drivers.Manager<D, S> {
   readonly configs: Drivers.Merged<D, S>;
-  public readonly bus: Bus<Drivers.Merged<D, S>> = new Bus();
+  public readonly bus = new TypedEventTarget<
+    Events.Natav.Map<Drivers.Merged<D, S>>
+  >();
 
   constructor(args: { drivers?: D; deferred?: S }) {
     let configs: Driver[] = [];
@@ -170,7 +178,7 @@ export class Manager<
   }
 
   async Start() {
-    this.configs.forEach((d) => {
+    const promises = this.configs.map(async (d) => {
       d.on("driver:state-updated", (data) =>
         // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
@@ -197,15 +205,17 @@ export class Manager<
         });
       });
 
-      d.socket?.start?.();
+      await d.start();
     });
+
+    await Promise.all(promises);
   }
 
   async End() {
-    await Promise.all(
-      this.configs.map(async (d) => {
-        await d.socket?.end?.();
-      }),
-    );
+    const promises = this.configs.map(async (d) => {
+      await d.end();
+    });
+
+    await Promise.all(promises);
   }
 }

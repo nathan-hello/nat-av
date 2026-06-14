@@ -16,7 +16,7 @@ export class System extends Driver<"system"> {
   constructor(natav: Drivers.ManagerView<systemDrivers>) {
     super({ name: "system", driverName: "system" });
     this.natav = natav;
-    new AutomationEngine(natav.bus);
+    new AutomationEngine(natav);
     type good = Drivers.FromName<drivers, "video-wall">;
     const bad = this.natav.GetDriver("decoder-1");
     bad.api.route;
