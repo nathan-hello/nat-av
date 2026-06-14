@@ -18,7 +18,7 @@ export class TestRpcClient
   sent: string[] = [];
   received: string[] = [];
 
-  private server: RPCServer;
+  private server: RPCServer<natav>;
   private peer: {
     addr: string;
     readonly readyState: number;
@@ -26,7 +26,7 @@ export class TestRpcClient
     close(): void;
   };
 
-  constructor(server: RPCServer) {
+  constructor(server: RPCServer<natav>) {
     super();
     this.server = server;
     this.peer = {

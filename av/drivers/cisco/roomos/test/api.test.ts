@@ -96,13 +96,13 @@ it("api writes to socket, state gets updated on notification", async () => {
 
   const strictSocket: Sockets.Client = {
     name: "roomos-strict-state",
-    start() {},
-    end() {},
+    start() { },
+    end() { },
     write() {
       return 0;
     },
     on() {
-      return () => {};
+      return () => { };
     },
   };
 
@@ -112,11 +112,7 @@ it("api writes to socket, state gets updated on notification", async () => {
     strict: true,
     subscriptions: {
       xFeedback: {
-        Bluetooth: {
-          Streaming: {
-            PlaybackPosition: true,
-          },
-        },
+        Bluetooth: true,
       },
     },
   });

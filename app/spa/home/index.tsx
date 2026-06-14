@@ -1,10 +1,9 @@
 import { getRpc } from "@/state";
 import { Wall } from "@/ui/av/wall";
-import type { ClientRpc } from "@av/rpc/client";
 import { css, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {
-  let rpc: ClientRpc = getRpc(handle);
+  let rpc = getRpc(handle);
 
   return () => {
     return (
@@ -27,7 +26,7 @@ export function HomePage(handle: Handle) {
             </a>
           </div>
         </header>
-        <Wall rpc={rpc} deviceName="video-wall" />
+        <Wall deviceName="video-wall" />
       </main>
     );
   };

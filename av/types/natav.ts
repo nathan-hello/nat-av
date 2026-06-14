@@ -11,6 +11,15 @@ type DepUnion<Deps> =
   : Deps extends Record<string, infer Dep> ? Dep
   : never;
 
+type HideMethods<D extends Driver> = {
+  deps: D["deps"];
+  name: D["name"];
+  api: D["api"];
+  state: D["state"];
+  events: D["state"];
+  on: D["on"];
+}
+
 type DriverTree<D> =
   D extends Driver ? D | DriverTree<Extract<DepUnion<DepMapOf<D>>, Driver>>
   : never;

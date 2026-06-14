@@ -9,7 +9,7 @@ import {
 } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 import type { LogEntry } from "@av/telemetry/types";
-import { Rpc } from "@av/types";
+import { Rpc, type Natav } from "@av/types";
 
 type PendingRequest = {
   resolve: (result: any) => void;
@@ -27,8 +27,10 @@ type RpcDebugEvents = {
   change: {};
 };
 
-export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
-  readonly rpc: ClientRpc;
+export class RpcDebugClient<
+  N extends Natav.Orch,
+> extends ProtectedTypedEventTarget<RpcDebugEvents> {
+  readonly rpc: ClientRpc<N>;
 
   private tel = new Telemetry("Rpc::Debug");
   private transport = new ClientWebsocket("/debug/ws", {
@@ -44,7 +46,7 @@ export class RpcDebugClient extends ProtectedTypedEventTarget<RpcDebugEvents> {
   public entries: LogEntry[] = [];
   public socketMessages: Record<string, Rpc.Debug.SocketMessage[]> = {};
 
-  constructor(rpc: ClientRpc) {
+  constructor(rpc: ClientRpc<N>) {
     super();
     this.rpc = rpc;
 

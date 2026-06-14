@@ -36,7 +36,7 @@ function readMessage(data: MessageEvent["data"]): string {
   return String(data);
 }
 
-export class WebsocketHandler {
+export class WebsocketHandler<N extends Natav.Orch> {
   private clients = new Set<WebSocketPeer>();
   private rpc: RPCServer<Natav.Orch>;
   private natav: Natav.Orch;
@@ -58,9 +58,9 @@ export class WebsocketHandler {
     });
   }
 
-  BroadcastEvent<E extends keyof Events.System.Map>(
+  BroadcastEvent<E extends keyof Events.System.Map<N>>(
     event: E,
-    payload: Events.System.Map[E],
+    payload: Events.System.Map<N>[E],
   ) {
     const notification = new RPCNotification(Rpc.Methods.Notification, {
       type: event,
@@ -135,11 +135,11 @@ export class WebsocketHandler {
   }
 }
 
-export function bindHttpToWs(
+export function bindHttpToWs<N extends Natav.Orch>(
   app: WebSocketApp,
   path: string,
   handlers: Pick<
-    WebsocketHandler,
+    WebsocketHandler<N>,
     "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
   >,
   tel: Telemetry,

@@ -1,4 +1,3 @@
-import type { natav } from "@av/index";
 import {
   RPCError,
   RPCErrorCodes,
@@ -15,7 +14,7 @@ import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
 
-export class RPCServer<N extends Natav.Orch = natav> extends TypedEventTarget<
+export class RPCServer<N extends Natav.Orch> extends TypedEventTarget<
   Events.System.Map<N>
 > {
   private tel = new Telemetry("Rpc");

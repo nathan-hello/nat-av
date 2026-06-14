@@ -1,11 +1,10 @@
+import { getRpc } from "@/state";
 import { Decoder } from "@/ui/av/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/av/wall/source";
 import type { LogicalWindow } from "@av/drivers/decoder/display";
-import type { ClientRpc } from "@av/rpc/client";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
-  rpc: ClientRpc;
   deviceName: "video-wall";
 }
 
@@ -22,7 +21,9 @@ type RouteFormState = {
 type InteractionMode = "free" | "snap";
 
 export function Wall(handle: Handle<WallProps>) {
-  const display = handle.props.rpc.device(handle.props.deviceName);
+  const rpc = getRpc(handle);
+
+  const display = rpc.device(handle.props.deviceName);
 
   let mode: InteractionMode = "free";
   let selectedSource: SourceSelectDetail | null = null;

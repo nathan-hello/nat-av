@@ -1,5 +1,4 @@
 import type { Driver } from "@av/drivers";
-import type { natav } from "@av/index";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
   RPCError,
@@ -25,7 +24,7 @@ function hasJsonEventTarget(
   );
 }
 
-export class DeviceRpcRouter<N extends Natav.Orch = natav>
+export class DeviceRpcRouter<N extends Natav.Orch>
   extends TypedEventTarget<Events.System.Map<N>>
   implements RPCRequestHandler<N>
 {

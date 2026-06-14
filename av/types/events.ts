@@ -1,4 +1,3 @@
-import type { natav } from "@av/index";
 import type { RPCError } from "@av/rpc/protocol";
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { Natav, Rpc as NRpc } from "@av/types";
@@ -52,7 +51,7 @@ export namespace Events {
       };
     }[Natav.Names<N>];
 
-    export type Map<N extends Natav.Orch = natav> = {
+    export type Map<N extends Natav.Orch> = {
       "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
@@ -93,8 +92,8 @@ export namespace Events {
       change: { name?: string };
     };
 
-    export type SystemMap = {
-      change: { state: Promise<NRpc.System.State> | undefined };
+    export type SystemMap<N extends Natav.Orch> = {
+      change: { state: Promise<NRpc.System.State<N>> | undefined };
     };
 
     export type DeviceMap<N extends Natav.Orch, Name extends Natav.Names<N>> = {

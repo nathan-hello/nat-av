@@ -1,4 +1,3 @@
-import type { natav } from "@av/index";
 import { bus } from "@av/lib/bus";
 import { DecodeWebsocketError } from "@av/rpc/errors";
 import {
@@ -50,7 +49,7 @@ function readMessage(data: MessageEvent["data"]): string {
   return String(data);
 }
 
-export class RpcDebugServer<N extends Natav.Orch = natav> {
+export class RpcDebugServer<N extends Natav.Orch> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
 
@@ -241,11 +240,11 @@ function toWebSocketConnection(ws: WebSocketPeer): DebugWebSocketConnection {
   };
 }
 
-export function bindDebugHttpToWs(
+export function bindDebugHttpToWs<N extends Natav.Orch>(
   app: WebSocketApp,
   path: string,
   handlers: Pick<
-    RpcDebugServer,
+    RpcDebugServer<N>,
     "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
   >,
   tel: Telemetry,

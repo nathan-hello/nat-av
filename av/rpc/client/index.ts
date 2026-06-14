@@ -1,4 +1,3 @@
-import type { natav } from "@av/index";
 import type { Events, Natav } from "@av/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
@@ -17,14 +16,14 @@ import {
 import { Telemetry } from "@av/telemetry";
 
 export class ClientRpc<
-  N extends Natav.Orch = natav,
+  N extends Natav.Orch,
 > extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
   private systemHandle: ClientRpcSystem<N>;
-  public debug: RpcDebugClient;
+  public debug: RpcDebugClient<N>;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();

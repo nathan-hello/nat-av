@@ -15,7 +15,7 @@ export namespace Rpc {
   };
 
   export namespace System {
-    export type State = System["state"];
+    export type State<N extends Natav.Orch> = System<N>["state"];
     export type Api<N extends Natav.Orch> = {
       [M in keyof System<N>["api"]]: System<N>["api"][M] extends (
         (...args: infer Args) => infer R
@@ -26,7 +26,7 @@ export namespace Rpc {
 
     export type ClientHandle<N extends Natav.Orch> = {
       api: Api<N>;
-      readonly state: Promise<State>;
+      readonly state: Promise<State<N>>;
       isPending(method: keyof Api<N>): boolean;
       pendingCount(method: keyof Api<N>): number;
     };

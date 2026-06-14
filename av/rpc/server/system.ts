@@ -1,4 +1,3 @@
-import type { natav } from "@av/index";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
   RPCError,
@@ -11,7 +10,7 @@ import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { Rpc, type Events, type Natav } from "@av/types";
 
-export class SystemRpcRouter<N extends Natav.Orch = natav>
+export class SystemRpcRouter<N extends Natav.Orch>
   extends TypedEventTarget<Events.System.Map<N>>
   implements RPCRequestHandler<N>
 {

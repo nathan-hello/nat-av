@@ -11,11 +11,11 @@ type SystemClient = {
 
 export class ClientRpcSystem<
   N extends Natav.Orch = Natav.Orch,
-> extends TypedEventTarget<Events.Rpc.SystemMap> {
+> extends TypedEventTarget<Events.Rpc.SystemMap<N>> {
   private tel = new Telemetry("Rpc::System");
   private apiProxy: Rpc.System.Api<N>;
   private pendingCounts = new Map<string, number>();
-  private stateValue: Promise<Rpc.System.State> | undefined;
+  private stateValue: Promise<Rpc.System.State<N>> | undefined;
 
   constructor(private client: SystemClient) {
     super();
@@ -39,7 +39,7 @@ export class ClientRpcSystem<
     return this.apiProxy;
   }
 
-  get state(): Promise<Rpc.System.State> {
+  get state(): Promise<Rpc.System.State<N>> {
     return this.stateValue ?? this.refreshState();
   }
 
@@ -71,9 +71,8 @@ export class ClientRpcSystem<
     }
   }
 
-  private refreshState(): Promise<Rpc.System.State> {
-    this.tel.debug("system.state");
-    const state = this.client.request<Rpc.System.State>(
+  private refreshState(): Promise<Rpc.System.State<N>> {
+    const state = this.client.request<Rpc.System.State<N>>(
       new RPCRequest(this.client.nextRequestId(), "system.state"),
     );
 
