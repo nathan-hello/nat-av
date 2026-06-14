@@ -1,6 +1,5 @@
 import { Manager } from "@av/drivers";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
-import { Bus } from "@av/lib/bus";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { TestRpcClient, TestSocket } from "@av/test/data";
@@ -110,7 +109,6 @@ describe("rpc roomos device", () => {
     });
 
     const natav = new Manager({
-      bus: new Bus(),
       drivers: [roomos],
       deferred: [],
     });

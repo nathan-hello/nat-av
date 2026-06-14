@@ -1,5 +1,4 @@
 import { Manager } from "@av/drivers";
-import { Bus } from "@av/lib/bus";
 import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import assert from "node:assert/strict";
@@ -19,7 +18,7 @@ describe("test driver", () => {
 
   it("forwards driver events through the rpc server per subscription", async () => {
     const eventDriver = new EventDriver("event-1");
-    const natav = new Manager({ bus: new Bus(), drivers: [eventDriver], deferred: [] });
+    const natav = new Manager({ drivers: [eventDriver], deferred: [] });
     const router = new DeviceRpcRouter<typeof natav['configs']>(natav);
     const makePeer = (addr: string) => {
       const sent: string[] = [];

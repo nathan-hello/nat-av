@@ -1,10 +1,7 @@
+import { Driver, Manager } from "@av/drivers";
+import type { Schema } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import { Driver } from "@av/drivers";
-import { Manager } from "@av/drivers";
-import { Bus } from "@av/lib/bus";
-import type { Schema } from "@av/types";
 import { ClientRpcDevice } from "../rpc/client/devices";
 
 class Leaf<const N extends string> extends Driver<N> {
@@ -41,7 +38,10 @@ class Parent<
 
 const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child } as const);
-const graph = new Manager({ bus: new Bus(), drivers: [parent] as const, deferred: [] as const });
+const graph = new Manager({
+  drivers: [parent] as const,
+  deferred: [] as const,
+});
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {
@@ -61,7 +61,7 @@ describe("driver deps", () => {
     };
 
     // TSAS:
-    const device = new ClientRpcDevice<typeof graph["configs"], "parent-1">(
+    const device = new ClientRpcDevice<(typeof graph)["configs"], "parent-1">(
       client as any,
       "parent-1",
     );

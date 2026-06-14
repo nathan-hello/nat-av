@@ -40,7 +40,6 @@ StartLogging([
 const chazy = new ChazyControl({
   name: "ChazyControl",
   socket: new Tcp({
-    bus,
     addr: "controller.local",
     port: 23,
     keepAlive: true,
@@ -53,7 +52,6 @@ const drivers = [
       driver: new Decoder({
         name: "decoder-1",
         socket: new Tcp({
-          bus,
           addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
@@ -68,13 +66,12 @@ const drivers = [
 ];
 
 const natav = new Manager({
-  bus,
   drivers,
-  deferred: [System],
+  deferred: [(natav) => new System(natav)],
 });
 
 export type drivers = typeof drivers;
-export type natav = typeof natav["configs"];
+export type natav = (typeof natav)["configs"];
 
 const rpc = new RPCServer({ natav });
 const debug = new RpcDebugServer({ natav });
