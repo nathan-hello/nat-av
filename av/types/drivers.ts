@@ -52,7 +52,7 @@ export namespace Drivers {
   export type Merged<
     D extends Drivers.Array,
     S extends readonly Drivers.AnyDeferred[],
-  > = readonly [...D, ...Drivers.DeferredInstances<S>];
+  > = readonly (D[number] | Drivers.DeferredInstances<S>[number])[];
 
   export type Deferred<
     N extends Drivers.Array = Drivers.Array,
@@ -61,9 +61,19 @@ export namespace Drivers {
     | ((natav: Drivers.Manager<N>) => T)
     | (new (natav: Drivers.Manager<N>) => T);
 
+  type DeferredFunction<T extends Driver = Driver> = ((natav: any) => T) & {
+    prototype?: undefined;
+  };
+
+  type DeferredConstructor<T extends Driver = Driver> = (new (
+    natav: any,
+  ) => T) & {
+    prototype: object;
+  };
+
   export type AnyDeferred<T extends Driver = Driver> =
-    | ((natav: any) => T)
-    | (new (natav: any) => T);
+    | DeferredFunction<T>
+    | DeferredConstructor<T>;
 
   export type DeferredReturn<T> =
     T extends new (...args: any[]) => infer R ? R

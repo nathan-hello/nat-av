@@ -100,22 +100,21 @@ export class Manager<
   >();
 
   constructor(args: { drivers?: D; deferred?: S }) {
-    let configs: Driver[] = [];
+    let configs: Drivers.Merged<D, S>[number][] = [];
     if (args.drivers) {
       configs = [...args.drivers];
     }
 
-    this.configs = configs as unknown as Drivers.Merged<D, S>;
+    this.configs = configs;
 
     if (args.deferred) {
       for (const deferred of args.deferred) {
         // TSAS: Deferred entries are either constructors or factories returning drivers.
-        const driver =
-          "prototype" in deferred && typeof deferred.prototype === "object" ?
-            new (deferred as new (natav: Manager<any, any>) => Driver)(this)
-          : (deferred as (natav: Manager<any, any>) => Driver)(this);
-
-        configs.push(driver);
+        if ("prototype" in deferred && typeof deferred.prototype === "object") {
+          configs.push(new deferred(this));
+        } else {
+          configs.push(deferred(this));
+        }
       }
     }
   }
@@ -191,7 +190,7 @@ export class Manager<
       d.on("driver:state-updated", (data) =>
         // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
-          name: d.name as Drivers.Names<Drivers.Merged<D, S>>,
+          name: d.name,
           data: data.data,
         }),
       );
