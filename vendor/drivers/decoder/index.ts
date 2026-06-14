@@ -1,5 +1,5 @@
 import { Driver } from "@av/drivers";
-import { DecoderSchema } from "@av/drivers/decoder/schema";
+import { DecoderSchema } from "@drivers/decoder/schema";
 import { toBuffer } from "@av/lib/buffer";
 import { RequestManager } from "@av/lib/requests";
 import { RPCErrorData } from "@av/rpc/protocol";

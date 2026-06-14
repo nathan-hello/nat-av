@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
-import Decoder from "@av/drivers/decoder";
-import DisplayManager from "@av/drivers/decoder/display";
-import ChazyControl from "@av/drivers/turtle";
+import Decoder from "@drivers/decoder";
+import DisplayManager from "@drivers/decoder/display";
+import ChazyControl from "@drivers/turtle";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { RPCServer } from "@av/rpc/server";
 import {

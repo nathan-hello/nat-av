@@ -1,5 +1,5 @@
-import { removeBrackets } from "@av/drivers/cisco/roomos/typegen/scripts/parse";
-import type { RoomOS } from "@av/drivers/cisco/roomos/types";
+import { removeBrackets } from "@drivers/cisco/roomos/typegen/scripts/parse";
+import type { RoomOS } from "@drivers/cisco/roomos/types";
 import type { Format } from "@av/types";
 
 export function isNumericSegment(segment: string): boolean {

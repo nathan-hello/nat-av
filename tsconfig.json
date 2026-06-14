@@ -16,7 +16,7 @@
     "paths": {
       "@/*": ["./app/*"],
       "@av/*": ["./vendor/av/*"],
-      "@av/drivers/*": ["./vendor/drivers/*"],
+      "@drivers/*": ["./vendor/drivers/*"],
       "@server/*": ["./server/*"]
     }
   },

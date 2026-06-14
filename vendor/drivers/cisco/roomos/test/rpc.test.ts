@@ -1,5 +1,5 @@
 import { Manager } from "@av/drivers";
-import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
+import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { TestRpcClient, TestSocket } from "@av/test/data";

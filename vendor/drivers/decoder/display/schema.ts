@@ -1,4 +1,4 @@
-import type DisplayManager from "@av/drivers/decoder/display";
+import type DisplayManager from "@drivers/decoder/display";
 import type { Schema } from "@av/types";
 
 const ArgResOffset = {

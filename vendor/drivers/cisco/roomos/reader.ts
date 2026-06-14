@@ -1,5 +1,5 @@
-import type { JsonValue } from "@av/drivers/cisco/roomos/typegen/scripts/types";
-import { RoomOS } from "@av/drivers/cisco/roomos/types";
+import type { JsonValue } from "@drivers/cisco/roomos/typegen/scripts/types";
+import { RoomOS } from "@drivers/cisco/roomos/types";
 import { toString } from "@av/lib/buffer";
 import { RPCError, RPCNotification } from "@av/rpc/protocol";
 

@@ -1,4 +1,4 @@
-import type { RoomOS } from "@av/drivers/cisco/roomos/types";
+import type { RoomOS } from "@drivers/cisco/roomos/types";
 import type { Telemetry } from "@av/telemetry";
 
 type TRequest = (operation: RoomOS.WriteOperation) => Promise<unknown>;

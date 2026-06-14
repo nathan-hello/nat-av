@@ -1,4 +1,4 @@
-import type { GeneratedRoomOS } from "@av/drivers/cisco/roomos/typegen/schemas/11.33.1";
+import type { GeneratedRoomOS } from "@drivers/cisco/roomos/typegen/schemas/11.33.1";
 import type { Drivers } from "@av/types/drivers";
 
 type IsPlainObject<V> =

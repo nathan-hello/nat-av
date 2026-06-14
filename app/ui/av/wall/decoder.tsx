@@ -1,9 +1,9 @@
 import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
-import type { LogicalWindow } from "@av/drivers/decoder/display";
+import type { LogicalWindow } from "@drivers/decoder/display";
 import type {
   GridTemplate,
   RectangularRegion,
-} from "@av/drivers/decoder/display/templates/builder";
+} from "@drivers/decoder/display/templates/builder";
 import { css, on, type Handle } from "remix/ui";
 
 type CanvasGlobal = {
