@@ -1,5 +1,4 @@
 import { Manager } from "@av/drivers";
-import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { RPCServer } from "@av/rpc/server";
 import {
   bindHttpToWs,
@@ -10,6 +9,7 @@ import { Tcp } from "@av/sockets/tcp";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { AddExporters } from "@av/telemetry/sdk";
+import { Debugger } from "@av/drivers/builtin/debugger";
 import {
   FileExporter,
   SimpleConsoleExporter,
@@ -63,6 +63,7 @@ export type drivers = typeof drivers;
 export type systemDrivers = readonly [...drivers];
 
 const deferred = [
+  (natav: Drivers.ManagerView<systemDrivers>) => new Debugger(natav),
   (natav: Drivers.ManagerView<systemDrivers>) => new System(natav),
 ] as const;
 
@@ -82,18 +83,11 @@ AddExporters([
 export type natav = (typeof natav)["configs"];
 
 const rpc = new RPCServer({ natav });
-const debug = new RpcDebugServer({ natav });
 
 const websocket = new WebsocketHandler({ rpc, natav });
 
 export async function start(app: WebSocketApp) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
-  bindDebugHttpToWs(
-    app,
-    "/debug/ws",
-    debug,
-    new Telemetry("Server::DebugWebsocket"),
-  );
 
   await natav.Start();
   // TSAS:

@@ -149,33 +149,6 @@ export class Manager<
     return this.all().map((d) => d.name);
   }
 
-  GetDebugTree(): Rpc.Debug.Node[] {
-    const toNode = (driver: Driver): Rpc.Debug.Node => {
-      const socket = driver.socket;
-      const canWrite = typeof socket?.write === "function";
-      const canReceive = typeof socket?.on === "function";
-
-      return {
-        name: driver.name,
-        driverName: driver._drivername,
-        children: Object.values(
-          driver.deps.get() as Record<string, Driver>,
-        ).map((child) => toNode(child)),
-        ...(typeof socket?.name === "string" ?
-          {
-            socket: {
-              traceName: socket.name,
-              canWrite,
-              canReceive,
-            },
-          }
-        : {}),
-      };
-    };
-
-    return this.configs.map((driver) => toNode(driver));
-  }
-
   async Start(
     filter?: (
       drivers: Drivers.Merged<D, S>,

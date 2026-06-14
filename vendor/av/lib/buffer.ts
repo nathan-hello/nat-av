@@ -1,6 +1,9 @@
-export function toBuffer(data: string | Uint8Array | Buffer | unknown) {
+export function toBuffer(
+  data: string | Uint8Array | Buffer | unknown,
+  encoding: BufferEncoding = "utf8",
+) {
   if (typeof data === "string") {
-    return Buffer.from(data, "utf8");
+    return Buffer.from(data, encoding);
   }
 
   if (data instanceof Buffer) {
@@ -11,7 +14,7 @@ export function toBuffer(data: string | Uint8Array | Buffer | unknown) {
     return Buffer.from(data);
   }
 
-  return Buffer.from(JSON.stringify(data), "utf8");
+  return Buffer.from(JSON.stringify(data), encoding);
 }
 
 export function toString(data: string | Uint8Array | Buffer | unknown): string {

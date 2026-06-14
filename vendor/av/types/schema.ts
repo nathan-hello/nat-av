@@ -67,14 +67,6 @@ type ObjectSchema<T> = {
   readonly fields: ObjectFields<T>;
 };
 
-export type SchemaNode =
-  | PrimitiveSchema<any>
-  | LiteralSchema<any>
-  | UnionSchema<any>
-  | ArraySchema<any>
-  | TupleSchema<readonly any[]>
-  | ObjectSchema<any>;
-
 type SchemaKind<T> =
   IsUnion<T> extends true ? "union"
   : IsLiteral<T> extends true ? "literal"
@@ -142,6 +134,14 @@ type ApiSchemaNode<Name extends string, T> =
   : never;
 
 export namespace Schema {
+  export type Node =
+    | PrimitiveSchema<any>
+    | LiteralSchema<any>
+    | UnionSchema<any>
+    | ArraySchema<any>
+    | TupleSchema<readonly any[]>
+    | ObjectSchema<any>;
+
   export namespace Ui {
     type Primitive<T> = {
       readonly label?: string;
