@@ -1,3 +1,4 @@
+import type { Manager } from "@av/drivers";
 import { bus } from "@av/lib/bus";
 import { DecodeWebsocketError } from "@av/rpc/errors";
 import {
@@ -11,7 +12,7 @@ import {
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
 import { ReadableLogRecordToLogEntry } from "@av/telemetry/types";
-import type { Events, Natav, Sockets } from "@av/types";
+import type { Events, Sockets } from "@av/types";
 import { Rpc } from "@av/types";
 
 const decoder = new TextDecoder();
@@ -49,11 +50,11 @@ function readMessage(data: MessageEvent["data"]): string {
   return String(data);
 }
 
-export class RpcDebugServer<N extends Natav.Orch> {
+export class RpcDebugServer<N extends Manager> {
   private clients = new Set<DebugWebSocketConnection>();
   private tel = new Telemetry("Server::WS::Debug");
 
-  constructor(private args: { natav: N; system: System<N> }) {
+  constructor(private args: { natav: N; system: System }) {
     bus.on("natav:opentelemetry:entry", (payload) => {
       this.broadcastNotification({
         type: "debug:log",
@@ -240,7 +241,7 @@ function toWebSocketConnection(ws: WebSocketPeer): DebugWebSocketConnection {
   };
 }
 
-export function bindDebugHttpToWs<N extends Natav.Orch>(
+export function bindDebugHttpToWs<N extends Manager>(
   app: WebSocketApp,
   path: string,
   handlers: Pick<

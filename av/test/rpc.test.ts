@@ -1,4 +1,4 @@
-import { Orchistrator } from "@av/lib/orch";
+import { Manager } from "@av/drivers";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { System } from "@av/system";
@@ -9,11 +9,13 @@ import { describe, it } from "node:test";
 describe("rpc device events", () => {
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new EventDriver("event-1");
-    const natav = new Orchistrator([eventDriver]);
+    const natav = new Manager([eventDriver]);
+    // Gotta get rid of the system stuff in general
+    // @ts-expect-error 
     const system = new System({ natav });
     const server = new RPCServer({ system, natav });
     const transport = new TestRpcClient(server);
-    const client = new ClientRpc<typeof natav>({ transport });
+    const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
     transport.connect();
     await new Promise<void>((resolve) => {

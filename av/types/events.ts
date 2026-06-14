@@ -1,6 +1,7 @@
 import type { RPCError } from "@av/rpc/protocol";
 import type { ReadableLogRecord } from "@av/telemetry/types";
-import type { Natav, Rpc as NRpc } from "@av/types";
+import type { Rpc as NRpc } from "@av/types";
+import type { Drivers } from "@av/types/drivers";
 
 export namespace Events {
   export namespace Socket {
@@ -24,7 +25,7 @@ export namespace Events {
 
   // This namespace is not allowed to import Natav namespace.
   // The Natav namespace uses Driver for inference, so trying
-  // to get the Natav.Names<N> for example will cause a circular
+  // to get the Drivers.Names<N> for example will cause a circular
   // dependency that Typescript cannot resolve.
   export namespace Driver {
     export type Map<StateData = any> = {
@@ -36,28 +37,28 @@ export namespace Events {
     };
   }
 
-  export namespace System {
-    type EventsFor<N extends Natav.Orch> = {
-      [Name in Natav.Names<N>]: {
+  export namespace Natav {
+    type EventsFor<N extends Drivers.Array> = {
+      [Name in Drivers.Names<N>]: {
         name: Name;
         event: string;
         data: NRpc.JSONValue;
       };
-    }[Natav.Names<N>];
-    type StateEventFor<N extends Natav.Orch> = {
-      [Name in Natav.Names<N>]: {
+    }[Drivers.Names<N>];
+    type StateEventFor<N extends Drivers.Array> = {
+      [Name in Drivers.Names<N>]: {
         name: Name;
-        data: Partial<Natav.State<N, Name>>;
+        data: Partial<Drivers.State<N, Name>>;
       };
-    }[Natav.Names<N>];
+    }[Drivers.Names<N>];
 
-    export type Map<N extends Natav.Orch> = {
+    export type Map<N extends Drivers.Array> = {
       "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
-      "natav:device:connected": { name: Natav.Names<N> };
-      "natav:device:disconnected": { name: Natav.Names<N> };
-      "natav:device:error": { name: Natav.Names<N>; error?: Error | unknown };
+      "natav:device:connected": { name: Drivers.Names<N> };
+      "natav:device:disconnected": { name: Drivers.Names<N> };
+      "natav:device:error": { name: Drivers.Names<N>; error?: Error | unknown };
       "natav:debug:socket": { data: Rpc.DebugMap };
       "natav:opentelemetry:entry": {
         record: ReadableLogRecord;
@@ -92,14 +93,17 @@ export namespace Events {
       change: { name?: string };
     };
 
-    export type SystemMap<N extends Natav.Orch> = {
-      change: { state: Promise<NRpc.System.State<N>> | undefined };
+    export type SystemMap = {
+      change: { state: Promise<NRpc.System.State> | undefined };
     };
 
-    export type DeviceMap<N extends Natav.Orch, Name extends Natav.Names<N>> = {
+    export type DeviceMap<
+      N extends Drivers.Array,
+      Name extends Drivers.Names<N>,
+    > = {
       change: {
         name: Name;
-        state: Natav.State<N, Name> | undefined;
+        state: Drivers.State<N, Name> | undefined;
       };
     };
 

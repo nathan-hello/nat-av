@@ -8,16 +8,16 @@ import {
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { System } from "@av/system";
 import { Telemetry } from "@av/telemetry";
-import { Rpc, type Events, type Natav } from "@av/types";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
-export class SystemRpcRouter<N extends Natav.Orch>
-  extends TypedEventTarget<Events.System.Map<N>>
+export class SystemRpcRouter<N extends Drivers.Array>
+  extends TypedEventTarget<Events.Natav.Map<N>>
   implements RPCRequestHandler<N>
 {
   prefix = "system.";
   private tel = new Telemetry("Rpc::Router::System");
 
-  constructor(private system: System<N>) {
+  constructor(private system: System) {
     super();
   }
 

@@ -2,7 +2,7 @@ import { Driver } from "@av/drivers";
 import { toBuffer } from "@av/lib/buffer";
 import { Bus } from "@av/lib/bus";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import { Orchistrator } from "@av/lib/orch";
+import { Manager } from "@av/drivers";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { RPCRequest } from "@av/rpc/protocol";
 import type { RPCServer } from "@av/rpc/server";
@@ -164,9 +164,9 @@ export const driver = new TestDriver({
   socket: new Tcp({ addr: "127.0.0.1", port: 12345, keepAlive: true }),
 });
 
-export const natav = new Orchistrator([driver]);
+export const natav = new Manager([driver]);
 
-export type natav = typeof natav;
+export type natav = typeof natav["configs"];
 
 const bus = new Bus<natav>();
 
@@ -178,7 +178,7 @@ export class AutomationEngine {
   }
 
   private handleStateChange(
-    data: Events.System.Map<natav>["natav:state:update"],
+    data: Events.Natav.Map<natav>["natav:state:update"],
   ): void {
     switch (data.name) {
       case "shim-1":

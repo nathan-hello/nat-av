@@ -1,5 +1,6 @@
 import type { Driver } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { Manager } from "@av/drivers";
 import {
   RPCError,
   RPCErrorCodes,
@@ -10,7 +11,7 @@ import {
 import type { RPCRequestHandler } from "@av/rpc/server/router";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
-import { Rpc, type Events, type Natav } from "@av/types";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
 function hasJsonEventTarget(
   value: unknown,
@@ -24,8 +25,8 @@ function hasJsonEventTarget(
   );
 }
 
-export class DeviceRpcRouter<N extends Natav.Orch>
-  extends TypedEventTarget<Events.System.Map<N>>
+export class DeviceRpcRouter<N extends Drivers.Array>
+  extends TypedEventTarget<Events.Natav.Map<N>>
   implements RPCRequestHandler<N>
 {
   prefix = "device.";
@@ -35,7 +36,7 @@ export class DeviceRpcRouter<N extends Natav.Orch>
     Map<string, Array<() => void>>
   >();
 
-  constructor(private natav: N) {
+  constructor(private natav: Manager<N>) {
     super();
   }
 
@@ -117,7 +118,7 @@ export class DeviceRpcRouter<N extends Natav.Orch>
     }
 
     // TSAS: FindDriver guarantees the runtime name belongs to this natav instance.
-    const deviceName = device.name as Natav.Names<N>;
+    const deviceName = device.name as Drivers.Names<N>;
 
     const cleanup = events.on(eventName, (data) => {
       if (peer.readyState !== 1) {

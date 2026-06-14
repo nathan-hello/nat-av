@@ -1,26 +1,26 @@
+import type { Manager } from "@av/drivers";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
   RPCError,
   RPCErrorCodes,
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import type { System } from "@av/system";
-import { Telemetry } from "@av/telemetry";
-import type { Events, Natav } from "@av/types";
-
-import { TypedEventTarget } from "@av/lib/eventtarget";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { RPCRequestRouter } from "@av/rpc/server/router";
 import { SystemRpcRouter } from "@av/rpc/server/system";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
+import type { System } from "@av/system";
+import { Telemetry } from "@av/telemetry";
+import type { Drivers, Events } from "@av/types";
 
-export class RPCServer<N extends Natav.Orch> extends TypedEventTarget<
-  Events.System.Map<N>
+export class RPCServer<N extends Drivers.Array> extends TypedEventTarget<
+  Events.Natav.Map<N>
 > {
   private tel = new Telemetry("Rpc");
   private router: RPCRequestRouter<N>;
 
-  constructor(args: { system: System<N>; natav: N }) {
+  constructor(args: { system: System; natav: Manager<N> }) {
     super();
     this.router = new RPCRequestRouter<N>([
       new SystemRpcRouter(args.system),

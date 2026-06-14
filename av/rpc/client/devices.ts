@@ -1,39 +1,19 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpc } from "@av/rpc/client";
 import { RPCRequest } from "@av/rpc/protocol";
-import type { Events, Natav } from "@av/types";
+import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
-type DeviceEventCallback<
-  N extends Natav.Orch,
-  Name extends Natav.Names<N>,
-  K extends keyof Natav.Events<N, Name> & string,
-> = (payload: Natav.Events<N, Name>[K]) => void;
-
-type DeviceEventHandle<N extends Natav.Orch, Name extends Natav.Names<N>> = {
-  on<K extends keyof Natav.Events<N, Name> & string>(
-    event: K,
-    callback: DeviceEventCallback<N, Name, K>,
-  ): Promise<() => Promise<void>>;
-};
-
-type DeviceEventState = {
-  callbacks: Set<(payload: any) => void>;
-  subscribed: boolean;
-  pendingSubscribe: Promise<void> | undefined;
-  pendingUnsubscribe: Promise<void> | undefined;
-};
-
 export class ClientRpcDevice<
-  N extends Natav.Orch,
-  Name extends Natav.Names<N>,
+  N extends Drivers.Array,
+  Name extends Drivers.Names<N>,
 > extends TypedEventTarget<Events.Rpc.DeviceMap<N, Name>> {
-  private apiProxy: Natav.Handle<N, Name>["api"];
-  private stateValue: Natav.State<N, Name> | undefined;
+  private apiProxy: Rpc.Api<N, Name>;
+  private stateValue: Drivers.State<N, Name> | undefined;
   private pendingCounts = new Map<string, number>();
-  private eventState = new Map<string, DeviceEventState>();
+  private eventState = new Map<string, Rpc.Client.Events.State>();
 
-  readonly event: DeviceEventHandle<N, Name> = {
+  readonly event: Rpc.Client.Events.Handle<N, Name> = {
     on: async (event, callback) => {
       await this.subscribeToEvent(event, callback);
       return async () => {
@@ -49,7 +29,7 @@ export class ClientRpcDevice<
     super();
 
     // TSAS: Proxies are used to mirror the nested device API shape at runtime.
-    this.apiProxy = this.createApiProxy() as Natav.Handle<N, Name>["api"];
+    this.apiProxy = this.createApiProxy() as Rpc.Api<N, Name>;
 
     this.on("change", () => this.client.emitChange(this.name));
   }
@@ -62,7 +42,7 @@ export class ClientRpcDevice<
     return this.stateValue;
   }
 
-  private createApiProxy(path: string[] = []) {
+  private createApiProxy(path: string[] = []): Rpc.Api<N, Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
         if (typeof methodName !== "string" || methodName === "then") {
@@ -72,7 +52,8 @@ export class ClientRpcDevice<
         return this.createApiProxy([...path, methodName]);
       },
       apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
-    });
+      // TSAS: Proxy
+    }) as unknown as Rpc.Api<N, Name>;
   }
 
   async call(method: string, args: any[] = []) {
@@ -84,25 +65,25 @@ export class ClientRpcDevice<
     }
   }
 
-  isPending(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
+  isPending(method: string) {
     return this.pendingCount(method) > 0;
   }
 
-  pendingCount(method: Extract<keyof Natav.Handle<N, Name>["api"], string>) {
+  pendingCount(method: string) {
     return this.pendingCounts.get(method) ?? 0;
   }
 
-  dep<DepName extends Natav.DepNames<N, Name>>(depName: DepName) {
+  dep<DepName extends Drivers.Dep.Names<N, Name>>(depName: DepName) {
     return this.client.device(depName);
   }
 
-  handleStateUpdate(patch: Partial<Natav.State<N, Name>>) {
+  handleStateUpdate(patch: Partial<Rpc.State<N, Name>>) {
     const currentState = this.stateValue;
     // TSAS: Partial patches are reconciled into the device's cached state.
     this.stateValue =
       currentState && typeof currentState === "object" ?
         { ...currentState, ...patch }
-      : (patch as Natav.State<N, Name>);
+      : patch;
 
     this.dispatchChange();
   }
@@ -124,8 +105,8 @@ export class ClientRpcDevice<
   }
 
   private async subscribeToEvent<
-    K extends keyof Natav.Events<N, Name> & string,
-  >(event: K, callback: DeviceEventCallback<N, Name, K>) {
+    K extends keyof Drivers.Events<N, Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<N, Name, K>) {
     const state = this.eventState.get(event) ?? {
       callbacks: new Set<(payload: any) => void>(),
       subscribed: false,
@@ -159,8 +140,8 @@ export class ClientRpcDevice<
   }
 
   private async unsubscribeFromEvent<
-    K extends keyof Natav.Events<N, Name> & string,
-  >(event: K, callback: DeviceEventCallback<N, Name, K>) {
+    K extends keyof Drivers.Events<N, Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<N, Name, K>) {
     const state = this.eventState.get(event);
     if (!state) {
       return;

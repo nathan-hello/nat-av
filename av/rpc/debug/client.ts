@@ -9,7 +9,7 @@ import {
 } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 import type { LogEntry } from "@av/telemetry/types";
-import { Rpc, type Natav } from "@av/types";
+import { Rpc, type Drivers } from "@av/types";
 
 type PendingRequest = {
   resolve: (result: any) => void;
@@ -28,7 +28,7 @@ type RpcDebugEvents = {
 };
 
 export class RpcDebugClient<
-  N extends Natav.Orch,
+  N extends Drivers.Array,
 > extends ProtectedTypedEventTarget<RpcDebugEvents> {
   readonly rpc: ClientRpc<N>;
 

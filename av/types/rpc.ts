@@ -1,6 +1,6 @@
 import type { System } from "@av/system";
 import type { LogEntry } from "@av/telemetry/types";
-import type { Natav } from "@av/types/natav";
+import type { Drivers } from "@av/types/drivers";
 
 export namespace Rpc {
   export type PendingRequest = {
@@ -14,21 +14,47 @@ export namespace Rpc {
     retryDelay?: number;
   };
 
+  export namespace Client {
+    export namespace Events {
+      export type Callback<
+        N extends Drivers.Array,
+        Name extends Drivers.Names<N>,
+        K extends keyof Drivers.Events<N, Name> & string,
+      > = (payload: Drivers.Events<N, Name>[K]) => void;
+
+      export type Handle<
+        N extends Drivers.Array,
+        Name extends Drivers.Names<N>,
+      > = {
+        on<K extends keyof Drivers.Events<N, Name> & string>(
+          event: K,
+          callback: Callback<N, Name, K>,
+        ): Promise<() => Promise<void>>;
+      };
+      export type State = {
+        callbacks: Set<(payload: any) => void>;
+        subscribed: boolean;
+        pendingSubscribe: Promise<void> | undefined;
+        pendingUnsubscribe: Promise<void> | undefined;
+      };
+    }
+  }
+
   export namespace System {
-    export type State<N extends Natav.Orch> = System<N>["state"];
-    export type Api<N extends Natav.Orch> = {
-      [M in keyof System<N>["api"]]: System<N>["api"][M] extends (
+    export type State = System["state"];
+    export type Api = {
+      [M in keyof System["api"]]: System["api"][M] extends (
         (...args: infer Args) => infer R
       ) ?
         (...args: Args) => Promise<Awaited<R>>
       : never;
     };
 
-    export type ClientHandle<N extends Natav.Orch> = {
-      api: Api<N>;
-      readonly state: Promise<State<N>>;
-      isPending(method: keyof Api<N>): boolean;
-      pendingCount(method: keyof Api<N>): number;
+    export type ClientHandle = {
+      api: Api;
+      readonly state: Promise<State>;
+      isPending(method: keyof Api): boolean;
+      pendingCount(method: keyof Api): number;
     };
 
     export const Methods = {
@@ -127,10 +153,21 @@ export namespace Rpc {
     [K in keyof T as IsJsonFunction<T[K]> extends never ? never : K]: T[K];
   };
 
+  type FilterState<T> = {
+    [K in keyof T as K extends string ? string : never]: {
+      K: T[K] extends JSONValue ? T[K] : never;
+    };
+  };
+
+  export type State<
+    N extends Drivers.Array,
+    Name extends Drivers.Names<N>,
+  > = FilterState<Drivers.State<N, Name>>;
+
   export type Api<
-    N extends Natav.Orch,
-    Name extends Natav.Names<N>,
-  > = FilterApi<Natav.Api<N, Name>>;
+    N extends Drivers.Array,
+    Name extends Drivers.Names<N>,
+  > = Drivers.Api<N, Name>;
 
   export const Methods = {
     Notification: "notification",

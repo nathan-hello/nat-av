@@ -1,4 +1,4 @@
-import type { Events, Natav, Rpc } from "@av/types";
+import type { Events, Rpc } from "@av/types";
 
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RPCRequest } from "@av/rpc/protocol";
@@ -9,13 +9,11 @@ type SystemClient = {
   nextRequestId(): number;
 };
 
-export class ClientRpcSystem<
-  N extends Natav.Orch = Natav.Orch,
-> extends TypedEventTarget<Events.Rpc.SystemMap<N>> {
+export class ClientRpcSystem extends TypedEventTarget<Events.Rpc.SystemMap> {
   private tel = new Telemetry("Rpc::System");
-  private apiProxy: Rpc.System.Api<N>;
+  private apiProxy: Rpc.System.Api;
   private pendingCounts = new Map<string, number>();
-  private stateValue: Promise<Rpc.System.State<N>> | undefined;
+  private stateValue: Promise<Rpc.System.State> | undefined;
 
   constructor(private client: SystemClient) {
     super();
@@ -32,22 +30,22 @@ export class ClientRpcSystem<
           return (...args: any[]) => this.call(methodName, args);
         },
       },
-    ) as Rpc.System.Api<N>;
+    ) as Rpc.System.Api;
   }
 
   get api() {
     return this.apiProxy;
   }
 
-  get state(): Promise<Rpc.System.State<N>> {
+  get state(): Promise<Rpc.System.State> {
     return this.stateValue ?? this.refreshState();
   }
 
-  isPending(method: keyof Rpc.System.Api<N>) {
+  isPending(method: keyof Rpc.System.Api) {
     return this.pendingCount(method) > 0;
   }
 
-  pendingCount(method: keyof Rpc.System.Api<N>) {
+  pendingCount(method: keyof Rpc.System.Api) {
     return this.pendingCounts.get(String(method)) ?? 0;
   }
 
@@ -71,8 +69,8 @@ export class ClientRpcSystem<
     }
   }
 
-  private refreshState(): Promise<Rpc.System.State<N>> {
-    const state = this.client.request<Rpc.System.State<N>>(
+  private refreshState(): Promise<Rpc.System.State> {
+    const state = this.client.request<Rpc.System.State>(
       new RPCRequest(this.client.nextRequestId(), "system.state"),
     );
 

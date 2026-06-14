@@ -91,7 +91,7 @@ export class CiscoRoomOS<
 
     this.socket.on("connected", async () => {
       this.socket.write("xPreferences OutputMode json\r");
-      const all = await Promise.all(
+      await Promise.all(
         this.RefeshSubscriptions(this.state.internal.subscriptions),
       );
     });

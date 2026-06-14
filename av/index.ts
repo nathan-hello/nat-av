@@ -12,7 +12,7 @@ import { Tcp } from "@av/sockets/tcp";
 import { System } from "@av/system";
 
 import ChazyControl from "@av/drivers/turtle";
-import { Orchistrator } from "@av/lib/orch";
+import { Manager } from "@av/drivers";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { StartLogging } from "@av/telemetry/sdk";
@@ -39,7 +39,7 @@ const chazy = new ChazyControl({
   name: "ChazyControl",
   socket: new Tcp({ addr: "controller.local", port: 23, keepAlive: true }),
 });
-const natav = new Orchistrator([
+const natav = new Manager([
   new DisplayManager("video-wall", [
     {
       driver: new Decoder({
@@ -60,7 +60,7 @@ const natav = new Orchistrator([
 
 natav.GetDriver("ChazyControl");
 
-export type natav = typeof natav;
+export type natav = typeof natav["configs"];
 
 const system = new System({ natav });
 

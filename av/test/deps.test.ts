@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { Driver } from "@av/drivers";
-import { Orchistrator } from "@av/lib/orch";
+import { Manager } from "@av/drivers";
 import type { Schema } from "@av/types";
 import { ClientRpcDevice } from "../rpc/client/devices";
 
@@ -40,7 +40,7 @@ class Parent<
 
 const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child } as const);
-const graph = new Orchistrator([parent] as const);
+const graph = new Manager([parent] as const);
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {
@@ -60,7 +60,7 @@ describe("driver deps", () => {
     };
 
     // TSAS:
-    const device = new ClientRpcDevice<typeof graph, "parent-1">(
+    const device = new ClientRpcDevice<typeof graph["configs"], "parent-1">(
       client as any,
       "parent-1",
     );

@@ -1,4 +1,4 @@
-import type { Events, Natav } from "@av/types";
+import type { Drivers, Events } from "@av/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
@@ -16,13 +16,13 @@ import {
 import { Telemetry } from "@av/telemetry";
 
 export class ClientRpc<
-  N extends Natav.Orch,
+  N extends Drivers.Array,
 > extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
-  private systemHandle: ClientRpcSystem<N>;
+  private systemHandle: ClientRpcSystem;
   public debug: RpcDebugClient<N>;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
@@ -82,7 +82,7 @@ export class ClientRpc<
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  device<Name extends Natav.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
+  device<Name extends Drivers.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
     const cached = this.deviceHandles.get(name);
     if (cached) {
       return cached;
@@ -164,7 +164,7 @@ export class ClientRpc<
 
       if (typeof params.name === "string") {
         // TSAS: The notification payload carries the device name as an untyped string.
-        const deviceName = params.name as Natav.Names<N>;
+        const deviceName = params.name as Drivers.Names<N>;
         const device = this.device(deviceName);
         switch (params.type) {
           case "natav:device:event":
@@ -175,7 +175,7 @@ export class ClientRpc<
           case "natav:state:update":
             device.handleStateUpdate(
               // TSAS: The server sends partial device state updates.
-              (params.data ?? {}) as Partial<Natav.State<N, typeof deviceName>>,
+              (params.data ?? {}) as Partial<Drivers.State<N, typeof deviceName>>,
             );
             break;
           default:

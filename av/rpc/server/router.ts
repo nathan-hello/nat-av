@@ -6,13 +6,13 @@ import {
   RPCResponse,
 } from "@av/rpc/protocol";
 import type { WebSocketPeer } from "@av/rpc/server/websocket";
-import type { Events, Natav } from "@av/types";
+import type { Drivers, Events } from "@av/types";
 
-export interface RPCRequestHandler<N extends Natav.Orch = Natav.Orch> {
+export interface RPCRequestHandler<N extends Drivers.Array> {
   prefix: string;
-  on<K extends keyof Events.System.Map<N>>(
+  on<K extends keyof Events.Natav.Map<N>>(
     type: K & string,
-    handler: (payload: Events.System.Map<N>[K]) => void,
+    handler: (payload: Events.Natav.Map<N>[K]) => void,
     options?: boolean | AddEventListenerOptions,
   ): () => void;
   handle(
@@ -22,8 +22,8 @@ export interface RPCRequestHandler<N extends Natav.Orch = Natav.Orch> {
   closePeer?(peer: WebSocketPeer): void;
 }
 
-export class RPCRequestRouter<N extends Natav.Orch> extends TypedEventTarget<
-  Events.System.Map<N>
+export class RPCRequestRouter<N extends Drivers.Array> extends TypedEventTarget<
+  Events.Natav.Map<N>
 > {
   constructor(private handlers: RPCRequestHandler<N>[]) {
     super();

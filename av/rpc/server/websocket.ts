@@ -1,9 +1,10 @@
+import type { Manager } from "@av/drivers";
 import { bus } from "@av/lib/bus";
 import { DecodeWebsocketError } from "@av/rpc/errors";
 import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { Telemetry } from "@av/telemetry";
-import { type Events, type Natav, Rpc } from "@av/types";
+import { type Events, Rpc, type Drivers } from "@av/types";
 
 const decoder = new TextDecoder();
 
@@ -36,13 +37,13 @@ function readMessage(data: MessageEvent["data"]): string {
   return String(data);
 }
 
-export class WebsocketHandler<N extends Natav.Orch> {
+export class WebsocketHandler<N extends Drivers.Array> {
   private clients = new Set<WebSocketPeer>();
-  private rpc: RPCServer<Natav.Orch>;
-  private natav: Natav.Orch;
+  private rpc: RPCServer<Drivers.Array>;
+  private natav: Manager<Drivers.Array>;
   private tel = new Telemetry("Server::WS");
 
-  constructor(args: { rpc: RPCServer<Natav.Orch>; natav: Natav.Orch }) {
+  constructor(args: { rpc: RPCServer<Drivers.Array>; natav: Manager<N> }) {
     this.rpc = args.rpc;
     this.natav = args.natav;
     bus.on("natav:state:update", (payload) => {
@@ -58,9 +59,9 @@ export class WebsocketHandler<N extends Natav.Orch> {
     });
   }
 
-  BroadcastEvent<E extends keyof Events.System.Map<N>>(
+  BroadcastEvent<E extends keyof Events.Natav.Map<N>>(
     event: E,
-    payload: Events.System.Map<N>[E],
+    payload: Events.Natav.Map<N>[E],
   ) {
     const notification = new RPCNotification(Rpc.Methods.Notification, {
       type: event,
@@ -135,7 +136,7 @@ export class WebsocketHandler<N extends Natav.Orch> {
   }
 }
 
-export function bindHttpToWs<N extends Natav.Orch>(
+export function bindHttpToWs<N extends Drivers.Array>(
   app: WebSocketApp,
   path: string,
   handlers: Pick<

@@ -1,5 +1,5 @@
+import { Manager } from "@av/drivers";
 import { CiscoRoomOS } from "@av/drivers/cisco/roomos";
-import { Orchistrator } from "@av/lib/orch";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { System } from "@av/system";
@@ -109,11 +109,11 @@ describe("rpc roomos device", () => {
       },
     });
 
-    const natav = new Orchistrator([roomos]);
-    const system = new System({ natav });
-    const server = new RPCServer({ system, natav });
+    const natav = new Manager([roomos]);
+    // const system = new System({ natav });
+    const server = new RPCServer({ natav });
     const transport = new TestRpcClient(server);
-    const client = new ClientRpc<typeof natav>({ transport });
+    const client = new ClientRpc<typeof natav["configs"]>({ transport });
 
     transport.connect();
     await new Promise<void>((resolve) => {

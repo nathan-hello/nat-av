@@ -4,12 +4,11 @@ import {
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import type { Events, Rpc, Schema, Sockets } from "@av/types";
-import type { Drivers } from "@av/types/drivers";
+import type { Drivers, Events, Rpc, Schema, Sockets } from "@av/types";
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Dependency = {},
+  Deps extends Drivers.Dep.TRecord = {},
   DriverName extends string = string,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
@@ -53,8 +52,8 @@ export abstract class Driver<
     });
   }
 
-  setDependencies(v: Drivers.DependencyInput) {
-    function unwrapDriver(v: Drivers.DependencyInput[number]) {
+  setDependencies(v: Drivers.Dep.Input) {
+    function unwrapDriver(v: Drivers.Dep.Input[number]) {
       return "driver" in v ? v.driver : v;
     }
 
@@ -80,5 +79,102 @@ export abstract class Driver<
     super.dispatch(type, payload);
 
     this.tel.info("EVENT_DISPATCHED", { type });
+  }
+}
+
+export class Manager<const D extends Drivers.Array = Drivers.Array> {
+  readonly configs: D;
+
+  constructor(configs: D) {
+    this.configs = configs;
+  }
+
+  private all(): Driver[] {
+    const collect = (drivers: readonly Driver[]): Driver[] =>
+      // TSAS:
+      drivers.flatMap((d) => [
+        d,
+        ...collect(Object.values(d.deps) as readonly Driver[]),
+      ]);
+
+    return collect(this.configs);
+  }
+
+  GetDriver<N extends Drivers.Names<D>>(name: N): Drivers.FromName<D, N> {
+    // TSAS:
+    return this.FindDriver(name) as Drivers.FromName<D, N>;
+  }
+
+  GetDriverState<N extends Drivers.Names<D>>(name: N): Drivers.State<D, N> {
+    return this.GetDriver(name).state;
+  }
+
+  FindDriver(name: string): Driver | undefined {
+    return this.all().find((d) => d.name === name);
+  }
+
+  GetAllDriverNames(): string[] {
+    return this.all().map((d) => d.name);
+  }
+
+  GetDebugTree(): Rpc.Debug.Node[] {
+    const toNode = (driver: Driver): Rpc.Debug.Node => {
+      const socket = driver.socket;
+      const canWrite = typeof socket?.write === "function";
+      const canReceive = typeof socket?.on === "function";
+
+      return {
+        name: driver.name,
+        driverName: driver._drivername,
+        children: Object.values(driver.deps as Record<string, Driver>).map(
+          (child) => toNode(child),
+        ),
+        ...(typeof socket?.name === "string" ?
+          {
+            socket: {
+              traceName: socket.name,
+              canWrite,
+              canReceive,
+            },
+          }
+        : {}),
+      };
+    };
+
+    return this.configs.map((driver) => toNode(driver));
+  }
+
+  async Start() {
+    this.configs.forEach((d) => {
+      d.on("driver:state-updated", (data) =>
+        // TS doesn't know about the Names/State impls within this class.
+        // @ts-ignore-next-line
+        bus.dispatch("natav:state:update", { name: d.name, data: data.data }),
+      );
+
+      d.on("driver:delimited", (payload) => {
+        bus.dispatch("natav:debug:socket", {
+          data: {
+            traceName: d.socket?.name ?? d.name,
+            direction: "rx-delimited",
+            time: new Date().toISOString(),
+            encoding: "utf8",
+            text: payload.toString("utf8"),
+            hex: payload.toString("hex"),
+            length: payload.length,
+          },
+        });
+      });
+
+      d.socket?.start?.();
+    });
+  }
+
+  async End() {
+    await Promise.all(
+      this.configs.map(async (d) => {
+        await d.socket?.end?.();
+      }),
+    );
   }
 }

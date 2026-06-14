@@ -1,4 +1,4 @@
-import { Orchistrator } from "@av/lib/orch";
+import { Manager } from "@av/drivers";
 import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import assert from "node:assert/strict";
@@ -18,8 +18,8 @@ describe("test driver", () => {
 
   it("forwards driver events through the rpc server per subscription", async () => {
     const eventDriver = new EventDriver("event-1");
-    const natav = new Orchistrator([eventDriver]);
-    const router = new DeviceRpcRouter<typeof natav>(natav);
+    const natav = new Manager([eventDriver]);
+    const router = new DeviceRpcRouter<typeof natav['configs']>(natav);
     const makePeer = (addr: string) => {
       const sent: string[] = [];
       return {
