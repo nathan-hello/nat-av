@@ -1,10 +1,10 @@
 import { Driver } from "@av/drivers";
-import { DecoderSchema } from "@drivers/decoder/schema";
 import { toBuffer } from "@av/lib/buffer";
 import { RequestManager } from "@av/lib/requests";
 import { RPCErrorData } from "@av/rpc/protocol";
 import { Delimiters } from "@av/sockets/delimiters";
 import type { Sockets } from "@av/types";
+import { DecoderSchema } from "@drivers/decoder/schema";
 import {
   type AudioRoute,
   type DecoderMap,

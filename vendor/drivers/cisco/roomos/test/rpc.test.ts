@@ -1,8 +1,8 @@
 import { Manager } from "@av/drivers";
-import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { TestRpcClient, TestSocket } from "@av/test/data";
+import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

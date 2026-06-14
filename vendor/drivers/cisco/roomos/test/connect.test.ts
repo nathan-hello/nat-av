@@ -1,5 +1,5 @@
-import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import { TestSocket } from "@av/test/data";
+import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 

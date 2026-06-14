@@ -1,7 +1,4 @@
 import { Manager } from "@av/drivers";
-import Decoder from "@drivers/decoder";
-import DisplayManager from "@drivers/decoder/display";
-import ChazyControl from "@drivers/turtle";
 import { bindDebugHttpToWs, RpcDebugServer } from "@av/rpc/debug/server";
 import { RPCServer } from "@av/rpc/server";
 import {
@@ -18,6 +15,9 @@ import {
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
 import type { Drivers } from "@av/types";
+import Decoder from "@drivers/decoder";
+import DisplayManager from "@drivers/decoder/display";
+import ChazyControl from "@drivers/turtle";
 import { System } from "@server/system";
 
 // TSAS:

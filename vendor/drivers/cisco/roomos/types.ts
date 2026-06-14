@@ -1,5 +1,5 @@
-import type { GeneratedRoomOS } from "@drivers/cisco/roomos/typegen/schemas/11.33.1";
 import type { Drivers } from "@av/types/drivers";
+import type { GeneratedRoomOS } from "@drivers/cisco/roomos/typegen/schemas/11.33.1";
 
 type IsPlainObject<V> =
   [V] extends [readonly any[]] ? false
