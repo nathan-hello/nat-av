@@ -1,5 +1,4 @@
-import type { Sockets } from "@av/index";
-import { Test } from "@av/index";
+import { Test, type Sockets } from "@av/index";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { CiscoRoomOS } from "../index";

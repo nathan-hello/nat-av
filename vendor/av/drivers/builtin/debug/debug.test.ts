@@ -1,6 +1,6 @@
 import { Manager } from "@av/drivers";
 import { Debugger } from "@av/drivers/builtin/debug";
-import { Test } from "@av/test/data";
+import { Test } from "@av/test/data.test";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 

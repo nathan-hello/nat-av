@@ -1,4 +1,4 @@
-import { Test } from "@av/test/data";
+import { Test } from "@av/index";
 import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { it } from "node:test";

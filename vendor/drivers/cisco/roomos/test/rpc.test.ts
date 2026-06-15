@@ -1,10 +1,7 @@
-import { Manager } from "@av/drivers";
-import { ClientRpc } from "@av/rpc/client";
-import { RPCServer } from "@av/rpc/server";
-import { Test } from "@av/test/data";
-import { CiscoRoomOS } from "@drivers/cisco/roomos";
+import { ClientRpc, Manager, RPCServer, Test } from "@av/index";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CiscoRoomOS } from "../index";
 
 describe("rpc roomos device", () => {
   it("calls roomos methods and receives roomos events through rpc", async () => {

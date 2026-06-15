@@ -28,4 +28,4 @@ export type {
   Sockets,
 } from "@av/types";
 
-export { Test } from "@av/test/data";
+export { Test } from "@av/test/data.test";

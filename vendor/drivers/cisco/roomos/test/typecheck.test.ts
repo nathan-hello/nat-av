@@ -1,7 +1,7 @@
-import { Test } from "@av/test/data";
-import { CiscoRoomOS } from "@drivers/cisco/roomos";
+import { Test } from "@av/index";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CiscoRoomOS } from "../index";
 
 describe("typecheck", () => {
   const socket = new Test.Socket(
