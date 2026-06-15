@@ -1,6 +1,6 @@
 import { getRpc } from "@/state";
 import type { ClientRpcDevice } from "@av/rpc/client/devices";
-import type { Rpc } from "@av/types";
+import type { Drivers } from "@av/types";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { DebugSocketPanel } from "./socket";
@@ -68,8 +68,8 @@ export function DebugPage(handle: Handle) {
 }
 
 function findFirstSocketDevice(
-  nodes: Rpc.Debug.Node[],
-): Rpc.Debug.Node | undefined {
+  nodes: Drivers.DriverView[],
+): Drivers.DriverView | undefined {
   for (const node of nodes) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;

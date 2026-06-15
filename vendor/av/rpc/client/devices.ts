@@ -7,7 +7,7 @@ export class ClientRpcDevice<
   N extends Drivers.Array = Drivers.Array,
   Name extends Drivers.Names<N> = Drivers.Names<N>,
 > extends TypedEventTarget<Events.Rpc.DeviceMap<N, Name>> {
-  private apiProxy: Rpc.Api<N, Name>;
+  private apiProxy: Rpc.Client.Api<N, Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
 
@@ -44,7 +44,7 @@ export class ClientRpcDevice<
     },
   };
 
-  private createApiProxy(path: string[] = []): Rpc.Api<N, Name> {
+  private createApiProxy(path: string[] = []): Rpc.Client.Api<N, Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
         if (typeof methodName !== "string" || methodName === "then") {
@@ -55,7 +55,7 @@ export class ClientRpcDevice<
       },
       apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
       // TSAS: Proxy
-    }) as unknown as Rpc.Api<N, Name>;
+    }) as unknown as Rpc.Client.Api<N, Name>;
   }
 
   async call(method: string, args: any[] = []) {
@@ -75,7 +75,7 @@ export class ClientRpcDevice<
     return this.pendingCounts.get(method) ?? 0;
   }
 
-  handleStateUpdate(patch: Partial<Rpc.State<N, Name>>) {
+  handleStateUpdate(patch: Partial<Rpc.Client.State<N, Name>>) {
     const currentState = this.state;
     // TSAS: Partial patches are reconciled into the device's cached state.
     this.state =
@@ -118,7 +118,7 @@ export class ClientRpcDevice<
     if (!state.subscribed) {
       state.pendingSubscribe ??= this.client
         .request(
-          Rpc.Protocol.Request.deviceSubscribe(this.client.nextRequestId(), {
+          Rpc.Request.deviceSubscribe(this.client.nextRequestId(), {
             device: this.name,
             method: event,
             args: [],
@@ -156,7 +156,7 @@ export class ClientRpcDevice<
 
       state.pendingUnsubscribe ??= this.client
         .request(
-          Rpc.Protocol.Request.deviceUnsubscribe(this.client.nextRequestId(), {
+          Rpc.Request.deviceUnsubscribe(this.client.nextRequestId(), {
             device: this.name,
             method: event,
             args: [],

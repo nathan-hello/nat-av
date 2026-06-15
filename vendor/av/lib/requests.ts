@@ -1,7 +1,7 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
-import type { Events, Requests } from "@av/types";
+import { Rpc, type Events, type Requests } from "@av/types";
 
 export class RequestManager<Tx, Rx> extends TypedEventTarget<
   Events.Request.Map<Tx, Rx>
@@ -68,7 +68,14 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
     request: Tx,
   ): Promise<TaskResult<ExpectedRx>> {
     if (this.ended) {
-      return Promise.resolve({ ok: false, error: "requests-ended" });
+      return Promise.resolve({
+        ok: false,
+        error: "requests-ended",
+        data: new Rpc.Error({
+          code: Rpc.Error.Codes.InternalError,
+          message: "requestmanager was disconnected",
+        }),
+      });
     }
 
     return new Promise<TaskResult<ExpectedRx>>((resolve) => {
@@ -81,7 +88,14 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
 
       entry.timeout = setTimeout(() => {
         this.removePending(entry);
-        resolve({ ok: false, error: "request-timeout" });
+        resolve({
+          ok: false,
+          error: "request-timeout",
+          data: new Rpc.Error({
+            code: Rpc.Error.Codes.RequestTimeout,
+            message: "request timed out",
+          }),
+        });
         this.dispatch("timeout", { request });
         this.flush();
       }, this.timeoutMs);
@@ -97,7 +111,15 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
           clearTimeout(entry.timeout);
         }
         this.removePending(entry);
-        resolve({ ok: false, error: enqueue.error });
+        resolve({
+          ok: false,
+          error: enqueue.error,
+
+          data: new Rpc.Error({
+            code: Rpc.Error.Codes.RequestTimeout,
+            message: enqueue.error,
+          }),
+        });
         this.dispatch("error", {
           phase: "send",
           error: enqueue.error,
@@ -109,7 +131,14 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
 
   send(request: Tx): Promise<TaskResult<number>> {
     if (this.ended) {
-      return Promise.resolve({ ok: false, error: "requests-ended" });
+      return Promise.resolve({
+        ok: false,
+        error: "requests-ended",
+        data: new Rpc.Error({
+          code: Rpc.Error.Codes.InternalError,
+          message: "requestmanager was disconnected",
+        }),
+      });
     }
 
     return Promise.resolve(
@@ -139,7 +168,14 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
       if (entry.timeout !== undefined) {
         clearTimeout(entry.timeout);
       }
-      entry.resolve({ ok: false, error: reason });
+      entry.resolve({
+        ok: false,
+        error: reason,
+        data: new Rpc.Error({
+          code: Rpc.Error.Codes.RequestsShutdown,
+          message: reason,
+        }),
+      });
     }
 
     super.end();

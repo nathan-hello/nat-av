@@ -91,7 +91,7 @@ export default class Decoder<
 
     const result = await this.requests.request<DecoderMap[Method]["res"]>(req);
     if (!result.ok) {
-      throw new Rpc.Protocol.ErrorData({ code: 400, message: result.error });
+      throw new Rpc.Error({ code: 400, message: result.error });
     }
 
     if (typeof result.data.result === "number" && result.data.result !== 0) {
@@ -125,7 +125,7 @@ export default class Decoder<
           (v) => v.output === r.video?.output,
         );
         if (!output) {
-          throw new Rpc.Protocol.ErrorData({
+          throw new Rpc.Error({
             code: 401,
             message: "output-or-monitor-not-found",
             data: this.context,
@@ -180,7 +180,7 @@ export default class Decoder<
     moveRelative: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new Rpc.Protocol.ErrorData({
+        throw new Rpc.Error({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,
@@ -203,7 +203,7 @@ export default class Decoder<
     moveAbsolute: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new Rpc.Protocol.ErrorData({
+        throw new Rpc.Error({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,
@@ -214,7 +214,7 @@ export default class Decoder<
 
     fetchContext: async () => {
       if (this.mock === null) {
-        throw new Rpc.Protocol.ErrorData({
+        throw new Rpc.Error({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,

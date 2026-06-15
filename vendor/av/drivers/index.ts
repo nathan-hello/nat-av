@@ -3,7 +3,7 @@ import {
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import type { Drivers, Events, Rpc, Schema, Sockets } from "@av/types";
+import type { Drivers, Events, Schema, Sockets } from "@av/types";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
 type SocketMaybe = Partial<Sockets.Client> | undefined;
@@ -149,8 +149,8 @@ export class Manager<
     return this.all().map((d) => d.name);
   }
 
-  GetTree(): Rpc.Debug.Node[] {
-    const toNode = (driver: Driver): Rpc.Debug.Node | undefined => {
+  GetTree(): Drivers.DriverView[] {
+    const toNode = (driver: Driver): Drivers.DriverView | undefined => {
       if (driver.name === "debugger") {
         return;
       }

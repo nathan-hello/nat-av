@@ -1,21 +1,21 @@
 import { Driver } from "@av/drivers";
-import { Rpc, type Drivers } from "@av/types";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
-type SerializableMessage = Omit<Rpc.Debug.SocketMessage, "data"> & {
+type SerializableMessage = Omit<Events.Natav.SocketMessage, "data"> & {
   data: number[];
 };
 
 type State = {
   tree: Record<
     Drivers.Names,
-    { meta: Rpc.Debug.Node; messages: SerializableMessage[] }
+    { meta: Drivers.DriverView; messages: SerializableMessage[] }
   >;
 };
 
-function buildTree(nodes: Rpc.Debug.Node[]): State["tree"] {
+function buildTree(nodes: Drivers.DriverView[]): State["tree"] {
   const tree: State["tree"] = {};
 
-  const visit = (node: Rpc.Debug.Node) => {
+  const visit = (node: Drivers.DriverView) => {
     tree[node.name] ??= {
       meta: node,
       messages: [],
@@ -45,18 +45,18 @@ export class Debugger extends Driver<"debugger"> {
         this.state.tree[name].messages = [];
       }
     },
-    getNode: (name: Drivers.Names): Rpc.Debug.Node => {
+    getNode: (name: Drivers.Names): Drivers.DriverView => {
       const found = this.state.tree[name]?.meta;
       if (!found) {
         this.tel.error("node not found", { name });
-        throw new Rpc.Protocol.ErrorData({
-          code: Rpc.Protocol.ErrorCodes.InvalidRequest,
+        throw new Rpc.Error({
+          code: Rpc.Error.Codes.InvalidRequest,
           message: "node not found",
         });
       }
       return found;
     },
-    tree: (): Rpc.Debug.Node[] => {
+    tree: (): Drivers.DriverView[] => {
       return this.natav.GetTree();
     },
     socket: {
@@ -103,15 +103,15 @@ export class Debugger extends Driver<"debugger"> {
     encoding?: BufferEncoding;
   }): Promise<{ bytesWritten: number }> {
     if (!params || typeof params !== "object") {
-      throw new Rpc.Protocol.ErrorData({
-        code: Rpc.Protocol.ErrorCodes.InvalidParams,
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.InvalidParams,
         message: "Invalid debug socket write params",
       });
     }
 
     if (typeof params.name !== "string" || typeof params.text !== "string") {
-      throw new Rpc.Protocol.ErrorData({
-        code: Rpc.Protocol.ErrorCodes.InvalidParams,
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.InvalidParams,
         message: "Debug socket write requires string deviceName and text",
       });
     }
@@ -119,16 +119,16 @@ export class Debugger extends Driver<"debugger"> {
     const result = await this.tel.task("debugger:socket-write", async () => {
       const device = this.natav.FindDriver(params.name);
       if (!device) {
-        throw new Rpc.Protocol.ErrorData({
-          code: Rpc.Protocol.ErrorCodes.DeviceNotFound,
+        throw new Rpc.Error({
+          code: Rpc.Error.Codes.DeviceNotFound,
           message: `Device "${params.name}" not found`,
           data: { availableDevices: this.natav.GetAllDriverNames() },
         });
       }
 
       if (typeof device.socket?.write !== "function") {
-        throw new Rpc.Protocol.ErrorData({
-          code: Rpc.Protocol.ErrorCodes.MethodNotFound,
+        throw new Rpc.Error({
+          code: Rpc.Error.Codes.MethodNotFound,
           message: `Device "${params.name}" does not expose a writable socket`,
         });
       }
@@ -141,9 +141,9 @@ export class Debugger extends Driver<"debugger"> {
       return result.data;
     }
 
-      throw new Rpc.Protocol.ErrorData({
-        code: Rpc.Protocol.ErrorCodes.InternalError,
-        message: result.error,
-      });
+    throw new Rpc.Error({
+      code: Rpc.Error.Codes.InternalError,
+      message: result.error,
+    });
   }
 }

@@ -49,7 +49,7 @@ describe("test driver", () => {
     const peer2 = makePeer("peer-2");
 
     await router.handle(
-      Rpc.Protocol.Request.deviceSubscribe(1, {
+      Rpc.Request.deviceSubscribe(1, {
         device: "event-1",
         method: "tick",
       }),
@@ -57,7 +57,7 @@ describe("test driver", () => {
     );
 
     await router.handle(
-      Rpc.Protocol.Request.deviceSubscribe(2, {
+      Rpc.Request.deviceSubscribe(2, {
         device: "event-1",
         method: "tick",
       }),
@@ -65,7 +65,7 @@ describe("test driver", () => {
     );
 
     await router.handle(
-      Rpc.Protocol.Request.deviceSubscribe(3, {
+      Rpc.Request.deviceSubscribe(3, {
         device: "event-1",
         method: "tick",
       }),
@@ -88,7 +88,7 @@ describe("test driver", () => {
     });
 
     await router.handle(
-      Rpc.Protocol.Request.deviceUnsubscribe(4, {
+      Rpc.Request.deviceUnsubscribe(4, {
         device: "event-1",
         method: "tick",
       }),

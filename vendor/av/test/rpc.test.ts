@@ -2,10 +2,37 @@ import { Manager } from "@av/drivers";
 import { RpcClient } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
 import { Test } from "@av/test/data.test";
+import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 describe("rpc device events", () => {
+  it("narrows parsed notifications into server notifications", () => {
+    const notification = Rpc.Notification.is({
+      jsonrpc: "2.0",
+      method: "notification",
+      params: {
+        type: "natav:device:event",
+        name: "event-1",
+        event: "tick",
+        data: { count: 1 },
+      },
+    });
+
+    assert.ok(notification);
+
+    const serverNotification = Rpc.Notification.Server.from(notification);
+
+    assert.ok(serverNotification);
+    assert.equal(serverNotification.type, "natav:device:event");
+    assert.deepEqual(serverNotification.params, {
+      type: "natav:device:event",
+      name: "event-1",
+      event: "tick",
+      data: { count: 1 },
+    });
+  });
+
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new Test.EventDriver("event-1");
     const natav = new Manager({

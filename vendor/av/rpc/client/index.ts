@@ -33,9 +33,10 @@ export class RpcClient<
 
     this.transport.on("close", (event) => {
       this.requests.rejectAll(
-        new Error(
-          `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
-        ),
+        new Rpc.Error({
+          code: Rpc.Error.Codes.RpcDisconnected,
+          message: `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
+        }),
       );
       this.dispatch("close", event);
     });
@@ -75,7 +76,7 @@ export class RpcClient<
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
     return this.requests.request(
-      Rpc.Protocol.Request.deviceCall(this.requests.nextRequestId(), {
+      Rpc.Request.deviceCall(this.requests.nextRequestId(), {
         device,
         method,
         args,
@@ -83,7 +84,7 @@ export class RpcClient<
     );
   }
 
-  request<T = any>(message: Rpc.Protocol.Request): Promise<T> {
+  request<T = any>(message: Rpc.Request): Promise<T> {
     return this.requests.request<T>(message);
   }
 
@@ -97,30 +98,36 @@ export class RpcClient<
   }
 
   private onMessage(raw: string) {
-    const parsed = this.tel.task("JSON_PARSE", () => Rpc.Protocol.JSON.parse(raw));
+    const parsed = this.tel.task("JSON_PARSE", () => Rpc.Json.parse(raw));
     if (!parsed.ok || !parsed.data) {
       this.tel.error("json-parse-failed", { raw, parsed });
       this.dispatch("error", { reason: "json-parse-failed", raw });
       return;
     }
 
-    const notification = Rpc.Protocol.ServerNotification.is(parsed.data);
+    const check = Rpc.Notification.is(parsed.data);
 
-    if (notification) {
-      this.tel.info("got-notification", parsed.data);
+    if (check) {
+      const notification = Rpc.Notification.Server.from(check);
+      if (!notification) {
+        return;
+      }
 
-      // TSAS: The server notification parser validates the payload shape but not the driver-name union.
-      const deviceName = notification.params.name as Drivers.Names<N>;
-      const device = this.device(deviceName);
+      this.tel.info("got-notification", notification);
+
+      let device: ClientRpcDevice;
+
       switch (notification.type) {
         case "natav:device:event":
-          device.handleEvent(notification.params.event, notification.params.data);
+          device = this.device(notification.params.name);
+          device.handleEvent(
+            notification.params.event,
+            notification.params.data,
+          );
           break;
         case "natav:state:update":
-          device.handleStateUpdate(
-            // TSAS: The server sends partial device state updates keyed by the runtime device name.
-            notification.params.data as Partial<Drivers.State<N, typeof deviceName>>,
-          );
+          device = this.device(notification.params.name);
+          device.handleStateUpdate(notification.params.data);
           break;
         default:
           break;
@@ -128,13 +135,13 @@ export class RpcClient<
       return;
     }
 
-    const response = Rpc.Protocol.Response.is(parsed.data);
+    const response = Rpc.Response.is(parsed.data);
     if (response) {
       this.requests.handleResponse(response);
       return;
     }
 
-    const rpcError = Rpc.Protocol.Error.is(parsed.data);
+    const rpcError = Rpc.Error.is(parsed.data);
     if (rpcError) {
       this.requests.handleError(rpcError);
     }

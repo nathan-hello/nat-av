@@ -5,7 +5,7 @@ import { Rpc, type Events } from "@av/types";
 
 function hasJsonEventTarget(
   value: unknown,
-): value is TypedEventTarget<Record<string, Rpc.JSONValue>> {
+): value is TypedEventTarget<Record<string, Rpc.Json.Value>> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -27,14 +27,17 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
   }
 
   async handle(
-    message: Rpc.Protocol.Request,
+    message: Rpc.Request,
     peer: Rpc.WebSocket.Peer,
-  ): Promise<Rpc.Protocol.Response | Rpc.Protocol.Error> {
+  ): Promise<Rpc.Response | Rpc.Error> {
     const params = message.DeviceParams();
-    const err = new Rpc.Protocol.Error(message.id, {
-      code: Rpc.Protocol.ErrorCodes.InvalidParams,
-      message: "Invalid device call params",
-    });
+    const err = new Rpc.Error(
+      {
+        code: Rpc.Error.Codes.InvalidParams,
+        message: "Invalid device call params",
+      },
+      message.id,
+    );
 
     if (!params) {
       return err;
@@ -50,24 +53,30 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
 
         const device = this.natav.FindDriver(params.device);
         if (!device) {
-          return new Rpc.Protocol.Error(message.id, {
-            code: Rpc.Protocol.ErrorCodes.DeviceNotFound,
-            message: `Device \"${params.device}\" not found`,
-            data: { availableDevices: this.natav.GetAllDriverNames() },
-          });
+          return new Rpc.Error(
+            {
+              code: Rpc.Error.Codes.DeviceNotFound,
+              message: `Device \"${params.device}\" not found`,
+              data: { availableDevices: this.natav.GetAllDriverNames() },
+            },
+            message.id,
+          );
         }
         switch (message.method) {
-          case Rpc.Methods.DeviceCall:
+          case Rpc.Request.Methods.DeviceCall:
             return await this.call(device, message, params);
-          case Rpc.Methods.DeviceSubscribe:
+          case Rpc.Request.Methods.DeviceSubscribe:
             return this.subscribe(device, message, params, peer);
-          case Rpc.Methods.DeviceUnsubscribe:
+          case Rpc.Request.Methods.DeviceUnsubscribe:
             return this.unsubscribe(message, params, peer);
           default:
-            return new Rpc.Protocol.Error(message.id, {
-              code: Rpc.Protocol.ErrorCodes.InvalidParams,
-              message: "Invalid device call params",
-            });
+            return new Rpc.Error(
+              {
+                code: Rpc.Error.Codes.InvalidParams,
+                message: "Invalid device call params",
+              },
+              message.id,
+            );
         }
       },
     );
@@ -77,30 +86,36 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     }
 
     if (result.data) {
-      return new Rpc.Protocol.Error(message.id, result.data.error);
+      return new Rpc.Error(result.data.error, message.id);
     }
 
-    return new Rpc.Protocol.Error(message.id, {
-      code: Rpc.Protocol.ErrorCodes.InternalError,
-      message: result.error,
-    });
+    return new Rpc.Error(
+      {
+        code: Rpc.Error.Codes.InternalError,
+        message: result.error,
+      },
+      message.id,
+    );
   }
 
   private subscribe(
     device: Driver,
-    message: Rpc.Protocol.Request,
-    params: Rpc.Device.CallParams,
+    message: Rpc.Request,
+    params: Rpc.Request.DeviceParams,
     peer: Rpc.WebSocket.Peer,
-  ): Rpc.Protocol.Response | Rpc.Protocol.Error {
+  ): Rpc.Response | Rpc.Error {
     const eventName = params.method;
 
     const events: unknown = device.events;
 
     if (!hasJsonEventTarget(events)) {
-      return new Rpc.Protocol.Error(message.id, {
-        code: Rpc.Protocol.ErrorCodes.InvalidParams,
-        message: "driver did not implement events",
-      });
+      return new Rpc.Error(
+        {
+          code: Rpc.Error.Codes.InvalidParams,
+          message: "driver did not implement events",
+        },
+        message.id,
+      );
     }
 
     const cleanup = events.on(eventName, (data) => {
@@ -115,8 +130,8 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
       };
 
       peer.send(
-        Rpc.Protocol.JSON.stringify(
-          new Rpc.Protocol.ServerNotification("natav:device:event", event),
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:device:event", event),
         ),
       );
     });
@@ -132,10 +147,10 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
   }
 
   private unsubscribe(
-    message: Rpc.Protocol.Request,
-    params: Rpc.Device.CallParams,
+    message: Rpc.Request,
+    params: Rpc.Request.DeviceParams,
     peer: Rpc.WebSocket.Peer,
-  ): Rpc.Protocol.Response | Rpc.Protocol.Error {
+  ): Rpc.Response | Rpc.Error {
     const eventName = params.method;
 
     const peerSubscriptions = this.subscriptions.get(peer);
@@ -156,17 +171,20 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
 
   private async call(
     device: Driver,
-    message: Rpc.Protocol.Request,
-    params: Rpc.Device.CallParams,
+    message: Rpc.Request,
+    params: Rpc.Request.DeviceParams,
   ) {
     const method = this.resolveApiMethod(device.api, params.method);
 
     if (!method) {
-      return new Rpc.Protocol.Error(message.id, {
-        code: Rpc.Protocol.ErrorCodes.DeviceMethodNotFound,
-        message: `Method \"${params.method}\" not found on device \"${params.device}\"`,
-        data: { availableMethods: Object.keys(device.api ?? {}) },
-      });
+      return new Rpc.Error(
+        {
+          code: Rpc.Error.Codes.DeviceMethodNotFound,
+          message: `Method \"${params.method}\" not found on device \"${params.device}\"`,
+          data: { availableMethods: Object.keys(device.api ?? {}) },
+        },
+        message.id,
+      );
     }
 
     const callResult = await Reflect.apply(
@@ -186,17 +204,20 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
         typeof error.code === "number" &&
         typeof error.message === "string"
       ) {
-        return new Rpc.Protocol.Error(message.id, {
-          code: error.code,
-          message: error.message,
-          data: error.data,
-        });
+        return new Rpc.Error(
+          {
+            code: error.code,
+            message: error.message,
+            data: error.data,
+          },
+          message.id,
+        );
       }
     }
 
     // TSAS: Device RPC responses are JSON payloads from the driver API.
     const jsonValue =
-      callResult === undefined ? null : (callResult as Rpc.JSONValue);
+      callResult === undefined ? null : (callResult as Rpc.Json.Value);
 
     return message.response(jsonValue);
   }

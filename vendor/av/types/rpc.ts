@@ -23,12 +23,14 @@ export namespace Rpc {
 
       return false;
     }
-    export function stringify(value: Super): string {
+    export function stringify(
+      value: Value | Rpc.Request | Rpc.Response | Rpc.Error | Rpc.Notification,
+    ): string {
       return globalThis.JSON.stringify(value);
     }
 
-    export function parse(value: string): Super {
-      return globalThis.JSON.parse(value);
+    export function parse(value: string | unknown): Value {
+      return globalThis.JSON.parse(value as any);
     }
 
     export type Value =
@@ -39,8 +41,6 @@ export namespace Rpc {
       | Value[]
       | { [key: string]: Value };
 
-    export type Super = Value | undefined | Error | Uint8Array;
-
     export type IsJSON<T> =
       T extends Value ?
         [T] extends [never] ?
@@ -50,32 +50,6 @@ export namespace Rpc {
   }
 
   export namespace Client {
-    type ValidateParams<Args extends any[]> =
-      Args extends [] ? true
-      : Args extends [infer Head, ...infer Tail] ?
-        Rpc.Json.IsJSON<Head> extends true ?
-          ValidateParams<Tail>
-        : false
-      : false;
-
-    type IsJsonFunction<T> =
-      T extends (...args: infer Args) => Promise<infer Return> ?
-        ValidateParams<Args> extends true ?
-          Rpc.Json.IsJSON<Return> extends true ?
-            T
-          : never
-        : never
-      : never;
-
-    type FilterApi<T> = {
-      [K in keyof T as IsJsonFunction<T[K]> extends never ? never : K]: T[K];
-    };
-
-    type FilterState<T> = {
-      [K in keyof T as K extends string ? string : never]: {
-        K: T[K] extends Rpc.Json.Value ? T[K] : never;
-      };
-    };
     export type PendingRequest = {
       resolve: (result: any) => void;
       reject: (error: Rpc.Error) => void;
@@ -107,20 +81,20 @@ export namespace Rpc {
     export type State<
       N extends Drivers.Array,
       Name extends Drivers.Names<N>,
-    > = FilterState<Drivers.State<N, Name>>;
+    > = Drivers.State<N, Name>;
 
     export type Api<
       N extends Drivers.Array = Drivers.Array,
       Name extends Drivers.Names<N> = Drivers.Names<N>,
-    > = FilterApi<Drivers.Api<N, Name>>;
+    > = Drivers.Api<N, Name>;
   }
 
   type Id = string | number;
 
   const REQUEST_METHOD = {
-    DeviceCall: "natav:driver:api",
-    DeviceSubscribe: "natav:driver:events:subscribe",
-    DeviceUnsubscribe: "natav:driver:events:unsubscribe",
+    DeviceCall: "device.call",
+    DeviceSubscribe: "device.events.subscribe",
+    DeviceUnsubscribe: "device.events.unsubscribe",
     GetAllDriverStates: "natav:all_states",
   } as const;
 
@@ -168,7 +142,7 @@ export namespace Rpc {
 
   export class Request<
     Method extends string = string,
-    Params = unknown,
+    Params extends Rpc.Json.Value = Rpc.Json.Value,
     Result extends Rpc.Json.Value = Rpc.Json.Value,
   > {
     readonly jsonrpc: "2.0" = "2.0";
@@ -245,7 +219,7 @@ export namespace Rpc {
   }
 
   export namespace Request {
-    export const Method = REQUEST_METHOD;
+    export const Methods = REQUEST_METHOD;
     export type DeviceParams = { device: string; method: string; args: any[] };
     export type DeviceCall = {
       method: typeof REQUEST_METHOD.DeviceCall;
@@ -268,7 +242,7 @@ export namespace Rpc {
       result: Rpc.Json.Value;
     };
     export type ResultOf<TRequest extends Rpc.Request> =
-      TRequest extends Rpc.Request<string, unknown, infer ResultType> ?
+      TRequest extends Rpc.Request<string, Rpc.Json.Value, infer ResultType> ?
         ResultType
       : never;
   }
@@ -296,7 +270,7 @@ export namespace Rpc {
         !("jsonrpc" in message) ||
         message.jsonrpc !== "2.0" ||
         (typeof message.id !== "string" && typeof message.id !== "number") ||
-        typeof message.method !== "string" ||
+        !("result" in message) ||
         !Rpc.Json.is(message.result)
       ) {
         return null;
@@ -318,11 +292,14 @@ export namespace Rpc {
       if (
         message === null ||
         typeof message !== "object" ||
-        !("jsonrpc" in message) ||
         !message ||
+        !("jsonrpc" in message) ||
         message.jsonrpc !== "2.0" ||
-        !(message.id === null) ||
-        !(typeof message.id === "string" && typeof message.id === "number") ||
+        !("id" in message) ||
+        (message.id !== null &&
+          typeof message.id !== "string" &&
+          typeof message.id !== "number") ||
+        !("error" in message) ||
         !isObject(message.error)
       ) {
         return null;
@@ -366,7 +343,10 @@ export namespace Rpc {
       DeviceNotFound: -32001,
       DeviceMethodNotFound: -32002,
       DeviceCallFailed: -32003,
+      RequestTimeout: -35000,
+      RequestsShutdown: -35001,
       RpcTimeout: -32004,
+      RpcDisconnected: -32005,
     } as const;
   }
 
@@ -416,16 +396,27 @@ export namespace Rpc {
         super(Rpc.Notification.Server.Methods, notificationParams);
       }
 
-      get type() {
+      get type(): T {
         return this.params.type;
       }
 
-      static is(value: Rpc.Json.Value): Rpc.Notification.Server | null {
+      static from(value: Notification): Rpc.Notification.Server.Any | null {
+        return Rpc.Notification.Server.fromNotification(value);
+      }
+
+      static is(value: Rpc.Json.Value): Rpc.Notification.Server.Any | null {
         const notification = Notification.is(value);
-        if (
-          !notification ||
-          notification.method !== Rpc.Notification.Server.Methods
-        ) {
+        if (!notification) {
+          return null;
+        }
+
+        return Rpc.Notification.Server.fromNotification(notification);
+      }
+
+      private static fromNotification(
+        notification: Notification,
+      ): Rpc.Notification.Server.Any | null {
+        if (notification.method !== Rpc.Notification.Server.Methods) {
           return null;
         }
 
@@ -481,6 +472,10 @@ export namespace Rpc {
     }
 
     export namespace Server {
+      export type Any = {
+        [K in keyof Events.Natav.Map]: Rpc.Notification.Server<K>;
+      }[keyof Events.Natav.Map];
+
       export const Methods = "notification";
     }
   }

@@ -18,7 +18,7 @@ export namespace Drivers {
   export type DriverView = {
     name: string;
     driverName: string;
-    children: Node[];
+    children: DriverView[];
     socket?: {
       traceName: string;
       canWrite: boolean;
@@ -56,7 +56,7 @@ export namespace Drivers {
     string,
     ApiRecord,
     Record<string, any>,
-    TypedEventTarget<{ [x: string]: Rpc.JSONValue }> | undefined,
+    TypedEventTarget<{ [x: string]: Rpc.Json.Value }> | undefined,
     Partial<Sockets.Client> | undefined
   >;
 

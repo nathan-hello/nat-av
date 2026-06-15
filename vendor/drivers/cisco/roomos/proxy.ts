@@ -63,7 +63,7 @@ export class RoomOSProxy {
 
   private static subscriptionRootForStateRoot(
     root: string,
-  ): keyof RoomOS.Subscriptions | null {
+  ): keyof RoomOS.Sub | null {
     switch (root) {
       case "Configuration":
         return "xConfiguration";
@@ -92,7 +92,7 @@ export class RoomOSProxy {
     const root = RoomOSProxy.subscriptionRootForStateRoot(path[0] ?? "");
     // TSAS: The state proxy stores the constructor-provided subscriptions tree on internal.
     const subscriptions = this.state.internal?.subscriptions as
-      | RoomOS.Subscriptions
+      | RoomOS.Sub
       | undefined;
 
     if (root === null || subscriptions === undefined) {

@@ -24,7 +24,7 @@ export class ClientWebsocket
 
   constructor(
     private url: string,
-    private options: Required<Rpc.TransportOptions>,
+    private options: Required<Rpc.WebSocket.TransportOptions>,
   ) {
     super();
   }

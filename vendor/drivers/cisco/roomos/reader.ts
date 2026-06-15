@@ -1,7 +1,7 @@
 import { Rpc, toString } from "@av/index";
 import { RoomOS } from "./types";
 
-function FromJsonRpcError(err: Rpc.Protocol.Error): RoomOS.ReadOperation {
+function FromJsonRpcError(err: Rpc.Error): RoomOS.ReadOperation {
   const code: RoomOS.ErrorCode =
     // TSAS: Object.keys takes out the string definitions
     (Object.keys(RoomOS.ErrorCodes) as RoomOS.ErrorCode[]).find(
@@ -103,7 +103,7 @@ function FromJsonRpcResponse(
 }
 
 function FromJsonRpcNotification(
-  notification: Rpc.Protocol.Notification,
+  notification: Rpc.Notification,
 ): RoomOS.ReadOperation | null {
   if (notification.method === "xFeedback/Event") {
     const params = parse.xFeedbackEvent(notification.params);
@@ -132,9 +132,7 @@ function FromJsonRpcNotification(
 
 const parse = {
   Is: {
-    SubOrUnsubFeedback: (
-      value: RoomOS.JsonValue,
-    ): value is RoomOS.Rx.RegisterFeedback => {
+    SubOrUnsubFeedback: (value: unknown): value is RoomOS.Rx.RegisterFeedback => {
       return (
         value !== null &&
         typeof value === "object" &&
@@ -143,8 +141,8 @@ const parse = {
       );
     },
     xFeedbackEvent: (
-      value: RoomOS.JsonValue,
-    ): value is { Id: number & Record<string, RoomOS.JsonValue> } => {
+      value: unknown,
+    ): value is { Id: number } & Record<string, RoomOS.JsonValue> => {
       return (
         value !== null &&
         typeof value === "object" &&
@@ -154,17 +152,15 @@ const parse = {
     },
   },
 
-  SubOrUnsubFeedback: (
-    value: RoomOS.JsonValue,
-  ): RoomOS.Rx.RegisterFeedback | null => {
+  SubOrUnsubFeedback: (value: unknown): RoomOS.Rx.RegisterFeedback | null => {
     if (parse.Is.SubOrUnsubFeedback(value)) {
       return value;
     }
     return null;
   },
   xFeedbackEvent: (
-    value: RoomOS.JsonValue,
-  ): { Id: number & Record<string, RoomOS.JsonValue> } | null => {
+    value: unknown,
+  ): ({ Id: number } & Record<string, RoomOS.JsonValue>) | null => {
     if (parse.Is.xFeedbackEvent(value)) {
       return value;
     }

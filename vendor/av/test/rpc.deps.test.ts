@@ -115,7 +115,7 @@ describe("rpc deps", () => {
     const serverPeer = makePeer("server-peer");
 
     const serverCall = await router.handle(
-      Rpc.Protocol.Request.deviceCall(1, {
+      Rpc.Request.deviceCall(1, {
         device: "leaf",
         method: "ping",
         args: [],
@@ -133,7 +133,7 @@ describe("rpc deps", () => {
     );
 
     await router.handle(
-      Rpc.Protocol.Request.deviceSubscribe(2, {
+      Rpc.Request.deviceSubscribe(2, {
         device: "leaf",
         method: "tick",
         args: [],

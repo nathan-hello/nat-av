@@ -20,38 +20,39 @@ export class ClientRpcRequests {
     return this.requestIdCounter++;
   }
 
-  handleResponse(response: Rpc.Protocol.Response) {
+  handleResponse(response: Rpc.Response) {
     this.tel.info("got-response", response);
     this.resolvePendingRequest(response.id, response.result);
   }
 
-  handleError(rpcError: Rpc.Protocol.Error) {
+  handleError(rpcError: Rpc.Error) {
     this.tel.info("got-error", rpcError);
     if (rpcError.id === null) {
       return;
     }
 
-    const error = rpcError;
-    this.rejectPendingRequest(rpcError.id, error);
+    this.rejectPendingRequest(rpcError);
   }
 
-  rejectAll(error: Rpc.Protocol.Error) {
-    for (const id of this.pendingRequests.keys()) {
-      this.rejectPendingRequest(id, error);
+  rejectAll(error: Rpc.Error) {
+    for (const _ of this.pendingRequests.keys()) {
+      this.rejectPendingRequest(error);
     }
   }
 
-  async request<T = any>(message: Rpc.Protocol.Request): Promise<T> {
+  async request<T = any>(message: Rpc.Request): Promise<T> {
     await this.waitForOpen();
 
     return new Promise<T>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.rejectPendingRequest(
-          message.id,
-          new Rpc.Protocol.Error(message.id, {
-            code: Rpc.Protocol.ErrorCodes.RpcTimeout,
-            message: `RPC call timed out after ${this.timeout}ms id ${message.id}`,
-          }),
+          new Rpc.Error(
+            {
+              code: Rpc.Error.Codes.RpcTimeout,
+              message: `RPC call timed out after ${this.timeout}ms id ${message.id}`,
+            },
+            message.id,
+          ),
         );
       }, this.timeout);
 
@@ -63,10 +64,10 @@ export class ClientRpcRequests {
       this.emitChange();
 
       const str = this.tel.task("JSON_STRINGIFY", () =>
-        Rpc.Protocol.JSON.stringify(message),
+        Rpc.Json.stringify(message),
       );
       if (!str.ok) {
-        this.rejectPendingRequest(message.id, str.data);
+        this.rejectPendingRequest(new Rpc.Error(str.data.error, message.id));
         return;
       }
 
@@ -74,7 +75,7 @@ export class ClientRpcRequests {
         this.transport.send(str.data),
       );
       if (!send.ok) {
-        this.rejectPendingRequest(message.id, send.data);
+        this.rejectPendingRequest(new Rpc.Error(send.data.error, message.id));
       }
     });
   }
@@ -87,7 +88,7 @@ export class ClientRpcRequests {
     await this.transport.once("open");
   }
 
-  private resolvePendingRequest(id: string | number, result: unknown) {
+  private resolvePendingRequest(id: string | number, result: Rpc.Json.Value) {
     const pending = this.pendingRequests.get(id);
     if (!pending) {
       return;
@@ -99,14 +100,18 @@ export class ClientRpcRequests {
     pending.resolve(result);
   }
 
-  private rejectPendingRequest(id: string | number, error: Rpc.Protocol.Error) {
-    const pending = this.pendingRequests.get(id);
+  private rejectPendingRequest(error: Rpc.Error) {
+    if (!error.id) {
+      return;
+    }
+
+    const pending = this.pendingRequests.get(error.id);
     if (!pending) {
       return;
     }
 
     clearTimeout(pending.timeout);
-    this.pendingRequests.delete(id);
+    this.pendingRequests.delete(error.id);
     this.emitChange();
     pending.reject(error);
   }

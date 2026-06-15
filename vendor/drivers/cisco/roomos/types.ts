@@ -144,7 +144,7 @@ export namespace RoomOS {
   export type FeedbackSubscriptionTree =
     SubscriptionTree<GeneratedRoomOS.EventSubscriptionShape>;
 
-  export type Subscriptions<
+  export type Sub<
     Product extends GeneratedRoomOS.ProductTarget = "any",
   > = {
     xConfiguration?: ConfigurationSubscriptionTree<Product>;
@@ -170,7 +170,7 @@ export namespace RoomOS {
 
   export type FeedbackSubscriptions<
     Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = Subscriptions<Product>;
+  > = Sub<Product>;
 
   export type SubscribedEventName<
     Product extends GeneratedRoomOS.ProductTarget = "any",

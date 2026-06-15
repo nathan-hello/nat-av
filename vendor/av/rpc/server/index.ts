@@ -1,8 +1,8 @@
 import type { Manager } from "@av/drivers";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
+import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "@av/types";
-import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 
 export class RPCServer {
   private tel = new Telemetry("Rpc");
@@ -14,24 +14,24 @@ export class RPCServer {
 
     args.natav.bus.on("natav:state:update", (payload) => {
       this.broadcast(
-        Rpc.Protocol.JSON.stringify(
-          new Rpc.Protocol.ServerNotification("natav:state:update", payload),
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:state:update", payload),
         ),
       );
     });
 
     args.natav.bus.on("natav:device:connected", (payload) => {
       this.broadcast(
-        Rpc.Protocol.JSON.stringify(
-          new Rpc.Protocol.ServerNotification("natav:device:connected", payload),
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:device:connected", payload),
         ),
       );
     });
 
     args.natav.bus.on("natav:device:disconnected", (payload) => {
       this.broadcast(
-        Rpc.Protocol.JSON.stringify(
-          new Rpc.Protocol.ServerNotification("natav:device:disconnected", payload),
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:device:disconnected", payload),
         ),
       );
     });
@@ -59,9 +59,9 @@ export class RPCServer {
   }
 
   async handleRequest(
-    message: Rpc.Protocol.Request,
+    message: Rpc.Request,
     peer: Rpc.WebSocket.Peer,
-  ): Promise<Rpc.Protocol.Response | Rpc.Protocol.Error> {
+  ): Promise<Rpc.Response | Rpc.Error> {
     const result = await this.tel.task(
       "server-rpc:handle-request",
       async (span) => {
@@ -76,8 +76,7 @@ export class RPCServer {
           "rpc.method": message.method,
         });
 
-        if (message.method === Rpc.Methods.GetAllDriverStates) {
-          
+        if (message.method === Rpc.Request.Methods.GetAllDriverStates) {
         }
 
         return this.router.handle(message, peer);
@@ -93,10 +92,10 @@ export class RPCServer {
       id: message.id,
     });
 
-    return new Rpc.Protocol.Error(message?.id ?? null, {
-      code: Rpc.Protocol.ErrorCodes.InternalError,
-      message: result.error,
-    });
+    return new Rpc.Error(
+      { code: Rpc.Error.Codes.InternalError, message: result.error },
+      message?.id,
+    );
   }
 
   closePeer(peer: Rpc.WebSocket.Peer) {
@@ -116,43 +115,58 @@ export class RPCServer {
 
   private async handleSocketMessage(peer: Rpc.WebSocket.Peer, raw: string) {
     const message = this.tel.task("WS_MSG_JSON_PARSE", () =>
-      Rpc.Protocol.JSON.parse(raw),
+      Rpc.Json.parse(raw),
     );
 
     if (!message.ok) {
-      peer.send(Rpc.Protocol.JSON.stringify(Rpc.Protocol.Errors.JsonParse()));
+      peer.send(
+        Rpc.Json.stringify(
+          new Rpc.Error({
+            code: Rpc.Error.Codes.InternalError,
+            message: "json stringify",
+          }),
+        ),
+      );
       return;
     }
 
-    const req = Rpc.Protocol.Request.is(message.data);
+    const req = Rpc.Request.is(message.data);
     if (!req) {
       const requestId =
-        message.data &&
-        typeof message.data === "object" &&
-        !Array.isArray(message.data) &&
-        "id" in message.data &&
-        (typeof message.data.id === "string" ||
-          typeof message.data.id === "number") ?
-          message.data.id
-        : undefined;
+        (
+          message.data &&
+          typeof message.data === "object" &&
+          !Array.isArray(message.data) &&
+          "id" in message.data &&
+          (typeof message.data.id === "string" ||
+            typeof message.data.id === "number")
+        ) ?
+          message.data.id.toString()
+        : "UNKNOWN_REQUEST_ID";
 
       peer.send(
-        Rpc.Protocol.JSON.stringify(
-          Rpc.Protocol.Errors.RequestInvalid(requestId, message.data),
+        Rpc.Json.stringify(
+          new Rpc.Error(
+            {
+              code: Rpc.Error.Codes.InvalidRequest,
+              message: "got_unknown_message",
+            },
+            requestId,
+          ),
         ),
       );
       return;
     }
 
     const response = await this.handleRequest(req, peer);
-    peer.send(Rpc.Protocol.JSON.stringify(response));
+    peer.send(Rpc.Json.stringify(response));
   }
 
   private pushInitialDeviceStates(natav: Manager, ws: Rpc.WebSocket.Peer) {
     for (const name of natav.GetAllDriverNames()) {
       ws.send(
-        Rpc.Protocol.JSON.stringify(
-          new Rpc.Protocol.ServerNotification("natav:state:update", {
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:state:update", {
             name,
             data: natav.GetDriverState(name),
           }),
