@@ -1,11 +1,10 @@
 import { Driver, Manager } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RpcClient } from "@av/rpc/client";
-import { RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { Test } from "@av/test/data.test";
-import type { Rpc } from "@av/types";
+import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -116,7 +115,7 @@ describe("rpc deps", () => {
     const serverPeer = makePeer("server-peer");
 
     const serverCall = await router.handle(
-      new RPCRequest(1, "device.call", {
+      Rpc.Protocol.Request.deviceCall(1, {
         device: "leaf",
         method: "ping",
         args: [],
@@ -134,7 +133,7 @@ describe("rpc deps", () => {
     );
 
     await router.handle(
-      new RPCRequest(2, "device.events.subscribe", {
+      Rpc.Protocol.Request.deviceSubscribe(2, {
         device: "leaf",
         method: "tick",
         args: [],

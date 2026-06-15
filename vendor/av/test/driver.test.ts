@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
-import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { Test } from "@av/test/data.test";
+import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -49,7 +49,7 @@ describe("test driver", () => {
     const peer2 = makePeer("peer-2");
 
     await router.handle(
-      new RPCRequest(1, "device.events.subscribe", {
+      Rpc.Protocol.Request.deviceSubscribe(1, {
         device: "event-1",
         method: "tick",
       }),
@@ -57,7 +57,7 @@ describe("test driver", () => {
     );
 
     await router.handle(
-      new RPCRequest(2, "device.events.subscribe", {
+      Rpc.Protocol.Request.deviceSubscribe(2, {
         device: "event-1",
         method: "tick",
       }),
@@ -65,7 +65,7 @@ describe("test driver", () => {
     );
 
     await router.handle(
-      new RPCRequest(3, "device.events.subscribe", {
+      Rpc.Protocol.Request.deviceSubscribe(3, {
         device: "event-1",
         method: "tick",
       }),
@@ -88,7 +88,7 @@ describe("test driver", () => {
     });
 
     await router.handle(
-      new RPCRequest(4, "device.events.unsubscribe", {
+      Rpc.Protocol.Request.deviceUnsubscribe(4, {
         device: "event-1",
         method: "tick",
       }),

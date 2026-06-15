@@ -7,14 +7,7 @@ export {
 } from "@av/lib/eventtarget";
 export { RequestManager } from "@av/lib/requests";
 export { RpcClient as ClientRpc } from "@av/rpc/client";
-
-export {
-  RPCError,
-  RPCErrorData,
-  RPCNotification,
-  RPCRequest,
-  RPCResponse,
-} from "@av/rpc/protocol";
+export { Rpc } from "@av/types";
 export { RPCServer } from "@av/rpc/server";
 export { Delimiters } from "@av/sockets/delimiters";
 export { Telemetry } from "@av/telemetry";
@@ -23,7 +16,6 @@ export type {
   Events,
   Format,
   Requests,
-  Rpc,
   Schema,
   Sockets,
 } from "@av/types";

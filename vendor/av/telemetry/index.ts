@@ -1,4 +1,4 @@
-import { RPCErrorData } from "@av/rpc/protocol";
+import { Rpc } from "@av/types";
 import { createSpan, getActiveSpan, withSpan } from "./runtime";
 import { getLoggerProvider } from "./sdk";
 import {
@@ -17,7 +17,7 @@ export type TelemetryLogSchema = {
 
 export type TaskResult<R> =
   | { ok: true; data: R }
-  | { ok: false; error: string; data?: RPCErrorData };
+  | { ok: false; error: string; data?: Rpc.Protocol.ErrorData };
 
 export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
   namespace: string;
@@ -46,7 +46,7 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
             })
             .catch((err): TaskResult<R> => {
               const error = this.handleError(span, name, err);
-              if (err instanceof RPCErrorData) {
+              if (err instanceof Rpc.Protocol.ErrorData) {
                 return {
                   ok: false as const,
                   error: err.error.message,
@@ -67,7 +67,7 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
       } catch (err) {
         const error = this.handleError(span, name, err);
         span.end();
-        if (err instanceof RPCErrorData) {
+        if (err instanceof Rpc.Protocol.ErrorData) {
           return { ok: false as const, error: err.error.message, data: err };
         }
         if (err instanceof Error) {

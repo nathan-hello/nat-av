@@ -1,4 +1,3 @@
-import type { RPCError } from "@av/rpc/protocol";
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { Rpc as NRpc } from "@av/types";
 import type { Drivers } from "@av/types/drivers";
@@ -93,7 +92,7 @@ export namespace Events {
         | { reason: "transport"; event: Event }
         | { reason: "init-promises-threw"; error: Error }
         | { reason: "json-parse-failed"; raw: string }
-        | { reason: "rpc-error"; error: RPCError };
+        | { reason: "rpc-error"; error: NRpc.Protocol.Error };
       change: { name?: string };
     };
 

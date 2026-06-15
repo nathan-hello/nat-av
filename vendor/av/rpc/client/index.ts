@@ -1,17 +1,10 @@
-import type { Drivers, Events } from "@av/types";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
-import {
-  RPCError,
-  RPCDeviceCallRequest,
-  RPCRequest,
-  RPCResponse,
-  RPCServerNotification,
-} from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 
 export class RpcClient<
@@ -82,7 +75,7 @@ export class RpcClient<
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
     return this.requests.request(
-      new RPCDeviceCallRequest(this.requests.nextRequestId(), {
+      Rpc.Protocol.Request.deviceCall(this.requests.nextRequestId(), {
         device,
         method,
         args,
@@ -90,7 +83,7 @@ export class RpcClient<
     );
   }
 
-  request<T = any>(message: RPCRequest): Promise<T> {
+  request<T = any>(message: Rpc.Protocol.Request): Promise<T> {
     return this.requests.request<T>(message);
   }
 
@@ -104,14 +97,14 @@ export class RpcClient<
   }
 
   private onMessage(raw: string) {
-    const parsed = this.tel.task("JSON_PARSE", () => JSON.parse(raw));
+    const parsed = this.tel.task("JSON_PARSE", () => Rpc.Protocol.JSON.parse(raw));
     if (!parsed.ok || !parsed.data) {
       this.tel.error("json-parse-failed", { raw, parsed });
       this.dispatch("error", { reason: "json-parse-failed", raw });
       return;
     }
 
-    const notification = RPCServerNotification.is(parsed.data);
+    const notification = Rpc.Protocol.ServerNotification.is(parsed.data);
 
     if (notification) {
       this.tel.info("got-notification", parsed.data);
@@ -135,13 +128,13 @@ export class RpcClient<
       return;
     }
 
-    const response = RPCResponse.is(parsed.data);
+    const response = Rpc.Protocol.Response.is(parsed.data);
     if (response) {
       this.requests.handleResponse(response);
       return;
     }
 
-    const rpcError = RPCError.is(parsed.data);
+    const rpcError = Rpc.Protocol.Error.is(parsed.data);
     if (rpcError) {
       this.requests.handleError(rpcError);
     }

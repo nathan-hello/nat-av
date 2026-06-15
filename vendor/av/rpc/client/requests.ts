@@ -1,7 +1,6 @@
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
-import { RPCError, RPCRequest, RPCResponse } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
-import type { Rpc } from "@av/types";
+import { Rpc } from "@av/types";
 
 type RpcClientError = Error & {
   code?: number;
@@ -23,12 +22,12 @@ export class ClientRpcRequests {
     return this.requestIdCounter++;
   }
 
-  handleResponse(response: RPCResponse) {
+  handleResponse(response: Rpc.Protocol.Response) {
     this.tel.info("got-response", response);
     this.resolvePendingRequest(response.id, response.result);
   }
 
-  handleError(rpcError: RPCError) {
+  handleError(rpcError: Rpc.Protocol.Error) {
     this.tel.info("got-error", rpcError);
     if (rpcError.id === null) {
       return;
@@ -46,7 +45,7 @@ export class ClientRpcRequests {
     }
   }
 
-  async request<T = any>(message: RPCRequest): Promise<T> {
+  async request<T = any>(message: Rpc.Protocol.Request): Promise<T> {
     await this.waitForOpen();
 
     return new Promise<T>((resolve, reject) => {
@@ -67,7 +66,7 @@ export class ClientRpcRequests {
       this.emitChange();
 
       const str = this.tel.task("JSON_STRINGIFY", () =>
-        JSON.stringify(message),
+        Rpc.Protocol.JSON.stringify(message),
       );
       if (!str.ok) {
         this.rejectPendingRequest(message.id, new Error(str.error));

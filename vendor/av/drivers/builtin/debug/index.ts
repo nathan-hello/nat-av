@@ -1,6 +1,5 @@
 import { Driver } from "@av/drivers";
-import { RPCErrorCodes, RPCErrorData } from "@av/rpc/protocol";
-import type { Drivers, Rpc } from "@av/types";
+import { Rpc, type Drivers } from "@av/types";
 
 type SerializableMessage = Omit<Rpc.Debug.SocketMessage, "data"> & {
   data: number[];
@@ -50,8 +49,8 @@ export class Debugger extends Driver<"debugger"> {
       const found = this.state.tree[name]?.meta;
       if (!found) {
         this.tel.error("node not found", { name });
-        throw new RPCErrorData({
-          code: RPCErrorCodes.InvalidRequest,
+        throw new Rpc.Protocol.ErrorData({
+          code: Rpc.Protocol.ErrorCodes.InvalidRequest,
           message: "node not found",
         });
       }
@@ -104,15 +103,15 @@ export class Debugger extends Driver<"debugger"> {
     encoding?: BufferEncoding;
   }): Promise<{ bytesWritten: number }> {
     if (!params || typeof params !== "object") {
-      throw new RPCErrorData({
-        code: RPCErrorCodes.InvalidParams,
+      throw new Rpc.Protocol.ErrorData({
+        code: Rpc.Protocol.ErrorCodes.InvalidParams,
         message: "Invalid debug socket write params",
       });
     }
 
     if (typeof params.name !== "string" || typeof params.text !== "string") {
-      throw new RPCErrorData({
-        code: RPCErrorCodes.InvalidParams,
+      throw new Rpc.Protocol.ErrorData({
+        code: Rpc.Protocol.ErrorCodes.InvalidParams,
         message: "Debug socket write requires string deviceName and text",
       });
     }
@@ -120,16 +119,16 @@ export class Debugger extends Driver<"debugger"> {
     const result = await this.tel.task("debugger:socket-write", async () => {
       const device = this.natav.FindDriver(params.name);
       if (!device) {
-        throw new RPCErrorData({
-          code: RPCErrorCodes.DeviceNotFound,
+        throw new Rpc.Protocol.ErrorData({
+          code: Rpc.Protocol.ErrorCodes.DeviceNotFound,
           message: `Device "${params.name}" not found`,
           data: { availableDevices: this.natav.GetAllDriverNames() },
         });
       }
 
       if (typeof device.socket?.write !== "function") {
-        throw new RPCErrorData({
-          code: RPCErrorCodes.MethodNotFound,
+        throw new Rpc.Protocol.ErrorData({
+          code: Rpc.Protocol.ErrorCodes.MethodNotFound,
           message: `Device "${params.name}" does not expose a writable socket`,
         });
       }
@@ -142,9 +141,9 @@ export class Debugger extends Driver<"debugger"> {
       return result.data;
     }
 
-    throw new RPCErrorData({
-      code: RPCErrorCodes.InternalError,
-      message: result.error,
-    });
+      throw new Rpc.Protocol.ErrorData({
+        code: Rpc.Protocol.ErrorCodes.InternalError,
+        message: result.error,
+      });
   }
 }

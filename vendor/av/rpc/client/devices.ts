@@ -1,9 +1,5 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { RpcClient } from "@av/rpc/client";
-import {
-  RPCDeviceSubscribeRequest,
-  RPCDeviceUnsubscribeRequest,
-} from "@av/rpc/protocol";
 import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
@@ -122,7 +118,7 @@ export class ClientRpcDevice<
     if (!state.subscribed) {
       state.pendingSubscribe ??= this.client
         .request(
-          new RPCDeviceSubscribeRequest(this.client.nextRequestId(), {
+          Rpc.Protocol.Request.deviceSubscribe(this.client.nextRequestId(), {
             device: this.name,
             method: event,
             args: [],
@@ -160,7 +156,7 @@ export class ClientRpcDevice<
 
       state.pendingUnsubscribe ??= this.client
         .request(
-          new RPCDeviceUnsubscribeRequest(this.client.nextRequestId(), {
+          Rpc.Protocol.Request.deviceUnsubscribe(this.client.nextRequestId(), {
             device: this.name,
             method: event,
             args: [],

@@ -1,11 +1,5 @@
 import type { Sockets } from "@av/index";
-import {
-  Delimiters,
-  Driver,
-  RequestManager,
-  RPCErrorData,
-  toBuffer,
-} from "@av/index";
+import { Delimiters, Driver, RequestManager, Rpc, toBuffer } from "@av/index";
 import { DecoderSchema } from "./schema";
 import {
   type AudioRoute,
@@ -97,7 +91,7 @@ export default class Decoder<
 
     const result = await this.requests.request<DecoderMap[Method]["res"]>(req);
     if (!result.ok) {
-      throw new RPCErrorData({ code: 400, message: result.error });
+      throw new Rpc.Protocol.ErrorData({ code: 400, message: result.error });
     }
 
     if (typeof result.data.result === "number" && result.data.result !== 0) {
@@ -131,7 +125,7 @@ export default class Decoder<
           (v) => v.output === r.video?.output,
         );
         if (!output) {
-          throw new RPCErrorData({
+          throw new Rpc.Protocol.ErrorData({
             code: 401,
             message: "output-or-monitor-not-found",
             data: this.context,
@@ -186,7 +180,7 @@ export default class Decoder<
     moveRelative: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new RPCErrorData({
+        throw new Rpc.Protocol.ErrorData({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,
@@ -209,7 +203,7 @@ export default class Decoder<
     moveAbsolute: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new RPCErrorData({
+        throw new Rpc.Protocol.ErrorData({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,
@@ -220,7 +214,7 @@ export default class Decoder<
 
     fetchContext: async () => {
       if (this.mock === null) {
-        throw new RPCErrorData({
+        throw new Rpc.Protocol.ErrorData({
           code: 401,
           message: "output-or-monitor-not-found",
           data: this.context,
