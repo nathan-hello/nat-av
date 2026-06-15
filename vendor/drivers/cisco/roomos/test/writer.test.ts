@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-
 import type { RoomOS } from "@drivers/cisco/roomos/types";
 import { RoomOSFormatter } from "@drivers/cisco/roomos/writer";
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 
 describe("roomos writer", () => {
   it("serializes command, get, set, and listen operations", () => {
