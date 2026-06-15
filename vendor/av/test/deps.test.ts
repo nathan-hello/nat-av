@@ -1,8 +1,8 @@
 import { Driver, Manager } from "@av/drivers";
+import { ClientRpcDevice } from "@av/rpc/client/devices";
 import type { Schema } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ClientRpcDevice } from "@av/rpc/client/devices";
 
 class Leaf<const N extends string> extends Driver<N> {
   state = { online: true };

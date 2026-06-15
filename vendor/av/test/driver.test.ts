@@ -1,9 +1,9 @@
 import { Manager } from "@av/drivers";
 import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
+import { Test } from "@av/test/data.test";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { Test } from "@av/test/data.test";
 
 describe("test driver", () => {
   const driver = new Test.Driver({
