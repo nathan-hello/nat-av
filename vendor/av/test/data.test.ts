@@ -2,42 +2,70 @@ import { Driver as NDriver } from "@av/drivers";
 import { toBuffer } from "@av/lib/buffer";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
-import { RPCRequest } from "@av/rpc/protocol";
-import type { RPCServer } from "@av/rpc/server";
-import { Tcp } from "@av/sockets/tcp";
+import type {
+  ServerRpcTransportEvents,
+  ServerRpcTransport as ServerRpcTransportShape,
+} from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
-import type { Events, Schema, Sockets } from "@av/types";
+import type { Events, Rpc, Schema, Sockets } from "@av/types";
 
 export namespace Test {
-  export class RpcClient
+  export async function AwaitNextMicrotask(n: number = 1) {
+    const promises = Array.from({ length: n }).map(
+      () => new Promise((resolve) => setImmediate(resolve)),
+    );
+
+    for (const p of promises) {
+      await p;
+    }
+  }
+
+  export class RpcServerTransport
+    extends TypedEventTarget<ServerRpcTransportEvents>
+    implements ServerRpcTransportShape
+  {
+    listen() {}
+
+    open(peer: Rpc.WebSocket.Peer) {
+      this.dispatch("open", { peer });
+    }
+
+    message(peer: Rpc.WebSocket.Peer, data: string) {
+      this.dispatch("message", { peer, data });
+    }
+
+    close(peer: Rpc.WebSocket.Peer, code: number, reason: string) {
+      this.dispatch("close", { peer, code, reason });
+    }
+
+    error(peer: Rpc.WebSocket.Peer) {
+      this.dispatch("error", { peer });
+    }
+  }
+
+  export class RpcTransport
     extends TypedEventTarget<WebSocketEventMap>
     implements ClientRpcTransport
   {
     readyState: number = WebSocket.CLOSED;
     sent: string[] = [];
     received: string[] = [];
+    server = new RpcServerTransport();
+    private peer: Rpc.WebSocket.Peer;
 
-    private server: RPCServer;
-    private peer: {
-      addr: string;
-      readonly readyState: number;
-      send(message: string): void;
-      close(): void;
-    };
-
-    constructor(server: RPCServer) {
+    constructor() {
       super();
-      this.server = server;
+      const transport = this;
       this.peer = {
         addr: "in-memory",
         get readyState() {
-          return 1;
+          return transport.readyState;
         },
         send: (message: string) => {
           this.receive(message);
         },
-        close: () => {
-          this.close();
+        close: (code?: number, reason?: string) => {
+          this.close(code, reason);
         },
       };
     }
@@ -45,6 +73,7 @@ export namespace Test {
     connect() {
       this.readyState = WebSocket.OPEN;
       this.dispatch("open", new Event("open"));
+      this.server.open(this.peer);
     }
 
     close(code?: number, reason?: string) {
@@ -56,19 +85,12 @@ export namespace Test {
           reason: reason ?? "",
         }),
       );
+      this.server.close(this.peer, code ?? 1000, reason ?? "");
     }
 
     send(message: string) {
       this.sent.push(message);
-
-      const request = RPCRequest.is(message);
-      if (!request) {
-        throw new Error(`invalid rpc request: ${message}`);
-      }
-
-      void this.server.handleRequest(request, this.peer).then((response) => {
-        this.peer.send(JSON.stringify(response));
-      });
+      this.server.message(this.peer, message);
     }
 
     private receive(message: string) {
@@ -80,7 +102,7 @@ export namespace Test {
   export class Driver<const N extends string = string> extends NDriver<N> {
     state = {
       connected: false,
-      lastFrame: "",
+      lastFrame: "init",
     };
 
     socket: Sockets.Client;
@@ -157,15 +179,6 @@ export namespace Test {
       this.events.dispatch("tick", { count });
     }
   }
-
-  export const driver = new Driver({
-    name: "shim-1",
-    socket: new Tcp({
-      addr: "127.0.0.1",
-      port: 12345,
-      keepAlive: true,
-    }),
-  });
 
   export type SocketScriptStep<State = unknown> = {
     onWrite: string | Uint8Array | Buffer;

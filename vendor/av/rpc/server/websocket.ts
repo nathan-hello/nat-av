@@ -1,164 +1,54 @@
-import type { Manager } from "@av/drivers";
-import { DecodeWebsocketError } from "@av/rpc/errors";
-import { RPCErrors, RPCNotification, RPCRequest } from "@av/rpc/protocol";
-import { RPCServer } from "@av/rpc/server";
-import { Telemetry } from "@av/telemetry";
-import { Rpc, type Drivers, type Events } from "@av/types";
+import { TypedEventTarget } from "@av/lib/eventtarget";
+import type { Rpc } from "@av/types";
+
+export type ServerRpcTransportEvents = {
+  open: { peer: Rpc.WebSocket.Peer };
+  message: { peer: Rpc.WebSocket.Peer; data: string };
+  close: { peer: Rpc.WebSocket.Peer; code: number; reason: string };
+  error: { peer: Rpc.WebSocket.Peer };
+};
+
+export type ServerRpcTransport = Pick<
+  TypedEventTarget<ServerRpcTransportEvents>,
+  "on" | "once"
+> & {
+  listen(): void;
+};
 
 const decoder = new TextDecoder();
 
-function readMessage(data: MessageEvent["data"]): string {
-  if (typeof data === "string") {
-    return data;
-  }
-  if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
-    return new TextDecoder().decode(data);
-  }
-  return String(data);
-}
-
-export class WebsocketHandler<N extends Drivers.Array> {
-  private clients = new Set<Rpc.WebSocket.Peer>();
-  private rpc: RPCServer;
-  private natav: Manager<Drivers.Array>;
-  private tel = new Telemetry("Server::WS");
-
-  constructor(args: { rpc: RPCServer; natav: Manager<N> }) {
-    this.rpc = args.rpc;
-    this.natav = args.natav;
-    args.natav.bus.on("natav:state:update", (payload) => {
-      this.BroadcastEvent("natav:state:update", payload);
-    });
-
-    args.natav.bus.on("natav:device:connected", (payload) => {
-      this.BroadcastEvent("natav:device:connected", payload);
-    });
-
-    args.natav.bus.on("natav:device:disconnected", (payload) => {
-      this.BroadcastEvent("natav:device:disconnected", payload);
-    });
-  }
-
-  BroadcastEvent<E extends keyof Events.Natav.Map<N>>(
-    event: E,
-    payload: Events.Natav.Map<N>[E],
+export class WebsocketHandler
+  extends TypedEventTarget<ServerRpcTransportEvents>
+  implements ServerRpcTransport
+{
+  constructor(
+    private app: Rpc.WebSocket.App,
+    private path = "/ws",
   ) {
-    const notification = new RPCNotification(Rpc.Methods.Notification, {
-      type: event,
-      ...payload,
-    });
-    this.broadcast(JSON.stringify(notification));
+    super();
   }
 
-  private broadcast(message: string) {
-    this.clients.forEach((c) => {
-      if (c.readyState !== 1) {
-        return;
-      }
-
-      c.send(message);
-    });
-  }
-
-  WsOpenHandler = (_: Event, peer: Rpc.WebSocket.Peer) => {
-    this.clients.add(peer);
-    this.pushInitialDeviceStates(peer);
-  };
-
-  WsCloseHandler = (_: CloseEvent, peer: Rpc.WebSocket.Peer) => {
-    this.clients.delete(peer);
-    this.closePeer(peer);
-  };
-
-  WsMessageHandler = async (event: MessageEvent, peer: Rpc.WebSocket.Peer) => {
-    const message = this.tel.task("WS_MSG_JSON_PARSE", () => {
-      return JSON.parse(readMessage(event.data));
-    });
-
-    if (!message.ok) {
-      peer.send(JSON.stringify(RPCErrors.JsonParse()));
-    }
-
-    const req = RPCRequest.is(message.data);
-
-    if (!req) {
-      peer.send(
-        JSON.stringify(
-          RPCErrors.RequestInvalid(
-            "id" in message.data ? message.data.id : null,
-            message.data,
-          ),
-        ),
-      );
-      return;
-    }
-    const response = await this.rpc.handleRequest(req, peer);
-
-    peer.send(JSON.stringify(response));
-  };
-
-  WsErrorHandler = (_: Event, __: Rpc.WebSocket.Peer) => {};
-
-  closePeer(peer: Rpc.WebSocket.Peer) {
-    this.rpc.closePeer(peer);
-  }
-
-  private pushInitialDeviceStates(ws: Rpc.WebSocket.Peer) {
-    for (const name of this.natav.GetAllDriverNames()) {
-      let notification = new RPCNotification(Rpc.Methods.Notification, {
-        type: "natav:state:update",
-        name,
-        data: this.natav.GetDriverState(name),
-      });
-
-      ws.send(JSON.stringify(notification));
-    }
-  }
-}
-
-export function bindHttpToWs<N extends Drivers.Array>(
-  app: Rpc.WebSocket.App,
-  path: string,
-  handlers: Pick<
-    WebsocketHandler<N>,
-    "WsOpenHandler" | "WsMessageHandler" | "WsCloseHandler" | "WsErrorHandler"
-  >,
-  tel: Telemetry,
-) {
-  const connections = new Set<Rpc.WebSocket.Peer>();
-
-  app.ws(path, {
-    open(peer) {
-      connections.add(peer);
-      handlers.WsOpenHandler(new Event("open"), peer);
-    },
-    message(peer, message, isBinary) {
-      handlers.WsMessageHandler(
-        new MessageEvent("message", {
-          data: isBinary ? message : decoder.decode(message),
-        }),
-        peer,
-      );
-    },
-    close(peer, code, message) {
-      connections.delete(peer);
-
-      tel.info("websocket closed", {
-        code,
-        meaning: DecodeWebsocketError(code),
-        reason: decoder.decode(message),
-      });
-
-      handlers.WsCloseHandler(
-        new CloseEvent("close", {
+  listen(): void {
+    this.app.ws(this.path, {
+      open: (peer) => {
+        this.dispatch("open", { peer });
+      },
+      message: (peer, message, _isBinary) => {
+        this.dispatch("message", {
+          peer,
+          data: decoder.decode(message),
+        });
+      },
+      close: (peer, code, message) => {
+        this.dispatch("close", {
+          peer,
           code,
           reason: decoder.decode(message),
-        }),
-        peer,
-      );
-    },
-    error(peer) {
-      handlers.WsErrorHandler(new Event("error"), peer);
-    },
-  });
+        });
+      },
+      error: (peer) => {
+        this.dispatch("error", { peer });
+      },
+    });
+  }
 }

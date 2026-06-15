@@ -93,11 +93,6 @@ export namespace Rpc {
       encoding: BufferEncoding | "unknown";
     };
 
-    export const Methods = {
-      GetTree: "debug.tree.get",
-      WriteSocket: "debug.socket.write",
-    } as const;
-
     export type Notification =
       | {
           type: "debug:log";
@@ -160,7 +155,7 @@ export namespace Rpc {
 
   export const Methods = {
     Notification: "notification",
+    GetAllDriverStates: "natav:all_states",
     ...Device.Methods,
-    ...Debug.Methods,
   } as const;
 }

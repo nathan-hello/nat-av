@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
 import { Debugger } from "@av/drivers/builtin/debug";
 import { RPCServer } from "@av/rpc/server";
-import { bindHttpToWs, WebsocketHandler } from "@av/rpc/server/websocket";
+import { WebsocketHandler } from "@av/rpc/server/websocket";
 import { Tcp } from "@av/sockets/tcp";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
@@ -77,12 +77,9 @@ AddExporters([
 
 export type natav = (typeof natav)["configs"];
 
-const rpc = new RPCServer({ natav });
-
-const websocket = new WebsocketHandler({ rpc, natav });
-
 export async function start(app: Rpc.WebSocket.App) {
-  bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
+  const websocket = new WebsocketHandler(app);
+  new RPCServer({ natav, transport: websocket });
 
   await natav.Start();
   // TSAS:

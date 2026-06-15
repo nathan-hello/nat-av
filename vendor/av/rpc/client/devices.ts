@@ -1,6 +1,9 @@
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { ClientRpc } from "@av/rpc/client";
-import { RPCRequest } from "@av/rpc/protocol";
+import type { RpcClient } from "@av/rpc/client";
+import {
+  RPCDeviceSubscribeRequest,
+  RPCDeviceUnsubscribeRequest,
+} from "@av/rpc/protocol";
 import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
@@ -9,7 +12,6 @@ export class ClientRpcDevice<
   Name extends Drivers.Names<N> = Drivers.Names<N>,
 > extends TypedEventTarget<Events.Rpc.DeviceMap<N, Name>> {
   private apiProxy: Rpc.Api<N, Name>;
-  private stateValue: Drivers.State<N, Name> | undefined;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
 
@@ -23,7 +25,7 @@ export class ClientRpcDevice<
   };
 
   constructor(
-    private client: ClientRpc<N>,
+    private client: RpcClient<N>,
     public readonly name: Name,
   ) {
     super();
@@ -35,9 +37,10 @@ export class ClientRpcDevice<
     return this.apiProxy;
   }
 
-  get state() {
-    return this.stateValue;
-  }
+  public state: Drivers.State<N, Name> =
+    // TSAS: this assertion depends on client getting
+    // accurate state before this class is used for rendering.
+    {} as unknown as Drivers.State<N, Name>;
 
   readonly deps = {
     get: <DepName extends Drivers.Dep.Names<N, Name>>(depName: DepName) => {
@@ -77,9 +80,9 @@ export class ClientRpcDevice<
   }
 
   handleStateUpdate(patch: Partial<Rpc.State<N, Name>>) {
-    const currentState = this.stateValue;
+    const currentState = this.state;
     // TSAS: Partial patches are reconciled into the device's cached state.
-    this.stateValue =
+    this.state =
       currentState && typeof currentState === "object" ?
         { ...currentState, ...patch }
       : patch;
@@ -119,15 +122,11 @@ export class ClientRpcDevice<
     if (!state.subscribed) {
       state.pendingSubscribe ??= this.client
         .request(
-          new RPCRequest(
-            this.client.nextRequestId(),
-            Rpc.Device.Methods.DeviceSubscribe,
-            {
-              device: this.name,
-              method: event,
-              args: [],
-            },
-          ),
+          new RPCDeviceSubscribeRequest(this.client.nextRequestId(), {
+            device: this.name,
+            method: event,
+            args: [],
+          }),
         )
         .then(() => {
           state.subscribed = true;
@@ -159,18 +158,14 @@ export class ClientRpcDevice<
       return;
     }
 
-    state.pendingUnsubscribe ??= this.client
-      .request(
-        new RPCRequest(
-          this.client.nextRequestId(),
-          Rpc.Device.Methods.DeviceUnsubscribe,
-          {
+      state.pendingUnsubscribe ??= this.client
+        .request(
+          new RPCDeviceUnsubscribeRequest(this.client.nextRequestId(), {
             device: this.name,
             method: event,
             args: [],
-          },
-        ),
-      )
+          }),
+        )
       .then(() => {
         state.subscribed = false;
         state.pendingUnsubscribe = undefined;

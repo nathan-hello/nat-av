@@ -6,7 +6,7 @@ export {
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 export { RequestManager } from "@av/lib/requests";
-export { ClientRpc } from "@av/rpc/client";
+export { RpcClient as ClientRpc } from "@av/rpc/client";
 
 export {
   RPCError,

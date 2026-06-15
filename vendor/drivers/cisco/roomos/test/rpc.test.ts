@@ -110,8 +110,8 @@ describe("rpc roomos device", () => {
       deferred: [],
     });
     // const system = new System({ natav });
-    const server = new RPCServer({ natav });
-    const transport = new Test.RpcClient(server);
+    const transport = new Test.RpcTransport();
+    new RPCServer({ natav, transport: transport.server });
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {
@@ -276,6 +276,15 @@ describe("rpc roomos device", () => {
     assert.deepEqual(
       transport.received.map((message) => JSON.parse(message)),
       [
+        {
+          jsonrpc: "2.0",
+          method: "notification",
+          params: {
+            data: {},
+            name: "roomos-rpc",
+            type: "natav:state:update",
+          },
+        },
         { jsonrpc: "2.0", result: null, id: 0 },
         {
           jsonrpc: "2.0",

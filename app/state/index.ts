@@ -1,13 +1,13 @@
-import { ClientRpc } from "@av/rpc/client";
+import { RpcClient } from "@av/rpc/client";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
-let rpcClient: ClientRpc<natav> | null = null;
+let rpcClient: RpcClient<natav> | null = null;
 const subscriptions = new WeakMap<Handle<any, any>, () => void>();
 
-export function getRpc(handle: Handle<any, any>): ClientRpc<natav> {
+export function getRpc(handle: Handle<any, any>): RpcClient<natav> {
   if (!rpcClient) {
-    rpcClient = new ClientRpc();
+    rpcClient = new RpcClient();
     rpcClient.connect();
   }
 

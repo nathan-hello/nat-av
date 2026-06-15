@@ -49,7 +49,6 @@ it("writes connect-time setup messages", async () => {
 
   socket.dispatch("connected", undefined);
 
-  await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(socket.writes.length, 2);
 

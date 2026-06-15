@@ -7,13 +7,14 @@ import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import {
   RPCError,
-  RPCNotification,
+  RPCDeviceCallRequest,
   RPCRequest,
   RPCResponse,
+  RPCServerNotification,
 } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 
-export class ClientRpc<
+export class RpcClient<
   N extends Drivers.Array,
 > extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
@@ -81,7 +82,7 @@ export class ClientRpc<
   async call(device: string, method: string, args: any[] = []) {
     this.tel.debug("device.call", { device, method, args });
     return this.requests.request(
-      new RPCRequest(this.requests.nextRequestId(), "device.call", {
+      new RPCDeviceCallRequest(this.requests.nextRequestId(), {
         device,
         method,
         args,
@@ -110,42 +111,26 @@ export class ClientRpc<
       return;
     }
 
-    const notification = RPCNotification.is(parsed.data);
+    const notification = RPCServerNotification.is(parsed.data);
 
     if (notification) {
       this.tel.info("got-notification", parsed.data);
 
-      // TSAS: Casting as unknown so we are forced to actually
-      // parse through the types. Otherwise this object will be
-      // typed as `any`
-      const params = parsed.data.params as {
-        type?: unknown;
-        name?: unknown;
-        event?: unknown;
-        data?: unknown;
-      };
-
-      if (typeof params.name === "string") {
-        // TSAS: The notification payload carries the device name as an untyped string.
-        const deviceName = params.name as Drivers.Names<N>;
-        const device = this.device(deviceName);
-        switch (params.type) {
-          case "natav:device:event":
-            if (typeof params.event === "string") {
-              device.handleEvent(params.event, params.data);
-            }
-            break;
-          case "natav:state:update":
-            device.handleStateUpdate(
-              // TSAS: The server sends partial device state updates.
-              (params.data ?? {}) as Partial<
-                Drivers.State<N, typeof deviceName>
-              >,
-            );
-            break;
-          default:
-            break;
-        }
+      // TSAS: The server notification parser validates the payload shape but not the driver-name union.
+      const deviceName = notification.params.name as Drivers.Names<N>;
+      const device = this.device(deviceName);
+      switch (notification.type) {
+        case "natav:device:event":
+          device.handleEvent(notification.params.event, notification.params.data);
+          break;
+        case "natav:state:update":
+          device.handleStateUpdate(
+            // TSAS: The server sends partial device state updates keyed by the runtime device name.
+            notification.params.data as Partial<Drivers.State<N, typeof deviceName>>,
+          );
+          break;
+        default:
+          break;
       }
       return;
     }

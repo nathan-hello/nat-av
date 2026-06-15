@@ -3,9 +3,9 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import {
   RPCError,
   RPCErrorCodes,
-  RPCNotification,
   RPCRequest,
   RPCResponse,
+  RPCServerNotification,
 } from "@av/rpc/protocol";
 import { Telemetry } from "@av/telemetry";
 import { Rpc, type Events } from "@av/types";
@@ -123,10 +123,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
 
       peer.send(
         JSON.stringify(
-          new RPCNotification(Rpc.Methods.Notification, {
-            type: "natav:device:event",
-            ...event,
-          }),
+          new RPCServerNotification("natav:device:event", event),
         ),
       );
     });
@@ -138,7 +135,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     peerSubscriptions.set(eventName, handlers);
     this.subscriptions.set(peer, peerSubscriptions);
 
-    return new RPCResponse(message.id, null);
+    return message.response(null);
   }
 
   private unsubscribe(
@@ -161,7 +158,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
       }
     }
 
-    return new RPCResponse(message.id, null);
+    return message.response(null);
   }
 
   private async call(
@@ -208,7 +205,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     const jsonValue =
       callResult === undefined ? null : (callResult as Rpc.JSONValue);
 
-    return new RPCResponse(message.id, jsonValue);
+    return message.response(jsonValue);
   }
 
   private resolveApiMethod(

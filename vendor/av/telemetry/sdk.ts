@@ -53,9 +53,9 @@ export function getLoggerProvider(): LoggerProvider {
     AddExporters([new SimpleConsoleExporter("WARN")]);
   }
   if (!loggerProvider) {
-    throw new Error("LoggerProvider not initialized. Call StartLogging first.");
+    AddExporters([new SimpleConsoleExporter("WARN")]);
   }
-  return loggerProvider;
+  return loggerProvider!;
 }
 
 export function AddExporters(exporters: LogRecordExporter[]) {
