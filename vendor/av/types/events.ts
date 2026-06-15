@@ -5,7 +5,7 @@ import type { Drivers } from "@av/types/drivers";
 export namespace Events {
   export namespace Socket {
     export type Map = {
-      debug: { data: NRpc.Debug.SocketMessage };
+      debug: { data: Natav.SocketMessage };
       connected: void;
       disconnected: { error: string | undefined };
       receive: Buffer;
@@ -33,7 +33,7 @@ export namespace Events {
         data: Partial<StateData>;
       };
       "driver:delimited": Buffer;
-      "socket:bubbled": Socket.Map;
+      "driver:socket:bubbled": Socket.Map;
     };
   }
 
@@ -42,7 +42,7 @@ export namespace Events {
       [Name in Drivers.Names<N>]: {
         name: Name;
         event: string;
-        data: NRpc.JSONValue;
+        data: NRpc.Json.Value;
       };
     }[Drivers.Names<N>];
     type StateEventFor<N extends Drivers.Array> = {
@@ -66,7 +66,7 @@ export namespace Events {
       "natav:state:override": StateEventFor<N>;
       "natav:device:connected": { name: Drivers.Names<N> };
       "natav:device:disconnected": { name: Drivers.Names<N> };
-      "natav:device:error": { name: Drivers.Names<N>; error?: Error | unknown };
+      "natav:device:error": { name: Drivers.Names<N>; error?: NRpc.Error };
       "natav:debug:socket": {
         name: Drivers.Names<N>;
         data: SocketMessage;
@@ -76,6 +76,12 @@ export namespace Events {
         asString: string;
       };
     };
+    export type MapWithTypes<N extends Drivers.Array = Drivers.Array> = {
+      [K in keyof Map<N>]: Map<N>[K] & { type: K };
+    };
+
+    export type EventUnion<N extends Drivers.Array = Drivers.Array> =
+      MapWithTypes<N>[keyof MapWithTypes<N>];
   }
 
   export namespace Request {
@@ -100,7 +106,7 @@ export namespace Events {
         | { reason: "transport"; event: Event }
         | { reason: "init-promises-threw"; error: Error }
         | { reason: "json-parse-failed"; raw: string }
-        | { reason: "rpc-error"; error: NRpc.Protocol.Error };
+        | { reason: "rpc-error"; error: NRpc.Error };
       change: { name?: string };
     };
 
