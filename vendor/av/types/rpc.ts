@@ -1,40 +1,54 @@
-import type { LogEntry } from "@av/telemetry/types";
 import type { Drivers } from "@av/types/drivers";
 import type { Events } from "@av/types/events";
 
 export namespace Rpc {
-  export namespace WebSocket {
-    export type App = {
-      ws(
-        path: string,
-        handlers: {
-          open(ws: Peer): void;
-          message(ws: Peer, message: ArrayBuffer, isBinary: boolean): void;
-          close(ws: Peer, code: number, message: ArrayBuffer): void;
-          error(ws: Peer): void;
-        },
-      ): void;
-    };
-
-    export type Peer = {
-      addr: string;
-      readonly readyState: number;
-      send(message: string): void;
-      close(code?: number, reason?: string): void;
-    };
-  }
-  export type PendingRequest = {
-    resolve: (result: any) => void;
-    reject: (error: Error) => void;
-    timeout: ReturnType<typeof setTimeout>;
-  };
-
-  export type TransportOptions = {
-    reconnect?: boolean;
-    retryDelay?: number;
-  };
+  export type JSONValue =
+    | null
+    | boolean
+    | number
+    | string
+    | JSONValue[]
+    | { [key: string]: JSONValue };
 
   export namespace Client {
+    type IsJSONValue<T> =
+      T extends JSONValue ?
+        [T] extends [never] ?
+          false
+        : true
+      : false;
+
+    type ValidateParams<Args extends any[]> =
+      Args extends [] ? true
+      : Args extends [infer Head, ...infer Tail] ?
+        IsJSONValue<Head> extends true ?
+          ValidateParams<Tail>
+        : false
+      : false;
+
+    type IsJsonFunction<T> =
+      T extends (...args: infer Args) => Promise<infer Return> ?
+        ValidateParams<Args> extends true ?
+          IsJSONValue<Return> extends true ?
+            T
+          : never
+        : never
+      : never;
+
+    type FilterApi<T> = {
+      [K in keyof T as IsJsonFunction<T[K]> extends never ? never : K]: T[K];
+    };
+
+    type FilterState<T> = {
+      [K in keyof T as K extends string ? string : never]: {
+        K: T[K] extends JSONValue ? T[K] : never;
+      };
+    };
+    export type PendingRequest = {
+      resolve: (result: any) => void;
+      reject: (error: Rpc.Protocol.Error) => void;
+      timeout: ReturnType<typeof setTimeout>;
+    };
     export namespace Events {
       export type Callback<
         N extends Drivers.Array,
@@ -58,143 +72,33 @@ export namespace Rpc {
         pendingUnsubscribe: Promise<void> | undefined;
       };
     }
+    export type State<
+      N extends Drivers.Array,
+      Name extends Drivers.Names<N>,
+    > = FilterState<Drivers.State<N, Name>>;
+
+    export type Api<
+      N extends Drivers.Array = Drivers.Array,
+      Name extends Drivers.Names<N> = Drivers.Names<N>,
+    > = FilterApi<Drivers.Api<N, Name>>;
   }
 
-  export namespace Device {
-    export const Methods = {
-      DeviceCall: "device.call",
-      DeviceSubscribe: "device.events.subscribe",
-      DeviceUnsubscribe: "device.events.unsubscribe",
-    } as const;
+    type Id = string | number;
 
-    export type CallParams = {
-      device: string;
-      method: string;
-      args: any[];
-    };
-  }
-
-  export namespace Debug {
-    export type Node = {
-      name: string;
-      driverName: string;
-      children: Node[];
-      socket?: {
-        traceName: string;
-        canWrite: boolean;
-        canReceive: boolean;
-      };
-    };
-
-    export type SocketMessage = {
-      traceName: string;
-      direction: "rx" | "tx" | "rx-delimited";
-      time: number;
-      data: Uint8Array;
-      encoding: BufferEncoding | "unknown";
-    };
-
-    export type Notification =
-      | {
-          type: "debug:log";
-          entry: LogEntry;
-        }
-      | {
-          type: "debug:socket:message";
-          message: SocketMessage;
-        };
-  }
-
-  type JSONPrimitive = string | number | boolean | null;
-  type JSONObject = { [key: string]: JSONValue };
-  type JSONArray = JSONValue[];
-  export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
-
-  type IsJSONValue<T> =
-    T extends JSONValue ?
-      [T] extends [never] ?
-        false
-      : true
-    : false;
-
-  type ValidateParams<Args extends any[]> =
-    Args extends [] ? true
-    : Args extends [infer Head, ...infer Tail] ?
-      IsJSONValue<Head> extends true ?
-        ValidateParams<Tail>
-      : false
-    : false;
-
-  type IsJsonFunction<T> =
-    T extends (...args: infer Args) => Promise<infer Return> ?
-      ValidateParams<Args> extends true ?
-        IsJSONValue<Return> extends true ?
-          T
-        : never
-      : never
-    : never;
-
-  type FilterApi<T> = {
-    [K in keyof T as IsJsonFunction<T[K]> extends never ? never : K]: T[K];
-  };
-
-  type FilterState<T> = {
-    [K in keyof T as K extends string ? string : never]: {
-      K: T[K] extends JSONValue ? T[K] : never;
-    };
-  };
-
-  export type State<
-    N extends Drivers.Array,
-    Name extends Drivers.Names<N>,
-  > = FilterState<Drivers.State<N, Name>>;
-
-  export type Api<
-    N extends Drivers.Array = Drivers.Array,
-    Name extends Drivers.Names<N> = Drivers.Names<N>,
-  > = Drivers.Api<N, Name>;
-
-  export const Methods = {
-    Notification: "notification",
-    GetAllDriverStates: "natav:all_states",
-    ...Device.Methods,
-  } as const;
-
-  export namespace Protocol {
-    export type Id = string | number;
-    export type WireValue = JSONValue;
-
-    export type ErrorShape = {
+    type ErrorShape = {
       code: number;
       message: string;
       data?: unknown;
     };
 
-    type RequestMap = {
-      [Methods.DeviceCall]: {
-        params: Device.CallParams;
-        result: WireValue;
-      };
-      [Methods.DeviceSubscribe]: {
-        params: Device.CallParams;
-        result: null;
-      };
-      [Methods.DeviceUnsubscribe]: {
-        params: Device.CallParams;
-        result: null;
-      };
-      [Methods.GetAllDriverStates]: {
-        params: undefined;
-        result: WireValue;
-      };
-    };
+    const REQUEST_METHOD = {
+      DeviceCall: "device.call",
+      DeviceSubscribe: "device.events.subscribe",
+      DeviceUnsubscribe: "device.events.unsubscribe",
+      GetAllDriverStates: "natav:all_states",
+    } as const;
 
-    type ServerNotificationMap = {
-      "natav:device:event": Events.Natav.Map["natav:device:event"];
-      "natav:state:update": Events.Natav.Map["natav:state:update"];
-      "natav:device:connected": Events.Natav.Map["natav:device:connected"];
-      "natav:device:disconnected": Events.Natav.Map["natav:device:disconnected"];
-    };
+    const NOTIFICATION_METHOD = "notification" as const;
 
     type DeviceParamsInput = {
       device: string;
@@ -202,30 +106,46 @@ export namespace Rpc {
       args?: any[];
     };
 
-    type KnownMethod = keyof RequestMap & string;
+    type Tagged<Type extends string, Params extends Record<string, unknown>> = {
+      type: Type;
+    } & Params;
 
-    export type RequestParams<Method extends KnownMethod> =
-      RequestMap[Method]["params"];
-    export type RequestResult<Method extends KnownMethod> =
-      RequestMap[Method]["result"];
-    export type RequestFor<Method extends KnownMethod> = Request<
-      Method,
-      RequestParams<Method>,
-      RequestResult<Method>
+    type RemoveTag<T extends { type: string }> = Omit<T, "type">;
+
+    type RequestSpecFor<Method extends KnownRequestMethod> = Extract<
+      KnownRequestSpec,
+      { method: Method }
     >;
-    export type RequestResultOf<TRequest extends Request> =
-      TRequest extends Request<string, unknown, infer Result> ? Result : never;
 
-    export type ServerNotificationType = keyof ServerNotificationMap & string;
-    export type ServerNotificationParams<Type extends ServerNotificationType> =
-      ServerNotificationMap[Type];
-    export type ServerNotificationPayload<Type extends ServerNotificationType> =
-      & { type: Type }
-      & ServerNotificationParams<Type>
-      & Record<string, WireValue>;
-    export type KnownServerNotification = {
-      [Type in ServerNotificationType]: ServerNotification<Type>;
-    }[ServerNotificationType];
+    type RequestParamsFor<Method extends KnownRequestMethod> =
+      RequestSpecFor<Method>["params"];
+
+    type RequestResultFor<Method extends KnownRequestMethod> =
+      RequestSpecFor<Method>["result"];
+
+    type RequestMessageFor<Method extends KnownRequestMethod> = Request<
+      Method,
+      RequestParamsFor<Method>,
+      RequestResultFor<Method>
+    >;
+
+    type ServerNotificationPayloadMap = {
+      [K in keyof Events.Natav.Map & string]: Tagged<K, Events.Natav.Map[K]>;
+    };
+
+    type KnownServerNotificationType = keyof ServerNotificationPayloadMap &
+      string;
+
+    type ServerNotificationPayloadFor<
+      Type extends KnownServerNotificationType,
+    > = ServerNotificationPayloadMap[Type] & Record<string, JSONValue>;
+
+    type ServerNotificationParamsFor<Type extends KnownServerNotificationType> =
+      RemoveTag<ServerNotificationPayloadFor<Type>>;
+
+    type KnownServerNotificationMessage = {
+      [Type in KnownServerNotificationType]: ServerNotification<Type>;
+    }[KnownServerNotificationType];
 
     export const ErrorCodes = {
       ParseError: -32700,
@@ -236,6 +156,7 @@ export namespace Rpc {
       DeviceNotFound: -32001,
       DeviceMethodNotFound: -32002,
       DeviceCallFailed: -32003,
+      RpcTimeout: -32004,
     } as const;
 
     export namespace JSON {
@@ -267,7 +188,10 @@ export namespace Rpc {
 
         if (replaced && typeof replaced === "object") {
           return Object.fromEntries(
-            Object.entries(replaced).map(([key, child]) => [key, encode(child)]),
+            Object.entries(replaced).map(([key, child]) => [
+              key,
+              encode(child),
+            ]),
           );
         }
 
@@ -287,7 +211,9 @@ export namespace Rpc {
       }
     }
 
-    function parseMessageObject(value: unknown): Record<string, unknown> | null {
+    function parseMessageObject(
+      value: unknown,
+    ): Record<string, unknown> | null {
       if (typeof value === "string") {
         try {
           value = JSON.parse(value);
@@ -309,10 +235,14 @@ export namespace Rpc {
     }
 
     function isObject(value: unknown): value is Record<string, unknown> {
-      return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+      return (
+        Boolean(value) && typeof value === "object" && !Array.isArray(value)
+      );
     }
 
-    function normalizeDeviceParams(params: DeviceParamsInput): Device.CallParams {
+    function normalizeDeviceParams(
+      params: DeviceParamsInput,
+    ): Rpc.Request.DeviceParams {
       return {
         device: params.device,
         method: params.method,
@@ -320,7 +250,7 @@ export namespace Rpc {
       };
     }
 
-    function parseDeviceParams(value: unknown): Device.CallParams | null {
+    function parseDeviceParams(value: unknown): Rpc.Request.DeviceParams | null {
       if (!isObject(value)) {
         return null;
       }
@@ -332,7 +262,10 @@ export namespace Rpc {
         args?: unknown;
       };
 
-      if (typeof params.device !== "string" || typeof params.method !== "string") {
+      if (
+        typeof params.device !== "string" ||
+        typeof params.method !== "string"
+      ) {
         return null;
       }
 
@@ -343,19 +276,77 @@ export namespace Rpc {
       };
     }
 
-    function toServerNotificationPayload<Type extends ServerNotificationType>(
+    function toServerNotificationPayload<
+      Type extends KnownServerNotificationType,
+    >(
       type: Type,
-      params: ServerNotificationParams<Type>,
-    ): ServerNotificationPayload<Type> {
+      params: ServerNotificationParamsFor<Type>,
+    ): ServerNotificationPayloadFor<Type> {
       // TSAS: Event payload types are already JSON-safe, but proving the spread satisfies the generic record is noisy.
-      return { type, ...params } as ServerNotificationPayload<Type>;
+      return { type, ...params } as ServerNotificationPayloadFor<Type>;
+    }
+
+    function parseDeviceEventNotification(
+      params: Record<string, unknown>,
+    ): ServerNotification<"natav:device:event"> | null {
+      if (
+        typeof params.name !== "string" ||
+        typeof params.event !== "string" ||
+        !isJSONValue(params.data)
+      ) {
+        return null;
+      }
+
+      return new ServerNotification("natav:device:event", {
+        name: params.name,
+        event: params.event,
+        data: params.data,
+      });
+    }
+
+    function parseStateUpdateNotification(
+      params: Record<string, unknown>,
+    ): ServerNotification<"natav:state:update"> | null {
+      if (typeof params.name !== "string" || !isJSONValue(params.data)) {
+        return null;
+      }
+
+      return new ServerNotification("natav:state:update", {
+        name: params.name,
+        // TSAS: The JSON-value runtime guard above is the strongest practical check for driver state payloads.
+        data: params.data as ServerNotificationParamsFor<"natav:state:update">["data"],
+      });
+    }
+
+    function parseConnectedNotification(
+      params: Record<string, unknown>,
+    ): ServerNotification<"natav:device:connected"> | null {
+      if (typeof params.name !== "string") {
+        return null;
+      }
+
+      return new ServerNotification("natav:device:connected", {
+        name: params.name,
+      });
+    }
+
+    function parseDisconnectedNotification(
+      params: Record<string, unknown>,
+    ): ServerNotification<"natav:device:disconnected"> | null {
+      if (typeof params.name !== "string") {
+        return null;
+      }
+
+      return new ServerNotification("natav:device:disconnected", {
+        name: params.name,
+      });
     }
 
     function parseServerNotification(
       value: unknown,
-    ): KnownServerNotification | null {
+    ): KnownServerNotificationMessage | null {
       const notification = Notification.is(value);
-      if (!notification || notification.method !== Methods.Notification) {
+      if (!notification || notification.method !== NOTIFICATION_METHOD) {
         return null;
       }
 
@@ -366,45 +357,13 @@ export namespace Rpc {
 
       switch (params.type) {
         case "natav:device:event":
-          if (
-            typeof params.name !== "string" ||
-            typeof params.event !== "string" ||
-            !isJSONValue(params.data)
-          ) {
-            return null;
-          }
-
-          return new ServerNotification("natav:device:event", {
-            name: params.name,
-            event: params.event,
-            data: params.data,
-          });
+          return parseDeviceEventNotification(params);
         case "natav:state:update":
-          if (typeof params.name !== "string" || !isJSONValue(params.data)) {
-            return null;
-          }
-
-          return new ServerNotification("natav:state:update", {
-            name: params.name,
-            // TSAS: The JSON-value runtime guard above is the strongest practical check for driver state payloads.
-            data: params.data as ServerNotificationParams<"natav:state:update">["data"],
-          });
+          return parseStateUpdateNotification(params);
         case "natav:device:connected":
-          if (typeof params.name !== "string") {
-            return null;
-          }
-
-          return new ServerNotification("natav:device:connected", {
-            name: params.name,
-          });
+          return parseConnectedNotification(params);
         case "natav:device:disconnected":
-          if (typeof params.name !== "string") {
-            return null;
-          }
-
-          return new ServerNotification("natav:device:disconnected", {
-            name: params.name,
-          });
+          return parseDisconnectedNotification(params);
         default:
           return null;
       }
@@ -413,7 +372,7 @@ export namespace Rpc {
     export class Request<
       Method extends string = string,
       Params = unknown,
-      Result extends WireValue = WireValue,
+      Result extends JSONValue = JSONValue,
     > {
       readonly jsonrpc: "2.0" = "2.0";
 
@@ -431,11 +390,11 @@ export namespace Rpc {
         return new Error(this.id, error);
       }
 
-      DeviceParams(): Device.CallParams | null {
+      DeviceParams(): Request.DeviceParams | null {
         if (
-          this.method !== Methods.DeviceCall &&
-          this.method !== Methods.DeviceSubscribe &&
-          this.method !== Methods.DeviceUnsubscribe
+          this.method !== REQUEST_METHOD.DeviceCall &&
+          this.method !== REQUEST_METHOD.DeviceSubscribe &&
+          this.method !== REQUEST_METHOD.DeviceUnsubscribe
         ) {
           return null;
         }
@@ -464,17 +423,21 @@ export namespace Rpc {
       static deviceCall(
         id: Id,
         params: DeviceParamsInput,
-      ): RequestFor<typeof Methods.DeviceCall> {
-        return new Request(id, Methods.DeviceCall, normalizeDeviceParams(params));
+      ): RequestMessageFor<typeof REQUEST_METHOD.DeviceCall> {
+        return new Request(
+          id,
+          REQUEST_METHOD.DeviceCall,
+          normalizeDeviceParams(params),
+        );
       }
 
       static deviceSubscribe(
         id: Id,
         params: DeviceParamsInput,
-      ): RequestFor<typeof Methods.DeviceSubscribe> {
+      ): RequestMessageFor<typeof REQUEST_METHOD.DeviceSubscribe> {
         return new Request(
           id,
-          Methods.DeviceSubscribe,
+          REQUEST_METHOD.DeviceSubscribe,
           normalizeDeviceParams(params),
         );
       }
@@ -482,16 +445,54 @@ export namespace Rpc {
       static deviceUnsubscribe(
         id: Id,
         params: DeviceParamsInput,
-      ): RequestFor<typeof Methods.DeviceUnsubscribe> {
+      ): RequestMessageFor<typeof REQUEST_METHOD.DeviceUnsubscribe> {
         return new Request(
           id,
-          Methods.DeviceUnsubscribe,
+          REQUEST_METHOD.DeviceUnsubscribe,
           normalizeDeviceParams(params),
         );
       }
     }
 
-    export class Response<T extends WireValue = WireValue> {
+    export namespace Request {
+      export const Method = REQUEST_METHOD;
+      export type DeviceParams = { device: string; method: string; args: any[]; };
+      export type DeviceCall = {
+      method: typeof REQUEST_METHOD.DeviceCall;
+      params: Rpc.Request.DeviceParams;
+      result: JSONValue;
+    };
+      export type DeviceSubscribe = {
+      method: typeof REQUEST_METHOD.DeviceSubscribe;
+      params: Rpc.Request.DeviceParams;
+      result: null;
+    };
+      export type DeviceUnsubscribe = {
+      method: typeof REQUEST_METHOD.DeviceUnsubscribe;
+      params: Rpc.Request.DeviceParams;
+      result: null;
+    };
+      export type GetAllDriverStates = {
+      method: typeof REQUEST_METHOD.GetAllDriverStates;
+      params: undefined;
+      result: JSONValue;
+    };
+      type Any = KnownRequestSpec;
+      export type Method = KnownRequestMethod;
+      export type Spec<MethodName extends Method> = RequestSpecFor<MethodName>;
+      export type Params<MethodName extends Method> =
+        RequestParamsFor<MethodName>;
+      export type Result<MethodName extends Method> =
+        RequestResultFor<MethodName>;
+      export type Message<MethodName extends Method> =
+        RequestMessageFor<MethodName>;
+      export type ResultOf<TRequest extends Protocol.Request> =
+        TRequest extends Protocol.Request<string, unknown, infer ResultType> ?
+          ResultType
+        : never;
+    }
+
+    export class Response<T extends JSONValue = JSONValue> {
       readonly jsonrpc: "2.0" = "2.0";
 
       constructor(
@@ -501,8 +502,8 @@ export namespace Rpc {
 
       static from<TRequest extends Request>(
         request: TRequest,
-        result: RequestResultOf<TRequest>,
-      ): Response<RequestResultOf<TRequest>> {
+        result: Request.ResultOf<TRequest>,
+      ): Response<Request.ResultOf<TRequest>> {
         return new Response(request.id, result);
       }
 
@@ -548,7 +549,10 @@ export namespace Rpc {
           data?: unknown;
         };
 
-        if (typeof error.code !== "number" || typeof error.message !== "string") {
+        if (
+          typeof error.code !== "number" ||
+          typeof error.message !== "string"
+        ) {
           return null;
         }
 
@@ -569,7 +573,7 @@ export namespace Rpc {
 
     export class Notification<
       Method extends string = string,
-      Params extends Record<string, WireValue> = Record<string, WireValue>,
+      Params extends Record<string, JSONValue> = Record<string, JSONValue>,
     > {
       readonly jsonrpc: "2.0" = "2.0";
 
@@ -595,22 +599,32 @@ export namespace Rpc {
     }
 
     export class ServerNotification<
-      Type extends ServerNotificationType = ServerNotificationType,
+      Type extends KnownServerNotificationType = KnownServerNotificationType,
     > extends Notification<
-      typeof Methods.Notification,
-      ServerNotificationPayload<Type>
+      typeof NOTIFICATION_METHOD,
+      ServerNotificationPayloadFor<Type>
     > {
-      constructor(type: Type, params: ServerNotificationParams<Type>) {
-        super(Methods.Notification, toServerNotificationPayload(type, params));
+      constructor(type: Type, params: ServerNotificationParamsFor<Type>) {
+        super(NOTIFICATION_METHOD, toServerNotificationPayload(type, params));
       }
 
       get type(): Type {
         return this.params.type;
       }
 
-      static is(value: unknown): KnownServerNotification | null {
+      static is(value: unknown): ServerNotification.Any | null {
         return parseServerNotification(value);
       }
+    }
+
+    export namespace ServerNotification {
+      export const Method = NOTIFICATION_METHOD;
+      export type Any = KnownServerNotificationMessage;
+      export type Type = KnownServerNotificationType;
+      export type Payload<TypeName extends Type> =
+        ServerNotificationPayloadFor<TypeName>;
+      export type Params<TypeName extends Type> =
+        ServerNotificationParamsFor<TypeName>;
     }
 
     export const Errors = {
@@ -649,4 +663,30 @@ export namespace Rpc {
       return false;
     }
   }
+}
+
+export namespace WebSocket {
+  export type App = {
+    ws(
+      path: string,
+      handlers: {
+        open(ws: Peer): void;
+        message(ws: Peer, message: ArrayBuffer, isBinary: boolean): void;
+        close(ws: Peer, code: number, message: ArrayBuffer): void;
+        error(ws: Peer): void;
+      },
+    ): void;
+  };
+
+  export type Peer = {
+    addr: string;
+    readonly readyState: number;
+    send(message: string): void;
+    close(code?: number, reason?: string): void;
+  };
+
+  export type TransportOptions = {
+    reconnect?: boolean;
+    retryDelay?: number;
+  };
 }

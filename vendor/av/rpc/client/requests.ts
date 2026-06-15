@@ -2,14 +2,12 @@ import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "@av/types";
 
-type RpcClientError = Error & {
-  code?: number;
-  data?: unknown;
-};
-
 export class ClientRpcRequests {
   private tel = new Telemetry("Rpc::Requests");
-  private pendingRequests = new Map<string | number, Rpc.PendingRequest>();
+  private pendingRequests = new Map<
+    string | number,
+    Rpc.Client.PendingRequest
+  >();
   private requestIdCounter = 0;
   private timeout = 30000;
 
@@ -33,15 +31,13 @@ export class ClientRpcRequests {
       return;
     }
 
-    const error = new Error(rpcError.error.message) as RpcClientError;
-    error.code = rpcError.error.code;
-    error.data = rpcError.error.data;
+    const error = rpcError;
     this.rejectPendingRequest(rpcError.id, error);
   }
 
-  rejectAll(error: Error) {
+  rejectAll(error: Rpc.Protocol.Error) {
     for (const id of this.pendingRequests.keys()) {
-      this.rejectPendingRequest(id, new Error(error.message));
+      this.rejectPendingRequest(id, error);
     }
   }
 
@@ -52,9 +48,10 @@ export class ClientRpcRequests {
       const timeoutId = setTimeout(() => {
         this.rejectPendingRequest(
           message.id,
-          new Error(
-            `RPC call timed out after ${this.timeout}ms id ${message.id}`,
-          ),
+          new Rpc.Protocol.Error(message.id, {
+            code: Rpc.Protocol.ErrorCodes.RpcTimeout,
+            message: `RPC call timed out after ${this.timeout}ms id ${message.id}`,
+          }),
         );
       }, this.timeout);
 
@@ -69,7 +66,7 @@ export class ClientRpcRequests {
         Rpc.Protocol.JSON.stringify(message),
       );
       if (!str.ok) {
-        this.rejectPendingRequest(message.id, new Error(str.error));
+        this.rejectPendingRequest(message.id, str.data);
         return;
       }
 
@@ -77,7 +74,7 @@ export class ClientRpcRequests {
         this.transport.send(str.data),
       );
       if (!send.ok) {
-        this.rejectPendingRequest(message.id, new Error(String(send.error)));
+        this.rejectPendingRequest(message.id, send.data);
       }
     });
   }
@@ -102,7 +99,7 @@ export class ClientRpcRequests {
     pending.resolve(result);
   }
 
-  private rejectPendingRequest(id: string | number, error: Error) {
+  private rejectPendingRequest(id: string | number, error: Rpc.Protocol.Error) {
     const pending = this.pendingRequests.get(id);
     if (!pending) {
       return;

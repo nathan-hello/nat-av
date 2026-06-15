@@ -15,6 +15,17 @@ export namespace Drivers {
     | T
     | readonly T[number][];
 
+  export type DriverView = {
+    name: string;
+    driverName: string;
+    children: Node[];
+    socket?: {
+      traceName: string;
+      canWrite: boolean;
+      canReceive: boolean;
+    };
+  };
+
   export interface ManagerView<N extends Drivers.Array = Drivers.Array> {
     readonly configs: N;
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;
@@ -27,7 +38,7 @@ export namespace Drivers {
     FindDriver(name: string): Driver | undefined;
     GetAllDriverNames(): Drivers.Names<N>[];
     Start(): Promise<void>;
-    GetTree(): Rpc.Debug.Node[];
+    GetTree(): DriverView[];
     End(): Promise<void>;
   }
 

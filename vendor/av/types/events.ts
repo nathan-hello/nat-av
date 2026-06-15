@@ -52,6 +52,14 @@ export namespace Events {
       };
     }[Drivers.Names<N>];
 
+    export type SocketMessage = {
+      traceName: string;
+      direction: "rx" | "tx" | "rx-delimited";
+      time: number;
+      data: Uint8Array;
+      encoding: BufferEncoding | "unknown";
+    };
+
     export type Map<N extends Drivers.Array = Drivers.Array> = {
       "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
@@ -61,7 +69,7 @@ export namespace Events {
       "natav:device:error": { name: Drivers.Names<N>; error?: Error | unknown };
       "natav:debug:socket": {
         name: Drivers.Names<N>;
-        data: NRpc.Debug.SocketMessage;
+        data: SocketMessage;
       };
       "natav:opentelemetry:entry": {
         record: ReadableLogRecord;
