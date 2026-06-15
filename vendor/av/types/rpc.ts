@@ -484,34 +484,34 @@ export namespace Rpc {
       export const Methods = "notification";
     }
   }
-}
 
-export namespace WebSocket {
-  export type App = {
-    ws(
-      path: string,
-      handlers: {
-        open(ws: Peer): void;
-        message(ws: Peer, message: ArrayBuffer, isBinary: boolean): void;
-        close(ws: Peer, code: number, message: ArrayBuffer): void;
-        error(ws: Peer): void;
-      },
-    ): void;
-  };
+  export namespace WebSocket {
+    export type App = {
+      ws(
+        path: string,
+        handlers: {
+          open(ws: Peer): void;
+          message(ws: Peer, message: ArrayBuffer, isBinary: boolean): void;
+          close(ws: Peer, code: number, message: ArrayBuffer): void;
+          error(ws: Peer): void;
+        },
+      ): void;
+    };
 
-  export type Peer = {
-    addr: string;
-    readonly readyState: number;
-    send(message: string): void;
-    close(code?: number, reason?: string): void;
-  };
+    export type Peer = {
+      addr: string;
+      readonly readyState: number;
+      send(message: string): void;
+      close(code?: number, reason?: string): void;
+    };
 
-  export type TransportOptions = {
-    reconnect?: boolean;
-    retryDelay?: number;
-  };
-}
+    export type TransportOptions = {
+      reconnect?: boolean;
+      retryDelay?: number;
+    };
+  }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  function isObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
 }
