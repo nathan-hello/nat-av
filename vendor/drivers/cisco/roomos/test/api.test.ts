@@ -1,11 +1,11 @@
-import { TestSocket } from "@av/test/data";
-import type { Sockets } from "@av/types";
-import { CiscoRoomOS } from "@drivers/cisco/roomos";
+import { Test } from "@av/index";
+import type { Sockets } from "@av/index";
+import { CiscoRoomOS } from "../index";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 
 it("api writes to socket, state gets updated on notification", async () => {
-  const socket = new TestSocket(
+  const socket = new Test.Socket(
     [
       {
         onWrite: JSON.stringify({
@@ -278,7 +278,7 @@ it("api writes to socket, state gets updated on notification", async () => {
 });
 
 it("hydrates camera arrays and runs newer async commands", async () => {
-  const socket = new TestSocket(
+  const socket = new Test.Socket(
     [
       {
         onWrite: JSON.stringify({
@@ -406,7 +406,7 @@ it("hydrates camera arrays and runs newer async commands", async () => {
 });
 
 it("returns an RPCError when a status fetch fails", async () => {
-  const socket = new TestSocket(
+  const socket = new Test.Socket(
     [
       {
         onWrite: JSON.stringify({

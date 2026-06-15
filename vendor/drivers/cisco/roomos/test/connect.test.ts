@@ -1,10 +1,10 @@
-import { TestSocket } from "@av/test/data";
+import { Test } from "@av/test/data";
 import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 
 it("writes connect-time setup messages", async () => {
-  const socket = new TestSocket(
+  const socket = new Test.Socket(
     [
       {
         onWrite: "xPreferences OutputMode json\r",

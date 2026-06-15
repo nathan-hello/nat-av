@@ -1,18 +1,23 @@
-import { Driver } from "@av/drivers";
-import { toBuffer, toString } from "@av/lib/buffer";
-import { TypedEventTarget } from "@av/lib/eventtarget";
-import { RequestManager } from "@av/lib/requests";
-import { RPCError, RPCNotification, RPCResponse } from "@av/rpc/protocol";
-import { Delimiters } from "@av/sockets/delimiters";
-import type { Sockets } from "@av/types";
-import { RoomOSProxy } from "@drivers/cisco/roomos/proxy";
-import { reader } from "@drivers/cisco/roomos/reader";
-import type { JsonValue } from "@drivers/cisco/roomos/typegen/scripts/types";
-import { RoomOS, type Generated } from "@drivers/cisco/roomos/types";
-import { RoomOSFormatter } from "@drivers/cisco/roomos/writer";
+import {
+  Delimiters,
+  Driver,
+  RequestManager,
+  RPCError,
+  RPCNotification,
+  RPCResponse,
+  toBuffer,
+  toString,
+  TypedEventTarget,
+  type Sockets,
+} from "@av/index";
+import { RoomOSProxy } from "./proxy";
+import { reader } from "./reader";
+import type { JsonValue } from "./typegen/scripts/types";
+import { RoomOS } from "./types";
+import { RoomOSFormatter } from "./writer";
 
 export type State<
-  Product extends Generated.ProductTarget = "any",
+  Product extends RoomOS.ProductTarget = "any",
   StrictState extends boolean = boolean,
   Subscriptions extends RoomOS.Subscriptions<Product> =
     RoomOS.Subscriptions<Product>,
@@ -21,7 +26,7 @@ export type State<
 };
 
 export class CiscoRoomOS<
-  Product extends Generated.ProductTarget = "any",
+  Product extends RoomOS.ProductTarget = "any",
   const StrictState extends boolean = true,
   const Subscriptions extends RoomOS.Subscriptions<Product> =
     RoomOS.Subscriptions<Product>,

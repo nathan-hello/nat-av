@@ -1,6 +1,5 @@
 import { router } from "@/router";
-import type { WebSocketApp, WebSocketPeer } from "@av/rpc/server/websocket";
-import { Telemetry } from "@av/telemetry";
+import { type Rpc, Telemetry } from "@av/index";
 import { start } from "@server/index";
 import * as http from "node:http";
 import { createRequestListener } from "remix/node-fetch-server";
@@ -46,7 +45,7 @@ function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-function createWebSocketApp(server: http.Server): WebSocketApp {
+function createWebSocketApp(server: http.Server): Rpc.WebSocket.App {
   const sockets = new Map<string, WebSocketServer>();
 
   server.on("upgrade", (request, socket, head) => {
@@ -104,7 +103,7 @@ function toWebSocketPeer(
     close(code?: number, reason?: string): void;
   },
   addr: string,
-): WebSocketPeer {
+): Rpc.WebSocket.Peer {
   return {
     addr,
     get readyState() {

@@ -5,11 +5,11 @@ import { setTimeout as delay } from "node:timers/promises";
 import { RequestManager } from "@av/lib/requests";
 import { Delimiters } from "@av/sockets/delimiters";
 import { Telemetry } from "@av/telemetry";
-import { TestSocket } from "@av/test/data";
+import { Test } from "@av/test/data";
 
 describe("requests", () => {
   it("queues serial requests when no matcher is provided", async () => {
-    const socket = new TestSocket();
+    const socket = new Test.Socket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Serial"),
       socket,
@@ -48,7 +48,7 @@ describe("requests", () => {
   });
 
   it("matches responses out of order when a matcher is provided", async () => {
-    const socket = new TestSocket();
+    const socket = new Test.Socket();
     const requests = new RequestManager<
       { id: number; command: string },
       { id: number; result: string }
@@ -89,7 +89,7 @@ describe("requests", () => {
   });
 
   it("paces matched requests without dropping queued work", async () => {
-    const socket = new TestSocket();
+    const socket = new Test.Socket();
     const requests = new RequestManager<
       { id: number; command: string },
       { id: number; result: string }
@@ -142,7 +142,7 @@ describe("requests", () => {
   });
 
   it("blocks later requests until earlier responses arrive in blocking queue mode", async () => {
-    const socket = new TestSocket();
+    const socket = new Test.Socket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::BlockingQueue"),
       socket,
@@ -175,7 +175,7 @@ describe("requests", () => {
   });
 
   it("emits unmatched messages", async () => {
-    const socket = new TestSocket();
+    const socket = new Test.Socket();
     const requests = new RequestManager<string, string>({
       tel: new Telemetry("Test::Requests::Messages"),
       socket,

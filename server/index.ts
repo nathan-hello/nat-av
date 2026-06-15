@@ -1,10 +1,9 @@
 import { Manager } from "@av/drivers";
-import { Debugger } from "@av/drivers/builtin/debugger";
+import { Debugger } from "@av/drivers/builtin/debug";
 import { RPCServer } from "@av/rpc/server";
 import {
   bindHttpToWs,
   WebsocketHandler,
-  type WebSocketApp,
 } from "@av/rpc/server/websocket";
 import { Tcp } from "@av/sockets/tcp";
 import { Telemetry } from "@av/telemetry";
@@ -14,7 +13,7 @@ import {
   FileExporter,
   SimpleConsoleExporter,
 } from "@av/telemetry/server/exporters";
-import type { Drivers } from "@av/types";
+import type { Drivers, Rpc } from "@av/types";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import ChazyControl from "@drivers/turtle";
@@ -85,7 +84,7 @@ const rpc = new RPCServer({ natav });
 
 const websocket = new WebsocketHandler({ rpc, natav });
 
-export async function start(app: WebSocketApp) {
+export async function start(app: Rpc.WebSocket.App) {
   bindHttpToWs(app, "/ws", websocket, new Telemetry("Server::Websocket"));
 
   await natav.Start();

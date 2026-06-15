@@ -1,4 +1,4 @@
-import type { Format } from "@av/types";
+import type { Format } from "@av/index";
 
 /** Domain Entities */
 export type VideoRoute = {

@@ -7,7 +7,6 @@ import {
   RPCRequest,
   RPCResponse,
 } from "@av/rpc/protocol";
-import type { WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
 import { Rpc, type Events } from "@av/types";
 
@@ -26,7 +25,7 @@ function hasJsonEventTarget(
 export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
   private tel = new Telemetry("Rpc::Router::Device");
   private subscriptions = new Map<
-    WebSocketPeer,
+    Rpc.WebSocket.Peer,
     Map<string, Array<() => void>>
   >();
 
@@ -36,7 +35,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
 
   async handle(
     message: RPCRequest,
-    peer: WebSocketPeer,
+    peer: Rpc.WebSocket.Peer,
   ): Promise<RPCResponse | RPCError> {
     const params = message.DeviceParams();
     const err = new RPCError(message.id, {
@@ -98,7 +97,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     device: Driver,
     message: RPCRequest,
     params: Rpc.Device.CallParams,
-    peer: WebSocketPeer,
+    peer: Rpc.WebSocket.Peer,
   ): RPCResponse | RPCError {
     const eventName = params.method;
 
@@ -145,7 +144,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
   private unsubscribe(
     message: RPCRequest,
     params: Rpc.Device.CallParams,
-    peer: WebSocketPeer,
+    peer: Rpc.WebSocket.Peer,
   ): RPCResponse | RPCError {
     const eventName = params.method;
 
@@ -244,7 +243,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     return null;
   }
 
-  closePeer(peer: WebSocketPeer) {
+  closePeer(peer: Rpc.WebSocket.Peer) {
     const peerSubscriptions = this.subscriptions.get(peer);
     if (!peerSubscriptions) {
       return;

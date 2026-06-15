@@ -4,98 +4,98 @@ import { ClientRpc } from "@av/rpc/client";
 import { RPCRequest } from "@av/rpc/protocol";
 import { RPCServer } from "@av/rpc/server";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
-import type { WebSocketPeer } from "@av/rpc/server/websocket";
-import { TestRpcClient } from "@av/test/data";
+import { Test } from "@av/test/data";
+import type { Rpc } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-function NewTick() {
-  return new TypedEventTarget<{ tick: { count: number } }>();
-}
-
-type PingApi = {
-  ping: () => Promise<string>;
-};
-
-class LeafDriver extends Driver<"leaf"> {
-  state: { ready: boolean } = { ready: true };
-  api: PingApi = {
-    ping: async () => "leaf-pong",
-  };
-  events = NewTick();
-  constructor() {
-    super({ name: "leaf", driverName: "node-driver" });
-  }
-  emitTick(count: number) {
-    this.events.dispatch("tick", { count });
-  }
-}
-
-class Level3Driver extends Driver<"level-3", { leaf: LeafDriver }> {
-  state: { ready: boolean } = { ready: true };
-  api: PingApi = {
-    ping: async () => "level-3-pong",
-  };
-  socket = undefined;
-  events = NewTick();
-  constructor(private leaf: LeafDriver) {
-    super({ name: "level-3", driverName: "node-driver" });
-    this.deps.set({ leaf: this.leaf });
-  }
-  emitTick(count: number) {
-    this.events.dispatch("tick", { count });
-  }
-}
-
-class Level2Driver extends Driver<"level-2", { "level-3": Level3Driver }> {
-  state: { ready: boolean } = { ready: true };
-  api: PingApi = {
-    ping: async () => "level-2-pong",
-  };
-  socket = undefined;
-  events = NewTick();
-  constructor(private level3: Level3Driver) {
-    super({ name: "level-2", driverName: "node-driver" });
-    this.deps.set({ "level-3": this.level3 });
-  }
-  emitTick(count: number) {
-    this.events.dispatch("tick", { count });
-  }
-}
-
-class RootDriver extends Driver<"root", { "level-2": Level2Driver }> {
-  state: { ready: boolean } = { ready: true };
-  api: PingApi = {
-    ping: async () => "root-pong",
-  };
-  socket = undefined;
-  events = NewTick();
-  constructor(private level2: Level2Driver) {
-    super({ name: "root", driverName: "node-driver" });
-    this.deps.set({ "level-2": this.level2 });
-  }
-  emitTick(count: number) {
-    this.events.dispatch("tick", { count });
-  }
-}
-
-type TestPeer = WebSocketPeer & { sent: string[] };
-
-function makePeer(addr: string): TestPeer {
-  const sent: string[] = [];
-
-  return {
-    addr,
-    readyState: 1,
-    sent,
-    send(message: string) {
-      sent.push(message);
-    },
-    close() {},
-  };
-}
-
 describe("rpc deps", () => {
+  function NewTick() {
+    return new TypedEventTarget<{ tick: { count: number } }>();
+  }
+
+  type PingApi = {
+    ping: () => Promise<string>;
+  };
+
+  class LeafDriver extends Driver<"leaf"> {
+    state: { ready: boolean } = { ready: true };
+    api: PingApi = {
+      ping: async () => "leaf-pong",
+    };
+    events = NewTick();
+    constructor() {
+      super({ name: "leaf", driverName: "node-driver" });
+    }
+    emitTick(count: number) {
+      this.events.dispatch("tick", { count });
+    }
+  }
+
+  class Level3Driver extends Driver<"level-3", { leaf: LeafDriver }> {
+    state: { ready: boolean } = { ready: true };
+    api: PingApi = {
+      ping: async () => "level-3-pong",
+    };
+    socket = undefined;
+    events = NewTick();
+    constructor(private leaf: LeafDriver) {
+      super({ name: "level-3", driverName: "node-driver" });
+      this.deps.set({ leaf: this.leaf });
+    }
+    emitTick(count: number) {
+      this.events.dispatch("tick", { count });
+    }
+  }
+
+  class Level2Driver extends Driver<"level-2", { "level-3": Level3Driver }> {
+    state: { ready: boolean } = { ready: true };
+    api: PingApi = {
+      ping: async () => "level-2-pong",
+    };
+    socket = undefined;
+    events = NewTick();
+    constructor(private level3: Level3Driver) {
+      super({ name: "level-2", driverName: "node-driver" });
+      this.deps.set({ "level-3": this.level3 });
+    }
+    emitTick(count: number) {
+      this.events.dispatch("tick", { count });
+    }
+  }
+
+  class RootDriver extends Driver<"root", { "level-2": Level2Driver }> {
+    state: { ready: boolean } = { ready: true };
+    api: PingApi = {
+      ping: async () => "root-pong",
+    };
+    socket = undefined;
+    events = NewTick();
+    constructor(private level2: Level2Driver) {
+      super({ name: "root", driverName: "node-driver" });
+      this.deps.set({ "level-2": this.level2 });
+    }
+    emitTick(count: number) {
+      this.events.dispatch("tick", { count });
+    }
+  }
+
+  type TestPeer = Rpc.WebSocket.Peer & { sent: string[] };
+
+  function makePeer(addr: string): TestPeer {
+    const sent: string[] = [];
+
+    return {
+      addr,
+      readyState: 1,
+      sent,
+      send(message: string) {
+        sent.push(message);
+      },
+      close() {},
+    };
+  }
+
   it("walks a four-level dependency tree on the server and through rpc", async () => {
     const leaf = new LeafDriver();
     const level3 = new Level3Driver(leaf);
@@ -157,7 +157,7 @@ describe("rpc deps", () => {
     });
 
     const server = new RPCServer({ natav });
-    const transport = new TestRpcClient(server);
+    const transport = new Test.RpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {

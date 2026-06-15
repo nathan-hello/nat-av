@@ -6,8 +6,8 @@ import {
   RPCResponse,
 } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
-import type { WebSocketPeer } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
+import type { Rpc } from "@av/types";
 
 export class RPCServer {
   private tel = new Telemetry("Rpc");
@@ -19,7 +19,7 @@ export class RPCServer {
 
   async handleRequest(
     message: RPCRequest,
-    peer: WebSocketPeer,
+    peer: Rpc.WebSocket.Peer,
   ): Promise<RPCResponse | RPCError> {
     const result = await this.tel.task(
       "server-rpc:handle-request",
@@ -54,7 +54,7 @@ export class RPCServer {
     });
   }
 
-  closePeer(peer: WebSocketPeer) {
+  closePeer(peer: Rpc.WebSocket.Peer) {
     this.router.closePeer(peer);
   }
 }

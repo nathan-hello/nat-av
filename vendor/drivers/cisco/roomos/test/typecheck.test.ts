@@ -1,10 +1,10 @@
-import { TestSocket } from "@av/test/data";
+import { Test } from "@av/test/data";
 import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 describe("typecheck", () => {
-  const socket = new TestSocket(
+  const socket = new Test.Socket(
     [
       {
         onWrite: JSON.stringify({

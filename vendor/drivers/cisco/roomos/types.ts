@@ -1,5 +1,5 @@
-import type { Drivers } from "@av/types/drivers";
-import type { GeneratedRoomOS } from "@drivers/cisco/roomos/typegen/schemas/11.33.1";
+import type { Drivers } from "@av/index";
+import type { GeneratedRoomOS } from "./typegen/schemas/11.33.1";
 
 type IsPlainObject<V> =
   [V] extends [readonly any[]] ? false
@@ -121,9 +121,16 @@ type ApiRecordify<Value> =
     { [K in keyof Value]: ApiRecordify<Value[K]> } & Drivers.ApiRecord
   : never;
 
-export type { GeneratedRoomOS as Generated };
-
 export namespace RoomOS {
+  export type JsonValue =
+    | null
+    | boolean
+    | number
+    | string
+    | JsonValue[]
+    | { [key: string]: JsonValue };
+
+  export type ProductTarget = GeneratedRoomOS.ProductTarget;
   export type ConfigurationSubscriptionTree<
     Product extends GeneratedRoomOS.ProductTarget = "any",
   > = SubscriptionTree<

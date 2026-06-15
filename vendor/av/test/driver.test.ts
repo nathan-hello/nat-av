@@ -3,9 +3,21 @@ import { RPCRequest } from "@av/rpc/protocol";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { driver, EventDriver } from "./data.ts";
+import { Test } from "./data.ts";
 
 describe("test driver", () => {
+  const driver = new Test.Driver({
+    name: "shim-1",
+    socket: new Test.Socket(),
+  });
+
+  const natav = new Manager({ drivers: [driver], deferred: [] });
+
+  it("registers the shim driver", () => {
+    assert.deepEqual(natav.GetAllDriverNames(), ["shim-1"]);
+    assert.equal(natav.GetDriver("shim-1").name, "shim-1");
+  });
+
   it("exposes the shim driver state and api", () => {
     assert.equal(driver.name, "shim-1");
     assert.equal(driver._drivername, "test-shim");
@@ -17,7 +29,7 @@ describe("test driver", () => {
   });
 
   it("forwards driver events through the rpc server per subscription", async () => {
-    const eventDriver = new EventDriver("event-1");
+    const eventDriver = new Test.EventDriver("event-1");
     const natav = new Manager({ drivers: [eventDriver], deferred: [] });
     const router = new DeviceRpcRouter(natav);
     const makePeer = (addr: string) => {
@@ -88,5 +100,4 @@ describe("test driver", () => {
     assert.equal(peer1.sent.length, 3);
     assert.equal(peer2.sent.length, 2);
   });
-
 });

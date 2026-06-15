@@ -1,7 +1,5 @@
-import { toString } from "@av/lib/buffer";
-import { RPCError, RPCNotification } from "@av/rpc/protocol";
-import type { JsonValue } from "@drivers/cisco/roomos/typegen/scripts/types";
-import { RoomOS } from "@drivers/cisco/roomos/types";
+import { RPCError, RPCNotification, toString } from "@av/index";
+import { RoomOS } from "./types";
 
 function FromJsonRpcError(err: RPCError): RoomOS.ReadOperation {
   const code: RoomOS.ErrorCode =
@@ -21,7 +19,7 @@ function FromJsonRpcError(err: RPCError): RoomOS.ReadOperation {
 
 function FromJsonRpcResponse(
   request: RoomOS.WriteOperation,
-  data: JsonValue,
+  data: RoomOS.JsonValue,
   subscriptions: RoomOS.HeldSubscription[],
 ): RoomOS.ReadOperation {
   switch (request.kind) {
@@ -135,7 +133,7 @@ function FromJsonRpcNotification(
 const parse = {
   Is: {
     SubOrUnsubFeedback: (
-      value: JsonValue,
+      value: RoomOS.JsonValue,
     ): value is RoomOS.Rx.RegisterFeedback => {
       return (
         value !== null &&
@@ -145,8 +143,8 @@ const parse = {
       );
     },
     xFeedbackEvent: (
-      value: JsonValue,
-    ): value is { Id: number & Record<string, JsonValue> } => {
+      value: RoomOS.JsonValue,
+    ): value is { Id: number & Record<string, RoomOS.JsonValue> } => {
       return (
         value !== null &&
         typeof value === "object" &&
@@ -156,15 +154,17 @@ const parse = {
     },
   },
 
-  SubOrUnsubFeedback: (value: JsonValue): RoomOS.Rx.RegisterFeedback | null => {
+  SubOrUnsubFeedback: (
+    value: RoomOS.JsonValue,
+  ): RoomOS.Rx.RegisterFeedback | null => {
     if (parse.Is.SubOrUnsubFeedback(value)) {
       return value;
     }
     return null;
   },
   xFeedbackEvent: (
-    value: JsonValue,
-  ): { Id: number & Record<string, JsonValue> } | null => {
+    value: RoomOS.JsonValue,
+  ): { Id: number & Record<string, RoomOS.JsonValue> } | null => {
     if (parse.Is.xFeedbackEvent(value)) {
       return value;
     }
@@ -184,11 +184,11 @@ function findSubTrees(
 }
 
 function getEventUpdate(
-  obj: JsonValue,
+  obj: RoomOS.JsonValue,
   currentPath: string[] = [],
 ): {
   path: string[];
-  value: JsonValue;
+  value: RoomOS.JsonValue;
 } {
   if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
     return { path: currentPath, value: obj };

@@ -1,14 +1,14 @@
 import { Manager } from "@av/drivers";
 import { ClientRpc } from "@av/rpc/client";
 import { RPCServer } from "@av/rpc/server";
-import { TestRpcClient, TestSocket } from "@av/test/data";
+import {Test} from "@av/test/data";
 import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 describe("rpc roomos device", () => {
   it("calls roomos methods and receives roomos events through rpc", async () => {
-    const socket = new TestSocket(
+    const socket = new Test.Socket(
       [
         {
           onWrite: JSON.stringify({
@@ -114,7 +114,7 @@ describe("rpc roomos device", () => {
     });
     // const system = new System({ natav });
     const server = new RPCServer({ natav });
-    const transport = new TestRpcClient(server);
+    const transport = new Test.RpcClient(server);
     const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {
