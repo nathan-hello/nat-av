@@ -1,3 +1,4 @@
+import { toUint8Array } from "@av/lib/buffer";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
@@ -58,11 +59,9 @@ export class Tcp
       data: {
         traceName: this.tel.namespace,
         direction: "tx",
-        time: new Date().toISOString(),
-        encoding: "utf8",
-        text: buffer.toString("utf8"),
-        hex: buffer.toString("hex"),
-        length: buffer.length,
+        time: Date.now(),
+        encoding: this.config.encoding ?? "unknown",
+        data: toUint8Array(buffer),
       },
     });
 
@@ -120,11 +119,9 @@ export class Tcp
         data: {
           traceName: this.tel.namespace,
           direction: "rx",
-          time: new Date().toISOString(),
+          time: Date.now(),
           encoding: "utf8",
-          text: data.toString("utf8"),
-          hex: data.toString("hex"),
-          length: data.length,
+          data: toUint8Array(data),
         },
       });
 

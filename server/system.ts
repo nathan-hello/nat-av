@@ -1,19 +1,14 @@
 import { Driver } from "@av/drivers";
 import type { Drivers } from "@av/types";
-import type { drivers, systemDrivers } from "@server/index";
+import type { drivers } from "@server/index";
 import { AutomationEngine } from "@server/lib/automation";
 
-// This is the System class. It is not a socket-less driver because if
-// this were to be managed by the Natav.Orch Orchistrator, then we would
-// have a circular type definition. We want the implementation of Natav.Orch
-// to be accessible to this class for custom work.
-
 export class System extends Driver<"system"> {
-  private natav: Drivers.ManagerView<systemDrivers>;
+  private natav: Drivers.ManagerView<drivers>;
   socket = undefined;
   schema = undefined;
 
-  constructor(natav: Drivers.ManagerView<systemDrivers>) {
+  constructor(natav: Drivers.ManagerView<drivers>) {
     super({ name: "system", driverName: "system" });
     this.natav = natav;
     new AutomationEngine(natav);

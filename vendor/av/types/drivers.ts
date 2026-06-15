@@ -25,9 +25,9 @@ export namespace Drivers {
       name: Name,
     ): Drivers.State<N, Name>;
     FindDriver(name: string): Driver | undefined;
-    GetAllDriverNames(): string[];
-    GetDebugTree(): Rpc.Debug.Node[];
+    GetAllDriverNames(): Drivers.Names<N>[];
     Start(): Promise<void>;
+    GetTree(): Rpc.Debug.Node[];
     End(): Promise<void>;
   }
 

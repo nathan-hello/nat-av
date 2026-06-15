@@ -49,11 +49,11 @@ export abstract class Driver<
     this.tel.info("EVENT_DISPATCHED", { type });
   }
 
-  public async start() {
-    await this.socket?.start?.();
+  public start(): Promise<void> | void {
+    this.socket?.start?.();
   }
-  public async end() {
-    await this.socket?.end?.();
+  public end(): Promise<void> | void {
+    this.socket?.end?.();
   }
 }
 
@@ -149,6 +149,40 @@ export class Manager<
     return this.all().map((d) => d.name);
   }
 
+  GetTree(): Rpc.Debug.Node[] {
+    const toNode = (driver: Driver): Rpc.Debug.Node | undefined => {
+      if (driver.name === "debugger") {
+        return;
+      }
+      const socket = driver.socket;
+      const canWrite = typeof socket?.write === "function";
+      const canReceive = typeof socket?.on === "function";
+
+      const node = {
+        name: driver.name,
+        driverName: driver._drivername,
+        // TSAS: Object.values strips out type info
+        children: Object.values(driver.deps.get() as Record<string, Driver>)
+          .map((child) => toNode(child))
+          .filter((s) => s !== undefined),
+        ...(typeof socket?.name === "string" ?
+          {
+            socket: {
+              traceName: socket.name,
+              canWrite,
+              canReceive,
+            },
+          }
+        : {}),
+      };
+
+      return node;
+    };
+    return this.configs
+      .map((driver) => toNode(driver))
+      .filter((s) => s !== undefined);
+  }
+
   async Start(
     filter?: (
       drivers: Drivers.Merged<D, S>,
@@ -168,20 +202,26 @@ export class Manager<
         }),
       );
 
-      d.socket?.on?.("debug", (data) => {
-        this.bus.dispatch("natav:debug:socket", data);
+      d.socket?.on?.("debug", (event) => {
+        this.bus.dispatch("natav:debug:socket", {
+          name: d.name,
+          data: event.data,
+        });
       });
 
       d.on("driver:delimited", (payload) => {
         this.bus.dispatch("natav:debug:socket", {
+          name: d.name,
           data: {
             traceName: d.socket?.name ?? d.name,
             direction: "rx-delimited",
-            time: new Date().toISOString(),
+            time: Date.now(),
             encoding: "utf8",
-            text: payload.toString("utf8"),
-            hex: payload.toString("hex"),
-            length: payload.length,
+            data: new Uint8Array(
+              payload.buffer,
+              payload.byteOffset,
+              payload.byteLength,
+            ),
           },
         });
       });

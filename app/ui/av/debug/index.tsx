@@ -1,4 +1,5 @@
 import { getRpc } from "@/state";
+import type { ClientRpcDevice } from "@av/rpc/client/devices";
 import type { Rpc } from "@av/types";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
@@ -7,17 +8,21 @@ import { DebugDeviceTree } from "./tree";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
-  const debug = rpc.debug;
+  const debug = rpc.device("debugger");
 
   let selectedDeviceName: string | null = null;
+  let selectedNode: ClientRpcDevice | null = null;
 
   return () => {
-    const tree = debug.tree;
+    const tree = debug.api.tree();
     const fallbackSelection = findFirstSocketDevice(tree);
-    const selectedNode =
-      selectedDeviceName ? debug.getDevice(selectedDeviceName) : undefined;
+    if (selectedDeviceName) {
+      selectedNode = rpc.device(selectedDeviceName as any);
+    }
 
-    if (!selectedNode?.socket?.canWrite || !selectedNode?.socket?.canReceive) {
+    const dnode = tree.find((t) => t.name === selectedNode?.name);
+
+    if (!dnode?.socket?.canWrite || !dnode?.socket?.canReceive) {
       selectedDeviceName = fallbackSelection?.name ?? null;
     }
 
@@ -26,9 +31,6 @@ export function DebugPage(handle: Handle) {
         <header mix={headerStyle}>
           <p>Debugger UI</p>
           <div mix={statusRowStyle}>
-            <span mix={statusPillStyle(debug.isOnline)}>
-              {debug.isOnline ? "Debug Connected" : "Debug Disconnected"}
-            </span>
             <a href="/" mix={linkStyle}>
               Control Surface
             </a>
@@ -52,7 +54,6 @@ export function DebugPage(handle: Handle) {
 
           <section mix={consoleColumnStyle}>
             <DebugSocketPanel
-              debug={debug}
               selectedDeviceName={selectedDeviceName}
               onSelectDevice={(name) => {
                 selectedDeviceName = name;

@@ -5,7 +5,6 @@ import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
-import { RpcDebugClient } from "@av/rpc/debug/client";
 import {
   RPCError,
   RPCNotification,
@@ -21,7 +20,6 @@ export class ClientRpc<
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
-  public debug: RpcDebugClient<N>;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
@@ -31,7 +29,6 @@ export class ClientRpc<
         reconnect: true,
         retryDelay: 1000,
       });
-    this.debug = new RpcDebugClient(this);
     this.requests = new ClientRpcRequests(this.transport, () =>
       this.emitChange(),
     );
@@ -60,12 +57,10 @@ export class ClientRpc<
 
   connect() {
     this.transport.connect();
-    this.debug.connect();
   }
 
   close(code?: number, reason?: string) {
     this.transport.close(code, reason);
-    this.debug.close(code, reason);
   }
 
   get isOnline() {

@@ -1,4 +1,5 @@
 import { Manager } from "@av/drivers";
+import { Debugger } from "@av/drivers/builtin/debugger";
 import { RPCServer } from "@av/rpc/server";
 import {
   bindHttpToWs,
@@ -9,7 +10,6 @@ import { Tcp } from "@av/sockets/tcp";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
 import { AddExporters } from "@av/telemetry/sdk";
-import { Debugger } from "@av/drivers/builtin/debugger";
 import {
   FileExporter,
   SimpleConsoleExporter,
@@ -60,11 +60,10 @@ const drivers = [
 ];
 
 export type drivers = typeof drivers;
-export type systemDrivers = readonly [...drivers];
 
 const deferred = [
-  (natav: Drivers.ManagerView<systemDrivers>) => new Debugger(natav),
-  (natav: Drivers.ManagerView<systemDrivers>) => new System(natav),
+  (natav: Drivers.ManagerView) => new Debugger(natav),
+  (natav: Drivers.ManagerView<drivers>) => new System(natav),
 ] as const;
 
 export type deferred = typeof deferred;

@@ -5,8 +5,8 @@ import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
 export class ClientRpcDevice<
-  N extends Drivers.Array,
-  Name extends Drivers.Names<N>,
+  N extends Drivers.Array = Drivers.Array,
+  Name extends Drivers.Names<N> = Drivers.Names<N>,
 > extends TypedEventTarget<Events.Rpc.DeviceMap<N, Name>> {
   private apiProxy: Rpc.Api<N, Name>;
   private stateValue: Drivers.State<N, Name> | undefined;
@@ -27,10 +27,7 @@ export class ClientRpcDevice<
     public readonly name: Name,
   ) {
     super();
-
-    // TSAS: Proxies are used to mirror the nested device API shape at runtime.
-    this.apiProxy = this.createApiProxy() as Rpc.Api<N, Name>;
-
+    this.apiProxy = this.createApiProxy();
     this.on("change", () => this.client.emitChange(this.name));
   }
 

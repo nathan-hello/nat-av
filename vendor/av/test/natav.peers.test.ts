@@ -160,7 +160,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     names.forEach((n) => {
       assert.equal(manager.FindDriver(n), manager.GetDriver(n));
     });
-    assert.deepEqual(manager.GetDebugTree(), tree);
+    assert.deepEqual(manager.GetTree(), tree);
   }
 
   describe("manager lookup and trees", () => {

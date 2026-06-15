@@ -2,10 +2,7 @@ import { getRpc } from "@/state";
 import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
 
-type DebugClient = ReturnType<typeof getRpc>["debug"];
-
 type DebugSocketPanelProps = {
-  debug: DebugClient;
   selectedDeviceName: string | null;
   onSelectDevice(name: string): void;
 };
@@ -15,6 +12,9 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   let encoding: "utf8" = "utf8";
   let sending = false;
   let sendError = "";
+
+  let rpc = getRpc(handle);
+  let debug = rpc.device("debugger");
 
   async function sendSelectedSocket() {
     if (!handle.props.selectedDeviceName || draft.length === 0 || sending) {
@@ -30,11 +30,11 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
       draft = draft.replaceAll("\\r", "\r");
     }
 
-    await handle.props.debug.writeSocket(
-      handle.props.selectedDeviceName,
-      draft,
+    await debug.api.socket.write({
+      name: handle.props.selectedDeviceName,
+      text: draft,
       encoding,
-    );
+    });
 
     draft = "";
     sending = false;
@@ -42,18 +42,10 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   }
 
   return () => {
-    const selected =
-      handle.props.selectedDeviceName ?
-        handle.props.debug.getDevice(handle.props.selectedDeviceName)
-      : undefined;
-    const messages =
-      handle.props.selectedDeviceName ?
-        [
-          ...handle.props.debug.getSocketMessages(
-            handle.props.selectedDeviceName,
-          ),
-        ].reverse()
-      : [];
+    const deviceName = handle.props.selectedDeviceName as any;
+    const selected = deviceName ? rpc.device(deviceName) : undefined;
+    const messages = debug.state?.tree[deviceName]?.messages ?? [];
+    const node = debug.state?.tree[deviceName];
 
     return (
       <>
@@ -64,8 +56,8 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
                 {selected?.name ?? "Select a device"}
               </h2>
               <p mix={panelSubtitleStyle}>
-                {selected?.socket ?
-                  `trace: ${selected.socket.traceName}`
+                {debug.state?.tree[deviceName].messages ?
+                  `trace: ${node?.meta.socket?.traceName}`
                 : "No socket selected yet."}
               </p>
             </div>
@@ -75,12 +67,8 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
                 mix={[
                   secondaryButtonStyle,
                   on("click", () => {
-                    handle.props.debug.clearSocketMessages(
-                      handle.props.selectedDeviceName!,
-                    );
-                    handle.props.onSelectDevice(
-                      handle.props.selectedDeviceName!,
-                    );
+                    debug.api.clear(deviceName);
+                    handle.props.onSelectDevice(deviceName);
                   }),
                 ]}
               >
@@ -105,13 +93,15 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
                       : "TX"}
                     </span>
                     <span>{message.time}</span>
-                    <span>{message.length ?? message.text.length} bytes</span>
+                    <span>
+                      {message.data.length ?? message.data.length} bytes
+                    </span>
                   </div>
                   <pre mix={messageBodyStyle}>
-                    {message.text || "<empty utf8 payload>"}
+                    {message.data || "<empty utf8 payload>"}
                   </pre>
-                  {message.hex ?
-                    <code mix={hexStyle}>{message.hex}</code>
+                  {message.data ?
+                    <code mix={hexStyle}>{message.data}</code>
                   : null}
                 </article>
               ))

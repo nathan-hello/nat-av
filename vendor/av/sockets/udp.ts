@@ -1,3 +1,4 @@
+import { toUint8Array } from "@av/lib/buffer";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
 import * as dgram from "node:dgram";
@@ -40,11 +41,9 @@ export class Udp
       data: {
         traceName: this.tel.namespace,
         direction: "rx",
-        time: new Date().toISOString(),
+        time: Date.now(),
         encoding: "utf8",
-        text: buf.toString("utf8"),
-        hex: buf.toString("hex"),
-        length: buf.length,
+        data: toUint8Array(buf),
       },
     });
     this.emit("receive", buf);
@@ -91,11 +90,9 @@ export class Udp
       data: {
         traceName: this.tel.namespace,
         direction: "tx",
-        time: new Date().toISOString(),
+        time: Date.now(),
         encoding: "utf8",
-        text: buffer.toString("utf8"),
-        hex: buffer.toString("hex"),
-        length: buffer.length,
+        data: toUint8Array(data),
       },
     });
 

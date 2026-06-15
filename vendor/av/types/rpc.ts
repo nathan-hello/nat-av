@@ -54,30 +54,23 @@ export namespace Rpc {
   }
 
   export namespace Debug {
-    export type Encoding = "utf8";
-
-    export type Descriptor = {
-      traceName: string;
-      canWrite: boolean;
-      canReceive: boolean;
-    };
-
     export type Node = {
       name: string;
       driverName: string;
       children: Node[];
-      socket?: Descriptor;
+      socket?: {
+        traceName: string;
+        canWrite: boolean;
+        canReceive: boolean;
+      };
     };
 
     export type SocketMessage = {
-      device: string;
-      direction: "rx" | "tx" | "rx-delimited";
-      time: string;
       traceName: string;
-      encoding: Encoding;
-      text: string;
-      hex: string;
-      length: number;
+      direction: "rx" | "tx" | "rx-delimited";
+      time: number;
+      data: Uint8Array;
+      encoding: BufferEncoding | "unknown";
     };
 
     export const Methods = {

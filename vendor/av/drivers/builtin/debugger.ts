@@ -1,55 +1,105 @@
-import type { Manager } from "@av/drivers";
 import { Driver } from "@av/drivers";
 import { RPCErrorCodes, RPCErrorData } from "@av/rpc/protocol";
 import type { Drivers, Rpc } from "@av/types";
 
-export class Debugger<
-  N extends Drivers.Array = Drivers.Array,
-> extends Driver<"debugger"> {
-  state = {};
+type SerializableMessage = Omit<Rpc.Debug.SocketMessage, "data"> & {
+  data: number[];
+};
+
+type State = {
+  tree: Record<
+    Drivers.Names,
+    { meta: Rpc.Debug.Node; messages: SerializableMessage[] }
+  >;
+};
+
+function buildTree(nodes: Rpc.Debug.Node[]): State["tree"] {
+  const tree: State["tree"] = {};
+
+  const visit = (node: Rpc.Debug.Node) => {
+    tree[node.name] ??= {
+      meta: node,
+      messages: [],
+    };
+
+    for (const child of node.children) {
+      visit(child);
+    }
+  };
+
+  for (const node of nodes) {
+    visit(node);
+  }
+
+  return tree;
+}
+
+export class Debugger extends Driver<"debugger"> {
+  natav: Drivers.ManagerView;
+  state: State = {
+    tree: {},
+  };
 
   api = {
-    debug: {
-      tree: async (): Promise<Rpc.Debug.Node[]> => {
-        const toNode = (driver: Driver): Rpc.Debug.Node | undefined => {
-          if (driver.name === "debugger") {
-            return;
-          }
-          const socket = driver.socket;
-          const canWrite = typeof socket?.write === "function";
-          const canReceive = typeof socket?.on === "function";
-
-          return {
-            name: driver.name,
-            driverName: driver._drivername,
-            children: Object.values(driver.deps.get() as Record<string, Driver>)
-              .map((child) => toNode(child))
-              .filter((s) => s !== undefined),
-            ...(typeof socket?.name === "string" ?
-              {
-                socket: {
-                  traceName: socket.name,
-                  canWrite,
-                  canReceive,
-                },
-              }
-            : {}),
-          };
-        };
-        return this.natav.configs
-          .map((driver) => toNode(driver))
-          .filter((s) => s !== undefined);
-      },
-      socket: this.writeSocket,
+    clear: (name: Drivers.Names) => {
+      if (this.state.tree[name]) {
+        this.state.tree[name].messages = [];
+      }
+    },
+    getNode: (name: Drivers.Names): Rpc.Debug.Node => {
+      const found = this.state.tree[name]?.meta;
+      if (!found) {
+        this.tel.error("node not found", { name });
+        throw new RPCErrorData({
+          code: RPCErrorCodes.InvalidRequest,
+          message: "node not found",
+        });
+      }
+      return found;
+    },
+    tree: (): Rpc.Debug.Node[] => {
+      return this.natav.GetTree();
+    },
+    socket: {
+      write: this.writeSocket,
     },
   };
 
-  constructor(private natav: Manager<N>) {
+  constructor(natav: Drivers.ManagerView) {
     super({ name: "debugger", driverName: "debugger" });
+    this.natav = natav;
+  }
+
+  public override start() {
+    this.state.tree = buildTree(this.natav.GetTree());
+    this.subscribe();
+  }
+
+  private subscribe() {
+    this.natav.bus.on("natav:debug:socket", (event) => {
+      const entry: SerializableMessage = {
+        encoding: event.data.encoding,
+        direction: event.data.direction,
+        time: event.data.time,
+        traceName: event.data.traceName,
+        data: Array.from(event.data.data),
+      };
+
+      const current = this.state.tree[event.name];
+      if (!current) {
+        this.state.tree[event.name] = {
+          meta: this.api.getNode(event.name),
+          messages: [entry],
+        };
+        return;
+      }
+
+      current.messages.push(entry);
+    });
   }
 
   private async writeSocket(params: {
-    deviceName: Drivers.Names<N>;
+    name: Drivers.Names;
     text: string | Uint8Array;
     encoding?: BufferEncoding;
   }): Promise<{ bytesWritten: number }> {
@@ -60,10 +110,7 @@ export class Debugger<
       });
     }
 
-    if (
-      typeof params.deviceName !== "string" ||
-      typeof params.text !== "string"
-    ) {
+    if (typeof params.name !== "string" || typeof params.text !== "string") {
       throw new RPCErrorData({
         code: RPCErrorCodes.InvalidParams,
         message: "Debug socket write requires string deviceName and text",
@@ -71,11 +118,11 @@ export class Debugger<
     }
 
     const result = await this.tel.task("debugger:socket-write", async () => {
-      const device = this.natav.FindDriver(params.deviceName);
+      const device = this.natav.FindDriver(params.name);
       if (!device) {
         throw new RPCErrorData({
           code: RPCErrorCodes.DeviceNotFound,
-          message: `Device "${params.deviceName}" not found`,
+          message: `Device "${params.name}" not found`,
           data: { availableDevices: this.natav.GetAllDriverNames() },
         });
       }
@@ -83,7 +130,7 @@ export class Debugger<
       if (typeof device.socket?.write !== "function") {
         throw new RPCErrorData({
           code: RPCErrorCodes.MethodNotFound,
-          message: `Device "${params.deviceName}" does not expose a writable socket`,
+          message: `Device "${params.name}" does not expose a writable socket`,
         });
       }
 

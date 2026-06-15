@@ -6,7 +6,6 @@ export {
 } from "@av/lib/eventtarget";
 export { RequestManager } from "@av/lib/requests";
 export { ClientRpc } from "@av/rpc/client";
-export { RpcDebugClient } from "@av/rpc/debug/client";
 export { Debugger } from "@av/drivers/builtin/debugger";
 export {
   RPCError,

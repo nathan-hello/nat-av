@@ -18,14 +18,17 @@ export namespace Sockets {
   }
 
   export namespace Args {
-    export type Tcp = {
+    type Base = {
+      encoding?: BufferEncoding;
+    };
+
+    export type Tcp = Base & {
       addr: string;
       port: number;
       keepAlive: boolean;
     };
 
-    export type Udp = {
-      name: string;
+    export type Udp = Base & {
       addr: string;
       port: number;
     };

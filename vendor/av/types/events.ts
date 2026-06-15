@@ -6,7 +6,7 @@ import type { Drivers } from "@av/types/drivers";
 export namespace Events {
   export namespace Socket {
     export type Map = {
-      debug: { data: Rpc.DebugMap };
+      debug: { data: NRpc.Debug.SocketMessage };
       connected: void;
       disconnected: { error: string | undefined };
       receive: Buffer;
@@ -60,7 +60,10 @@ export namespace Events {
       "natav:device:connected": { name: Drivers.Names<N> };
       "natav:device:disconnected": { name: Drivers.Names<N> };
       "natav:device:error": { name: Drivers.Names<N>; error?: Error | unknown };
-      "natav:debug:socket": { data: Rpc.DebugMap };
+      "natav:debug:socket": {
+        name: Drivers.Names<N>;
+        data: NRpc.Debug.SocketMessage;
+      };
       "natav:opentelemetry:entry": {
         record: ReadableLogRecord;
         asString: string;
@@ -102,16 +105,6 @@ export namespace Events {
         name: Name;
         state: Drivers.State<N, Name> | undefined;
       };
-    };
-
-    export type DebugMap = {
-      traceName: string;
-      direction: "rx" | "tx" | "rx-delimited";
-      time: string;
-      encoding: NRpc.Debug.Encoding;
-      text: string;
-      hex: string;
-      length: number;
     };
   }
 }
