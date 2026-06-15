@@ -50,7 +50,7 @@ export function getLoggerProvider(): LoggerProvider {
     typeof process.env.NODE_ENV === "string" &&
     process.env.NODE_ENV === "testing"
   ) {
-    AddExporters([new SimpleConsoleExporter("INFO")]);
+    AddExporters([new SimpleConsoleExporter("WARN")]);
   }
   if (!loggerProvider) {
     throw new Error("LoggerProvider not initialized. Call StartLogging first.");

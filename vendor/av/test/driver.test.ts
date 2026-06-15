@@ -25,7 +25,7 @@ describe("test driver", () => {
     assert.equal(driver.state.lastFrame, "");
     assert.equal(typeof driver.api.ping, "function");
     assert.equal(typeof driver.api.send, "function");
-    assert.equal(driver.socket.name, "TcpClient::127.0.0.1:12345");
+    assert.equal(driver.socket.name, "test-socket");
   });
 
   it("forwards driver events through the rpc server per subscription", async () => {
