@@ -1,8 +1,8 @@
-import { Test } from "@av/index";
 import type { Sockets } from "@av/index";
-import { CiscoRoomOS } from "../index";
+import { Test } from "@av/index";
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { CiscoRoomOS } from "../index";
 
 it("api writes to socket, state gets updated on notification", async () => {
   const socket = new Test.Socket(

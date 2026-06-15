@@ -1,10 +1,7 @@
 import { Manager } from "@av/drivers";
 import { Debugger } from "@av/drivers/builtin/debug";
 import { RPCServer } from "@av/rpc/server";
-import {
-  bindHttpToWs,
-  WebsocketHandler,
-} from "@av/rpc/server/websocket";
+import { bindHttpToWs, WebsocketHandler } from "@av/rpc/server/websocket";
 import { Tcp } from "@av/sockets/tcp";
 import { Telemetry } from "@av/telemetry";
 import { CustomExporter } from "@av/telemetry/exporters";
