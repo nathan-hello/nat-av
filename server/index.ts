@@ -1,4 +1,4 @@
-import { Builtin, Manager, Telemetry, Transport, type Rpc } from "@av/index";
+import { Builtin, Manager, Server, Telemetry, type Rpc } from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import ChazyControl from "@drivers/turtle";
@@ -63,8 +63,8 @@ Telemetry.Sdk.AddExporters([
 export type natav = (typeof natav)["configs"];
 
 export async function start(app: Rpc.WebSocket.App) {
-  const websocket = new Transport.Server.Websocket(app);
-  new Transport.Server.Rpc({ natav, transport: websocket });
+  const websocket = new Server.Websocket(app);
+  new Server.Rpc({ natav, transport: websocket });
 
   await natav.Start();
   // TSAS:

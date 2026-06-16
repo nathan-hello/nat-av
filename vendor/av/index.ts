@@ -44,14 +44,13 @@ export namespace Builtin {
     Udp,
   };
 }
-export namespace Transport {
-  export const Client = {
-    Rpc: RpcClient,
-    Websocket: ClientWebsocket,
-  };
 
-  export const Server = {
-    Rpc: RpcServer,
-    Websocket: ServerTransportWebsocket,
-  };
-}
+export const Client = {
+  Rpc: RpcClient,
+  Websocket: ClientWebsocket,
+};
+
+export const Server = {
+  Rpc: RpcServer,
+  Websocket: ServerTransportWebsocket,
+};

@@ -1,4 +1,4 @@
-import type { Drivers } from "@av/types";
+import type { Drivers } from "@av/client";
 import { css, on, type Handle } from "remix/ui";
 
 type DebugDeviceTreeProps = {

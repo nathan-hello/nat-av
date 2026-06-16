@@ -1,4 +1,12 @@
-import { Driver, Manager, Rpc, Test, Transport, type Drivers } from "@av/index";
+import {
+  Client,
+  Driver,
+  Manager,
+  Rpc,
+  Server,
+  Test,
+  type Drivers,
+} from "@av/index";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -36,8 +44,8 @@ describe("rpc device events", () => {
       deferred: [() => new Test.EventDriver("defer")],
     });
     const transport = new Test.RpcTransport();
-    new Transport.Server.Rpc({ natav, transport: transport.server });
-    const client = new Transport.Client.Rpc<(typeof natav)["configs"]>({
+    new Server.Rpc({ natav, transport: transport.server });
+    const client = new Client.Rpc<(typeof natav)["configs"]>({
       transport,
     });
 
@@ -178,8 +186,8 @@ describe("rpc device events", () => {
     });
     const transport = new Test.RpcTransport();
     const clientIds = { "in-memory": "CLIENT_1" } as const;
-    new Transport.Server.Rpc({ natav, transport: transport.server, clientIds });
-    const client = new Transport.Client.Rpc<(typeof natav)["configs"]>({
+    new Server.Rpc({ natav, transport: transport.server, clientIds });
+    const client = new Client.Rpc<(typeof natav)["configs"]>({
       transport,
     });
 

@@ -1,6 +1,5 @@
 import { getRpc } from "@/state";
-import type { ClientRpcDevice } from "@av/rpc/client/devices";
-import type { Drivers } from "@av/types";
+import { type Drivers, RpcDevice } from "@av/client";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { DebugSocketPanel } from "./socket";
@@ -11,7 +10,7 @@ export function DebugPage(handle: Handle) {
   const debug = rpc.device("debugger");
 
   let selectedDeviceName: string | null = null;
-  let selectedNode: ClientRpcDevice | null = null;
+  let selectedNode: RpcDevice | null = null;
 
   return () => {
     const tree = debug.api.tree();

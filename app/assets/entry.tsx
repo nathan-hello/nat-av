@@ -1,10 +1,11 @@
 import { DebugPage } from "@/spa/debug";
 import { HomePage } from "@/spa/home";
-import { SimpleConsoleExporter } from "@av/telemetry/exporters";
-import { AddExporters } from "@av/telemetry/sdk";
+import { Telemetry } from "@av/client";
 import { createRoot, run } from "remix/ui";
 
-AddExporters([new SimpleConsoleExporter("DEBUG")]);
+Telemetry.Sdk.AddExporters([
+  new Telemetry.Exporters.SimpleConsoleExporter("DEBUG"),
+]);
 
 const homeContainer = document.getElementById("spa-home");
 if (homeContainer) {
