@@ -412,7 +412,9 @@ export class RoomOSProxy {
             this.state,
           );
           const actualProp =
-            path.length === 0 ? RoomOSProxy.rawStateRootForPublicRoot(prop) : prop;
+            path.length === 0 ?
+              RoomOSProxy.rawStateRootForPublicRoot(prop)
+            : prop;
           return {
             enumerable: true,
             configurable: true,

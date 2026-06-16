@@ -1,5 +1,4 @@
-import { SimpleConsoleExporter } from "./exporters";
-import { type LogRecordExporter } from "./exporters";
+import { SimpleConsoleExporter, type LogRecordExporter } from "./exporters";
 import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types";
 
 class LoggerProvider {

@@ -9,9 +9,8 @@ type IsAny<T> = 0 extends 1 & T ? true : false;
 // to get the Natav.Names<N> for example will cause a circular
 // dependency that Typescript cannot resolve.
 export namespace Drivers {
-  export type Context<ClientId extends string = string> = Rpc.Server.Context<
-    ClientId
-  >;
+  export type Context<ClientId extends string = string> =
+    Rpc.Server.Context<ClientId>;
 
   export type Array = readonly Driver[];
 
@@ -48,7 +47,7 @@ export namespace Drivers {
     GetTree(): DriverView[];
     End(): Promise<void>;
     runWithContext<T>(context: Context, fn: () => T): T;
-    GetContext(): Context; 
+    GetContext(): Context;
   }
 
   export interface Manager<
@@ -80,8 +79,12 @@ export namespace Drivers {
     T extends Driver = Driver,
     Context extends Drivers.Context = Drivers.Context,
   > =
-    | ((natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>) => T)
-    | (new (natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>) => T);
+    | ((
+        natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>,
+      ) => T)
+    | (new (
+        natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>,
+      ) => T);
 
   type DeferredFunction<T extends Driver = Driver> = ((natav: any) => T) & {
     prototype?: undefined;

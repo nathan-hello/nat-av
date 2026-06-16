@@ -154,14 +154,14 @@ export class ClientRpcDevice<
       return;
     }
 
-      state.pendingUnsubscribe ??= this.client
-        .request(
-          Rpc.Request.deviceUnsubscribe(this.client.nextRequestId(), {
-            device: this.name,
-            method: event,
-            args: [],
-          }),
-        )
+    state.pendingUnsubscribe ??= this.client
+      .request(
+        Rpc.Request.deviceUnsubscribe(this.client.nextRequestId(), {
+          device: this.name,
+          method: event,
+          args: [],
+        }),
+      )
       .then(() => {
         state.subscribed = false;
         state.pendingUnsubscribe = undefined;

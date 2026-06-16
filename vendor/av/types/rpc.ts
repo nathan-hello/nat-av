@@ -215,7 +215,6 @@ export namespace Rpc {
         normalizeDeviceParams(params),
       );
     }
-
   }
 
   export namespace Request {
@@ -342,7 +341,7 @@ export namespace Rpc {
       RequestsShutdown: -35001,
       RpcTimeout: -32004,
       RpcDisconnected: -32005,
-      CtxNotFound : -36001
+      CtxNotFound: -36001,
     } as const;
   }
 
@@ -423,7 +422,10 @@ export namespace Rpc {
 
         switch (params.type) {
           case "natav:peer":
-            if (typeof params.addr !== "string" || typeof params.clientId !== "string") {
+            if (
+              typeof params.addr !== "string" ||
+              typeof params.clientId !== "string"
+            ) {
               return null;
             }
 
@@ -435,10 +437,7 @@ export namespace Rpc {
             if (typeof params.name !== "string") {
               return null;
             }
-            if (
-              typeof params.event !== "string" ||
-              !Rpc.Json.is(params.data)
-            ) {
+            if (typeof params.event !== "string" || !Rpc.Json.is(params.data)) {
               return null;
             }
 

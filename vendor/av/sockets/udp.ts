@@ -1,8 +1,8 @@
 import { toUint8Array } from "@av/lib/convert";
+import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
 import * as dgram from "node:dgram";
-import { TypedEventTarget } from "@av/lib/eventtarget";
 
 const RETRY_DELAY = 5000;
 

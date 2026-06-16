@@ -10,13 +10,17 @@ export class RpcPeerRegistry<
 
   constructor(private clientIds?: ClientIds) {}
 
-  open(peer: Rpc.WebSocket.Peer): Rpc.Server.Context<ClientIds[keyof ClientIds]> {
+  open(
+    peer: Rpc.WebSocket.Peer,
+  ): Rpc.Server.Context<ClientIds[keyof ClientIds]> {
     const context = this.contextFor(peer);
     this.peers.set(peer, context);
     return context;
   }
 
-  get(peer: Rpc.WebSocket.Peer): Rpc.Server.Context<ClientIds[keyof ClientIds]> {
+  get(
+    peer: Rpc.WebSocket.Peer,
+  ): Rpc.Server.Context<ClientIds[keyof ClientIds]> {
     const context = this.peers.get(peer);
     if (!context) {
       throw new Error(`missing rpc peer context for ${peer.addr}`);

@@ -5,7 +5,6 @@ export namespace Sockets {
     bytesWritten: number;
   };
 
-
   export interface Client {
     start(): Promise<void> | void;
     end(): Promise<void> | void;

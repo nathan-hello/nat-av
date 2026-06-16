@@ -144,9 +144,7 @@ export namespace RoomOS {
   export type FeedbackSubscriptionTree =
     SubscriptionTree<GeneratedRoomOS.EventSubscriptionShape>;
 
-  export type Sub<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = {
+  export type Sub<Product extends GeneratedRoomOS.ProductTarget = "any"> = {
     xConfiguration?: ConfigurationSubscriptionTree<Product>;
     xStatus?: StatusSubscriptionTree<Product>;
     xFeedback?: FeedbackSubscriptionTree;

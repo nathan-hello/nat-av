@@ -1,4 +1,4 @@
-import type { Driver, Manager } from "@av/drivers";
+import type { Driver } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { Rpc, type Events } from "@av/types";

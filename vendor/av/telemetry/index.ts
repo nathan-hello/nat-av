@@ -39,7 +39,10 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     name: string,
     fn: (span: Span) => R | Promise<R>,
   ): TaskResult<R> | Promise<TaskResult<R>> {
-    const span = RuntimeMod.createSpan(name, RuntimeMod.getActiveSpan()?.context);
+    const span = RuntimeMod.createSpan(
+      name,
+      RuntimeMod.getActiveSpan()?.context,
+    );
 
     return RuntimeMod.withSpan(span, () => {
       try {
