@@ -3,7 +3,14 @@ import {
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import type { Drivers, Events, Schema, Sockets } from "@av/types";
+import {
+  Rpc,
+  type Drivers,
+  type Events,
+  type Schema,
+  type Sockets,
+} from "@av/types";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
 type SocketMaybe = Partial<Sockets.Client> | undefined;
@@ -93,11 +100,24 @@ export class Manager<
   const D extends Drivers.Array = Drivers.Array,
   const S extends readonly Drivers.AnyDeferred[] =
     readonly Drivers.AnyDeferred[],
-> implements Drivers.Manager<D, S> {
+  Context extends Drivers.Context = Drivers.Context,
+> implements Drivers.Manager<D, S, Context> {
   readonly configs: Drivers.Merged<D, S>;
+  private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
   >();
+
+  GetContext() {
+    const ctx = this.contextStore.getStore();
+    if (!ctx) {
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.CtxNotFound,
+        message: "could not find context.",
+      });
+    }
+    return ctx;
+  }
 
   constructor(args: { drivers?: D; deferred?: S }) {
     let configs: Drivers.Merged<D, S>[number][] = [];
@@ -119,6 +139,10 @@ export class Manager<
     }
   }
 
+  runWithContext<T>(context: Context, fn: () => T): T {
+    return this.contextStore.run(context, fn);
+  }
+
   private all(): Driver[] {
     const collect = (drivers: readonly Driver[]): Driver[] =>
       // TSAS: Runtime dependency managers only store driver instances keyed by name.
@@ -137,8 +161,7 @@ export class Manager<
   GetDriverState<N extends Drivers.Names<Drivers.Merged<D, S>>>(
     name: N,
   ): Drivers.State<Drivers.Merged<D, S>, N> {
-    // TSAS: Runtime driver lookup guarantees the returned instance matches the merged configs tuple.
-    return this.GetDriver(name).state as Drivers.State<Drivers.Merged<D, S>, N>;
+    return this.GetDriver(name).state;
   }
 
   FindDriver(name: string): Driver | undefined {

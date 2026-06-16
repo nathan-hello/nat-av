@@ -95,7 +95,6 @@ export namespace Rpc {
     DeviceCall: "device.call",
     DeviceSubscribe: "device.events.subscribe",
     DeviceUnsubscribe: "device.events.unsubscribe",
-    GetAllDriverStates: "natav:all_states",
   } as const;
 
   type DeviceParamsInput = {
@@ -216,6 +215,7 @@ export namespace Rpc {
         normalizeDeviceParams(params),
       );
     }
+
   }
 
   export namespace Request {
@@ -235,11 +235,6 @@ export namespace Rpc {
       method: typeof REQUEST_METHOD.DeviceUnsubscribe;
       params: Rpc.Request.DeviceParams;
       result: null;
-    };
-    export type GetAllDriverStates = {
-      method: typeof REQUEST_METHOD.GetAllDriverStates;
-      params: undefined;
-      result: Rpc.Json.Value;
     };
     export type ResultOf<TRequest extends Rpc.Request> =
       TRequest extends Rpc.Request<string, Rpc.Json.Value, infer ResultType> ?
@@ -347,6 +342,7 @@ export namespace Rpc {
       RequestsShutdown: -35001,
       RpcTimeout: -32004,
       RpcDisconnected: -32005,
+      CtxNotFound : -36001
     } as const;
   }
 
@@ -425,14 +421,21 @@ export namespace Rpc {
           return null;
         }
 
-        if (typeof params.name !== "string") {
-          return null;
-        }
-
         switch (params.type) {
+          case "natav:peer":
+            if (typeof params.addr !== "string" || typeof params.clientId !== "string") {
+              return null;
+            }
+
+            return new Rpc.Notification.Server("natav:peer", {
+              addr: params.addr,
+              clientId: params.clientId,
+            });
           case "natav:device:event":
+            if (typeof params.name !== "string") {
+              return null;
+            }
             if (
-              typeof params.name !== "string" ||
               typeof params.event !== "string" ||
               !Rpc.Json.is(params.data)
             ) {
@@ -445,6 +448,9 @@ export namespace Rpc {
               data: params.data,
             });
           case "natav:state:update":
+            if (typeof params.name !== "string") {
+              return null;
+            }
             if (typeof params.name !== "string" || !isObject(params.data)) {
               return null;
             }
@@ -457,11 +463,13 @@ export namespace Rpc {
             if (typeof params.name !== "string") {
               return null;
             }
-
             return new Rpc.Notification.Server("natav:device:connected", {
               name: params.name,
             });
           case "natav:device:disconnected":
+            if (typeof params.name !== "string") {
+              return null;
+            }
             return new Rpc.Notification.Server("natav:device:disconnected", {
               name: params.name,
             });
@@ -478,6 +486,13 @@ export namespace Rpc {
 
       export const Methods = "notification";
     }
+  }
+
+  export namespace Server {
+    export type Context<ClientId extends string = string> = {
+      addr: string;
+      clientId: ClientId;
+    };
   }
 
   export namespace WebSocket {

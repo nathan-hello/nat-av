@@ -64,6 +64,7 @@ export namespace Events {
       "natav:device:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
+      "natav:peer": NRpc.Server.Context;
       "natav:device:connected": { name: Drivers.Names<N> };
       "natav:device:disconnected": { name: Drivers.Names<N> };
       "natav:device:error": { name: Drivers.Names<N>; error?: NRpc.Error };
@@ -101,6 +102,7 @@ export namespace Events {
   export namespace Rpc {
     export type Map = {
       ready: boolean;
+      peer: NRpc.Server.Context;
       close: CloseEvent;
       error:
         | { reason: "transport"; event: Event }

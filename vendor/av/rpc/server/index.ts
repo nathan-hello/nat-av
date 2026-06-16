@@ -1,23 +1,30 @@
 import type { Manager } from "@av/drivers";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
+import { RpcPeerRegistry } from "@av/rpc/server/registry";
 import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "@av/types";
 
-export class RpcServer {
+export class RpcServer<
+  ClientIds extends Record<string, string> = Record<string, string>,
+> {
   private tel = new Telemetry("Rpc");
   private router: DeviceRpcRouter;
+  private peers: RpcPeerRegistry<ClientIds>;
   private clients = new Set<Rpc.WebSocket.Peer>();
+  private natav: Manager;
 
-  constructor(args: { natav: Manager; transport: ServerRpcTransport }) {
+  constructor(args: {
+    natav: Manager;
+    transport: ServerRpcTransport;
+    clientIds?: ClientIds;
+  }) {
+    this.natav = args.natav;
     this.router = new DeviceRpcRouter(args.natav);
+    this.peers = new RpcPeerRegistry<ClientIds>(args.clientIds);
 
     args.natav.bus.on("natav:state:update", (payload) => {
-      this.broadcast(
-        Rpc.Json.stringify(
-          new Rpc.Notification.Server("natav:state:update", payload),
-        ),
-      );
+      this.broadcastState(payload.name);
     });
 
     args.natav.bus.on("natav:device:connected", (payload) => {
@@ -37,8 +44,19 @@ export class RpcServer {
     });
 
     args.transport.on("open", ({ peer }) => {
-      this.clients.add(peer);
-      this.pushInitialDeviceStates(args.natav, peer);
+      try {
+        const context = this.peers.open(peer);
+        this.clients.add(peer);
+        this.pushPeerContext(peer, context);
+        this.pushInitialDeviceStates(peer, context);
+      } catch (error) {
+        this.tel.error("websocket peer rejected", { error, addr: peer.addr });
+        peer.close(
+          1008,
+          error instanceof Error ? error.message : "peer rejected",
+        );
+        return;
+      }
     });
 
     args.transport.on("message", ({ peer, data }) => {
@@ -62,24 +80,38 @@ export class RpcServer {
     message: Rpc.Request,
     peer: Rpc.WebSocket.Peer,
   ): Promise<Rpc.Response | Rpc.Error> {
+    let context: Rpc.Server.Context<ClientIds[keyof ClientIds] & string>;
+
+    try {
+      context = this.peers.get(peer);
+    } catch (error) {
+      return new Rpc.Error(
+        {
+          code: Rpc.Error.Codes.InternalError,
+          message:
+            error instanceof Error ? error.message : "missing peer context",
+        },
+        message.id,
+      );
+    }
+
     const result = await this.tel.task(
       "server-rpc:handle-request",
       async (span) => {
-        this.tel.info("RPC_RECEIVED", {
-          jsonrpc: message.jsonrpc,
-          id: message.id,
-          method: message.method,
+        return this.natav.runWithContext(context, async () => {
+          this.tel.info("RPC_RECEIVED", {
+            jsonrpc: message.jsonrpc,
+            id: message.id,
+            method: message.method,
+          });
+
+          span.setAttributes({
+            "rpc.id": message.id,
+            "rpc.method": message.method,
+          });
+
+          return this.router.handle(message, peer);
         });
-
-        span.setAttributes({
-          "rpc.id": message.id,
-          "rpc.method": message.method,
-        });
-
-        if (message.method === Rpc.Request.Methods.GetAllDriverStates) {
-        }
-
-        return this.router.handle(message, peer);
       },
     );
 
@@ -100,6 +132,7 @@ export class RpcServer {
 
   closePeer(peer: Rpc.WebSocket.Peer) {
     this.clients.delete(peer);
+    this.peers.close(peer);
     this.router.closePeer(peer);
   }
 
@@ -111,6 +144,37 @@ export class RpcServer {
 
       peer.send(message);
     });
+  }
+
+  private broadcastState(name: string) {
+    this.clients.forEach((peer) => this.sendStateToPeer(peer, name));
+  }
+
+  private sendStateToPeer(peer: Rpc.WebSocket.Peer, name: string) {
+    if (peer.readyState !== 1) {
+      return;
+    }
+
+    const context = this.peers.get(peer);
+    this.natav.runWithContext(context, () => {
+      peer.send(
+        Rpc.Json.stringify(
+          new Rpc.Notification.Server("natav:state:update", {
+            name,
+            data: this.natav.GetDriverState(name),
+          }),
+        ),
+      );
+    });
+  }
+
+  private pushPeerContext(
+    peer: Rpc.WebSocket.Peer,
+    context: Rpc.Server.Context<ClientIds[keyof ClientIds] & string>,
+  ) {
+    peer.send(
+      Rpc.Json.stringify(new Rpc.Notification.Server("natav:peer", context)),
+    );
   }
 
   private async handleSocketMessage(peer: Rpc.WebSocket.Peer, raw: string) {
@@ -162,16 +226,21 @@ export class RpcServer {
     peer.send(Rpc.Json.stringify(response));
   }
 
-  private pushInitialDeviceStates(natav: Manager, ws: Rpc.WebSocket.Peer) {
-    for (const name of natav.GetAllDriverNames()) {
-      ws.send(
-        Rpc.Json.stringify(
-          new Rpc.Notification.Server("natav:state:update", {
-            name,
-            data: natav.GetDriverState(name),
-          }),
-        ),
-      );
+  private pushInitialDeviceStates(
+    ws: Rpc.WebSocket.Peer,
+    context: Rpc.Server.Context<ClientIds[keyof ClientIds] & string>,
+  ) {
+    for (const name of this.natav.GetAllDriverNames()) {
+      this.natav.runWithContext(context, () => {
+        ws.send(
+          Rpc.Json.stringify(
+            new Rpc.Notification.Server("natav:state:update", {
+              name,
+              data: this.natav.GetDriverState(name),
+            }),
+          ),
+        );
+      });
     }
   }
 }

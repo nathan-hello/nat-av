@@ -282,6 +282,15 @@ describe("rpc roomos device", () => {
           jsonrpc: "2.0",
           method: "notification",
           params: {
+            addr: "in-memory",
+            clientId: "in-memory",
+            type: "natav:peer",
+          },
+        },
+        {
+          jsonrpc: "2.0",
+          method: "notification",
+          params: {
             data: {},
             name: "roomos-rpc",
             type: "natav:state:update",

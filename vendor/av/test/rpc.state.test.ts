@@ -34,4 +34,6 @@ it("gets state automatically on connect", async () => {
   socket.receive("zxcv");
 
   assert.deepEqual(client.device("shim-1").state?.lastFrame, "zxcv");
+
+  client.close();
 });

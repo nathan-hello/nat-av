@@ -9,6 +9,10 @@ type IsAny<T> = 0 extends 1 & T ? true : false;
 // to get the Natav.Names<N> for example will cause a circular
 // dependency that Typescript cannot resolve.
 export namespace Drivers {
+  export type Context<ClientId extends string = string> = Rpc.Server.Context<
+    ClientId
+  >;
+
   export type Array = readonly Driver[];
 
   export type PartialArray<T extends readonly unknown[]> =
@@ -26,7 +30,10 @@ export namespace Drivers {
     };
   };
 
-  export interface ManagerView<N extends Drivers.Array = Drivers.Array> {
+  export interface ManagerView<
+    N extends Drivers.Array = Drivers.Array,
+    Context extends Drivers.Context = Drivers.Context,
+  > {
     readonly configs: N;
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;
     GetDriver<Name extends Drivers.Names<N>>(
@@ -40,12 +47,15 @@ export namespace Drivers {
     Start(): Promise<void>;
     GetTree(): DriverView[];
     End(): Promise<void>;
+    runWithContext<T>(context: Context, fn: () => T): T;
+    GetContext(): Context; 
   }
 
   export interface Manager<
     D extends Drivers.Array = Drivers.Array,
     S extends readonly Drivers.AnyDeferred[] = readonly Drivers.AnyDeferred[],
-  > extends ManagerView<Drivers.Merged<D, S>> {}
+    Context extends Drivers.Context = Drivers.Context,
+  > extends ManagerView<Drivers.Merged<D, S>, Context> {}
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -68,9 +78,10 @@ export namespace Drivers {
   export type Deferred<
     N extends Drivers.Array = Drivers.Array,
     T extends Driver = Driver,
+    Context extends Drivers.Context = Drivers.Context,
   > =
-    | ((natav: Drivers.Manager<N>) => T)
-    | (new (natav: Drivers.Manager<N>) => T);
+    | ((natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>) => T)
+    | (new (natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>) => T);
 
   type DeferredFunction<T extends Driver = Driver> = ((natav: any) => T) & {
     prototype?: undefined;

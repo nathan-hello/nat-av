@@ -1,11 +1,10 @@
-import { Rpc, type Drivers, type Events } from "@av/types";
-
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { Telemetry } from "@av/telemetry";
+import { Rpc, type Drivers, type Events } from "@av/types";
 
 export class RpcClient<
   N extends Drivers.Array,
@@ -14,6 +13,7 @@ export class RpcClient<
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
+  private currentPeer: Rpc.Server.Context | undefined;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
@@ -60,6 +60,10 @@ export class RpcClient<
 
   get isOnline() {
     return this.transport.readyState === WebSocket.OPEN;
+  }
+
+  get peer() {
+    return this.currentPeer;
   }
 
   device<Name extends Drivers.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
@@ -118,6 +122,10 @@ export class RpcClient<
       let device: ClientRpcDevice;
 
       switch (notification.type) {
+        case "natav:peer":
+          this.currentPeer = notification.params;
+          this.dispatch("peer", notification.params);
+          break;
         case "natav:device:event":
           device = this.device(notification.params.name);
           device.handleEvent(

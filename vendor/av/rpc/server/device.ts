@@ -3,6 +3,11 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { Rpc, type Events } from "@av/types";
 
+type DeviceRpcManager = {
+  FindDriver(name: string): Driver | undefined;
+  GetAllDriverNames(): string[];
+};
+
 function hasJsonEventTarget(
   value: unknown,
 ): value is TypedEventTarget<Record<string, Rpc.Json.Value>> {
@@ -22,7 +27,7 @@ export class DeviceRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     Map<string, Array<() => void>>
   >();
 
-  constructor(private natav: Manager) {
+  constructor(private natav: DeviceRpcManager) {
     super();
   }
 
