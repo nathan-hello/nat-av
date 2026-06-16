@@ -1,16 +1,4 @@
-import {
-  AddExporters,
-  CustomExporter,
-  Debugger,
-  FileExporter,
-  Manager,
-  RpcServer,
-  ServerSimpleConsoleExporter,
-  ServerTransportWebsocket,
-  Tcp,
-  type Drivers,
-  type Rpc,
-} from "@av/index";
+import { Builtin, Manager, Telemetry, Transport, type Rpc } from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import ChazyControl from "@drivers/turtle";
@@ -22,14 +10,14 @@ if ((globalThis as any).__devices__) {
   await (globalThis as any).__devices__.End();
 }
 
-AddExporters([
-  new FileExporter("./logs/natav.jsonl", true, "DEBUG"),
-  new ServerSimpleConsoleExporter("DEBUG"),
+Telemetry.Sdk.AddExporters([
+  new Telemetry.Server.FileExporter("./logs/natav.jsonl", true, "DEBUG"),
+  new Telemetry.Server.SimpleConsoleExporter("DEBUG"),
 ]);
 
 const chazy = new ChazyControl({
   name: "ChazyControl",
-  socket: new Tcp({
+  socket: new Builtin.Sockets.Tcp({
     addr: "controller.local",
     port: 23,
     keepAlive: true,
@@ -41,7 +29,7 @@ const drivers = [
     {
       driver: new Decoder({
         name: "decoder-1",
-        socket: new Tcp({
+        socket: new Builtin.Sockets.Tcp({
           addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
@@ -57,10 +45,7 @@ const drivers = [
 
 export type drivers = typeof drivers;
 
-const deferred = [
-  (natav: Drivers.ManagerView) => new Debugger(natav),
-  (natav: Drivers.ManagerView<drivers>) => new System(natav),
-] as const;
+const deferred = [Builtin.Drivers.Debugger, System] as const;
 
 export type deferred = typeof deferred;
 
@@ -69,8 +54,8 @@ const natav = new Manager({
   deferred,
 });
 
-AddExporters([
-  new CustomExporter((event) => {
+Telemetry.Sdk.AddExporters([
+  new Telemetry.Exporters.CustomExporter((event) => {
     natav.bus.dispatch("natav:opentelemetry:entry", event);
   }),
 ]);
@@ -78,8 +63,8 @@ AddExporters([
 export type natav = (typeof natav)["configs"];
 
 export async function start(app: Rpc.WebSocket.App) {
-  const websocket = new ServerTransportWebsocket(app);
-  new RpcServer({ natav, transport: websocket });
+  const websocket = new Transport.Server.Websocket(app);
+  new Transport.Server.Rpc({ natav, transport: websocket });
 
   await natav.Start();
   // TSAS:

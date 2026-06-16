@@ -1,4 +1,4 @@
-import { RpcClient } from "@av/rpc/client";
+import { RpcClient } from "@av/client";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 

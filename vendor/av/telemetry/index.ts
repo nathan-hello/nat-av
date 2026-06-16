@@ -1,5 +1,5 @@
 import { Rpc } from "@av/types";
-import { createSpan, getActiveSpan, withSpan } from "./runtime";
+import * as RuntimeMod from "./runtime";
 import { getLoggerProvider } from "./sdk";
 import {
   SeverityNumber,
@@ -39,9 +39,9 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
     name: string,
     fn: (span: Span) => R | Promise<R>,
   ): TaskResult<R> | Promise<TaskResult<R>> {
-    const span = createSpan(name, getActiveSpan()?.context);
+    const span = RuntimeMod.createSpan(name, RuntimeMod.getActiveSpan()?.context);
 
-    return withSpan(span, () => {
+    return RuntimeMod.withSpan(span, () => {
       try {
         const result = fn(span);
 
@@ -137,7 +137,7 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
       severityNumber,
       severityText,
       attributes: attributes ?? {},
-      spanContext: getActiveSpan()?.context,
+      spanContext: RuntimeMod.getActiveSpan()?.context,
       instrumentationScope: { name: this.namespace },
     });
   }
