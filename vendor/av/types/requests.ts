@@ -1,3 +1,4 @@
+import { toBuffer, toString, toUint8Array } from "@av/lib/convert";
 import type { TaskResult } from "@av/telemetry";
 import type { Sockets } from "@av/types/socket";
 
@@ -27,6 +28,11 @@ export namespace Requests {
 }
 
 export namespace Format {
+  export const Convert = {
+    toBuffer,
+    toUint8Array,
+    toString,
+  };
   export namespace JsonRpc {
     export type Id = string | number;
 

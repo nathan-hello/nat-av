@@ -1,5 +1,5 @@
 import { Driver as NDriver } from "@av/drivers";
-import { toBuffer } from "@av/lib/buffer";
+import { toBuffer } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import type {

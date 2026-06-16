@@ -1,4 +1,4 @@
-import { toUint8Array } from "@av/lib/buffer";
+import { toUint8Array } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";

@@ -1,6 +1,6 @@
 import { Manager } from "@av/drivers";
 import { RpcClient } from "@av/rpc/client";
-import { RPCServer } from "@av/rpc/server";
+import { RpcServer } from "@av/rpc/server";
 import { Test } from "@av/test/data.test";
 import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
@@ -40,7 +40,7 @@ describe("rpc device events", () => {
       deferred: [() => new Test.EventDriver("defer")],
     });
     const transport = new Test.RpcTransport();
-    new RPCServer({ natav, transport: transport.server });
+    new RpcServer({ natav, transport: transport.server });
     const client = new RpcClient<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {

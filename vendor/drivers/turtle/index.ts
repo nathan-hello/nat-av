@@ -1,8 +1,8 @@
 import {
   Delimiters,
   Driver,
+  Format,
   RequestManager,
-  toBuffer,
   type Schema,
   type Sockets,
 } from "@av/index";
@@ -35,7 +35,7 @@ export default class ChazyControl<
     });
 
     this.requests.on("delimited", (event) => {
-      this.dispatch("driver:delimited", toBuffer(event));
+      this.dispatch("driver:delimited", Format.Convert.toBuffer(event));
     });
   }
 

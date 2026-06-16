@@ -1,7 +1,7 @@
 import { Driver, Manager } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RpcClient } from "@av/rpc/client";
-import { RPCServer } from "@av/rpc/server";
+import { RpcServer } from "@av/rpc/server";
 import { DeviceRpcRouter } from "@av/rpc/server/device";
 import { Test } from "@av/test/data.test";
 import { Rpc } from "@av/types";
@@ -156,7 +156,7 @@ describe("rpc deps", () => {
     });
 
     const transport = new Test.RpcTransport();
-    new RPCServer({ natav, transport: transport.server });
+    new RpcServer({ natav, transport: transport.server });
     const client = new RpcClient<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {

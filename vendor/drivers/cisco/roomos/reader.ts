@@ -1,4 +1,4 @@
-import { Rpc, toString } from "@av/index";
+import { Format, Rpc } from "@av/index";
 import { RoomOS } from "./types";
 
 function FromJsonRpcError(err: Rpc.Error): RoomOS.ReadOperation {
@@ -30,8 +30,7 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-
-            message: toString(data),
+            message: Format.Convert.toString(data),
           },
         };
       }
@@ -64,9 +63,9 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.XSET_RETURNED_FALSE,
-            message: toString(request),
+            message: Format.Convert.toString(request),
 
-            data: toString(data),
+            data: Format.Convert.toString(data),
           },
         };
       }
@@ -81,8 +80,8 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-            message: toString(request),
-            data: toString(data),
+            message: Format.Convert.toString(request),
+            data: Format.Convert.toString(data),
           },
         };
       }
@@ -132,7 +131,9 @@ function FromJsonRpcNotification(
 
 const parse = {
   Is: {
-    SubOrUnsubFeedback: (value: unknown): value is RoomOS.Rx.RegisterFeedback => {
+    SubOrUnsubFeedback: (
+      value: unknown,
+    ): value is RoomOS.Rx.RegisterFeedback => {
       return (
         value !== null &&
         typeof value === "object" &&

@@ -1,6 +1,6 @@
 import { Manager } from "@av/drivers";
 import { RpcClient } from "@av/rpc/client";
-import { RPCServer } from "@av/rpc/server";
+import { RpcServer } from "@av/rpc/server";
 import { Test } from "@av/test/data.test";
 import assert from "node:assert/strict";
 import { it } from "node:test";
@@ -17,7 +17,7 @@ it("gets state automatically on connect", async () => {
   await natav.Start();
 
   const transport = new Test.RpcTransport();
-  new RPCServer({ natav, transport: transport.server });
+  new RpcServer({ natav, transport: transport.server });
   const client = new RpcClient<(typeof natav)["configs"]>({ transport });
   transport.connect();
 

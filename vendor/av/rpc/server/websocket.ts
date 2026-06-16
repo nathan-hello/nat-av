@@ -17,7 +17,7 @@ export type ServerRpcTransport = Pick<
 
 const decoder = new TextDecoder();
 
-export class WebsocketHandler
+export class ServerTransportWebsocket
   extends TypedEventTarget<ServerRpcTransportEvents>
   implements ServerRpcTransport
 {

@@ -3,10 +3,8 @@ import {
   Driver,
   RequestManager,
   Rpc,
-  toBuffer,
-  toString,
   TypedEventTarget,
-  type Format,
+  Format,
   type Sockets,
 } from "@av/index";
 import { RoomOSProxy } from "./proxy";
@@ -100,7 +98,7 @@ export class CiscoRoomOS<
     });
 
     this.requests.on("delimited", (message) => {
-      this.dispatch("driver:delimited", toBuffer(message));
+      this.dispatch("driver:delimited", Format.Convert.toBuffer(message));
       const notification = Rpc.Notification.is(message);
       if (notification) {
         const read = reader.JsonRpc.Notification(notification);
@@ -233,7 +231,7 @@ export class CiscoRoomOS<
         error: {
           code: RoomOS.ErrorCodes.INVALID_WRITE_OPERATION,
           data: rx,
-          message: toString(operation),
+          message: Format.Convert.toString(operation),
         },
       };
     }
@@ -261,7 +259,7 @@ export class CiscoRoomOS<
       ok: false,
       error: {
         code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-        message: toString(rx),
+        message: Format.Convert.toString(rx),
         data: operation,
       },
     };

@@ -1,16 +1,16 @@
-import { Manager } from "@av/drivers";
-import { Debugger } from "@av/drivers/builtin/debug";
-import { RPCServer } from "@av/rpc/server";
-import { WebsocketHandler } from "@av/rpc/server/websocket";
-import { Tcp } from "@av/sockets/tcp";
-import { Telemetry } from "@av/telemetry";
-import { CustomExporter } from "@av/telemetry/exporters";
-import { AddExporters } from "@av/telemetry/sdk";
 import {
+  AddExporters,
+  CustomExporter,
+  Debugger,
   FileExporter,
-  SimpleConsoleExporter,
-} from "@av/telemetry/server/exporters";
-import type { Drivers, Rpc } from "@av/types";
+  Manager,
+  RpcServer,
+  ServerSimpleConsoleExporter,
+  ServerTransportWebsocket,
+  Tcp,
+  type Drivers,
+  type Rpc,
+} from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import ChazyControl from "@drivers/turtle";
@@ -24,7 +24,7 @@ if ((globalThis as any).__devices__) {
 
 AddExporters([
   new FileExporter("./logs/natav.jsonl", true, "DEBUG"),
-  new SimpleConsoleExporter("DEBUG"),
+  new ServerSimpleConsoleExporter("DEBUG"),
 ]);
 
 const chazy = new ChazyControl({
@@ -78,8 +78,8 @@ AddExporters([
 export type natav = (typeof natav)["configs"];
 
 export async function start(app: Rpc.WebSocket.App) {
-  const websocket = new WebsocketHandler(app);
-  new RPCServer({ natav, transport: websocket });
+  const websocket = new ServerTransportWebsocket(app);
+  new RpcServer({ natav, transport: websocket });
 
   await natav.Start();
   // TSAS:

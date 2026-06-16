@@ -4,7 +4,7 @@ import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "@av/types";
 
-export class RPCServer {
+export class RpcServer {
   private tel = new Telemetry("Rpc");
   private router: DeviceRpcRouter;
   private clients = new Set<Rpc.WebSocket.Peer>();

@@ -1,4 +1,4 @@
-import { ClientRpc, Manager, RPCServer, Test } from "@av/index";
+import { RpcClient, Manager, RpcServer, Test } from "@av/index";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index";
@@ -111,8 +111,8 @@ describe("rpc roomos device", () => {
     });
     // const system = new System({ natav });
     const transport = new Test.RpcTransport();
-    new RPCServer({ natav, transport: transport.server });
-    const client = new ClientRpc<(typeof natav)["configs"]>({ transport });
+    new RpcServer({ natav, transport: transport.server });
+    const client = new RpcClient<(typeof natav)["configs"]>({ transport });
 
     const ready = new Promise<void>((resolve) => {
       const off = client.on("ready", () => {
