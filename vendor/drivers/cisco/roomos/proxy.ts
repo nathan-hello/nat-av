@@ -76,6 +76,32 @@ export class RoomOSProxy {
     }
   }
 
+  private static publicStateRootForRawRoot(root: string): string {
+    switch (root) {
+      case "Configuration":
+        return "xConfiguration";
+      case "Status":
+        return "xStatus";
+      case "Event":
+        return "xFeedback";
+      default:
+        return root;
+    }
+  }
+
+  private static rawStateRootForPublicRoot(root: string): string {
+    switch (root) {
+      case "xConfiguration":
+        return "Configuration";
+      case "xStatus":
+        return "Status";
+      case "xFeedback":
+        return "Event";
+      default:
+        return root;
+    }
+  }
+
   private static isPlainSubscriptionNode(
     value: unknown,
   ): value is Record<string, unknown> {
@@ -113,7 +139,6 @@ export class RoomOSProxy {
         return undefined;
       }
 
-      // TSAS: We only continue traversal when the subscription node is either true or a nested object.
       node = node[segment];
 
       if (node === undefined) {
@@ -146,6 +171,18 @@ export class RoomOSProxy {
       return Reflect.ownKeys(current).filter(
         (key): key is string => typeof key === "string",
       );
+    }
+
+    if (path.length === 0) {
+      return Reflect.ownKeys(current)
+        .filter((key): key is string => typeof key === "string")
+        .flatMap((key) => {
+          if (this.getSubscriptionNode([key]) === undefined) {
+            return [];
+          }
+
+          return [RoomOSProxy.publicStateRootForRawRoot(key)];
+        });
     }
 
     const subscriptionNode = this.getSubscriptionNode(
@@ -374,10 +411,12 @@ export class RoomOSProxy {
             (target, key) => target?.[key],
             this.state,
           );
+          const actualProp =
+            path.length === 0 ? RoomOSProxy.rawStateRootForPublicRoot(prop) : prop;
           return {
             enumerable: true,
             configurable: true,
-            value: value?.[prop],
+            value: value?.[actualProp],
           };
         }
         return undefined;

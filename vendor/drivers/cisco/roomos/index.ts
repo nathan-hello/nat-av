@@ -124,6 +124,9 @@ export class CiscoRoomOS<
       case "update":
         this.tel.info("UPDATE_STATE", operation);
         this.proxy.UpdateState(operation.data.path, operation.data.value);
+        this.dispatch("driver:state-updated", {
+          data: this.state,
+        });
 
         if (operation.data.path[0] === "Event") {
           const eventName = operation.data.path.slice(1).join(" ");
