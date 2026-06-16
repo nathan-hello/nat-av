@@ -1,4 +1,4 @@
-import { Manager, Test, Transport } from "@av/index";
+import { Client, Manager, Server, Test } from "@av/index";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index";
@@ -17,24 +17,26 @@ describe("rpc roomos device", () => {
           sendBack: {
             jsonrpc: "2.0",
             result: {
-              Camera: [
-                {
-                  DetectedConnector: 1,
-                  Flip: "Off",
-                  HardwareID: "cam-1",
-                  MacAddress: "aa:bb:cc:dd:ee:01",
-                  Position: { Focus: 10, Lens: "Wide" },
-                  SerialNumber: "S1",
-                },
-                {
-                  DetectedConnector: 2,
-                  Flip: "On",
-                  HardwareID: "cam-2",
-                  MacAddress: "aa:bb:cc:dd:ee:02",
-                  Position: { Focus: 20, Lens: "Tele" },
-                  SerialNumber: "S2",
-                },
-              ],
+              Cameras: {
+                Camera: [
+                  {
+                    DetectedConnector: 1,
+                    Flip: "Off",
+                    HardwareID: "cam-1",
+                    MacAddress: "aa:bb:cc:dd:ee:01",
+                    Position: { Focus: 10, Lens: "Wide" },
+                    SerialNumber: "S1",
+                  },
+                  {
+                    DetectedConnector: 2,
+                    Flip: "On",
+                    HardwareID: "cam-2",
+                    MacAddress: "aa:bb:cc:dd:ee:02",
+                    Position: { Focus: 20, Lens: "Tele" },
+                    SerialNumber: "S2",
+                  },
+                ],
+              },
             },
             id: 0,
           },
@@ -109,10 +111,9 @@ describe("rpc roomos device", () => {
       drivers: [roomos],
       deferred: [],
     });
-    // const system = new System({ natav });
     const transport = new Test.RpcTransport();
-    new Transport.Server.Rpc({ natav, transport: transport.server });
-    const client = new Transport.Client.Rpc<(typeof natav)["configs"]>({
+    new Server.Rpc({ natav, transport: transport.server });
+    const client = new Client.Rpc<(typeof natav)["configs"]>({
       transport,
     });
 
@@ -139,28 +140,50 @@ describe("rpc roomos device", () => {
     assert.deepEqual(status, {
       ok: true,
       data: {
-        Camera: [
-          {
-            DetectedConnector: 1,
-            Flip: "Off",
-            HardwareID: "cam-1",
-            MacAddress: "aa:bb:cc:dd:ee:01",
-            Position: { Focus: 10, Lens: "Wide" },
-            SerialNumber: "S1",
-          },
-          {
-            DetectedConnector: 2,
-            Flip: "On",
-            HardwareID: "cam-2",
-            MacAddress: "aa:bb:cc:dd:ee:02",
-            Position: { Focus: 20, Lens: "Tele" },
-            SerialNumber: "S2",
-          },
-        ],
+        Cameras: {
+          Camera: [
+            {
+              DetectedConnector: 1,
+              Flip: "Off",
+              HardwareID: "cam-1",
+              MacAddress: "aa:bb:cc:dd:ee:01",
+              Position: { Focus: 10, Lens: "Wide" },
+              SerialNumber: "S1",
+            },
+            {
+              DetectedConnector: 2,
+              Flip: "On",
+              HardwareID: "cam-2",
+              MacAddress: "aa:bb:cc:dd:ee:02",
+              Position: { Focus: 20, Lens: "Tele" },
+              SerialNumber: "S2",
+            },
+          ],
+        },
       },
     });
 
-    assert.equal(status.data.Camera.length, 2);
+    it("goes into the device.state object", () => {
+      assert.deepEqual(device.state.xStatus.Cameras.Camera[0], {
+        DetectedConnector: 1,
+        Flip: "Off",
+        HardwareID: "cam-1",
+        MacAddress: "aa:bb:cc:dd:ee:01",
+        Position: { Focus: 10, Lens: "Wide" },
+        SerialNumber: "S1",
+      });
+
+      assert.deepEqual(device.state.xStatus.Cameras.Camera[1], {
+        DetectedConnector: 2,
+        Flip: "On",
+        HardwareID: "cam-2",
+        MacAddress: "aa:bb:cc:dd:ee:02",
+        Position: { Focus: 20, Lens: "Tele" },
+        SerialNumber: "S2",
+      });
+    });
+
+    assert.equal(status.data.Cameras.Camera.length, 2);
 
     const booking = await device.api.xCommand.Bookings.Get({
       Id: "booking-123",
@@ -302,24 +325,26 @@ describe("rpc roomos device", () => {
           result: {
             ok: true,
             data: {
-              Camera: [
-                {
-                  DetectedConnector: 1,
-                  Flip: "Off",
-                  HardwareID: "cam-1",
-                  MacAddress: "aa:bb:cc:dd:ee:01",
-                  Position: { Focus: 10, Lens: "Wide" },
-                  SerialNumber: "S1",
-                },
-                {
-                  DetectedConnector: 2,
-                  Flip: "On",
-                  HardwareID: "cam-2",
-                  MacAddress: "aa:bb:cc:dd:ee:02",
-                  Position: { Focus: 20, Lens: "Tele" },
-                  SerialNumber: "S2",
-                },
-              ],
+              Cameras: {
+                Camera: [
+                  {
+                    DetectedConnector: 1,
+                    Flip: "Off",
+                    HardwareID: "cam-1",
+                    MacAddress: "aa:bb:cc:dd:ee:01",
+                    Position: { Focus: 10, Lens: "Wide" },
+                    SerialNumber: "S1",
+                  },
+                  {
+                    DetectedConnector: 2,
+                    Flip: "On",
+                    HardwareID: "cam-2",
+                    MacAddress: "aa:bb:cc:dd:ee:02",
+                    Position: { Focus: 20, Lens: "Tele" },
+                    SerialNumber: "S2",
+                  },
+                ],
+              },
             },
           },
           id: 1,
