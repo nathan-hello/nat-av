@@ -24,24 +24,27 @@ const chazy = new ChazyControl({
   }),
 });
 
-const foo = new DisplayManager(
-  "video-wall",
-  [
-    new Decoder({
-      name: "decoder-1",
-      socket: new Builtin.Sockets.Tcp({
-        addr: "decoder-0c7a1566cf92.local",
-        port: 12345,
-        keepAlive: true,
+const drivers = [
+  new DisplayManager(
+    "video-wall",
+    [
+      new Decoder({
+        name: "decoder-1",
+        socket: new Builtin.Sockets.Tcp({
+          addr: "decoder-0c7a1566cf92.local",
+          port: 12345,
+          keepAlive: true,
+        }),
       }),
-    }),
-  ],
-  {
-    "decoder-1": [
-      { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
     ],
-  },
-);
+    {
+      "decoder-1": [
+        { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
+      ],
+    },
+  ),
+  chazy,
+];
 
 export type drivers = typeof drivers;
 

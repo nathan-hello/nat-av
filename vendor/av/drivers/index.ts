@@ -17,7 +17,7 @@ type SocketMaybe = Partial<Sockets.Client> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Array | undefined = undefined,
+  Deps extends Drivers.Array = Drivers.Array,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
   Events extends EventsMaybe = EventsMaybe,
@@ -33,15 +33,16 @@ export abstract class Driver<
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
   // TSAS: This anchor keeps the resolved dependency record available for type recursion.
-  declare public _deps: Deps;
   public name: Name;
-  public deps: Deps;
+  public deps: Deps = [] as unknown as Deps;
   protected tel: Telemetry;
 
   constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
     // TSAS: Could be instantiated with different type
-    this.deps = deps as Deps;
+    if (deps) {
+      this.deps = deps;
+    }
     this.name = name;
     this.tel = new Telemetry(`Driver::${this.name}`);
   }
@@ -85,7 +86,7 @@ export class Manager<
   Context extends Drivers.Context = Drivers.Context,
 > implements Drivers.Manager<D, S, Context> {
   readonly configs: Drivers.Merged<D, S>;
-  readonly configs_flat: Drivers.Merged<D, S>;
+  readonly configs_flat: Driver[];
   private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
@@ -103,22 +104,10 @@ export class Manager<
   }
 
   constructor(args: { drivers?: D; deferred?: S }) {
-    let configs: Drivers.Merged<D, S>[number][] = [];
+    let configs: Driver[] = [];
     if (args.drivers) {
       configs = [...args.drivers];
     }
-
-    this.configs = configs;
-
-    const collect = (driver: Drivers.Merged<D, S>[number]): Driver[] => {
-      const out: Driver[] = driver ? [] : [driver];
-      for (const dep of driver.deps ?? []) {
-        out.push(...collect(dep));
-      }
-      return out;
-    };
-
-    this.configs_flat = this.configs.flatMap(collect);
 
     if (args.deferred) {
       for (const deferred of args.deferred) {
@@ -130,6 +119,19 @@ export class Manager<
         }
       }
     }
+
+    // TSAS: The public configs property is the tuple-shaped merged driver set for type inference.
+    this.configs = configs as unknown as Drivers.Merged<D, S>;
+
+    const collect = (driver: Driver): Driver[] => {
+      const out: Driver[] = [driver];
+      for (const dep of driver.deps ?? []) {
+        out.push(...collect(dep));
+      }
+      return out;
+    };
+
+    this.configs_flat = this.configs.flatMap(collect);
   }
 
   runWithContext<T>(context: Context, fn: () => T): T {

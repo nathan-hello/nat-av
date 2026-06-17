@@ -58,7 +58,7 @@ export namespace Drivers {
 
   export type AnyDriver = Driver<
     string,
-    Drivers.Array | undefined,
+    Drivers.Array,
     ApiRecord,
     Record<string, any>,
     TypedEventTarget<{ [x: string]: Rpc.Json.Value }> | undefined,
@@ -68,7 +68,10 @@ export namespace Drivers {
   export type Merged<
     D extends Drivers.Array,
     S extends readonly Drivers.AnyDeferred[],
-  > = readonly (D[number] | Drivers.DeferredInstances<S>[number])[];
+  > =
+    number extends D["length"] ?
+      readonly (D[number] | Drivers.DeferredInstances<S>[number])[]
+    : readonly [...D, ...Drivers.DeferredInstances<S>];
 
   export type Deferred<
     N extends Drivers.Array = Drivers.Array,
@@ -127,26 +130,34 @@ export namespace Drivers {
     FromName<N, Name>["events"] extends TypedEventTarget<infer Events> ? Events
     : never;
 
+  type IsTuple<T extends readonly unknown[]> =
+    number extends T["length"] ? false : true;
+
   export type WithDeps<D extends Driver | Drivers.Array> =
     D extends Driver ?
-      | D
-      | (NonNullable<D["_deps"]> extends Drivers.Array ?
-          WithDeps<NonNullable<D["_deps"]>>
-        : never)
+      NonNullable<D["deps"]> extends Drivers.Array ?
+        IsTuple<NonNullable<D["deps"]>> extends true ?
+          readonly [D, ...WithDeps<NonNullable<D["deps"]>>]
+        : readonly [D]
+      : readonly [D]
+    : D extends readonly [] ? readonly []
     : D extends (
       readonly [infer Head extends Driver, ...infer Rest extends Drivers.Array]
     ) ?
-      WithDeps<Head> | WithDeps<Rest>
-    : D extends readonly Driver[] ? D[number]
-    : never;
+      readonly [...WithDeps<Head>, ...WithDeps<Rest>]
+    : D extends readonly (infer Item extends Driver)[] ?
+      Item extends Driver ?
+        readonly [Item, ...WithDeps<NonNullable<Item["deps"]>>]
+      : readonly []
+    : readonly [];
 
   export type Names<N extends Drivers.Array = Drivers.Array> =
-    Drivers.WithDeps<N>["name"];
+    Drivers.WithDeps<N>[number]["name"];
 
   export type FromName<
     N extends Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
-  > = Extract<Drivers.WithDeps<N>, { name: Name }>;
+  > = Extract<Drivers.WithDeps<N>[number], { name: Name }>;
 
   export type Handle<D extends Driver> = {
     deps: D["deps"];
