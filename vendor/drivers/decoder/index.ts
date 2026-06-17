@@ -31,7 +31,7 @@ export default class Decoder<
   private requests: RequestManager<DecoderRequest, DecoderMessage>;
 
   constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
-    super({ name, driverName: "natalie-decoder" });
+    super({ name });
     this.socket = socket;
 
     const { delimiter, formatter } = Delimiters.lengthPrefixedJson<

@@ -17,8 +17,7 @@ type SocketMaybe = Partial<Sockets.Client> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Dep.TRecord = {},
-  DriverName extends string = string,
+  Deps extends Drivers.Array | undefined = undefined,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
   Events extends EventsMaybe = EventsMaybe,
@@ -36,14 +35,14 @@ export abstract class Driver<
   // TSAS: This anchor keeps the resolved dependency record available for type recursion.
   declare public _deps: Deps;
   public name: Name;
-  public _drivername: DriverName;
-  public deps: Drivers.Dep.Handle<Deps> = new DependencyManager<Deps>();
+  public deps: Deps;
   protected tel: Telemetry;
 
-  constructor({ name, driverName }: { name: Name; driverName: DriverName }) {
+  constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
+    // TSAS: Could be instantiated with different type
+    this.deps = deps as Deps;
     this.name = name;
-    this._drivername = driverName;
     this.tel = new Telemetry(`Driver::${this.name}`);
   }
 
@@ -62,40 +61,23 @@ export abstract class Driver<
   public end(): Promise<void> | void {
     this.socket?.end?.();
   }
-}
 
-class DependencyManager<Deps extends Drivers.Dep.TRecord> implements Drivers.Dep
-  .Handle<Deps> {
-  // TSAS: Drivers start with no dependencies and fill this record during construction.
-  private _deps: Deps = {} as Deps;
+  public dep<K extends NonNullable<Deps>[number]["name"]>(
+    name: K,
+  ): Extract<NonNullable<Deps>[number], { name: K }> {
+    const child = this.deps?.find(
+      (d): d is Extract<NonNullable<Deps>[number], { name: K }> =>
+        d.name === name,
+    );
 
-  constructor(input?: Drivers.Dep.Input) {
-    if (input) {
-      this.set(input);
-    }
-  }
-
-  public get(): Deps;
-  public get<N extends keyof Deps & string>(name: N): Deps[N];
-  public get(name?: string): any {
-    return name ? this._deps[name] : this._deps;
-  }
-
-  public set(vd: Drivers.Dep.Input): void {
-    if (!Array.isArray(vd)) {
-      // TSAS: Non-array dep inputs are already keyed dependency records.
-      this._deps = vd as Deps;
-      return;
+    if (!child) {
+      throw new Error(`missing dependency: ${name}`);
     }
 
-    const nextDeps: Record<string, Drivers.AnyDriver> = { ...this._deps };
-    for (const entry of vd) {
-      const driver = "driver" in entry ? entry.driver : entry;
-      nextDeps[driver.name] = driver;
-    }
-    this._deps = nextDeps as Deps;
+    return child;
   }
 }
+
 export class Manager<
   const D extends Drivers.Array = Drivers.Array,
   const S extends readonly Drivers.AnyDeferred[] =
@@ -103,6 +85,7 @@ export class Manager<
   Context extends Drivers.Context = Drivers.Context,
 > implements Drivers.Manager<D, S, Context> {
   readonly configs: Drivers.Merged<D, S>;
+  readonly configs_flat: Drivers.Merged<D, S>;
   private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
@@ -127,6 +110,16 @@ export class Manager<
 
     this.configs = configs;
 
+    const collect = (driver: Drivers.Merged<D, S>[number]): Driver[] => {
+      const out: Driver[] = driver ? [] : [driver];
+      for (const dep of driver.deps ?? []) {
+        out.push(...collect(dep));
+      }
+      return out;
+    };
+
+    this.configs_flat = this.configs.flatMap(collect);
+
     if (args.deferred) {
       for (const deferred of args.deferred) {
         // TSAS: Deferred entries are either constructors or factories returning drivers.
@@ -143,14 +136,6 @@ export class Manager<
     return this.contextStore.run(context, fn);
   }
 
-  private all(): Driver[] {
-    const collect = (drivers: readonly Driver[]): Driver[] =>
-      // TSAS: Runtime dependency managers only store driver instances keyed by name.
-      drivers.flatMap((d) => [d, ...collect(Object.values(d.deps.get()))]);
-
-    return collect(this.configs);
-  }
-
   GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
     name: N,
   ): Drivers.FromName<Drivers.Merged<D, S>, N> {
@@ -165,29 +150,24 @@ export class Manager<
   }
 
   FindDriver(name: string): Driver | undefined {
-    return this.all().find((d) => d.name === name);
+    return this.configs_flat.find((d) => d.name === name);
   }
 
   GetAllDriverNames(): string[] {
-    return this.all().map((d) => d.name);
+    return this.configs_flat.map((d) => d.name);
   }
 
   GetTree(): Drivers.DriverView[] {
     const toNode = (driver: Driver): Drivers.DriverView | undefined => {
-      if (driver.name === "debugger") {
-        return;
-      }
       const socket = driver.socket;
       const canWrite = typeof socket?.write === "function";
       const canReceive = typeof socket?.on === "function";
 
       const node = {
         name: driver.name,
-        driverName: driver._drivername,
-        // TSAS: Object.values strips out type info
-        children: Object.values(driver.deps.get() as Record<string, Driver>)
+        deps: (driver.deps ?? [])
           .map((child) => toNode(child))
-          .filter((s) => s !== undefined),
+          .filter((child): child is Drivers.DriverView => child !== undefined),
         ...(typeof socket?.name === "string" ?
           {
             socket: {

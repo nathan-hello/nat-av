@@ -13,12 +13,13 @@ it("gets state automatically on connect", async () => {
   });
 
   const natav = new Manager({ drivers: [driver], deferred: [] });
+  type natav = typeof natav;
 
   await natav.Start();
 
   const transport = new Test.RpcTransport();
   new RpcServer({ natav, transport: transport.server });
-  const client = new RpcClient<(typeof natav)["configs"]>({ transport });
+  const client = new RpcClient<natav>({ transport });
   transport.connect();
 
   assert.deepEqual(client.device("shim-1").state?.lastFrame, "init");

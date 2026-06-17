@@ -74,7 +74,7 @@ function findFirstSocketDevice(
       return node;
     }
 
-    const child = findFirstSocketDevice(node.children);
+    const child = findFirstSocketDevice(node.deps);
     if (child) {
       return child;
     }

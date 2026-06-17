@@ -43,9 +43,10 @@ describe("rpc device events", () => {
       drivers: [eventDriver],
       deferred: [() => new Test.EventDriver("defer")],
     });
+    type natav = typeof natav;
     const transport = new Test.RpcTransport();
     new Server.Rpc({ natav, transport: transport.server });
-    const client = new Client.Rpc<(typeof natav)["configs"]>({
+    const client = new Client.Rpc<natav>({
       transport,
     });
 
@@ -184,10 +185,11 @@ describe("rpc device events", () => {
       drivers: [] as const,
       deferred: [PeerAwareDriver] as const,
     });
+    type natav = typeof natav;
     const transport = new Test.RpcTransport();
     const clientIds = { "in-memory": "CLIENT_1" } as const;
     new Server.Rpc({ natav, transport: transport.server, clientIds });
-    const client = new Client.Rpc<(typeof natav)["configs"]>({
+    const client = new Client.Rpc<natav>({
       transport,
     });
 

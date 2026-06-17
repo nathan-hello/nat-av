@@ -56,8 +56,8 @@ function renderTreeNode(
           {selectable ? "socket" : "no socket"}
         </span>
       </button>
-      {node.children.length > 0 ?
-        node.children.map((child) => renderTreeNode(child, handle, depth + 1))
+      {node.deps.length > 0 ?
+        node.deps.map((child) => renderTreeNode(child, handle, depth + 1))
       : null}
     </div>
   );

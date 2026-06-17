@@ -1,3 +1,4 @@
+import type { Manager } from "@av/client";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDevice } from "@av/rpc/client/devices";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
@@ -7,7 +8,7 @@ import { Telemetry } from "@av/telemetry";
 import { Rpc, type Drivers, type Events } from "@av/types";
 
 export class RpcClient<
-  N extends Drivers.Array,
+  N extends Manager = Manager,
 > extends ProtectedTypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
@@ -66,7 +67,9 @@ export class RpcClient<
     return this.currentPeer;
   }
 
-  device<Name extends Drivers.Names<N>>(name: Name): ClientRpcDevice<N, Name> {
+  device<Name extends Drivers.Names<N["configs"]>>(
+    name: Name,
+  ): ClientRpcDevice<N, Name> {
     const cached = this.deviceHandles.get(name);
     if (cached) {
       return cached;

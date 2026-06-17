@@ -111,9 +111,10 @@ describe("rpc roomos device", () => {
       drivers: [roomos],
       deferred: [],
     });
+    type natav = typeof natav;
     const transport = new Test.RpcTransport();
     new Server.Rpc({ natav, transport: transport.server });
-    const client = new Client.Rpc<(typeof natav)["configs"]>({
+    const client = new Client.Rpc<natav>({
       transport,
     });
     await natav.Start();
@@ -163,10 +164,6 @@ describe("rpc roomos device", () => {
         },
       },
     });
-
-    console.log("device.state");
-    console.log("\n\n\n");
-    console.log(device.state);
 
     it("goes into the driver.state object", () => {
       assert.deepEqual(roomos.state.xStatus.Cameras.Camera[0], {

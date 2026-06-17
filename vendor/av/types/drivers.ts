@@ -2,8 +2,6 @@ import type { Driver } from "@av/drivers";
 import type { TypedEventTarget } from "@av/lib/eventtarget";
 import type { Rpc, Sockets, Events as TEvents } from "@av/types";
 
-type IsAny<T> = 0 extends 1 & T ? true : false;
-
 // This namespace is not allowed to import Natav namespace.
 // The Natav namespace uses Driver for inference, so trying
 // to get the Natav.Names<N> for example will cause a circular
@@ -12,7 +10,7 @@ export namespace Drivers {
   export type Context<ClientId extends string = string> =
     Rpc.Server.Context<ClientId>;
 
-  export type Array = readonly Driver[];
+  export type Array = readonly Drivers.AnyDriver[];
 
   export type PartialArray<T extends readonly unknown[]> =
     | T
@@ -20,8 +18,7 @@ export namespace Drivers {
 
   export type DriverView = {
     name: string;
-    driverName: string;
-    children: DriverView[];
+    deps: DriverView[];
     socket?: {
       traceName: string;
       canWrite: boolean;
@@ -61,8 +58,7 @@ export namespace Drivers {
 
   export type AnyDriver = Driver<
     string,
-    Record<string, AnyDriver>,
-    string,
+    Drivers.Array | undefined,
     ApiRecord,
     Record<string, any>,
     TypedEventTarget<{ [x: string]: Rpc.Json.Value }> | undefined,
@@ -132,15 +128,23 @@ export namespace Drivers {
     : never;
 
   export type WithDeps<D extends Driver | Drivers.Array> =
-    D extends Driver ? D | WithDeps<Extract<Dep.Union<Dep.RecordOf<D>>, Driver>>
-    : D extends Drivers.Array ? WithDeps<D[number]>
+    D extends Driver ?
+      | D
+      | (NonNullable<D["_deps"]> extends Drivers.Array ?
+          WithDeps<NonNullable<D["_deps"]>>
+        : never)
+    : D extends (
+      readonly [infer Head extends Driver, ...infer Rest extends Drivers.Array]
+    ) ?
+      WithDeps<Head> | WithDeps<Rest>
+    : D extends readonly Driver[] ? D[number]
     : never;
 
   export type Names<N extends Drivers.Array = Drivers.Array> =
     Drivers.WithDeps<N>["name"];
 
   export type FromName<
-    N extends readonly Driver[],
+    N extends Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
   > = Extract<Drivers.WithDeps<N>, { name: Name }>;
 
@@ -153,53 +157,5 @@ export namespace Drivers {
     on: D["on"];
   };
 
-  export namespace Dep {
-    export type TRecord = Record<string, AnyDriver>;
-
-    export type Handle<Deps extends TRecord> = {
-      get(): Deps;
-      get<N extends keyof Deps & string>(name: N): Deps[N];
-      set(vd: Input): void;
-    };
-
-    export type RecordOf<D extends Driver> = D["_deps"];
-
-    export type FromName<
-      N extends Drivers.Array,
-      Name extends Drivers.Names<N>,
-      DepName extends Drivers.Dep.Names<N, Name>,
-    > = Extract<Deps<N, Name>[DepName], Driver>;
-
-    export type Deps<
-      N extends Drivers.Array,
-      Name extends Drivers.Names<N>,
-    > = RecordOf<Drivers.FromName<N, Name>>;
-
-    export type Input =
-      | TRecord
-      | readonly Drivers.AnyDriver[]
-      | readonly { driver: Drivers.AnyDriver }[];
-
-    export type FromInput<I extends Drivers.Dep.Input> =
-      I extends readonly Drivers.AnyDriver[] ?
-        {
-          [K in I[number]["name"]]: Extract<I[number], { name: K }>;
-        }
-      : I extends readonly { driver: AnyDriver }[] ?
-        {
-          [K in I[number]["driver"]["name"]]: Extract<
-            I[number]["driver"],
-            { name: K }
-          >;
-        }
-      : I;
-
-    export type Union<Deps> =
-      IsAny<Deps> extends true ? never
-      : Deps extends Record<string, infer Dep> ? Dep
-      : never;
-
-    export type Names<N extends Drivers.Array, Name extends Drivers.Names<N>> =
-      IsAny<Deps<N, Name>> extends true ? never : keyof Deps<N, Name> & string;
-  }
+  export type DepsOf<D extends Driver> = NonNullable<D["deps"]>[number];
 }

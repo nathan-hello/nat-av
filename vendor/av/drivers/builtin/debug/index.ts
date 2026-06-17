@@ -21,7 +21,7 @@ function buildTree(nodes: Drivers.DriverView[]): State["tree"] {
       messages: [],
     };
 
-    for (const child of node.children) {
+    for (const child of node.deps) {
       visit(child);
     }
   };

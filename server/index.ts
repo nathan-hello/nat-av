@@ -24,24 +24,24 @@ const chazy = new ChazyControl({
   }),
 });
 
-const drivers = [
-  new DisplayManager("video-wall", [
-    {
-      driver: new Decoder({
-        name: "decoder-1",
-        socket: new Builtin.Sockets.Tcp({
-          addr: "127.0.0.1",
-          port: 12345,
-          keepAlive: true,
-        }),
+const foo = new DisplayManager(
+  "video-wall",
+  [
+    new Decoder({
+      name: "decoder-1",
+      socket: new Builtin.Sockets.Tcp({
+        addr: "decoder-0c7a1566cf92.local",
+        port: 12345,
+        keepAlive: true,
       }),
-      placement: [
-        { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
-      ],
-    },
-  ]),
-  chazy,
-];
+    }),
+  ],
+  {
+    "decoder-1": [
+      { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
+    ],
+  },
+);
 
 export type drivers = typeof drivers;
 
@@ -60,7 +60,7 @@ Telemetry.Sdk.AddExporters([
   }),
 ]);
 
-export type natav = (typeof natav)["configs"];
+export type natav = typeof natav;
 
 export async function start(app: Rpc.WebSocket.App) {
   const websocket = new Server.Websocket(app);

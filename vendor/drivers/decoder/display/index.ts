@@ -1,5 +1,4 @@
-import type { Drivers } from "@av/index";
-import { Driver } from "@av/index";
+import { Driver, type Drivers } from "@av/index";
 import config from "../config";
 import type Decoder from "../index";
 import type { VideoRoute } from "../types";
@@ -57,22 +56,13 @@ type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 
 export default class DisplayManager<
   const N extends string = string,
-  const C extends readonly DecoderConfig[] = readonly DecoderConfig[],
-> extends Driver<N, Drivers.Dep.FromInput<C>> {
-  private configs: C;
+  const D extends readonly Decoder[] = readonly Decoder[],
+> extends Driver<N, D> {
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];
   private canvasWidth: number = 0;
   private canvasHeight: number = 0;
-
-  socket = {
-    start: () => {
-      this.configs.forEach((c) => c.driver.socket.start());
-    },
-    end: () => {
-      this.configs.forEach((c) => c.driver.socket.end());
-    },
-  };
+  private placement: { [K in Drivers.Names<D>]: OutputPlacement[] };
 
   private template = BUILTIN_TEMPLATES[0];
 
@@ -80,24 +70,30 @@ export default class DisplayManager<
     return DisplaySchema;
   };
 
-  constructor(name: N, configs: C) {
-    super({ name, driverName: "natalie-display-manager" });
-    this.configs = configs;
-    this.loutputs = this.configs.flatMap((config, decoderIndex) =>
-      config.placement.map((output) => ({ decoderIndex, output })),
+  constructor(
+    name: N,
+    deps: D,
+    placement: { [K in Drivers.Names<D>]: OutputPlacement[] },
+  ) {
+    super({ name, deps: deps });
+    this.loutputs = this.deps.flatMap((config, decoderIndex) =>
+      getPlacement(placement, config.name).map((output) => ({
+        decoderIndex,
+        output,
+      })),
     );
+    this.placement = placement;
     this.computeCanvasDimensions();
     this.checkOverlaps();
     this.subscribeToDecoders();
-    this.deps.set(this.configs);
   }
 
   get state(): DisplayState {
     return {
       canvas: { width: this.canvasWidth, height: this.canvasHeight },
-      audioOutputs: this.configs.flatMap(
+      audioOutputs: this.deps.flatMap(
         (config, decoderIndex) =>
-          config.driver.state.context?.audio.map((output) => ({
+          config.state.context?.audio.map((output) => ({
             decoderIndex,
             output: output.output,
             type: output.type,
@@ -105,7 +101,7 @@ export default class DisplayManager<
       ),
       windows: this.lwindows,
       encoders: config.encoders,
-      decoders: this.configs.map((c) => c.driver.state),
+      decoders: this.deps.map((c) => c.state),
       template: {
         choices: BUILTIN_TEMPLATES,
         state: this.template,
@@ -170,7 +166,7 @@ export default class DisplayManager<
       // Send routes to each decoder
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
-          const decoder = this.configs[decoderIdx].driver;
+          const decoder = this.deps[decoderIdx];
           return Promise.all(
             routes.map((route) => decoder.api.route({ video: route })),
           );
@@ -184,7 +180,7 @@ export default class DisplayManager<
       uri: string,
       output: { decoderIndex: number; output: number },
     ) => {
-      const decoder = this.configs[output.decoderIndex]?.driver;
+      const decoder = this.deps[output.decoderIndex];
       if (!decoder) {
         return -1;
       }
@@ -227,7 +223,7 @@ export default class DisplayManager<
       // Send move commands to each decoder
       const results = await Promise.all(
         Array.from(routesByDecoder.entries()).map(([decoderIdx, routes]) => {
-          const decoder = this.configs[decoderIdx].driver;
+          const decoder = this.deps[decoderIdx];
           return Promise.all(
             routes.map((route) => decoder.api.moveAbsolute(route)),
           );
@@ -237,14 +233,12 @@ export default class DisplayManager<
       return results;
     },
     debug: (b?: boolean) => {
-      return Promise.all(this.configs.map((c) => c.driver.api.debug(b)));
+      return Promise.all(this.deps.map((c) => c.api.debug(b)));
     },
 
     destroy: async (windowId: number | "all") => {
       if (windowId === "all") {
-        return Promise.all(
-          this.configs.map((c) => c.driver.api.unroute("all")),
-        );
+        return Promise.all(this.deps.map((c) => c.api.unroute("all")));
       }
       const existing = this.lwindows.find((w) => w.id === windowId);
       if (!existing) {
@@ -273,7 +267,7 @@ export default class DisplayManager<
       // Send destroy commands to each decoder
       const results = await Promise.all(
         Array.from(destroyByDecoder.entries()).map(([decoderIdx, items]) => {
-          const decoder = this.configs[decoderIdx].driver;
+          const decoder = this.deps[decoderIdx];
           return decoder.api.unroute({ video: items, audio: [] });
         }),
       );
@@ -283,7 +277,7 @@ export default class DisplayManager<
   };
 
   private subscribeToDecoders(): void {
-    for (const { driver } of this.configs) {
+    for (const driver of this.deps) {
       driver.on("driver:state-updated", () => {
         this.rebuildWindows();
         this.dispatch("driver:state-updated", { data: this.state });
@@ -292,9 +286,7 @@ export default class DisplayManager<
   }
 
   private rebuildWindows(): void {
-    const routesByDecoder = this.configs.map(
-      (c) => c.driver.state.routes.video,
-    );
+    const routesByDecoder = this.deps.map((c) => c.state.routes.video);
     this.lwindows = this.videoRoutesToWindows(routesByDecoder);
   }
 
@@ -397,13 +389,15 @@ export default class DisplayManager<
     const windowsMap = new Map<number, LogicalWindow>();
 
     routesByDecoder.forEach((decoderRoutes, decoderIdx) => {
-      decoderRoutes.forEach((outputRoutes, outputIdx) => {
-        const output = this.configs[decoderIdx]?.placement.find(
-          (p) => p.outputId === outputIdx,
-        );
-        if (!output) return;
+      const decoder = this.deps[decoderIdx];
+      if (!decoder) return;
 
+      const placements = getPlacement(this.placement, decoder.name);
+
+      decoderRoutes.forEach((outputRoutes) => {
         outputRoutes.forEach((route) => {
+          const output = placements.find((p) => p.outputId === route.output);
+          if (!output) return;
           if (!windowsMap.has(route.window)) {
             windowsMap.set(route.window, {
               id: route.window,
@@ -424,4 +418,11 @@ export default class DisplayManager<
 
     return Array.from(windowsMap.values());
   }
+}
+
+function getPlacement<const K extends string>(
+  placement: Record<K, OutputPlacement[]>,
+  name: K,
+) {
+  return placement[name];
 }

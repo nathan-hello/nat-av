@@ -102,6 +102,7 @@ describe("rpc deps", () => {
     const root = new RootDriver(level2);
 
     const natav = new Manager({ drivers: [root] });
+    type natav = typeof natav;
     assert.deepEqual(natav.GetAllDriverNames(), [
       "root",
       "level-2",
@@ -157,7 +158,7 @@ describe("rpc deps", () => {
 
     const transport = new Test.RpcTransport();
     new RpcServer({ natav, transport: transport.server });
-    const client = new RpcClient<(typeof natav)["configs"]>({ transport });
+    const client = new RpcClient<natav>({ transport });
 
     const ready = new Promise<void>((resolve) => {
       const off = client.on("ready", () => {

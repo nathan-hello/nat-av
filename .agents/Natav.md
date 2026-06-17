@@ -1,33 +1,107 @@
 # nat-av Library
 
-Natav is a vendored library that is in the ./av directory.
+Natav is a vendored library that is in the `vendor/av` directory.
 
 Its primary goal is to provide a high quality programming environment for
-communicating directly with other devices on a local area network. 
+communicating directly with other devices on a local area network. Programs
+using this library are typically not connected to the internet and have a
+single digit, constant number of clients connecting to the server. 
 
-## Real world example for context
+# Folders
 
-In a room there is several Decoders that make up one Video Wall. Each Decoder
-is responsible for one piece of the Video Wall. This means that the several
-different Decoders has their own APIs, and the Video Wall class is responsible
-for orchestrating them. For example if a new Window sits between the edges of
-two Decoders, we need something to tell each of the Decoder what they are
-responsible for. This is just one example of why a node server will need to
-talk to devices on the network.
+## ./vendor/av/drivers/
 
-One big problem with consistently talking to devices is their delimiter. This
-is why you can use an off the shelf delimiter as in `av/sockets/delimiters.ts`,
-or create your own. Delimiters are a responsibility of the Driver
-implementation because it does not change between invocations, but it does
-change between Drivers.
+The Driver is an abstract base class used mostly for typing any implementations.
+Inheriters of Driver only require four things: a `name`, `driverName`, `api`,
+and `state`. 
 
-# Files & Folders
+This is the simplest possible Driver
 
-## av/driver.ts
+```typescript
+import { Driver } from "@av/drivers";
 
-The goal of the Driver class in `av/driver.ts` is to create a base over which I
-can make these APIs and relationships. It should do all potenital work that
-will consistently be shared between drivers implementations.
+export class Controller extends Driver<"ui"> {
+  state = {};
+  api = {};
+  constructor() {
+    super({ name: "ui", driverName: "controller" });
+  }
+}
+```
+
+`Manager` is repsonsible for collecting all of the drivers together, dispatching
+events, and giving the appropiate API to `RpcServer` when requested, as well
+as injecting context if a `Driver` requests it. 
+
+A `Driver` can either be precreated and given to the constructor of `Manager`,
+or `Manager` can be given a `(natav: Manager) => Driver` function that will
+be called during the construction phase of `Manager`.
+
+There may be multiple Drivers that take this "deferred" path. For this reason
+it is important to *never use the Manager object during the constructor of the
+Driver*. This is because the Manager might not have called the Driver you are
+looking for, or otherwise set up the context for the system, during that
+construction phase. If you want to run some startup code that requires the
+`Manager` use `public override start(): Promise<void> | void` in the Driver.
+This is after `Manager.Start()` is called, which means all drivers originally
+given to `Manager` are correctly available and constructed. 
+
+Alternatively, if a Driver extremely depends on another driver, you can simply
+put it in the constructor.
+
+```typescript
+import { Driver } from "@av/drivers";
+
+class Leaf<const N extends string> extends Driver<N> {
+  state = { ready: true };
+  api = {
+    setOnline
+  };
+
+  constructor(name: N) {
+    super({ name, driverName: "leaf" });
+  }
+}
+
+class Parent<
+  const N extends string,
+  const D extends Record<string, Leaf<string>>,
+> extends Driver<N, D> {
+  state = { ready: true };
+  api = {};
+
+  constructor(name: N, deps: D) {
+    super({ name, driverName: "parent" });
+    this.deps.set(deps);
+  }
+}
+
+const child = new Leaf("child-1");
+const parent = new Parent("parent-1", { [child.name]: child });
+const natav = new Manager({
+  drivers: [parent] as const,
+  deferred: [] as const,
+});
+```
+
+Then you can access the dependency using either:
+
+```typescript
+const client = new RpcClient<(typeof graph)["configs"]>({
+  transport: transport,
+});
+client.device("parent-1").deps.get("child-1").name  // "child-1"
+client.device("parent-1").deps.get("child-1").state // { online: true }
+```
+
+Or you can query the `child-1` directly. Dependencies are lifted up to a single
+flat array in Manager. This so it is more obvious what names are available and
+accessing the drivers easier.
+
+```typescript
+client.device("child-1").state // { online: true }
+client.device("child-1").name  // "child-1"
+```
 
 ## av/lib/eventtarget.ts
 
