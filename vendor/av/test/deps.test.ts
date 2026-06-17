@@ -53,9 +53,10 @@ type natav = typeof natav;
 
 describe("driver deps", () => {
   it("exposes named deps and lifts them into natav lookup", () => {
+    const asdf = natav.GetDriver("child-1");
     assert.equal(parent.dep("child-1"), child1);
     assert.equal(parent.dep("child-2"), child2);
-    assert.equal(natav.GetDriver("child-1"), child1);
+    assert.equal(asdf.name, child1);
     assert.equal(natav.GetDriver("child-2"), child2);
     assert.deepEqual(natav.GetAllDriverNames(), [
       "parent-1",

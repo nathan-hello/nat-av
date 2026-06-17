@@ -20,7 +20,6 @@ describe("test driver", () => {
 
   it("exposes the shim driver state and api", () => {
     assert.equal(driver.name, "shim-1");
-    assert.equal(driver._drivername, "test-shim");
     assert.equal(driver.state.connected, false);
     assert.equal(driver.state.lastFrame, "init");
     assert.equal(typeof driver.api.ping, "function");

@@ -152,11 +152,8 @@ describe("rpc device events", () => {
 
     class PeerAwareDriver extends Driver<
       "peer-aware",
-      {},
-      string,
-      {
-        identify: () => Promise<string>;
-      },
+      [],
+      { identify: () => Promise<string> },
       { label: string }
     > {
       api = {
@@ -169,7 +166,7 @@ describe("rpc device events", () => {
           PeerContext
         >,
       ) {
-        super({ name: "peer-aware", driverName: "peer-aware-driver" });
+        super({ name: "peer-aware" });
       }
 
       get state() {

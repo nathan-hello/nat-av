@@ -50,7 +50,6 @@ function renderTreeNode(
       >
         <span>
           <strong>{node.name}</strong>
-          <span mix={treeMetaStyle}>{node.driverName}</span>
         </span>
         <span mix={treeBadgeStyle(selectable)}>
           {selectable ? "socket" : "no socket"}
@@ -80,12 +79,6 @@ const treeButtonStyle = css({
   borderRadius: "14px",
   padding: "12px",
   textAlign: "left",
-});
-const treeMetaStyle = css({
-  display: "block",
-  marginTop: "4px",
-  fontSize: "12px",
-  color: "#94a3b8",
 });
 const treeBadgeStyle = (active: boolean) =>
   css({

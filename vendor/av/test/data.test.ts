@@ -132,7 +132,7 @@ export namespace Test {
     };
 
     constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
-      super({ name, driverName: "test-shim" });
+      super({ name });
       this.socket = socket;
 
       socket.on("connected", () => {
@@ -172,7 +172,7 @@ export namespace Test {
     events = new TypedEventTarget<{ tick: { count: number } }>();
 
     constructor(name: N) {
-      super({ name, driverName: "event-driver" });
+      super({ name });
     }
 
     emitTick(count: number) {

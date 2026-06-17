@@ -119,23 +119,30 @@ export namespace Drivers {
   export type Api<
     N extends Drivers.Array,
     Name extends Drivers.Names<N>,
-  > = FromName<N, Name>["api"];
+  > = FromName<N, Name> extends { api: infer Api extends Drivers.ApiRecord } ? Api
+    : never;
 
   export type State<
     N extends Drivers.Array = Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
-  > = FromName<N, Name>["state"];
+  > = FromName<N, Name> extends { state: infer State extends Record<string, any> } ?
+    State
+  : never;
 
   export type Events<N extends Drivers.Array, Name extends Drivers.Names<N>> =
-    FromName<N, Name>["events"] extends TypedEventTarget<infer Events> ? Events
+    FromName<N, Name> extends { events: TypedEventTarget<infer Events> } ? Events
     : never;
 
   type IsTuple<T extends readonly unknown[]> =
     number extends T["length"] ? false : true;
 
+  type IsAny<T> = 0 extends (1 & T) ? true : false;
+
   export type WithDeps<D extends Driver | Drivers.Array> =
-    D extends Driver ?
-      NonNullable<D["deps"]> extends Drivers.Array ?
+    IsAny<D> extends true ? readonly []
+    : D extends Driver ?
+      IsAny<NonNullable<D["deps"]>> extends true ? readonly [D]
+      : NonNullable<D["deps"]> extends Drivers.Array ?
         IsTuple<NonNullable<D["deps"]>> extends true ?
           readonly [D, ...WithDeps<NonNullable<D["deps"]>>]
         : readonly [D]
@@ -146,9 +153,7 @@ export namespace Drivers {
     ) ?
       readonly [...WithDeps<Head>, ...WithDeps<Rest>]
     : D extends readonly (infer Item extends Driver)[] ?
-      Item extends Driver ?
-        readonly [Item, ...WithDeps<NonNullable<Item["deps"]>>]
-      : readonly []
+      readonly [Item]
     : readonly [];
 
   export type Names<N extends Drivers.Array = Drivers.Array> =

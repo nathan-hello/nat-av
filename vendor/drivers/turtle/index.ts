@@ -15,7 +15,7 @@ export default class ChazyControl<
   requests: RequestManager<string, string>;
 
   constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
-    super({ name, driverName: "chazy-control" });
+    super({ name });
     this.socket = socket;
     this.requests = new RequestManager({
       socket: this.socket,

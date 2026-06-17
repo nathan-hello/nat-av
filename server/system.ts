@@ -9,12 +9,12 @@ export class System extends Driver<"system"> {
   schema = undefined;
 
   constructor(natav: Drivers.ManagerView<drivers>) {
-    super({ name: "system", driverName: "system" });
+    super({ name: "system" });
     this.natav = natav;
     new AutomationEngine(natav);
     type good = Drivers.FromName<drivers, "video-wall">;
-    const bad = this.natav.GetDriver("decoder-1");
-    bad.api.route;
+    const shouldwork1 = this.natav.GetDriver("video-wall");
+    const shouldwork2 = this.natav.GetDriver("decoder-1");
   }
 
   public override async start() {}

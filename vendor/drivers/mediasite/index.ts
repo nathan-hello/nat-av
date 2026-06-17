@@ -80,7 +80,7 @@ export default class Mediasite<
     socket: Sockets.Client;
     poll?: { queries: PollQuery[]; intervalMs?: number };
   }) {
-    super({ name, driverName: "mediasite" });
+    super({ name });
     this.socket = socket;
 
     socket.on("connected", () => {

@@ -4,6 +4,6 @@ export class Controller extends Driver<"ui"> {
   state = {};
   api = {};
   constructor() {
-    super({ name: "ui", driverName: "controller" });
+    super({ name: "ui" });
   }
 }

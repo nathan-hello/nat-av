@@ -17,7 +17,7 @@ type SocketMaybe = Partial<Sockets.Client> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Array = Drivers.Array,
+  Deps extends Drivers.Array = any,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
   Events extends EventsMaybe = EventsMaybe,
@@ -141,18 +141,35 @@ export class Manager<
   GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
     name: N,
   ): Drivers.FromName<Drivers.Merged<D, S>, N> {
-    // TSAS:
-    return this.FindDriver(name) as Drivers.FromName<Drivers.Merged<D, S>, N>;
+    const found = this.FindDriverTyped(name);
+    if (!found) {
+      throw new Error(`missing driver: ${name}`);
+    }
+
+    return found;
   }
 
   GetDriverState<N extends Drivers.Names<Drivers.Merged<D, S>>>(
     name: N,
   ): Drivers.State<Drivers.Merged<D, S>, N> {
-    return this.GetDriver(name).state;
+    const driver = this.FindDriverTyped(name);
+    if (!driver) {
+      throw new Error(`missing driver: ${name}`);
+    }
+
+    return driver.state;
   }
 
   FindDriver(name: string): Driver | undefined {
     return this.configs_flat.find((d) => d.name === name);
+  }
+
+  private FindDriverTyped<N extends Drivers.Names<Drivers.Merged<D, S>>>(
+    name: N,
+  ): Drivers.FromName<Drivers.Merged<D, S>, N> | undefined {
+    return this.configs_flat.find(
+      (d): d is Drivers.FromName<Drivers.Merged<D, S>, N> => d.name === name,
+    );
   }
 
   GetAllDriverNames(): string[] {
@@ -160,16 +177,14 @@ export class Manager<
   }
 
   GetTree(): Drivers.DriverView[] {
-    const toNode = (driver: Driver): Drivers.DriverView | undefined => {
+    const toNode = (driver: Drivers.AnyDriver): Drivers.DriverView => {
       const socket = driver.socket;
       const canWrite = typeof socket?.write === "function";
       const canReceive = typeof socket?.on === "function";
 
-      const node = {
+      return {
         name: driver.name,
-        deps: (driver.deps ?? [])
-          .map((child) => toNode(child))
-          .filter((child): child is Drivers.DriverView => child !== undefined),
+        deps: driver.deps.map((child) => toNode(child)),
         ...(typeof socket?.name === "string" ?
           {
             socket: {
@@ -180,12 +195,9 @@ export class Manager<
           }
         : {}),
       };
-
-      return node;
     };
-    return this.configs
-      .map((driver) => toNode(driver))
-      .filter((s) => s !== undefined);
+
+    return this.configs.map((driver) => toNode(driver));
   }
 
   async Start(

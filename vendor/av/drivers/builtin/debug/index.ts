@@ -65,7 +65,7 @@ export class Debugger extends Driver<"debugger"> {
   };
 
   constructor(natav: Drivers.ManagerView) {
-    super({ name: "debugger", driverName: "debugger" });
+    super({ name: "debugger" });
     this.natav = natav;
   }
 

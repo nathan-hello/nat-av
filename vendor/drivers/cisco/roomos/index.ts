@@ -53,7 +53,7 @@ export class CiscoRoomOS<
     subscriptions?: RoomOS.Sub<Product> & Sub;
     strict: Strict;
   }) {
-    super({ name, driverName: "cisco-room-devices" });
+    super({ name });
     this.socket = socket;
 
     this.proxy = new RoomOSProxy(this.tel, this.request.bind(this), {}, strict);

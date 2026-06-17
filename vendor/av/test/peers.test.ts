@@ -18,7 +18,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
 
     constructor() {
-      super({ name: "left-peer", driverName: "left-peer" });
+      super({ name: "left-peer" });
     }
   }
 
@@ -36,7 +36,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
 
     constructor() {
-      super({ name: "right-peer", driverName: "right-peer" });
+      super({ name: "right-peer" });
     }
   }
 
@@ -53,7 +53,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     constructor(
       natav: Drivers.ManagerView<readonly [RightPeer, RightDeferred]>,
     ) {
-      super({ name: "left-deferred", driverName: "left-deferred" });
+      super({ name: "left-deferred" });
       this.natav = natav;
     }
 
@@ -77,7 +77,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
 
     constructor(natav: Drivers.ManagerView<readonly [LeftPeer]>) {
-      super({ name: "right-deferred", driverName: "right-deferred" });
+      super({ name: "right-deferred" });
       this.natav = natav;
     }
 
@@ -102,11 +102,11 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
 
     constructor() {
-      super({ name: "child-peer", driverName: "child-peer" });
+      super({ name: "child-peer" });
     }
   }
 
-  class ParentPeer extends Driver<"parent-peer", { "child-peer": ChildPeer }> {
+  class ParentPeer extends Driver<"parent-peer", [ChildPeer]> {
     state = { ready: true };
     api = {};
     socket = undefined;
@@ -115,9 +115,8 @@ describe("typechecking that drivers can get Managers that have other drivers in 
       return [];
     };
 
-    constructor(private child: ChildPeer) {
-      super({ name: "parent-peer", driverName: "parent-peer" });
-      this.deps.set({ "child-peer": this.child });
+    constructor(child: ChildPeer) {
+      super({ name: "parent-peer", deps: [child] });
     }
   }
 
@@ -278,7 +277,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
       assert.equal(depManager.GetDriverState("child-peer").count, 1);
       assert.equal(depManager.FindDriver("child-peer"), childPeer);
       assert.equal(
-        depManager.GetDriver("parent-peer").deps.get("child-peer"),
+        depManager.GetDriver("parent-peer").dep("child-peer"),
         childPeer,
       );
     });

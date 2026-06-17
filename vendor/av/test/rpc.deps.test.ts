@@ -24,55 +24,52 @@ describe("rpc deps", () => {
     };
     events = NewTick();
     constructor() {
-      super({ name: "leaf", driverName: "node-driver" });
+      super({ name: "leaf" });
     }
     emitTick(count: number) {
       this.events.dispatch("tick", { count });
     }
   }
 
-  class Level3Driver extends Driver<"level-3", { leaf: LeafDriver }> {
+  class Level3Driver extends Driver<"level-3", [LeafDriver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-3-pong",
     };
     socket = undefined;
     events = NewTick();
-    constructor(private leaf: LeafDriver) {
-      super({ name: "level-3", driverName: "node-driver" });
-      this.deps.set({ leaf: this.leaf });
+    constructor(leaf: LeafDriver) {
+      super({ name: "level-3", deps: [leaf] });
     }
     emitTick(count: number) {
       this.events.dispatch("tick", { count });
     }
   }
 
-  class Level2Driver extends Driver<"level-2", { "level-3": Level3Driver }> {
+  class Level2Driver extends Driver<"level-2", [Level3Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-2-pong",
     };
     socket = undefined;
     events = NewTick();
-    constructor(private level3: Level3Driver) {
-      super({ name: "level-2", driverName: "node-driver" });
-      this.deps.set({ "level-3": this.level3 });
+    constructor(level3: Level3Driver) {
+      super({ name: "level-2", deps: [level3] });
     }
     emitTick(count: number) {
       this.events.dispatch("tick", { count });
     }
   }
 
-  class RootDriver extends Driver<"root", { "level-2": Level2Driver }> {
+  class RootDriver extends Driver<"root", [Level2Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "root-pong",
     };
     socket = undefined;
     events = NewTick();
-    constructor(private level2: Level2Driver) {
-      super({ name: "root", driverName: "node-driver" });
-      this.deps.set({ "level-2": this.level2 });
+    constructor(level2: Level2Driver) {
+      super({ name: "root", deps: [level2] });
     }
     emitTick(count: number) {
       this.events.dispatch("tick", { count });
