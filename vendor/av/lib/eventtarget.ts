@@ -135,11 +135,10 @@ export class ProtectedTypedEventTarget<
   }
 
   protected dispatch<K extends keyof Events>(
-    type: K,
+    type: K & string,
     payload: Events[K],
   ): void {
-    // TSAS: Typscript thinks that type is string | number | symbol.
-    const event = new CustomEvent(type as string, { detail: payload });
+    const event = new CustomEvent(type, { detail: payload });
     super.dispatchEvent(event);
   }
 }
