@@ -2,7 +2,7 @@ import { Driver, Manager } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { RpcClient } from "@av/rpc/client";
 import { RpcServer } from "@av/rpc/server";
-import { DeviceRpcRouter } from "@av/rpc/server/device";
+import { DriverRpcRouter } from "@av/rpc/server/driver";
 import { Test } from "@av/test/data.test";
 import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
@@ -109,12 +109,12 @@ describe("rpc deps", () => {
     assert.equal(natav.GetDriver("leaf"), leaf);
     assert.equal(natav.FindDriver("level-3"), level3);
 
-    const router = new DeviceRpcRouter(natav);
+    const router = new DriverRpcRouter(natav);
     const serverPeer = makePeer("server-peer");
 
     const serverCall = await router.handle(
-      Rpc.Request.deviceCall(1, {
-        device: "leaf",
+      Rpc.Request.driverCall(1, {
+        driver: "leaf",
         method: "ping",
         args: [],
       }),
@@ -131,8 +131,8 @@ describe("rpc deps", () => {
     );
 
     await router.handle(
-      Rpc.Request.deviceSubscribe(2, {
-        device: "leaf",
+      Rpc.Request.driverSubscribe(2, {
+        driver: "leaf",
         method: "tick",
         args: [],
       }),
@@ -146,7 +146,7 @@ describe("rpc deps", () => {
       jsonrpc: "2.0",
       method: "notification",
       params: {
-        type: "natav:device:event",
+        type: "natav:driver:event",
         name: "leaf",
         event: "tick",
         data: { count: 1 },
@@ -167,7 +167,7 @@ describe("rpc deps", () => {
     transport.connect();
     await ready;
 
-    const clientRoot = client.device("root");
+    const clientRoot = client.driver("root");
     const clientLevel2 = clientRoot.deps.get("level-2");
     const clientLevel3 = clientLevel2.deps.get("level-3");
     const clientLeaf = clientLevel3.deps.get("leaf");
@@ -194,9 +194,9 @@ describe("rpc deps", () => {
       [
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "root",
+            driver: "root",
             method: "ping",
             args: [],
           },
@@ -204,9 +204,9 @@ describe("rpc deps", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "level-2",
+            driver: "level-2",
             method: "ping",
             args: [],
           },
@@ -214,9 +214,9 @@ describe("rpc deps", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "level-3",
+            driver: "level-3",
             method: "ping",
             args: [],
           },
@@ -224,9 +224,9 @@ describe("rpc deps", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "leaf",
+            driver: "leaf",
             method: "ping",
             args: [],
           },
@@ -234,9 +234,9 @@ describe("rpc deps", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
+          method: "driver.events.subscribe",
           params: {
-            device: "leaf",
+            driver: "leaf",
             method: "tick",
             args: [],
           },
@@ -244,9 +244,9 @@ describe("rpc deps", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.unsubscribe",
+          method: "driver.events.unsubscribe",
           params: {
-            device: "leaf",
+            driver: "leaf",
             method: "tick",
             args: [],
           },

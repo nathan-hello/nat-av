@@ -1,30 +1,30 @@
 import type { Drivers } from "@av/client";
 import { css, on, type Handle } from "remix/ui";
 
-type DebugDeviceTreeProps = {
+type DebugDriverTreeProps = {
   tree: Drivers.DriverView[];
-  selectedDeviceName: string | null;
+  selectedDriverName: string | null;
   onSelect(name: string): void;
 };
 
-export function DebugDeviceTree(handle: Handle<DebugDeviceTreeProps>) {
+export function DebugDriverTree(handle: Handle<DebugDriverTreeProps>) {
   return () => (
     <div mix={treeStyle}>
       {handle.props.tree.length > 0 ?
         handle.props.tree.map((node) => renderTreeNode(node, handle))
-      : <p mix={emptyStyle}>Waiting for device debug tree...</p>}
+      : <p mix={emptyStyle}>Waiting for driver debug tree...</p>}
     </div>
   );
 }
 
 function renderTreeNode(
   node: Drivers.DriverView,
-  handle: Handle<DebugDeviceTreeProps>,
+  handle: Handle<DebugDriverTreeProps>,
   depth = 0,
 ) {
   const socket = node.socket;
   const selectable = !!socket?.canWrite && !!socket?.canReceive;
-  const isSelected = handle.props.selectedDeviceName === node.name;
+  const isSelected = handle.props.selectedDriverName === node.name;
 
   return (
     <div key={node.name}>

@@ -1,5 +1,5 @@
 import type { Manager } from "@av/drivers";
-import { DeviceRpcRouter } from "@av/rpc/server/device";
+import { DriverRpcRouter } from "@av/rpc/server/driver";
 import { RpcPeerRegistry } from "@av/rpc/server/registry";
 import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
@@ -9,7 +9,7 @@ export class RpcServer<
   ClientIds extends Record<string, string> = Record<string, string>,
 > {
   private tel = new Telemetry("Rpc");
-  private router: DeviceRpcRouter;
+  private router: DriverRpcRouter;
   private peers: RpcPeerRegistry<ClientIds>;
   private clients = new Set<Rpc.WebSocket.Peer>();
   private natav: Manager;
@@ -20,25 +20,25 @@ export class RpcServer<
     clientIds?: ClientIds;
   }) {
     this.natav = args.natav;
-    this.router = new DeviceRpcRouter(args.natav);
+    this.router = new DriverRpcRouter(args.natav);
     this.peers = new RpcPeerRegistry<ClientIds>(args.clientIds);
 
     args.natav.bus.on("natav:state:update", (payload) => {
       this.broadcastState(payload.name);
     });
 
-    args.natav.bus.on("natav:device:connected", (payload) => {
+    args.natav.bus.on("natav:driver:connected", (payload) => {
       this.broadcast(
         Rpc.Json.stringify(
-          new Rpc.Notification.Server("natav:device:connected", payload),
+          new Rpc.Notification.Server("natav:driver:connected", payload),
         ),
       );
     });
 
-    args.natav.bus.on("natav:device:disconnected", (payload) => {
+    args.natav.bus.on("natav:driver:disconnected", (payload) => {
       this.broadcast(
         Rpc.Json.stringify(
-          new Rpc.Notification.Server("natav:device:disconnected", payload),
+          new Rpc.Notification.Server("natav:driver:disconnected", payload),
         ),
       );
     });
@@ -48,7 +48,7 @@ export class RpcServer<
         const context = this.peers.open(peer);
         this.clients.add(peer);
         this.pushPeerContext(peer, context);
-        this.pushInitialDeviceStates(peer, context);
+        this.pushInitialDriverStates(peer, context);
       } catch (error) {
         this.tel.error("websocket peer rejected", { error, addr: peer.addr });
         peer.close(
@@ -226,7 +226,7 @@ export class RpcServer<
     peer.send(Rpc.Json.stringify(response));
   }
 
-  private pushInitialDeviceStates(
+  private pushInitialDriverStates(
     ws: Rpc.WebSocket.Peer,
     context: Rpc.Server.Context<ClientIds[keyof ClientIds] & string>,
   ) {

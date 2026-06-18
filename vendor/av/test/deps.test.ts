@@ -77,13 +77,13 @@ describe("driver deps", () => {
     });
     transport.connect();
 
-    assert.equal(client.device("parent-1").dep("child-1").name, "child-1");
-    assert.equal(client.device("parent-1").dep("child-2").name, "child-2");
+    assert.equal(client.driver("parent-1").dep("child-1").name, "child-1");
+    assert.equal(client.driver("parent-1").dep("child-2").name, "child-2");
 
-    assert.deepEqual(client.device("child-1").state, {
+    assert.deepEqual(client.driver("child-1").state, {
       ready: true,
     });
-    assert.deepEqual(client.device("parent-1").dep("child-1").state, {
+    assert.deepEqual(client.driver("parent-1").dep("child-1").state, {
       ready: true,
     });
   });

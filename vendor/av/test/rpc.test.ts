@@ -10,13 +10,13 @@ import {
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-describe("rpc device events", () => {
+describe("rpc driver events", () => {
   it("narrows parsed notifications into server notifications", () => {
     const notification = Rpc.Notification.is({
       jsonrpc: "2.0",
       method: "notification",
       params: {
-        type: "natav:device:event",
+        type: "natav:driver:event",
         name: "event-1",
         event: "tick",
         data: { count: 1 },
@@ -28,9 +28,9 @@ describe("rpc device events", () => {
     const serverNotification = Rpc.Notification.Server.from(notification);
 
     assert.ok(serverNotification);
-    assert.equal(serverNotification.type, "natav:device:event");
+    assert.equal(serverNotification.type, "natav:driver:event");
     assert.deepEqual(serverNotification.params, {
-      type: "natav:device:event",
+      type: "natav:driver:event",
       name: "event-1",
       event: "tick",
       data: { count: 1 },
@@ -60,9 +60,9 @@ describe("rpc device events", () => {
     transport.connect();
     await ready;
 
-    const device = client.device("event-1");
+    const driver = client.driver("event-1");
     const received: Array<{ count: number }> = [];
-    const off1 = await device.event.on("tick", (payload) => {
+    const off1 = await driver.event.on("tick", (payload) => {
       received.push(payload);
     });
 
@@ -74,9 +74,9 @@ describe("rpc device events", () => {
       [
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
+          method: "driver.events.subscribe",
           params: {
-            device: "event-1",
+            driver: "event-1",
             method: "tick",
             args: [],
           },
@@ -91,7 +91,7 @@ describe("rpc device events", () => {
     assert.deepEqual(received, [{ count: 1 }]);
 
     // Verify it works again
-    const off2 = await device.event.on("tick", (payload) => {
+    const off2 = await driver.event.on("tick", (payload) => {
       received.push(payload);
     });
     eventDriver.emitTick(3);
@@ -103,9 +103,9 @@ describe("rpc device events", () => {
       [
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
+          method: "driver.events.subscribe",
           params: {
-            device: "event-1",
+            driver: "event-1",
             method: "tick",
             args: [],
           },
@@ -113,9 +113,9 @@ describe("rpc device events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.unsubscribe",
+          method: "driver.events.unsubscribe",
           params: {
-            device: "event-1",
+            driver: "event-1",
             method: "tick",
             args: [],
           },
@@ -123,9 +123,9 @@ describe("rpc device events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
+          method: "driver.events.subscribe",
           params: {
-            device: "event-1",
+            driver: "event-1",
             method: "tick",
             args: [],
           },
@@ -133,9 +133,9 @@ describe("rpc device events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.unsubscribe",
+          method: "driver.events.unsubscribe",
           params: {
-            device: "event-1",
+            driver: "event-1",
             method: "tick",
             args: [],
           },
@@ -147,7 +147,7 @@ describe("rpc device events", () => {
     client.close();
   });
 
-  it("injects a typed client id into device api calls", async () => {
+  it("injects a typed client id into driver api calls", async () => {
     type PeerContext = Rpc.Server.Context<"CLIENT_1">;
 
     class PeerAwareDriver extends Driver<
@@ -208,8 +208,8 @@ describe("rpc device events", () => {
 
     assert.equal((await peer).clientId, "CLIENT_1");
     assert.equal(client.peer?.clientId, "CLIENT_1");
-    assert.equal(client.device("peer-aware").state?.label, "CLIENT_1");
-    assert.equal(await client.device("peer-aware").api.identify(), "CLIENT_1");
+    assert.equal(client.driver("peer-aware").state?.label, "CLIENT_1");
+    assert.equal(await client.driver("peer-aware").api.identify(), "CLIENT_1");
 
     client.close();
   });

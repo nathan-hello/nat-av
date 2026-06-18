@@ -1,5 +1,5 @@
 import { Manager } from "@av/drivers";
-import { DeviceRpcRouter } from "@av/rpc/server/device";
+import { DriverRpcRouter } from "@av/rpc/server/driver";
 import { Test } from "@av/test/data.test";
 import { Rpc } from "@av/types";
 import assert from "node:assert/strict";
@@ -30,7 +30,7 @@ describe("test driver", () => {
   it("forwards driver events through the rpc server per subscription", async () => {
     const eventDriver = new Test.EventDriver("event-1");
     const natav = new Manager({ drivers: [eventDriver], deferred: [] });
-    const router = new DeviceRpcRouter(natav);
+    const router = new DriverRpcRouter(natav);
     const makePeer = (addr: string) => {
       const sent: string[] = [];
       return {
@@ -48,24 +48,24 @@ describe("test driver", () => {
     const peer2 = makePeer("peer-2");
 
     await router.handle(
-      Rpc.Request.deviceSubscribe(1, {
-        device: "event-1",
+      Rpc.Request.driverSubscribe(1, {
+        driver: "event-1",
         method: "tick",
       }),
       peer1,
     );
 
     await router.handle(
-      Rpc.Request.deviceSubscribe(2, {
-        device: "event-1",
+      Rpc.Request.driverSubscribe(2, {
+        driver: "event-1",
         method: "tick",
       }),
       peer1,
     );
 
     await router.handle(
-      Rpc.Request.deviceSubscribe(3, {
-        device: "event-1",
+      Rpc.Request.driverSubscribe(3, {
+        driver: "event-1",
         method: "tick",
       }),
       peer2,
@@ -79,7 +79,7 @@ describe("test driver", () => {
       jsonrpc: "2.0",
       method: "notification",
       params: {
-        type: "natav:device:event",
+        type: "natav:driver:event",
         name: "event-1",
         event: "tick",
         data: { count: 1 },
@@ -87,8 +87,8 @@ describe("test driver", () => {
     });
 
     await router.handle(
-      Rpc.Request.deviceUnsubscribe(4, {
-        device: "event-1",
+      Rpc.Request.driverUnsubscribe(4, {
+        driver: "event-1",
         method: "tick",
       }),
       peer1,

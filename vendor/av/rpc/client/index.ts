@@ -1,6 +1,6 @@
 import type { Manager } from "@av/client";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
-import { ClientRpcDevice } from "@av/rpc/client/devices";
+import { ClientRpcDriver } from "@av/rpc/client/driver";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
@@ -13,7 +13,7 @@ export class RpcClient<
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
-  private deviceHandles = new Map<string, ClientRpcDevice<N, any>>();
+  private driverHandles = new Map<string, ClientRpcDriver<N, any>>();
   private currentPeer: Rpc.Server.Context | undefined;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
@@ -67,24 +67,23 @@ export class RpcClient<
     return this.currentPeer;
   }
 
-  device<Name extends Drivers.Names<N["configs"]>>(
+  driver<Name extends Drivers.Names<N["configs"]>>(
     name: Name,
-  ): ClientRpcDevice<N, Name> {
-    const cached = this.deviceHandles.get(name);
+  ): ClientRpcDriver<N, Name> {
+    const cached = this.driverHandles.get(name);
     if (cached) {
       return cached;
     }
 
-    const device = new ClientRpcDevice(this, name);
-    this.deviceHandles.set(name, device);
-    return device;
+    const driver = new ClientRpcDriver(this, name);
+    this.driverHandles.set(name, driver);
+    return driver;
   }
 
-  async call(device: string, method: string, args: any[] = []) {
-    this.tel.debug("device.call", { device, method, args });
+  async call(driver: string, method: string, args: any[] = []) {
     return this.requests.request(
-      Rpc.Request.deviceCall(this.requests.nextRequestId(), {
-        device,
+      Rpc.Request.driverCall(this.requests.nextRequestId(), {
+        driver: driver,
         method,
         args,
       }),
@@ -122,23 +121,23 @@ export class RpcClient<
 
       this.tel.info("got-notification", notification);
 
-      let device: ClientRpcDevice;
+      let driver: ClientRpcDriver;
 
       switch (notification.type) {
         case "natav:peer":
           this.currentPeer = notification.params;
           this.dispatch("peer", notification.params);
           break;
-        case "natav:device:event":
-          device = this.device(notification.params.name);
-          device.handleEvent(
+        case "natav:driver:event":
+          driver = this.driver(notification.params.name);
+          driver.handleEvent(
             notification.params.event,
             notification.params.data,
           );
           break;
         case "natav:state:update":
-          device = this.device(notification.params.name);
-          device.handleStateUpdate(notification.params.data);
+          driver = this.driver(notification.params.name);
+          driver.handleStateUpdate(notification.params.data);
           break;
         default:
           break;

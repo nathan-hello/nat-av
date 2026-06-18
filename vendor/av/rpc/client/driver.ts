@@ -4,10 +4,10 @@ import type { RpcClient } from "@av/rpc/client";
 import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
-export class ClientRpcDevice<
+export class ClientRpcDriver<
   N extends Manager = Manager,
   Name extends Drivers.Names<N["configs"]> = Drivers.Names<N["configs"]>,
-> extends TypedEventTarget<Events.Rpc.DeviceMap<N["configs"], Name>> {
+> extends TypedEventTarget<Events.Rpc.DriverMap<N["configs"], Name>> {
   private apiProxy: Rpc.Client.Api<N["configs"], Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
@@ -43,12 +43,12 @@ export class ClientRpcDevice<
     get: <DepName extends string>(
       depName: DepName,
     ) => {
-      return this.client.device(depName);
+      return this.client.driver(depName);
     },
   };
 
   dep<DepName extends string>(depName: DepName) {
-    return this.client.device(depName);
+    return this.client.driver(depName);
   }
 
   private createApiProxy(
@@ -86,7 +86,7 @@ export class ClientRpcDevice<
 
   handleStateUpdate(patch: Partial<Rpc.Client.State<N["configs"], Name>>) {
     const currentState = this.state;
-    // TSAS: Partial patches are reconciled into the device's cached state.
+    // TSAS: Partial patches are reconciled into the driver's cached state.
     this.state =
       currentState && typeof currentState === "object" ?
         { ...currentState, ...patch }
@@ -127,8 +127,8 @@ export class ClientRpcDevice<
     if (!state.subscribed) {
       state.pendingSubscribe ??= this.client
         .request(
-          Rpc.Request.deviceSubscribe(this.client.nextRequestId(), {
-            device: this.name,
+          Rpc.Request.driverSubscribe(this.client.nextRequestId(), {
+            driver: this.name,
             method: event,
             args: [],
           }),
@@ -165,8 +165,8 @@ export class ClientRpcDevice<
 
     state.pendingUnsubscribe ??= this.client
       .request(
-        Rpc.Request.deviceUnsubscribe(this.client.nextRequestId(), {
-          device: this.name,
+        Rpc.Request.driverUnsubscribe(this.client.nextRequestId(), {
+          driver: this.name,
           method: event,
           args: [],
         }),

@@ -92,48 +92,48 @@ export namespace Rpc {
   type Id = string | number;
 
   const REQUEST_METHOD = {
-    DeviceCall: "device.call",
-    DeviceSubscribe: "device.events.subscribe",
-    DeviceUnsubscribe: "device.events.unsubscribe",
+    DriverCall: "driver.call",
+    DriverSubscribe: "driver.events.subscribe",
+    DriverUnsubscribe: "driver.events.unsubscribe",
   } as const;
 
-  type DeviceParamsInput = {
-    device: string;
+  type DriverParamsInput = {
+    driver: string;
     method: string;
     args?: any[];
   };
 
-  function normalizeDeviceParams(
-    params: DeviceParamsInput,
-  ): Rpc.Request.DeviceParams {
+  function normalizeDriverParams(
+    params: DriverParamsInput,
+  ): Rpc.Request.DriverParams {
     return {
-      device: params.device,
+      driver: params.driver,
       method: params.method,
       args: Array.isArray(params.args) ? params.args : [],
     };
   }
 
-  function parseDeviceParams(value: unknown): Rpc.Request.DeviceParams | null {
+  function parseDriverParams(value: unknown): Rpc.Request.DriverParams | null {
     if (!isObject(value)) {
       return null;
     }
 
     // TSAS: The runtime checks above ensure this params object can be inspected by key.
     const params = value as {
-      device?: unknown;
+      driver?: unknown;
       method?: unknown;
       args?: unknown;
     };
 
     if (
-      typeof params.device !== "string" ||
+      typeof params.driver !== "string" ||
       typeof params.method !== "string"
     ) {
       return null;
     }
 
     return {
-      device: params.device,
+      driver: params.driver,
       method: params.method,
       args: Array.isArray(params.args) ? params.args : [],
     };
@@ -160,16 +160,16 @@ export namespace Rpc {
       return new Rpc.Error(error, this.id);
     }
 
-    DeviceParams(): Request.DeviceParams | null {
+    DriverParams(): Request.DriverParams | null {
       if (
-        this.method !== REQUEST_METHOD.DeviceCall &&
-        this.method !== REQUEST_METHOD.DeviceSubscribe &&
-        this.method !== REQUEST_METHOD.DeviceUnsubscribe
+        this.method !== REQUEST_METHOD.DriverCall &&
+        this.method !== REQUEST_METHOD.DriverSubscribe &&
+        this.method !== REQUEST_METHOD.DriverUnsubscribe
       ) {
         return null;
       }
 
-      return parseDeviceParams(this.params);
+      return parseDriverParams(this.params);
     }
 
     static is(message: Rpc.Json.Value): Request | null {
@@ -192,47 +192,47 @@ export namespace Rpc {
       );
     }
 
-    static deviceCall(id: Id, params: DeviceParamsInput) {
+    static driverCall(id: Id, params: DriverParamsInput) {
       return new Rpc.Request(
         id,
-        REQUEST_METHOD.DeviceCall,
-        normalizeDeviceParams(params),
+        REQUEST_METHOD.DriverCall,
+        normalizeDriverParams(params),
       );
     }
 
-    static deviceSubscribe(id: Id, params: DeviceParamsInput) {
+    static driverSubscribe(id: Id, params: DriverParamsInput) {
       return new Rpc.Request(
         id,
-        REQUEST_METHOD.DeviceSubscribe,
-        normalizeDeviceParams(params),
+        REQUEST_METHOD.DriverSubscribe,
+        normalizeDriverParams(params),
       );
     }
 
-    static deviceUnsubscribe(id: Id, params: DeviceParamsInput) {
+    static driverUnsubscribe(id: Id, params: DriverParamsInput) {
       return new Rpc.Request(
         id,
-        REQUEST_METHOD.DeviceUnsubscribe,
-        normalizeDeviceParams(params),
+        REQUEST_METHOD.DriverUnsubscribe,
+        normalizeDriverParams(params),
       );
     }
   }
 
   export namespace Request {
     export const Methods = REQUEST_METHOD;
-    export type DeviceParams = { device: string; method: string; args: any[] };
-    export type DeviceCall = {
-      method: typeof REQUEST_METHOD.DeviceCall;
-      params: Rpc.Request.DeviceParams;
+    export type DriverParams = { driver: string; method: string; args: any[] };
+    export type DriverCall = {
+      method: typeof REQUEST_METHOD.DriverCall;
+      params: Rpc.Request.DriverParams;
       result: Rpc.Json.Value;
     };
-    export type DeviceSubscribe = {
-      method: typeof REQUEST_METHOD.DeviceSubscribe;
-      params: Rpc.Request.DeviceParams;
+    export type DriverSubscribe = {
+      method: typeof REQUEST_METHOD.DriverSubscribe;
+      params: Rpc.Request.DriverParams;
       result: null;
     };
-    export type DeviceUnsubscribe = {
-      method: typeof REQUEST_METHOD.DeviceUnsubscribe;
-      params: Rpc.Request.DeviceParams;
+    export type DriverUnsubscribe = {
+      method: typeof REQUEST_METHOD.DriverUnsubscribe;
+      params: Rpc.Request.DriverParams;
       result: null;
     };
     export type ResultOf<TRequest extends Rpc.Request> =
@@ -334,9 +334,9 @@ export namespace Rpc {
       MethodNotFound: -32601,
       InvalidParams: -32602,
       InternalError: -32603,
-      DeviceNotFound: -32001,
-      DeviceMethodNotFound: -32002,
-      DeviceCallFailed: -32003,
+      DriverNotFound: -32001,
+      DriverMethodNotFound: -32002,
+      DriverCallFailed: -32003,
       RequestTimeout: -35000,
       RequestsShutdown: -35001,
       RpcTimeout: -32004,
@@ -433,7 +433,7 @@ export namespace Rpc {
               addr: params.addr,
               clientId: params.clientId,
             });
-          case "natav:device:event":
+          case "natav:driver:event":
             if (typeof params.name !== "string") {
               return null;
             }
@@ -441,7 +441,7 @@ export namespace Rpc {
               return null;
             }
 
-            return new Rpc.Notification.Server("natav:device:event", {
+            return new Rpc.Notification.Server("natav:driver:event", {
               name: params.name,
               event: params.event,
               data: params.data,
@@ -458,18 +458,18 @@ export namespace Rpc {
               name: params.name,
               data: params.data,
             });
-          case "natav:device:connected":
+          case "natav:driver:connected":
             if (typeof params.name !== "string") {
               return null;
             }
-            return new Rpc.Notification.Server("natav:device:connected", {
+            return new Rpc.Notification.Server("natav:driver:connected", {
               name: params.name,
             });
-          case "natav:device:disconnected":
+          case "natav:driver:disconnected":
             if (typeof params.name !== "string") {
               return null;
             }
-            return new Rpc.Notification.Server("natav:device:disconnected", {
+            return new Rpc.Notification.Server("natav:driver:disconnected", {
               name: params.name,
             });
           default:

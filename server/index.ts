@@ -5,9 +5,9 @@ import ChazyControl from "@drivers/turtle";
 import { System } from "@server/system";
 
 // TSAS:
-if ((globalThis as any).__devices__) {
+if ((globalThis as any).__manager__) {
   // TSAS:
-  await (globalThis as any).__devices__.End();
+  await (globalThis as any).__manager__.End();
 }
 
 Telemetry.Sdk.AddExporters([
@@ -71,5 +71,5 @@ export async function start(app: Rpc.WebSocket.App) {
 
   await natav.Start();
   // TSAS:
-  (globalThis as any).__devices__ = natav;
+  (globalThis as any).__manager__ = natav;
 }

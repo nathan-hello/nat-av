@@ -3,8 +3,8 @@ import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
 
 type DebugSocketPanelProps = {
-  selectedDeviceName: string | null;
-  onSelectDevice(name: string): void;
+  selectedDriverName: string | null;
+  onSelectDriver(name: string): void;
 };
 
 export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
@@ -14,10 +14,10 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   let sendError = "";
 
   let rpc = getRpc(handle);
-  let debug = rpc.device("debugger");
+  let debug = rpc.driver("debugger");
 
   async function sendSelectedSocket() {
-    if (!handle.props.selectedDeviceName || draft.length === 0 || sending) {
+    if (!handle.props.selectedDriverName || draft.length === 0 || sending) {
       return;
     }
 
@@ -31,7 +31,7 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
     }
 
     await debug.api.socket.write({
-      name: handle.props.selectedDeviceName,
+      name: handle.props.selectedDriverName,
       text: draft,
       encoding,
     });
@@ -42,10 +42,10 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   }
 
   return () => {
-    const deviceName = handle.props.selectedDeviceName as any;
-    const selected = deviceName ? rpc.device(deviceName) : undefined;
-    const messages = debug.state?.tree[deviceName]?.messages ?? [];
-    const node = debug.state?.tree[deviceName];
+    const driverName = handle.props.selectedDriverName as any;
+    const selected = driverName ? rpc.driver(driverName) : undefined;
+    const messages = debug.state?.tree[driverName]?.messages ?? [];
+    const node = debug.state?.tree[driverName];
 
     return (
       <>
@@ -53,22 +53,22 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
           <div mix={panelHeaderStyle}>
             <div>
               <h2 mix={panelTitleStyle}>
-                {selected?.name ?? "Select a device"}
+                {selected?.name ?? "Select a driver"}
               </h2>
               <p mix={panelSubtitleStyle}>
-                {debug.state?.tree[deviceName].messages ?
+                {debug.state?.tree[driverName].messages ?
                   `trace: ${node?.meta.socket?.traceName}`
                 : "No socket selected yet."}
               </p>
             </div>
-            {handle.props.selectedDeviceName ?
+            {handle.props.selectedDriverName ?
               <button
                 type="button"
                 mix={[
                   secondaryButtonStyle,
                   on("click", () => {
-                    debug.api.clear(deviceName);
-                    handle.props.onSelectDevice(deviceName);
+                    debug.api.clear(driverName);
+                    handle.props.onSelectDriver(driverName);
                   }),
                 ]}
               >
@@ -106,9 +106,9 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
                 </article>
               ))
             : <p mix={emptyStyle}>
-                {handle.props.selectedDeviceName ?
+                {handle.props.selectedDriverName ?
                   "No socket traffic yet."
-                : "Select a socket-capable device."}
+                : "Select a socket-capable driver."}
               </p>
             }
           </div>
@@ -119,7 +119,7 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
             <div>
               <h2 mix={panelTitleStyle}>Write</h2>
               <p mix={panelSubtitleStyle}>
-                Send utf8 text directly to the underlying device socket.
+                Send utf8 text directly to the underlying driver socket.
               </p>
             </div>
           </div>
@@ -163,14 +163,14 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
 
             <div mix={composerFooterStyle}>
               <span mix={hintStyle}>
-                {handle.props.selectedDeviceName ?
-                  `Target: ${handle.props.selectedDeviceName}`
-                : "Pick a device before sending."}
+                {handle.props.selectedDriverName ?
+                  `Target: ${handle.props.selectedDriverName}`
+                : "Pick a driver before sending."}
               </span>
               <button
                 type="button"
                 disabled={
-                  !handle.props.selectedDeviceName ||
+                  !handle.props.selectedDriverName ||
                   draft.length === 0 ||
                   sending
                 }

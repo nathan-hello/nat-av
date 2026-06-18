@@ -5,7 +5,7 @@ import type { LogicalWindow } from "@drivers/decoder/display";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
-  deviceName: "video-wall";
+  driverName: "video-wall";
 }
 
 type RouteFormState = {
@@ -23,7 +23,7 @@ type InteractionMode = "free" | "snap";
 export function Wall(handle: Handle<WallProps>) {
   const rpc = getRpc(handle);
 
-  const display = rpc.device(handle.props.deviceName);
+  const display = rpc.driver(handle.props.driverName);
 
   let mode: InteractionMode = "free";
   let selectedSource: SourceSelectDetail | null = null;

@@ -13,7 +13,7 @@ export function HomePage(handle: Handle) {
             <p mix={eyebrowStyle}>Control surface</p>
             <h1 mix={titleStyle}>Decoder Control</h1>
             <p mix={subtitleStyle}>
-              Live router for the `video-wall` device. Route, move,
+              Live router for the `video-wall` driver. Route, move,
               template-switch, and wipe from one page.
             </p>
           </div>
@@ -26,7 +26,7 @@ export function HomePage(handle: Handle) {
             </a>
           </div>
         </header>
-        <Wall deviceName="video-wall" />
+        <Wall driverName="video-wall" />
       </main>
     );
   };

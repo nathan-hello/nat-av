@@ -112,28 +112,28 @@ export class Debugger extends Driver<"debugger"> {
     if (typeof params.name !== "string" || typeof params.text !== "string") {
       throw new Rpc.Error({
         code: Rpc.Error.Codes.InvalidParams,
-        message: "Debug socket write requires string deviceName and text",
+        message: "Debug socket write requires string driverName and text",
       });
     }
 
     const result = await this.tel.task("debugger:socket-write", async () => {
-      const device = this.natav.FindDriver(params.name);
-      if (!device) {
+      const driver = this.natav.FindDriver(params.name);
+      if (!driver) {
         throw new Rpc.Error({
-          code: Rpc.Error.Codes.DeviceNotFound,
-          message: `Device "${params.name}" not found`,
-          data: { availableDevices: this.natav.GetAllDriverNames() },
+          code: Rpc.Error.Codes.DriverNotFound,
+          message: `Driver "${params.name}" not found`,
+          data: { availableDrivers: this.natav.GetAllDriverNames() },
         });
       }
 
-      if (typeof device.socket?.write !== "function") {
+      if (typeof driver.socket?.write !== "function") {
         throw new Rpc.Error({
           code: Rpc.Error.Codes.MethodNotFound,
-          message: `Device "${params.name}" does not expose a writable socket`,
+          message: `Drivers "${params.name}" does not expose a writable socket`,
         });
       }
 
-      const bytesWritten = await device.socket.write(params.text);
+      const bytesWritten = await driver.socket.write(params.text);
       return { bytesWritten };
     });
 

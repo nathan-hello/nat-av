@@ -22,19 +22,19 @@ it("gets state automatically on connect", async () => {
   const client = new RpcClient<natav>({ transport });
   transport.connect();
 
-  assert.deepEqual(client.device("shim-1").state?.lastFrame, "init");
+  assert.deepEqual(client.driver("shim-1").state?.lastFrame, "init");
 
   socket.receive("asdf");
 
-  assert.deepEqual(client.device("shim-1").state?.lastFrame, "asdf");
+  assert.deepEqual(client.driver("shim-1").state?.lastFrame, "asdf");
 
   socket.receive("fdsa");
 
-  assert.deepEqual(client.device("shim-1").state?.lastFrame, "fdsa");
+  assert.deepEqual(client.driver("shim-1").state?.lastFrame, "fdsa");
 
   socket.receive("zxcv");
 
-  assert.deepEqual(client.device("shim-1").state?.lastFrame, "zxcv");
+  assert.deepEqual(client.driver("shim-1").state?.lastFrame, "zxcv");
 
   client.close();
 });

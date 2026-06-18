@@ -61,13 +61,13 @@ export namespace Events {
     };
 
     export type Map<N extends Drivers.Array = Drivers.Array> = {
-      "natav:device:event": EventsFor<N>;
+      "natav:driver:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
       "natav:peer": NRpc.Server.Context;
-      "natav:device:connected": { name: Drivers.Names<N> };
-      "natav:device:disconnected": { name: Drivers.Names<N> };
-      "natav:device:error": { name: Drivers.Names<N>; error?: NRpc.Error };
+      "natav:driver:connected": { name: Drivers.Names<N> };
+      "natav:driver:disconnected": { name: Drivers.Names<N> };
+      "natav:driver:error": { name: Drivers.Names<N>; error?: NRpc.Error };
       "natav:debug:socket": {
         name: Drivers.Names<N>;
         data: SocketMessage;
@@ -112,7 +112,7 @@ export namespace Events {
       change: { name?: string };
     };
 
-    export type DeviceMap<
+    export type DriverMap<
       N extends Drivers.Array = Drivers.Array,
       Name extends Drivers.Names<N> = Drivers.Names<N>,
     > = {

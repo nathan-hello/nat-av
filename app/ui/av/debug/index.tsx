@@ -1,28 +1,28 @@
 import { getRpc } from "@/state";
-import { type Drivers, RpcDevice } from "@av/client";
+import { type Drivers, RpcDriver } from "@av/client";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { DebugSocketPanel } from "./socket";
-import { DebugDeviceTree } from "./tree";
+import { DebugDriverTree } from "./tree";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
-  const debug = rpc.device("debugger");
+  const debug = rpc.driver("debugger");
 
-  let selectedDeviceName: string | null = null;
-  let selectedNode: RpcDevice | null = null;
+  let selectedDriverName: string | null = null;
+  let selectedNode: RpcDriver | null = null;
 
   return () => {
     const tree = debug.api.tree();
-    const fallbackSelection = findFirstSocketDevice(tree);
-    if (selectedDeviceName) {
-      selectedNode = rpc.device(selectedDeviceName as any);
+    const fallbackSelection = findFirstSocketDriver(tree);
+    if (selectedDriverName) {
+      selectedNode = rpc.driver(selectedDriverName as any);
     }
 
     const dnode = tree.find((t) => t.name === selectedNode?.name);
 
     if (!dnode?.socket?.canWrite || !dnode?.socket?.canReceive) {
-      selectedDeviceName = fallbackSelection?.name ?? null;
+      selectedDriverName = fallbackSelection?.name ?? null;
     }
 
     return (
@@ -39,13 +39,13 @@ export function DebugPage(handle: Handle) {
         <section mix={layoutStyle}>
           <aside mix={sidebarStyle}>
             <div mix={panelHeaderStyle}>
-              <h2>Devices</h2>
+              <h2>Drivers</h2>
             </div>
-            <DebugDeviceTree
+            <DebugDriverTree
               tree={tree}
-              selectedDeviceName={selectedDeviceName}
+              selectedDriverName={selectedDriverName}
               onSelect={(name) => {
-                selectedDeviceName = name;
+                selectedDriverName = name;
                 handle.update();
               }}
             />
@@ -53,9 +53,9 @@ export function DebugPage(handle: Handle) {
 
           <section mix={consoleColumnStyle}>
             <DebugSocketPanel
-              selectedDeviceName={selectedDeviceName}
-              onSelectDevice={(name) => {
-                selectedDeviceName = name;
+              selectedDriverName={selectedDriverName}
+              onSelectDriver={(name) => {
+                selectedDriverName = name;
                 handle.update();
               }}
             />
@@ -66,7 +66,7 @@ export function DebugPage(handle: Handle) {
   };
 }
 
-function findFirstSocketDevice(
+function findFirstSocketDriver(
   nodes: Drivers.DriverView[],
 ): Drivers.DriverView | undefined {
   for (const node of nodes) {
@@ -74,7 +74,7 @@ function findFirstSocketDevice(
       return node;
     }
 
-    const child = findFirstSocketDevice(node.deps);
+    const child = findFirstSocketDriver(node.deps);
     if (child) {
       return child;
     }

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index";
 
-describe("rpc roomos device", () => {
+describe("rpc roomos driver", () => {
   it("calls roomos methods and receives roomos events through rpc", async () => {
     const socket = new Test.Socket(
       [
@@ -129,16 +129,16 @@ describe("rpc roomos device", () => {
     transport.connect();
     await ready;
 
-    const device = client.device("roomos-rpc");
+    const driver = client.driver("roomos-rpc");
     const received: Array<{ Position: number }> = [];
-    const off = await device.event.on(
+    const off = await driver.event.on(
       "Bluetooth Streaming PlaybackPosition",
       (payload) => {
         received.push(payload);
       },
     );
 
-    const status = await device.api.xStatus.get();
+    const status = await driver.api.xStatus.get();
     assert.deepEqual(status, {
       ok: true,
       data: {
@@ -186,7 +186,7 @@ describe("rpc roomos device", () => {
     });
 
     it("goes into the client rpc .state object", () => {
-      assert.deepEqual(device.state.xStatus.Cameras.Camera[0], {
+      assert.deepEqual(driver.state.xStatus.Cameras.Camera[0], {
         DetectedConnector: 1,
         Flip: "Off",
         HardwareID: "cam-1",
@@ -195,7 +195,7 @@ describe("rpc roomos device", () => {
         SerialNumber: "S1",
       });
 
-      assert.deepEqual(device.state.xStatus.Cameras.Camera[1], {
+      assert.deepEqual(driver.state.xStatus.Cameras.Camera[1], {
         DetectedConnector: 2,
         Flip: "On",
         HardwareID: "cam-2",
@@ -207,7 +207,7 @@ describe("rpc roomos device", () => {
 
     assert.equal(status.data.Cameras.Camera.length, 2);
 
-    const booking = await device.api.xCommand.Bookings.Get({
+    const booking = await driver.api.xCommand.Bookings.Get({
       Id: "booking-123",
     });
     assert.deepEqual(booking, {
@@ -215,7 +215,7 @@ describe("rpc roomos device", () => {
       data: { Id: "booking-123", Title: "Design Review" },
     });
 
-    const roomType = await device.api.xCommand.Provisioning.RoomType.Activate({
+    const roomType = await driver.api.xCommand.Provisioning.RoomType.Activate({
       Name: "Standard",
     });
     assert.deepEqual(roomType, {
@@ -224,7 +224,7 @@ describe("rpc roomos device", () => {
     });
 
     const subscription =
-      await device.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe();
+      await driver.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe();
     assert.deepEqual(subscription, {
       ok: true,
       data: {
@@ -259,9 +259,9 @@ describe("rpc roomos device", () => {
       [
         {
           jsonrpc: "2.0",
-          method: "device.events.subscribe",
+          method: "driver.events.subscribe",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
@@ -269,9 +269,9 @@ describe("rpc roomos device", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "xStatus/get",
             args: [],
           },
@@ -279,9 +279,9 @@ describe("rpc roomos device", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "xCommand/Bookings/Get",
             args: [{ Id: "booking-123" }],
           },
@@ -289,9 +289,9 @@ describe("rpc roomos device", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "xCommand/Provisioning/RoomType/Activate",
             args: [{ Name: "Standard" }],
           },
@@ -299,9 +299,9 @@ describe("rpc roomos device", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.call",
+          method: "driver.call",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "xFeedback/Bluetooth/Streaming/PlaybackPosition/subscribe",
             args: [],
           },
@@ -309,9 +309,9 @@ describe("rpc roomos device", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "device.events.unsubscribe",
+          method: "driver.events.unsubscribe",
           params: {
-            device: "roomos-rpc",
+            driver: "roomos-rpc",
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
@@ -526,7 +526,7 @@ describe("rpc roomos device", () => {
           jsonrpc: "2.0",
           method: "notification",
           params: {
-            type: "natav:device:event",
+            type: "natav:driver:event",
             name: "roomos-rpc",
             event: "Bluetooth Streaming PlaybackPosition",
             data: { Position: 6 },
