@@ -13,8 +13,8 @@ export class System extends Driver<"system"> {
     this.natav = natav;
     new AutomationEngine(natav);
     type good = Drivers.FromName<drivers, "video-wall">;
-    const shouldwork1 = this.natav.GetDriver("video-wall");
-    const shouldwork2 = this.natav.GetDriver("decoder-1");
+    // const shouldwork1 = this.natav.GetDriver("video-wall");
+    // const shouldwork2 = this.natav.GetDriver("decoder-1");
   }
 
   public override async start() {}

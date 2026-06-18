@@ -71,7 +71,10 @@ export abstract class Driver<
     );
 
     if (!child) {
-      throw new Error(`missing dependency: ${name}`);
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.DriverNotFound,
+        message: `Driver.dep: ${name}`,
+      });
     }
 
     return child;
@@ -85,7 +88,7 @@ export class Manager<
   Context extends Drivers.Context = Drivers.Context,
 > implements Drivers.Manager<D, S, Context> {
   readonly configs: Drivers.Merged<D, S>;
-  readonly configs_flat: Driver[];
+  readonly configs_flat: Driver[] = [];
   private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
@@ -96,7 +99,7 @@ export class Manager<
     if (!ctx) {
       throw new Rpc.Error({
         code: Rpc.Error.Codes.CtxNotFound,
-        message: "could not find context.",
+        message: `Manager.GetContext: ${JSON.stringify(this.contextStore)}`,
       });
     }
     return ctx;
@@ -142,7 +145,10 @@ export class Manager<
   ): Drivers.FromName<Drivers.Merged<D, S>, N> {
     const found = this.FindDriverTyped(name);
     if (!found) {
-      throw new Error(`missing driver: ${name}`);
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.DriverCallFailed,
+        message: `Manager.GetDriver: ${name}`,
+      });
     }
 
     return found;
@@ -211,7 +217,10 @@ export class Manager<
     const promises = configs.map(async (d) => {
       const name = d.name;
       if (!this.IsDriverName(name)) {
-        throw new Error(`unknown driver: ${name}`);
+        throw new Rpc.Error({
+          code: Rpc.Error.Codes.DriverNotFound,
+          message: `Manager.Start: ${name}`,
+        });
       }
 
       d.on("driver:state-updated", (event) =>

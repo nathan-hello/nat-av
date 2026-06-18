@@ -7,7 +7,7 @@ import * as TelemetryRuntimeMod from "@av/telemetry/runtime";
 import * as TelemetrySdkMod from "@av/telemetry/sdk";
 import * as TelemetryTypesMod from "@av/telemetry/types";
 
-export { Driver, Manager } from "@av/drivers";
+export type { Driver, Manager } from "@av/drivers";
 export { TypedEventTarget } from "@av/lib/eventtarget";
 export { RequestManager } from "@av/lib/requests";
 export { RpcClient } from "@av/rpc/client";

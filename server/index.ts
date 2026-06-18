@@ -1,7 +1,6 @@
 import { Builtin, Manager, Server, Telemetry, type Rpc } from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
-import ChazyControl from "@drivers/turtle";
 import { System } from "@server/system";
 
 // TSAS:
@@ -15,15 +14,15 @@ Telemetry.Sdk.AddExporters([
   new Telemetry.Server.SimpleConsoleExporter("DEBUG"),
 ]);
 
-const chazy = new ChazyControl({
-  name: "ChazyControl",
-  socket: new Builtin.Sockets.Tcp({
-    addr: "controller.local",
-    port: 23,
-    keepAlive: true,
-  }),
-});
-
+// const chazy = new ChazyControl({
+//   name: "ChazyControl",
+//   socket: new Builtin.Sockets.Tcp({
+//     addr: "controller.local",
+//     port: 23,
+//     keepAlive: true,
+//   }),
+// });
+//
 const drivers = [
   new DisplayManager(
     "video-wall",
@@ -31,7 +30,7 @@ const drivers = [
       new Decoder({
         name: "decoder-1",
         socket: new Builtin.Sockets.Tcp({
-          addr: "decoder-0c7a1566cf92.local",
+          addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
         }),
@@ -43,7 +42,6 @@ const drivers = [
       ],
     },
   ),
-  chazy,
 ];
 
 export type drivers = typeof drivers;
