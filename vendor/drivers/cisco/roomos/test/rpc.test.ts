@@ -254,8 +254,10 @@ describe("rpc roomos driver", () => {
 
     await off();
 
+    const sent = () => transport.sent.map((message) => JSON.parse(message));
+
     assert.deepEqual(
-      transport.sent.map((message) => JSON.parse(message)),
+      sent().slice(1),
       [
         {
           jsonrpc: "2.0",
@@ -265,7 +267,7 @@ describe("rpc roomos driver", () => {
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
-          id: 0,
+          id: 1,
         },
         {
           jsonrpc: "2.0",
@@ -275,7 +277,7 @@ describe("rpc roomos driver", () => {
             method: "xStatus/get",
             args: [],
           },
-          id: 1,
+          id: 2,
         },
         {
           jsonrpc: "2.0",
@@ -285,7 +287,7 @@ describe("rpc roomos driver", () => {
             method: "xCommand/Bookings/Get",
             args: [{ Id: "booking-123" }],
           },
-          id: 2,
+          id: 3,
         },
         {
           jsonrpc: "2.0",
@@ -295,7 +297,7 @@ describe("rpc roomos driver", () => {
             method: "xCommand/Provisioning/RoomType/Activate",
             args: [{ Name: "Standard" }],
           },
-          id: 3,
+          id: 4,
         },
         {
           jsonrpc: "2.0",
@@ -305,7 +307,7 @@ describe("rpc roomos driver", () => {
             method: "xFeedback/Bluetooth/Streaming/PlaybackPosition/subscribe",
             args: [],
           },
-          id: 4,
+          id: 5,
         },
         {
           jsonrpc: "2.0",
@@ -315,51 +317,34 @@ describe("rpc roomos driver", () => {
             method: "Bluetooth Streaming PlaybackPosition",
             args: [],
           },
-          id: 5,
+          id: 6,
         },
       ],
     );
 
+    const parsedReceived = () =>
+      transport.received.map((message) => JSON.parse(message));
+
+    assert.deepEqual(parsedReceived()[0], {
+      jsonrpc: "2.0",
+      method: "notification",
+      params: {
+        addr: "in-memory",
+        name: "in-memory",
+        type: "natav:peer",
+      },
+    });
+
+    const initResponse = parsedReceived()[1];
+    assert.equal(initResponse.id, 0);
+    assert.equal(typeof initResponse.result, "object");
+    assert.equal(initResponse.result.context.addr, "in-memory");
+    assert.equal(typeof initResponse.result.states["roomos-rpc"], "object");
+
     assert.deepEqual(
-      transport.received.map((message) => JSON.parse(message)),
+      parsedReceived().slice(2),
       [
-        {
-          jsonrpc: "2.0",
-          method: "notification",
-          params: {
-            addr: "in-memory",
-            clientId: "in-memory",
-            type: "natav:peer",
-          },
-        },
-        {
-          jsonrpc: "2.0",
-          method: "notification",
-          params: {
-            data: {
-              internal: {
-                highestId: 0,
-                subscriptions: {
-                  xFeedback: {
-                    Bluetooth: {
-                      Streaming: {
-                        PlaybackPosition: true,
-                      },
-                    },
-                  },
-                  xStatus: {
-                    Cameras: {
-                      Camera: true,
-                    },
-                  },
-                },
-              },
-            },
-            name: "roomos-rpc",
-            type: "natav:state:update",
-          },
-        },
-        { jsonrpc: "2.0", result: null, id: 0 },
+        { jsonrpc: "2.0", result: null, id: 1 },
         {
           jsonrpc: "2.0",
           method: "notification",
@@ -437,7 +422,7 @@ describe("rpc roomos driver", () => {
               },
             },
           },
-          id: 1,
+          id: 2,
         },
         {
           jsonrpc: "2.0",
@@ -445,12 +430,12 @@ describe("rpc roomos driver", () => {
             ok: true,
             data: { Id: "booking-123", Title: "Design Review" },
           },
-          id: 2,
+          id: 3,
         },
         {
           jsonrpc: "2.0",
           result: { ok: true, data: { Activated: true } },
-          id: 3,
+          id: 4,
         },
         {
           jsonrpc: "2.0",
@@ -461,7 +446,7 @@ describe("rpc roomos driver", () => {
               path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
             },
           },
-          id: 4,
+          id: 5,
         },
         {
           jsonrpc: "2.0",
@@ -532,7 +517,7 @@ describe("rpc roomos driver", () => {
             data: { Position: 6 },
           },
         },
-        { jsonrpc: "2.0", result: null, id: 5 },
+        { jsonrpc: "2.0", result: null, id: 6 },
       ],
     );
 

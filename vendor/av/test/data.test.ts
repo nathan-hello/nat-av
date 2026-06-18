@@ -10,6 +10,14 @@ import { Telemetry } from "@av/telemetry";
 import type { Events, Rpc, Schema, Sockets } from "@av/types";
 
 export namespace Test {
+  export type Equal<A, B> =
+    (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true
+    : false;
+
+  export type NotEqual<A, B> = Equal<A, B> extends true ? false : true;
+
+  export type Assert<T extends true> = T;
+
   export async function AwaitNextMicrotask(n: number = 1) {
     const promises = Array.from({ length: n }).map(
       () => new Promise((resolve) => setImmediate(resolve)),
@@ -72,8 +80,8 @@ export namespace Test {
 
     connect() {
       this.readyState = WebSocket.OPEN;
-      this.dispatch("open", new Event("open"));
       this.server.open(this.peer);
+      this.dispatch("open", new Event("open"));
     }
 
     close(code?: number, reason?: string) {

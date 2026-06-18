@@ -69,8 +69,10 @@ describe("rpc driver events", () => {
     eventDriver.emitTick(1);
 
     assert.deepEqual(received, [{ count: 1 }]);
+    const sent = () => transport.sent.map((message) => JSON.parse(message));
+
     assert.deepEqual(
-      transport.sent.map((message) => JSON.parse(message)),
+      sent().slice(1),
       [
         {
           jsonrpc: "2.0",
@@ -80,7 +82,7 @@ describe("rpc driver events", () => {
             method: "tick",
             args: [],
           },
-          id: 0,
+          id: 1,
         },
       ],
     );
@@ -99,7 +101,7 @@ describe("rpc driver events", () => {
     await off2();
 
     assert.deepEqual(
-      transport.sent.map((message) => JSON.parse(message)),
+      sent().slice(1),
       [
         {
           jsonrpc: "2.0",
@@ -109,21 +111,11 @@ describe("rpc driver events", () => {
             method: "tick",
             args: [],
           },
-          id: 0,
-        },
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.unsubscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
           id: 1,
         },
         {
           jsonrpc: "2.0",
-          method: "driver.events.subscribe",
+          method: "driver.events.unsubscribe",
           params: {
             driver: "event-1",
             method: "tick",
@@ -133,13 +125,23 @@ describe("rpc driver events", () => {
         },
         {
           jsonrpc: "2.0",
-          method: "driver.events.unsubscribe",
+          method: "driver.events.subscribe",
           params: {
             driver: "event-1",
             method: "tick",
             args: [],
           },
           id: 3,
+        },
+        {
+          jsonrpc: "2.0",
+          method: "driver.events.unsubscribe",
+          params: {
+            driver: "event-1",
+            method: "tick",
+            args: [],
+          },
+          id: 4,
         },
       ],
     );
@@ -157,7 +159,7 @@ describe("rpc driver events", () => {
       { label: string }
     > {
       api = {
-        identify: async () => this.natav.GetContext()?.clientId ?? "UNKNOWN",
+        identify: async () => this.natav.GetContext()?.name ?? "UNKNOWN",
       };
 
       constructor(
@@ -170,7 +172,7 @@ describe("rpc driver events", () => {
       }
 
       get state() {
-        return { label: this.natav.GetContext().clientId ?? "UNKNOWN" };
+        return { label: this.natav.GetContext().name ?? "UNKNOWN" };
       }
     }
 
@@ -184,8 +186,14 @@ describe("rpc driver events", () => {
     });
     type natav = typeof natav;
     const transport = new Test.RpcTransport();
-    const clientIds = { "in-memory": "CLIENT_1" } as const;
-    new Server.Rpc({ natav, transport: transport.server, clientIds });
+    new Server.Rpc({
+      natav,
+      transport: transport.server,
+      peerToContext: (peer): PeerContext => ({
+        addr: peer.addr,
+        name: "CLIENT_1" as const,
+      }),
+    });
     const client = new Client.Rpc<natav>({
       transport,
     });
@@ -206,8 +214,8 @@ describe("rpc driver events", () => {
     transport.connect();
     await ready;
 
-    assert.equal((await peer).clientId, "CLIENT_1");
-    assert.equal(client.peer?.clientId, "CLIENT_1");
+    assert.equal((await peer).name, "CLIENT_1");
+    assert.equal(client.peer?.name, "CLIENT_1");
     assert.equal(client.driver("peer-aware").state?.label, "CLIENT_1");
     assert.equal(await client.driver("peer-aware").api.identify(), "CLIENT_1");
 

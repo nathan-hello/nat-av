@@ -1,7 +1,9 @@
 import { getRpc } from "@/state";
 import { Decoder } from "@/ui/av/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/av/wall/source";
+import type { Drivers } from "@av/types";
 import type { LogicalWindow } from "@drivers/decoder/display";
+import type { natav } from "@server/index";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
@@ -20,10 +22,13 @@ type RouteFormState = {
 
 type InteractionMode = "free" | "snap";
 
+type fdsa = Drivers.Names<natav["configs"]>;
+
 export function Wall(handle: Handle<WallProps>) {
   const rpc = getRpc(handle);
 
   const display = rpc.driver(handle.props.driverName);
+  const system = rpc.driver("system");
 
   let mode: InteractionMode = "free";
   let selectedSource: SourceSelectDetail | null = null;

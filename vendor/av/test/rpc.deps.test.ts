@@ -189,24 +189,26 @@ describe("rpc deps", () => {
     leaf.emitTick(3);
     assert.deepEqual(received, [{ count: 2 }]);
 
+    const initMsg = transport.sent.map((m) => JSON.parse(m))[0];
+    assert.deepEqual(initMsg, {
+      id: 0,
+      jsonrpc: "2.0",
+      method: "driver.init",
+    });
+
     assert.deepEqual(
       transport.sent.map((message) => JSON.parse(message)),
       [
         {
-          jsonrpc: "2.0",
-          method: "driver.call",
-          params: {
-            driver: "root",
-            method: "ping",
-            args: [],
-          },
           id: 0,
+          jsonrpc: "2.0",
+          method: "driver.init",
         },
         {
           jsonrpc: "2.0",
           method: "driver.call",
           params: {
-            driver: "level-2",
+            driver: "root",
             method: "ping",
             args: [],
           },
@@ -216,7 +218,7 @@ describe("rpc deps", () => {
           jsonrpc: "2.0",
           method: "driver.call",
           params: {
-            driver: "level-3",
+            driver: "level-2",
             method: "ping",
             args: [],
           },
@@ -226,11 +228,21 @@ describe("rpc deps", () => {
           jsonrpc: "2.0",
           method: "driver.call",
           params: {
-            driver: "leaf",
+            driver: "level-3",
             method: "ping",
             args: [],
           },
           id: 3,
+        },
+        {
+          jsonrpc: "2.0",
+          method: "driver.call",
+          params: {
+            driver: "leaf",
+            method: "ping",
+            args: [],
+          },
+          id: 4,
         },
         {
           jsonrpc: "2.0",
@@ -240,7 +252,7 @@ describe("rpc deps", () => {
             method: "tick",
             args: [],
           },
-          id: 4,
+          id: 5,
         },
         {
           jsonrpc: "2.0",
@@ -250,7 +262,7 @@ describe("rpc deps", () => {
             method: "tick",
             args: [],
           },
-          id: 5,
+          id: 6,
         },
       ],
     );

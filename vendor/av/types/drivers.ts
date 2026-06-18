@@ -144,8 +144,11 @@ export namespace Drivers {
     D extends Driver ?
       readonly [
         D,
-        ...(Depth extends readonly [] ? readonly []
-        : Drivers.WithDeps<NonNullable<D["deps"]>, ShiftDepth<Depth>>),
+        ...(
+          Depth extends readonly [] ? readonly []
+          : number extends NonNullable<D["deps"]>["length"] ? readonly []
+          : Drivers.WithDeps<NonNullable<D["deps"]>, ShiftDepth<Depth>>
+        ),
       ]
     : D extends readonly [] ? readonly []
     : D extends (

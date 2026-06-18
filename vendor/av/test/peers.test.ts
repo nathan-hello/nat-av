@@ -1,4 +1,5 @@
 import { Driver, Manager } from "@av/drivers";
+import { Test } from "@av/test/data.test";
 import type { Drivers, Schema } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -153,6 +154,11 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     drivers: [parentPeer] as const,
     deferred: [] as const,
   });
+
+  type names = Drivers.Names<(typeof depManager)["configs"]>;
+
+  type _ = Test.Assert<Test.Equal<names, "parent-peer" | "child-peer">>;
+  type __ = Test.Assert<Test.NotEqual<names, string>>;
 
   function expectManager(manager: Manager, names: string[], tree: unknown) {
     assert.deepEqual(manager.GetAllDriverNames(), names);

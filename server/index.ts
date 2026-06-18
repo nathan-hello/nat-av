@@ -42,7 +42,7 @@ const drivers = [
       ],
     },
   ),
-];
+] as const;
 
 export type drivers = typeof drivers;
 
@@ -61,11 +61,23 @@ Telemetry.Sdk.AddExporters([
   }),
 ]);
 
-export type natav = typeof natav;
+export type natav = Manager<drivers, deferred, AppContext>;
+
+type AppContext = {
+  addr: string;
+  name: string;
+};
 
 export async function start(app: Rpc.WebSocket.App) {
   const websocket = new Server.Websocket(app);
-  new Server.Rpc({ natav, transport: websocket });
+  new Server.Rpc<AppContext>({
+    natav: natav as Manager<any, any, AppContext>,
+    transport: websocket,
+    peerToContext: (peer): AppContext => ({
+      addr: peer.addr,
+      name: peer.addr,
+    }),
+  });
 
   await natav.Start();
   // TSAS:

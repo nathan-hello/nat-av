@@ -75,7 +75,16 @@ describe("driver deps", () => {
     const client = new RpcClient<natav>({
       transport: transport,
     });
+
+    const ready = new Promise<void>((resolve) => {
+      const off = client.on("ready", () => {
+        off();
+        resolve();
+      });
+    });
+
     transport.connect();
+    await ready;
 
     assert.equal(client.driver("parent-1").dep("child-1").name, "child-1");
     assert.equal(client.driver("parent-1").dep("child-2").name, "child-2");

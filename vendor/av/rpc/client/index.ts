@@ -15,6 +15,9 @@ export class RpcClient<
   private requests: ClientRpcRequests;
   private driverHandles = new Map<string, ClientRpcDriver<N, any>>();
   private currentPeer: Rpc.Server.Context | undefined;
+  private initPromise: Promise<void> | undefined;
+  private initResolve: (() => void) | undefined;
+  private initReject: ((err: unknown) => void) | undefined;
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
@@ -51,8 +54,14 @@ export class RpcClient<
     });
   }
 
-  connect() {
+  connect(): Promise<void> {
+    if (this.initPromise) return this.initPromise;
     this.transport.connect();
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initResolve = resolve;
+      this.initReject = reject;
+    });
+    return this.initPromise;
   }
 
   close(code?: number, reason?: string) {
@@ -98,9 +107,32 @@ export class RpcClient<
     return this.requests.nextRequestId();
   }
 
-  // FIXME: we should be getting state on connect
   private async init() {
-    this.dispatch("ready", true);
+    try {
+      const result = await this.requests.request<{
+        context: Rpc.Server.Context;
+        states: Record<string, unknown>;
+      }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
+
+      this.currentPeer = result.context;
+      this.dispatch("peer", result.context);
+
+      for (const [name, state] of Object.entries(result.states)) {
+        // TSAS: driver names from server response are guaranteed to match registered drivers
+        const driver = this.driver(name as Drivers.Names<N["configs"]>);
+        driver.handleStateUpdate(state as any);
+      }
+
+      this.dispatch("ready", true);
+      this.initResolve?.();
+    } catch (err) {
+      this.tel.error("init-failed", { error: err });
+      this.initReject?.(err);
+      this.dispatch("error", {
+        reason: "init-promises-threw",
+        error: err as Error,
+      });
+    }
   }
 
   private onMessage(raw: string) {

@@ -20,7 +20,16 @@ it("gets state automatically on connect", async () => {
   const transport = new Test.RpcTransport();
   new RpcServer({ natav, transport: transport.server });
   const client = new RpcClient<natav>({ transport });
+
+  const ready = new Promise<void>((resolve) => {
+    const off = client.on("ready", () => {
+      off();
+      resolve();
+    });
+  });
+
   transport.connect();
+  await ready;
 
   assert.deepEqual(client.driver("shim-1").state?.lastFrame, "init");
 

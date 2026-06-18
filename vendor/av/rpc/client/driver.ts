@@ -4,6 +4,9 @@ import type { RpcClient } from "@av/rpc/client";
 import type { Drivers, Events } from "@av/types";
 import { Rpc } from "@av/types";
 
+type DepNames<N extends Manager, Name extends Drivers.Names<N["configs"]>> =
+  NonNullable<Drivers.FromName<N["configs"], Name>["deps"]>[number]["name"];
+
 export class ClientRpcDriver<
   N extends Manager = Manager,
   Name extends Drivers.Names<N["configs"]> = Drivers.Names<N["configs"]>,
@@ -40,14 +43,11 @@ export class ClientRpcDriver<
     {} as unknown as Drivers.State<N["configs"], Name>;
 
   readonly deps = {
-    get: <DepName extends string>(
-      depName: DepName,
-    ) => {
-      return this.client.driver(depName);
-    },
+    get: <DepName extends DepNames<N, Name>>(depName: DepName) =>
+      this.client.driver(depName),
   };
 
-  dep<DepName extends string>(depName: DepName) {
+  dep<DepName extends DepNames<N, Name>>(depName: DepName) {
     return this.client.driver(depName);
   }
 

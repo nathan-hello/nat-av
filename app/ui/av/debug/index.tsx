@@ -1,5 +1,6 @@
 import { getRpc } from "@/state";
 import { type Drivers, RpcDriver } from "@av/client";
+import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { DebugSocketPanel } from "./socket";
@@ -10,13 +11,15 @@ export function DebugPage(handle: Handle) {
   const debug = rpc.driver("debugger");
 
   let selectedDriverName: string | null = null;
-  let selectedNode: RpcDriver | null = null;
+  let selectedNode: RpcDriver<natav> | null = null;
 
   return () => {
     const tree = debug.api.tree();
     const fallbackSelection = findFirstSocketDriver(tree);
     if (selectedDriverName) {
-      selectedNode = rpc.driver(selectedDriverName as any);
+      selectedNode = rpc.driver(
+        selectedDriverName as Drivers.Names<natav["configs"]>,
+      );
     }
 
     const dnode = tree.find((t) => t.name === selectedNode?.name);
@@ -102,15 +105,6 @@ const statusRowStyle = css({
   alignItems: "center",
   flexWrap: "wrap",
 });
-const statusPillStyle = (connected: boolean) =>
-  css({
-    padding: "8px 12px",
-    borderRadius: "999px",
-    background: connected ? "#14532d" : "#450a0a",
-    color: connected ? "#86efac" : "#fca5a5",
-    border: "1px solid " + (connected ? "#166534" : "#7f1d1d"),
-    fontSize: "12px",
-  });
 const linkStyle = css({ color: "#7dd3fc", textDecoration: "none" });
 const layoutStyle = css({
   display: "flex",

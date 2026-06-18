@@ -95,6 +95,7 @@ export namespace Rpc {
     DriverCall: "driver.call",
     DriverSubscribe: "driver.events.subscribe",
     DriverUnsubscribe: "driver.events.unsubscribe",
+    DriverInit: "driver.init",
   } as const;
 
   type DriverParamsInput = {
@@ -215,6 +216,10 @@ export namespace Rpc {
         normalizeDriverParams(params),
       );
     }
+
+    static driverInit(id: Id) {
+      return new Rpc.Request(id, REQUEST_METHOD.DriverInit);
+    }
   }
 
   export namespace Request {
@@ -234,6 +239,11 @@ export namespace Rpc {
       method: typeof REQUEST_METHOD.DriverUnsubscribe;
       params: Rpc.Request.DriverParams;
       result: null;
+    };
+    export type DriverInit = {
+      method: typeof REQUEST_METHOD.DriverInit;
+      params: undefined;
+      result: { context: Rpc.Server.Context; states: Record<string, unknown> };
     };
     export type ResultOf<TRequest extends Rpc.Request> =
       TRequest extends Rpc.Request<string, Rpc.Json.Value, infer ResultType> ?
@@ -435,7 +445,7 @@ export namespace Rpc {
 
             return new Rpc.Notification.Server("natav:peer", {
               addr: params.addr,
-              clientId: params.clientId,
+              name: params.clientId,
             });
           case "natav:driver:event":
             if (typeof params.name !== "string") {
@@ -460,7 +470,7 @@ export namespace Rpc {
 
             return new Rpc.Notification.Server("natav:state:update", {
               name: params.name,
-              data: params.data,
+              data: params.data
             });
           case "natav:driver:connected":
             if (typeof params.name !== "string") {
@@ -494,7 +504,7 @@ export namespace Rpc {
   export namespace Server {
     export type Context<ClientId extends string = string> = {
       addr: string;
-      clientId: ClientId;
+      name: ClientId;
     };
   }
 
