@@ -4,6 +4,7 @@ import {
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import {
+  Format,
   Rpc,
   type Drivers,
   type Events,
@@ -213,11 +214,11 @@ export class Manager<
         throw new Error(`unknown driver: ${name}`);
       }
 
-      d.on("driver:state-updated", (data) =>
+      d.on("driver:state-updated", (event) =>
         // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
           name,
-          data: data.data,
+          data: event.data,
         }),
       );
 
@@ -228,7 +229,9 @@ export class Manager<
         });
       });
 
-      d.on("driver:delimited", (payload) => {
+      d.on("driver:delimited", (event) => {
+        const payload = Format.Convert.toUint8Array(event);
+
         this.bus.dispatch("natav:debug:socket", {
           name,
           data: {
@@ -236,11 +239,7 @@ export class Manager<
             direction: "rx-delimited",
             time: Date.now(),
             encoding: "utf8",
-            data: new Uint8Array(
-              payload.buffer,
-              payload.byteOffset,
-              payload.byteLength,
-            ),
+            data: payload,
           },
         });
       });

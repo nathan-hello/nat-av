@@ -1,10 +1,4 @@
-import {
-  Delimiters,
-  Driver,
-  RequestManager,
-  type Schema,
-  type Sockets,
-} from "@av/index";
+import { Delimiters, Driver, RequestManager, type Sockets } from "@av/index";
 
 export default class ChazyControl<
   const N extends string = string,
@@ -37,11 +31,6 @@ export default class ChazyControl<
       this.dispatch("driver:delimited", event);
     });
   }
-
-  schema = (): Schema.Schema<this> => {
-    // TSAS: TODO: Implement schema.
-    return [{}];
-  };
 
   api = {
     GetDanteInfo: async () => {
