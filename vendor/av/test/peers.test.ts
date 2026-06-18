@@ -59,7 +59,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
     syncRightPeer() {
       this.natav.GetDriver("right-peer").api.bump();
-      this.natav.GetDriverState("right-peer").count;
+      this.natav.GetDriver("right-peer").state.count;
     }
 
     GetRightDeferredSyncedState() {
@@ -84,7 +84,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     natav: Drivers.ManagerView<readonly [LeftPeer]>;
 
     syncLeftPeer() {
-      this.natav.GetDriverState("left-peer").count;
+      this.natav.GetDriver("left-peer").state.count;
     }
   }
 
@@ -175,18 +175,15 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         [
           {
             name: "right-peer",
-            driverName: "right-peer",
-            children: [],
+            deps: [],
           },
           {
             name: "left-deferred",
-            driverName: "left-deferred",
-            children: [],
+            deps: [],
           },
           {
             name: "right-deferred",
-            driverName: "right-deferred",
-            children: [],
+            deps: [],
           },
         ],
       );
@@ -195,7 +192,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         leftManager.GetDriver("left-deferred").name,
         "left-deferred",
       );
-      assert.equal(leftManager.GetDriverState("left-deferred").synced, false);
+      assert.equal(leftManager.GetDriver("left-deferred").state.synced, false);
       assert.equal(leftManager.FindDriver("missing"), undefined);
     });
 
@@ -210,19 +207,17 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         [
           {
             name: "left-peer",
-            driverName: "left-peer",
-            children: [],
+            deps: [],
           },
           {
             name: "right-deferred",
-            driverName: "right-deferred",
-            children: [],
+            deps: [],
           },
         ],
       );
 
       assert.equal(rightManager.GetDriver("left-peer").name, "left-peer");
-      assert.equal(rightManager.GetDriverState("left-peer").count, 1);
+      assert.equal(rightManager.GetDriver("left-peer").state.count, 1);
     });
 
     it("works for the paired manager", () => {
@@ -235,13 +230,11 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         [
           {
             name: "left-peer",
-            driverName: "left-peer",
-            children: [],
+            deps: [],
           },
           {
             name: "right-peer",
-            driverName: "right-peer",
-            children: [],
+            deps: [],
           },
         ],
       );
@@ -260,12 +253,10 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         [
           {
             name: "parent-peer",
-            driverName: "parent-peer",
-            children: [
+            deps: [
               {
                 name: "child-peer",
-                driverName: "child-peer",
-                children: [],
+                deps: [],
               },
             ],
           },
@@ -274,7 +265,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
       assert.equal(depManager.GetDriver("parent-peer").name, "parent-peer");
       assert.equal(depManager.GetDriver("child-peer").name, "child-peer");
-      assert.equal(depManager.GetDriverState("child-peer").count, 1);
+      assert.equal(depManager.GetDriver("child-peer").state.count, 1);
       assert.equal(depManager.FindDriver("child-peer"), childPeer);
       assert.equal(
         depManager.GetDriver("parent-peer").dep("child-peer"),

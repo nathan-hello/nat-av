@@ -161,7 +161,7 @@ export class RpcServer<
         Rpc.Json.stringify(
           new Rpc.Notification.Server("natav:state:update", {
             name,
-            data: this.natav.GetDriverState(name),
+            data: this.natav.GetDriver(name).state,
           }),
         ),
       );
@@ -236,7 +236,7 @@ export class RpcServer<
           Rpc.Json.stringify(
             new Rpc.Notification.Server("natav:state:update", {
               name,
-              data: this.natav.GetDriverState(name),
+              data: this.natav.GetDriver(name).state,
             }),
           ),
         );

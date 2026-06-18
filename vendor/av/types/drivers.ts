@@ -35,9 +35,6 @@ export namespace Drivers {
     GetDriver<Name extends Drivers.Names<N>>(
       name: Name,
     ): Drivers.FromName<N, Name>;
-    GetDriverState<Name extends Drivers.Names<N>>(
-      name: Name,
-    ): Drivers.State<N, Name>;
     FindDriver(name: string): Driver | undefined;
     GetAllDriverNames(): Drivers.Names<N>[];
     Start(): Promise<void>;
@@ -119,50 +116,68 @@ export namespace Drivers {
   export type Api<
     N extends Drivers.Array,
     Name extends Drivers.Names<N>,
-  > = FromName<N, Name> extends { api: infer Api extends Drivers.ApiRecord } ? Api
-    : never;
+  > = FromName<N, Name>["api"];
 
   export type State<
     N extends Drivers.Array = Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
-  > = FromName<N, Name> extends { state: infer State extends Record<string, any> } ?
-    State
-  : never;
+  > = FromName<N, Name>["state"];
 
   export type Events<N extends Drivers.Array, Name extends Drivers.Names<N>> =
-    FromName<N, Name> extends { events: TypedEventTarget<infer Events> } ? Events
+    FromName<N, Name>["events"] extends TypedEventTarget<infer Events> ? Events
     : never;
 
-  type IsTuple<T extends readonly unknown[]> =
-    number extends T["length"] ? false : true;
+  type DriverTypeDepthLimit = readonly [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
-  type IsAny<T> = 0 extends (1 & T) ? true : false;
+  type ShiftDepth<Depth extends readonly unknown[]> =
+    Depth extends readonly [unknown, ...infer Rest] ? Rest : readonly [];
 
-  export type WithDeps<D extends Driver | Drivers.Array> =
-    IsAny<D> extends true ? readonly []
-    : D extends Driver ?
-      IsAny<NonNullable<D["deps"]>> extends true ? readonly [D]
-      : NonNullable<D["deps"]> extends Drivers.Array ?
-        IsTuple<NonNullable<D["deps"]>> extends true ?
-          readonly [D, ...WithDeps<NonNullable<D["deps"]>>]
-        : readonly [D]
-      : readonly [D]
+  type FlattenedMembers<
+    D extends Driver,
+    Depth extends readonly unknown[],
+  > = Drivers.WithDeps<D, Depth>[number];
+
+  export type WithDeps<
+    D extends Driver | Drivers.Array,
+    Depth extends readonly unknown[] = DriverTypeDepthLimit,
+  > =
+    D extends Driver ?
+      readonly [
+        D,
+        ...(Depth extends readonly [] ? readonly []
+        : Drivers.WithDeps<NonNullable<D["deps"]>, ShiftDepth<Depth>>),
+      ]
     : D extends readonly [] ? readonly []
     : D extends (
       readonly [infer Head extends Driver, ...infer Rest extends Drivers.Array]
     ) ?
-      readonly [...WithDeps<Head>, ...WithDeps<Rest>]
+      readonly [
+        ...Drivers.WithDeps<Head, Depth>,
+        ...Drivers.WithDeps<Rest, Depth>,
+      ]
     : D extends readonly (infer Item extends Driver)[] ?
-      readonly [Item]
+      readonly FlattenedMembers<Item, Depth>[]
     : readonly [];
 
+  export type Resolved<N extends Drivers.Array = Drivers.Array> = Extract<
+    Drivers.WithDeps<N>[number],
+    Driver
+  >;
+
+  type NamedDriver<DriverUnion, Name extends string> =
+    DriverUnion extends Driver ?
+      DriverUnion["name"] extends Name ?
+        DriverUnion
+      : never
+    : never;
+
   export type Names<N extends Drivers.Array = Drivers.Array> =
-    Drivers.WithDeps<N>[number]["name"];
+    Drivers.Resolved<N>["name"];
 
   export type FromName<
     N extends Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
-  > = Extract<Drivers.WithDeps<N>[number], { name: Name }>;
+  > = NamedDriver<Drivers.Resolved<N>, Name>;
 
   export type Handle<D extends Driver> = {
     deps: D["deps"];

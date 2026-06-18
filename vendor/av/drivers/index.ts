@@ -17,7 +17,7 @@ type SocketMaybe = Partial<Sockets.Client> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  Deps extends Drivers.Array = any,
+  Deps extends Drivers.Array = Drivers.Array,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
   State extends Record<string, any> = Record<string, any>,
   Events extends EventsMaybe = EventsMaybe,
@@ -32,14 +32,12 @@ export abstract class Driver<
 
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
-  // TSAS: This anchor keeps the resolved dependency record available for type recursion.
   public name: Name;
   public deps: Deps = [] as unknown as Deps;
   protected tel: Telemetry;
 
   constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
-    // TSAS: Could be instantiated with different type
     if (deps) {
       this.deps = deps;
     }
@@ -149,17 +147,6 @@ export class Manager<
     return found;
   }
 
-  GetDriverState<N extends Drivers.Names<Drivers.Merged<D, S>>>(
-    name: N,
-  ): Drivers.State<Drivers.Merged<D, S>, N> {
-    const driver = this.FindDriverTyped(name);
-    if (!driver) {
-      throw new Error(`missing driver: ${name}`);
-    }
-
-    return driver.state;
-  }
-
   FindDriver(name: string): Driver | undefined {
     return this.configs_flat.find((d) => d.name === name);
   }
@@ -172,8 +159,18 @@ export class Manager<
     );
   }
 
-  GetAllDriverNames(): string[] {
-    return this.configs_flat.map((d) => d.name);
+  private IsDriverName(
+    name: string,
+  ): name is Drivers.Names<Drivers.Merged<D, S>> {
+    return this.configs_flat.some((driver) => driver.name === name);
+  }
+
+  GetAllDriverNames(): Drivers.Names<Drivers.Merged<D, S>>[] {
+    return this.configs_flat
+      .map((d) => d.name)
+      .filter((name): name is Drivers.Names<Drivers.Merged<D, S>> =>
+        this.IsDriverName(name),
+      );
   }
 
   GetTree(): Drivers.DriverView[] {
@@ -211,26 +208,31 @@ export class Manager<
     }
 
     const promises = configs.map(async (d) => {
+      const name = d.name;
+      if (!this.IsDriverName(name)) {
+        throw new Error(`unknown driver: ${name}`);
+      }
+
       d.on("driver:state-updated", (data) =>
         // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
-          name: d.name,
+          name,
           data: data.data,
         }),
       );
 
       d.socket?.on?.("debug", (event) => {
         this.bus.dispatch("natav:debug:socket", {
-          name: d.name,
+          name,
           data: event.data,
         });
       });
 
       d.on("driver:delimited", (payload) => {
         this.bus.dispatch("natav:debug:socket", {
-          name: d.name,
+          name,
           data: {
-            traceName: d.socket?.name ?? d.name,
+            traceName: d.socket?.name ?? name,
             direction: "rx-delimited",
             time: Date.now(),
             encoding: "utf8",
