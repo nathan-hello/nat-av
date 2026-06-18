@@ -32,8 +32,7 @@ export namespace Events {
       "driver:state-updated": {
         data: Partial<StateData>;
       };
-      "driver:delimited": Buffer;
-      "driver:socket:bubbled": Socket.Map;
+      "driver:delimited": string | Uint8Array | Buffer;
     };
   }
 

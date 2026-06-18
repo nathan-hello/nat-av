@@ -1,7 +1,6 @@
 import {
   Delimiters,
   Driver,
-  Format,
   RequestManager,
   type Schema,
   type Sockets,
@@ -35,13 +34,13 @@ export default class ChazyControl<
     });
 
     this.requests.on("delimited", (event) => {
-      this.dispatch("driver:delimited", Format.Convert.toBuffer(event));
+      this.dispatch("driver:delimited", event);
     });
   }
 
   schema = (): Schema.Schema<this> => {
     // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema.Schema<this>;
+    return [{}];
   };
 
   api = {
