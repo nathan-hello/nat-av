@@ -282,6 +282,10 @@ export namespace Rpc {
       public id?: Id | null,
     ) {}
 
+    toString(): string {
+      return `Rpc.Error(${this.error.code}): ${this.error.message}`;
+    }
+
     static is(message: Rpc.Json.Value): Rpc.Error | null {
       if (
         message === null ||

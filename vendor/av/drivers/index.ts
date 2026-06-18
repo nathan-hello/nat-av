@@ -35,7 +35,7 @@ export abstract class Driver<
   public events: Events = undefined as Events;
   public name: Name;
   public deps: Deps = [] as unknown as Deps;
-  protected tel: Telemetry;
+  public tel: Telemetry;
 
   constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
@@ -113,7 +113,6 @@ export class Manager<
 
     if (args.deferred) {
       for (const deferred of args.deferred) {
-        // TSAS: Deferred entries are either constructors or factories returning drivers.
         if ("prototype" in deferred && typeof deferred.prototype === "object") {
           configs.push(new deferred(this));
         } else {
@@ -224,7 +223,6 @@ export class Manager<
       }
 
       d.on("driver:state-updated", (event) =>
-        // TSAS: Each iterated driver comes from this manager's merged config tuple, so its name and state match the bus event union.
         this.bus.dispatch("natav:state:update", {
           name,
           data: event.data,
@@ -232,16 +230,21 @@ export class Manager<
       );
 
       d.socket?.on?.("debug", (event) => {
-        this.bus.dispatch("natav:debug:socket", {
+        const data = {
           name,
           data: event.data,
-        });
+        };
+        this.bus.dispatch("natav:debug:socket", data);
+
+        if (data.data.direction === "tx") {
+          d.tel.info("delimited", data);
+        }
       });
 
       d.on("driver:delimited", (event) => {
         const payload = Format.Convert.toUint8Array(event);
 
-        this.bus.dispatch("natav:debug:socket", {
+        const data = {
           name,
           data: {
             traceName: d.socket?.name ?? name,
@@ -250,7 +253,11 @@ export class Manager<
             encoding: "utf8",
             data: payload,
           },
-        });
+        } as const;
+
+        d.tel.info("delimited", data);
+
+        this.bus.dispatch("natav:debug:socket", data);
       });
 
       await d.start();

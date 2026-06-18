@@ -76,12 +76,13 @@ export function Wall(handle: Handle<WallProps>) {
 
   return () => {
     const state = display.state;
+    const hasState = Boolean(state?.windows);
 
-    if (state && form.resX === 0 && form.resY === 0 && state.windows[0]) {
+    if (hasState && form.resX === 0 && form.resY === 0 && state.windows?.[0]) {
       loadWindow(state.windows[0], selectedSource);
     }
 
-    if (state && !form.uri && state.encoders[0]) {
+    if (hasState && !form.uri && state.encoders?.[0]) {
       selectedSource = selectedSource ?? {
         id: state.encoders[0].uri,
         name: state.encoders[0].name,
@@ -89,7 +90,7 @@ export function Wall(handle: Handle<WallProps>) {
       form = { ...form, uri: selectedSource.id };
     }
 
-    if (state && !form.audioOutput && state.audioOutputs[0]) {
+    if (hasState && !form.audioOutput && state.audioOutputs?.[0]) {
       form = { ...form, audioOutput: getAudioOutputKey(state.audioOutputs[0]) };
     }
 
@@ -98,8 +99,8 @@ export function Wall(handle: Handle<WallProps>) {
     const changeTemplatePending = display.isPending("changeTemplate");
     const destroyPending = display.isPending("destroy");
     const debugPending = display.isPending("debug");
-    const audioOutputs = state ? state.audioOutputs : [];
-    const scale = state ? Math.min(1, 1280 / state.canvas.width) : 0.7;
+    const audioOutputs = state.audioOutputs ?? [];
+    const scale = hasState ? Math.min(1, 1280 / state.canvas.width) : 0.7;
 
     return (
       <section mix={layoutStyle}>
@@ -139,7 +140,7 @@ export function Wall(handle: Handle<WallProps>) {
               </div>
             </div>
 
-            {state ?
+            {hasState ?
               <>
                 <div mix={statusRowStyle}>
                   <span mix={statusPillStyle}>mode: {mode}</span>
@@ -237,7 +238,7 @@ export function Wall(handle: Handle<WallProps>) {
               <h2 mix={titleStyle}>Sources</h2>
               <p mix={mutedStyle}>Selected: {selectedSource?.name ?? "none"}</p>
             </div>
-            {state ?
+            {hasState ?
               <div mix={sourceListStyle}>
                 {state.encoders.map((source) => (
                   <Source
@@ -448,7 +449,7 @@ export function Wall(handle: Handle<WallProps>) {
 
           <section mix={panelStyle}>
             <h2 mix={titleStyle}>Templates</h2>
-            {state ?
+            {hasState ?
               <div mix={templateListStyle}>
                 {state.template.choices.map((template) => (
                   <button
@@ -500,7 +501,7 @@ export function Wall(handle: Handle<WallProps>) {
                 {debugPending ? "Running..." : "Toggle debug"}
               </button>
             </div>
-            {state ?
+            {hasState ?
               <pre mix={stateStyle}>{JSON.stringify(state, null, 2)}</pre>
             : <div mix={emptyStyle}>No state yet.</div>}
           </section>

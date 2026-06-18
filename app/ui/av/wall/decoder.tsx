@@ -247,9 +247,9 @@ export function Decoder(handle: Handle<DecoderProps>) {
             : twindow.global;
           const sourceName =
             handle.props.encoders?.find(
-              (encoder) => encoder.uri === twindow.routes[0]?.uri,
+              (encoder) => encoder.uri === twindow.routes?.[0]?.uri,
             )?.name ??
-            twindow.routes[0]?.uri ??
+            twindow.routes?.[0]?.uri ??
             `Window ${twindow.id}`;
 
           return (
