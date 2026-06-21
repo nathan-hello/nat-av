@@ -1,3 +1,6 @@
+import type { Manager } from "@av/drivers";
+import type { RpcClient } from "@av/rpc/client";
+import type { ClientRpcDriver } from "@av/rpc/client/driver";
 import type { Drivers } from "@av/types/drivers";
 import type { Events } from "@av/types/events";
 
@@ -87,6 +90,24 @@ export namespace Rpc {
       N extends Drivers.Array = Drivers.Array,
       Name extends Drivers.Names<N> = Drivers.Names<N>,
     > = Drivers.Api<N, Name>;
+
+    export type Handle<N extends Manager> = Pick<RpcClient<N>, "ctx"> & {
+      driver<Name extends Drivers.Names<N["configs"]>>(
+        name: Name,
+      ): DriverHandle<N, Name>;
+    };
+
+    export type DriverHandle<
+      N extends Manager,
+      Name extends Drivers.Names<N["configs"]>,
+    > = Pick<
+      ClientRpcDriver<N, Name>,
+      "api" | "state" | "on" | "event" | "once" | "pendingCount"
+    > & {
+      dep: <DepName extends Drivers.DepNames<N, Name>>(
+        depName: DepName,
+      ) => DriverHandle<N, DepName>;
+    };
   }
 
   type Id = string | number;
@@ -470,7 +491,7 @@ export namespace Rpc {
 
             return new Rpc.Notification.Server("natav:state:update", {
               name: params.name,
-              data: params.data
+              data: params.data,
             });
           case "natav:driver:connected":
             if (typeof params.name !== "string") {

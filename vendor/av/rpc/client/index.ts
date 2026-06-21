@@ -1,4 +1,4 @@
-import type { Manager } from "@av/client";
+import type { Manager } from "@av/drivers";
 import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
 import { ClientRpcDriver } from "@av/rpc/client/driver";
 import { ClientRpcRequests } from "@av/rpc/client/requests";
@@ -14,7 +14,7 @@ export class RpcClient<
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private driverHandles = new Map<string, ClientRpcDriver<N, any>>();
-  private currentPeer: Rpc.Server.Context | undefined;
+  private _context: Rpc.Server.Context | undefined;
   private initPromise: Promise<void> | undefined;
   private initResolve: (() => void) | undefined;
   private initReject: ((err: unknown) => void) | undefined;
@@ -72,8 +72,14 @@ export class RpcClient<
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  get peer() {
-    return this.currentPeer;
+  get ctx() {
+    if (!this._context) {
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.CtxNotFound,
+        message: "client",
+      });
+    }
+    return this._context;
   }
 
   driver<Name extends Drivers.Names<N["configs"]>>(
@@ -111,16 +117,18 @@ export class RpcClient<
     try {
       const result = await this.requests.request<{
         context: Rpc.Server.Context;
-        states: Record<string, unknown>;
+        states: Record<string, Rpc.Json.Value>;
       }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
 
-      this.currentPeer = result.context;
+      this._context = result.context;
       this.dispatch("peer", result.context);
 
       for (const [name, state] of Object.entries(result.states)) {
         // TSAS: driver names from server response are guaranteed to match registered drivers
         const driver = this.driver(name as Drivers.Names<N["configs"]>);
-        driver.handleStateUpdate(state as any);
+        driver.handleStateUpdate(
+          state as Drivers.State<N["configs"], (typeof driver)["name"]>,
+        );
       }
 
       this.dispatch("ready", true);
@@ -157,7 +165,7 @@ export class RpcClient<
 
       switch (notification.type) {
         case "natav:peer":
-          this.currentPeer = notification.params;
+          this._context = notification.params;
           this.dispatch("peer", notification.params);
           break;
         case "natav:driver:event":

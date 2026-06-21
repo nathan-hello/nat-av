@@ -215,7 +215,7 @@ describe("rpc driver events", () => {
     await ready;
 
     assert.equal((await peer).name, "CLIENT_1");
-    assert.equal(client.peer?.name, "CLIENT_1");
+    assert.equal(client.ctx?.name, "CLIENT_1");
     assert.equal(client.driver("peer-aware").state?.label, "CLIENT_1");
     assert.equal(await client.driver("peer-aware").api.identify(), "CLIENT_1");
 

@@ -50,6 +50,9 @@ export namespace Drivers {
     Context extends Drivers.Context = Drivers.Context,
   > extends ManagerView<Drivers.Merged<D, S>, Context> {}
 
+  export type ManagerParams<M extends Drivers.Manager> =
+    M extends Drivers.Manager<infer A, infer B, infer C> ? [A, B, C] : never;
+
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
 
@@ -144,11 +147,9 @@ export namespace Drivers {
     D extends Driver ?
       readonly [
         D,
-        ...(
-          Depth extends readonly [] ? readonly []
-          : number extends NonNullable<D["deps"]>["length"] ? readonly []
-          : Drivers.WithDeps<NonNullable<D["deps"]>, ShiftDepth<Depth>>
-        ),
+        ...(Depth extends readonly [] ? readonly []
+        : number extends NonNullable<D["deps"]>["length"] ? readonly []
+        : Drivers.WithDeps<NonNullable<D["deps"]>, ShiftDepth<Depth>>),
       ]
     : D extends readonly [] ? readonly []
     : D extends (
@@ -181,6 +182,11 @@ export namespace Drivers {
     N extends Drivers.Array,
     Name extends Drivers.Names<N> = Drivers.Names<N>,
   > = NamedDriver<Drivers.Resolved<N>, Name>;
+
+  export type DepNames<
+    N extends Drivers.Manager,
+    Name extends Drivers.Names<N["configs"]>,
+  > = NonNullable<Drivers.FromName<N["configs"], Name>["deps"]>[number]["name"];
 
   export type Handle<D extends Driver> = {
     deps: D["deps"];
