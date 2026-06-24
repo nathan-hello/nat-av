@@ -48,6 +48,13 @@ function parseAvahiLine(line: string): DiscoveredService | null {
   };
 }
 
+function avahiServiceType(serviceType: string): string {
+  return serviceType.endsWith(".local.") ?
+      serviceType.slice(0, -7)
+    : serviceType.endsWith(".") ? serviceType.slice(0, -1)
+    : serviceType;
+}
+
 export class AvahiDiscovery implements DiscoveryBackend {
   async discover(
     serviceType: string,
@@ -56,10 +63,10 @@ export class AvahiDiscovery implements DiscoveryBackend {
     return new Promise((resolve) => {
       execFile(
         "avahi-browse",
-        ["-rtp", serviceType, "-t"],
+        ["-rtp", avahiServiceType(serviceType), "-t"],
         { timeout: timeoutMs, killSignal: "SIGKILL" },
-        (error: Error | null, stdout: string) => {
-          if (error) {
+        (error: Error | null, stdout: string, stderr: string) => {
+          if (error || stderr) {
             resolve([]);
             return;
           }
@@ -81,7 +88,7 @@ export class AvahiDiscovery implements DiscoveryBackend {
     let cancelled = false;
 
     try {
-      proc = spawn("avahi-browse", ["-rp", serviceType], {
+      proc = spawn("avahi-browse", ["-rp", avahiServiceType(serviceType)], {
         stdio: ["ignore", "pipe", "ignore"],
       });
 

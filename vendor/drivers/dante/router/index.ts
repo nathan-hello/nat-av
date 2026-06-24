@@ -1,6 +1,6 @@
-import { Driver, type Schema } from "@av/index";
+import { Driver } from "@av/index";
 import * as dgram from "node:dgram";
-import { SERVICE_ARC } from "./constants";
+import { RESULT_CODE_SUCCESS, SERVICE_ARC } from "./constants";
 import { AvahiDiscovery } from "./discovery";
 import {
   buildAddSubscriptions,
@@ -13,6 +13,7 @@ import {
 import {
   getChannelCount,
   getDeviceName,
+  getResultCode,
   parseRxChannels,
   parseTxChannelInfo,
   parseTxFriendlyNames,
@@ -38,7 +39,10 @@ class ArcTransport {
   private pending = new Map<string, PendingRequest>();
   private started = false;
 
-  constructor(private timeoutMs: number = ARC_TIMEOUT_MS) {}
+  constructor(
+    private readonly interfaceIp: string | undefined,
+    private timeoutMs: number = ARC_TIMEOUT_MS,
+  ) {}
 
   start(): void {
     if (this.started) return;
@@ -57,7 +61,8 @@ class ArcTransport {
       }
     });
 
-    this.socket.bind();
+    const bindAddr = this.interfaceIp || "0.0.0.0";
+    this.socket.bind(0, bindAddr);
   }
 
   stop(): void {
@@ -120,9 +125,7 @@ function makeDeviceRecord(
   };
 }
 
-export default class DanteRouter<
-  const N extends string = "dante",
-> extends Driver<N> {
+export default class DanteRouter<const N extends string> extends Driver<N> {
   socket = undefined;
 
   state: DanteRouterState = {
@@ -133,7 +136,7 @@ export default class DanteRouter<
     liveMdns: false,
   };
 
-  private transport = new ArcTransport();
+  private transport: ArcTransport;
   private discovery: DiscoveryBackend = new AvahiDiscovery();
   private liveWatchCleanup: (() => void) | null = null;
   private scanning = false;
@@ -149,6 +152,7 @@ export default class DanteRouter<
   }) {
     super({ name });
     this.state.liveMdns = liveMdns;
+    this.transport = new ArcTransport(interfaceIp);
   }
 
   public start(): void {
@@ -163,11 +167,6 @@ export default class DanteRouter<
     this.liveWatchCleanup = null;
     this.transport.stop();
   }
-
-  schema = (): Schema.Schema<DanteRouter> => {
-    // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema.Schema<DanteRouter>;
-  };
 
   api = {
     refresh: async () => {
@@ -224,7 +223,12 @@ export default class DanteRouter<
         throw new Error(`RX device not found: ${rxDevice}`);
       }
 
-      await this.transport.request(
+      const txDev = Object.values(this.state.devices).find(
+        (d) => d.serverName === txDevice || d.name === txDevice,
+      );
+      const txDeviceName = txDev?.name ?? txDevice;
+
+      const routeResponse = await this.transport.request(
         device.ipv4,
         device.arcPort,
         buildAddSubscriptions(
@@ -232,24 +236,18 @@ export default class DanteRouter<
             {
               rxChannelNumber: rxChannel,
               txChannelName,
-              txDeviceName: txDevice,
+              txDeviceName,
             },
           ],
           0,
         ),
       );
 
-      if (!this.state.matrix[rxDevice]) {
-        this.state.matrix[rxDevice] = Object.create(null);
+      if (getResultCode(routeResponse) !== RESULT_CODE_SUCCESS) {
+        throw new Error(
+          `Subscription add failed for ${device.name}:${rxChannel}: result code 0x${getResultCode(routeResponse).toString(16)}`,
+        );
       }
-      this.state.matrix[rxDevice][rxChannel] = {
-        txDevice,
-        txChannelName,
-      };
-
-      this.dispatch("driver:state-updated", {
-        data: { matrix: this.state.matrix },
-      });
     },
 
     unroute: async (rxDevice: string, rxChannel: number): Promise<void> => {
@@ -258,22 +256,17 @@ export default class DanteRouter<
         throw new Error(`RX device not found: ${rxDevice}`);
       }
 
-      await this.transport.request(
+      const unrouteResponse = await this.transport.request(
         device.ipv4,
         device.arcPort,
         buildRemoveSubscriptions([rxChannel], 0),
       );
 
-      if (this.state.matrix[rxDevice]) {
-        delete this.state.matrix[rxDevice][rxChannel];
-        if (Object.keys(this.state.matrix[rxDevice]).length === 0) {
-          delete this.state.matrix[rxDevice];
-        }
+      if (getResultCode(unrouteResponse) !== RESULT_CODE_SUCCESS) {
+        throw new Error(
+          `Subscription remove failed for ${device.name}:${rxChannel}: result code 0x${getResultCode(unrouteResponse).toString(16)}`,
+        );
       }
-
-      this.dispatch("driver:state-updated", {
-        data: { matrix: this.state.matrix },
-      });
     },
 
     clearRoutes: async (rxDevice: string): Promise<void> => {
@@ -286,17 +279,17 @@ export default class DanteRouter<
       if (!matrix || Object.keys(matrix).length === 0) return;
 
       const channels = Object.keys(matrix).map(Number);
-      await this.transport.request(
+      const clearResponse = await this.transport.request(
         device.ipv4,
         device.arcPort,
         buildRemoveSubscriptions(channels, 0),
       );
 
-      delete this.state.matrix[rxDevice];
-
-      this.dispatch("driver:state-updated", {
-        data: { matrix: this.state.matrix },
-      });
+      if (getResultCode(clearResponse) !== RESULT_CODE_SUCCESS) {
+        throw new Error(
+          `Subscription clear failed for ${device.name}: result code 0x${getResultCode(clearResponse).toString(16)}`,
+        );
+      }
     },
 
     setLiveMdns: async (enabled: boolean): Promise<void> => {
@@ -473,7 +466,16 @@ export default class DanteRouter<
           device.arcPort,
           buildTxChannelsQuery(page, false, 0),
         );
-        const channels = parseTxChannelInfo(response, device.txCount, page);
+        const { channels, sampleRate } = parseTxChannelInfo(
+          response,
+          device.txCount,
+          page,
+        );
+        if (sampleRate !== undefined && device.sampleRate === undefined) {
+          // TSAS: augmenting device record at discovery time
+          (device as unknown as Record<string, unknown>).sampleRate =
+            sampleRate;
+        }
         for (const [num, ch] of channels) {
           const friendly = friendlyNames.get(num);
           if (friendly) {

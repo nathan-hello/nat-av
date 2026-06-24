@@ -54,7 +54,9 @@ export function parseRxChannels(
     const expected = page * 16 + i + 1;
     if (channelNumber === 0 || channelNumber !== expected) break;
 
-    if (!sampleRateParsed) {
+    const txDeviceOffset = body.readUInt16BE(off + 8);
+
+    if (!sampleRateParsed && txDeviceOffset !== 0) {
       sampleRateParsed = true;
       const sampleRateOffset = body.readUInt16BE(off + 4);
       if (
@@ -70,7 +72,6 @@ export function parseRxChannels(
     }
 
     const txChannelOffset = body.readUInt16BE(off + 6);
-    const txDeviceOffset = body.readUInt16BE(off + 8);
     const rxChannelOffset = body.readUInt16BE(off + 10);
     const rxChannelStatusCode = body.readUInt16BE(off + 12);
     const subscriptionStatusCode = body.readUInt16BE(off + 14);
@@ -139,7 +140,7 @@ export function parseTxChannelInfo(
   response: Buffer,
   txCount: number,
   page: number,
-): Map<number, DanteChannel> {
+): { channels: Map<number, DanteChannel>; sampleRate?: number } {
   const channels = new Map<number, DanteChannel>();
   const body = response.subarray(RESPONSE_HEADER_SIZE);
   const maxRecords = Math.min(
@@ -148,6 +149,7 @@ export function parseTxChannelInfo(
   );
 
   let firstChannelGroup: number | null = null;
+  let sampleRate: number | undefined;
 
   for (let i = 0; i < maxRecords; i++) {
     const off = BODY_HEADER_SIZE + i * TX_RECORD_SIZE;
@@ -161,6 +163,16 @@ export function parseTxChannelInfo(
 
     if (i === 0) {
       firstChannelGroup = channelGroup;
+      const sampleRateOffset = channelGroup;
+      if (
+        response.length >= sampleRateOffset + 4 &&
+        sampleRateOffset < response.length
+      ) {
+        const raw = response.readUInt32BE(sampleRateOffset);
+        if (raw > 0) {
+          sampleRate = raw;
+        }
+      }
     }
 
     if (channelGroup !== firstChannelGroup) break;
@@ -177,7 +189,7 @@ export function parseTxChannelInfo(
     }
   }
 
-  return channels;
+  return { channels, sampleRate };
 }
 
 function getStringAtOffset(data: Buffer, offset: number): string | null {

@@ -81,11 +81,13 @@ export function buildAddSubscriptions(
     throw new Error(`Subscription count must be 1-16, got ${count}`);
   }
 
+  const arcHeaderSize = 8;
   const firstRecordSize = 10;
   const additionalRecordSize = 6;
   const recordsTotal = firstRecordSize + additionalRecordSize * (count - 1);
   const paddingSize = Math.max(0, 44 - recordsTotal);
-  const stringTableOffset = 44;
+  const stringTableOffset =
+    arcHeaderSize + recordsTotal + paddingSize;
 
   const strings: Buffer[] = [];
   const records: { rxChannel: number; txOffset: number; devOffset: number }[] =
