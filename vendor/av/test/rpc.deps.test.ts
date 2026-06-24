@@ -168,9 +168,9 @@ describe("rpc deps", () => {
     await ready;
 
     const clientRoot = client.driver("root");
-    const clientLevel2 = clientRoot.deps.get("level-2");
-    const clientLevel3 = clientLevel2.deps.get("level-3");
-    const clientLeaf = clientLevel3.deps.get("leaf");
+    const clientLevel2 = clientRoot.dep("level-2");
+    const clientLevel3 = clientLevel2.dep("level-3");
+    const clientLeaf = clientLevel3.dep("leaf");
 
     assert.equal(await clientRoot.api.ping(), "root-pong");
     assert.equal(await clientLevel2.api.ping(), "level-2-pong");
