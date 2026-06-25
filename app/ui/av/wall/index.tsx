@@ -1,9 +1,7 @@
 import { getRpc } from "@/state";
 import { Decoder } from "@/ui/av/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/av/wall/source";
-import type { Drivers } from "@av/types";
 import type { LogicalWindow } from "@drivers/decoder/display";
-import type { natav } from "@server/index";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
@@ -22,90 +20,133 @@ type RouteFormState = {
 
 type InteractionMode = "free" | "snap";
 
-type fdsa = Drivers.Names<natav["configs"]>;
-
 export function Wall(handle: Handle<WallProps>) {
-  const rpc = getRpc(handle);
-
-  const display = rpc.driver(handle.props.driverName);
-  const system = rpc.driver("system");
-
-  let mode: InteractionMode = "free";
-  let selectedSource: SourceSelectDetail | null = null;
-  let selectedWindowId: number | null = null;
-  let form: RouteFormState = {
-    dwindowId: 0,
-    uri: "",
-    audioOutput: "",
-    resX: 0,
-    resY: 0,
-    offsetX: 0,
-    offsetY: 0,
-  };
-
-  function getAudioOutputKey(output: { decoderIndex: number; output: number }) {
-    return `${output.decoderIndex}:${output.output}`;
-  }
-
-  function parseAudioOutputKey(value: string) {
-    const [decoderIndex, output] = value
-      .split(":")
-      .map((part) => Number.parseInt(part, 10));
-    return Number.isFinite(decoderIndex) && Number.isFinite(output) ?
-        { decoderIndex, output }
-      : null;
-  }
-
-  function loadWindow(
-    dwindow: LogicalWindow,
-    source?: SourceSelectDetail | null,
-  ) {
-    selectedWindowId = dwindow.id;
-    form = {
-      dwindowId: dwindow.id,
-      uri: source?.id ?? dwindow.routes[0]?.uri ?? form.uri,
-      audioOutput: form.audioOutput,
-      resX: dwindow.global.resX,
-      resY: dwindow.global.resY,
-      offsetX: dwindow.global.offsetX,
-      offsetY: dwindow.global.offsetY,
-    };
-  }
-
-  function updateNumberField(field: keyof RouteFormState, value: string) {
-    form = {
-      ...form,
-      [field]: Number.parseInt(value, 10) || 0,
-    };
-  }
-
   return () => {
-    const state = display.state;
-    const hasState = Boolean(state?.windows);
+    const rpc = getRpc(handle);
+    const display = rpc.driver(handle.props.driverName);
 
-    if (hasState && form.resX === 0 && form.resY === 0 && state.windows?.[0]) {
-      loadWindow(state.windows[0], selectedSource);
+    let mode: InteractionMode = "free";
+    let selectedSource: SourceSelectDetail | null = null;
+    let selectedWindowId: number | null = null;
+    let form: RouteFormState = {
+      dwindowId: 0,
+      uri: "",
+      audioOutput: "",
+      resX: 0,
+      resY: 0,
+      offsetX: 0,
+      offsetY: 0,
+    };
+
+    function getAudioOutputKey(output: {
+      decoderIndex: number;
+      output: number;
+    }) {
+      return `${output.decoderIndex}:${output.output}`;
     }
 
-    if (hasState && !form.uri && state.encoders?.[0]) {
+    function parseAudioOutputKey(value: string) {
+      const [decoderIndex, output] = value
+        .split(":")
+        .map((part) => Number.parseInt(part, 10));
+      return Number.isFinite(decoderIndex) && Number.isFinite(output) ?
+          { decoderIndex, output }
+        : null;
+    }
+
+    function loadWindow(
+      dwindow: LogicalWindow,
+      source?: SourceSelectDetail | null,
+    ) {
+      selectedWindowId = dwindow.id;
+      form = {
+        dwindowId: dwindow.id,
+        uri: source?.id ?? dwindow.routes[0]?.uri ?? form.uri,
+        audioOutput: form.audioOutput,
+        resX: dwindow.global.resX,
+        resY: dwindow.global.resY,
+        offsetX: dwindow.global.offsetX,
+        offsetY: dwindow.global.offsetY,
+      };
+    }
+
+    function updateNumberField(field: keyof RouteFormState, value: string) {
+      form = {
+        ...form,
+        [field]: Number.parseInt(value, 10) || 0,
+      };
+    }
+
+    let movePending = 0;
+    let routePending = 0;
+    let changeTemplatePending = 0;
+    let destroyPending = 0;
+    let debugPending = 0;
+    let audioOutputs = display.state.audioOutputs ?? [];
+    let scale = Math.min(1, 1280 / display.state.canvas.width);
+
+    const off1 = display.on("before:request", (event) => {
+      switch (event.method) {
+        case "debug":
+          debugPending++;
+        case "move":
+          movePending++;
+        case "route":
+          routePending++;
+        case "changeTemplate":
+          changeTemplatePending++;
+        case "destroy":
+          destroyPending++;
+      }
+      handle.update();
+    });
+
+    const off2 = display.on("after:response", (event) => {
+      switch (event.method) {
+        case "debug":
+          debugPending--;
+        case "move":
+          movePending--;
+        case "route":
+          routePending--;
+        case "changeTemplate":
+          changeTemplatePending--;
+        case "destroy":
+          destroyPending--;
+      }
+      handle.update();
+    });
+
+    handle.signal.addEventListener("abort", () => {
+      off1();
+      off2();
+    });
+
+    const hasState = Boolean(display.state?.windows);
+
+    if (
+      hasState &&
+      form.resX === 0 &&
+      form.resY === 0 &&
+      display.state.windows?.[0]
+    ) {
+      loadWindow(display.state.windows[0], selectedSource);
+    }
+
+    if (hasState && !form.uri && display.state.encoders?.[0]) {
       selectedSource = selectedSource ?? {
-        id: state.encoders[0].uri,
-        name: state.encoders[0].name,
+        id: display.state.encoders[0].uri,
+        name: display.state.encoders[0].name,
       };
       form = { ...form, uri: selectedSource.id };
     }
 
-    if (hasState && !form.audioOutput && state.audioOutputs?.[0]) {
-      form = { ...form, audioOutput: getAudioOutputKey(state.audioOutputs[0]) };
+    if (hasState && !form.audioOutput && display.state.audioOutputs?.[0]) {
+      form = {
+        ...form,
+        audioOutput: getAudioOutputKey(display.state.audioOutputs[0]),
+      };
     }
-
-    const movePending = display.isPending("move");
-    const routePending = display.isPending("route");
-    const changeTemplatePending = display.isPending("changeTemplate");
-    const destroyPending = display.isPending("destroy");
-    const debugPending = display.isPending("debug");
-    const audioOutputs = state.audioOutputs ?? [];
-    const scale = hasState ? Math.min(1, 1280 / state.canvas.width) : 0.7;
 
     return (
       <section mix={layoutStyle}>
@@ -158,14 +199,14 @@ export function Wall(handle: Handle<WallProps>) {
                 </div>
                 <div mix={canvasViewportStyle}>
                   <Decoder
-                    canvas={state.canvas}
-                    windows={state.windows}
-                    template={state.template.state}
-                    encoders={state.encoders}
+                    canvas={display.state.canvas}
+                    windows={display.state.windows}
+                    template={display.state.template.state}
+                    encoders={display.state.encoders}
                     scale={scale}
                     mode={mode}
-                    movePending={movePending}
-                    routePending={routePending}
+                    movePending={movePending > 0}
+                    routePending={routePending > 0}
                     selectedWindowId={selectedWindowId}
                     onRegionSelect={(region, global) => {
                       selectedWindowId = region.id;
@@ -245,7 +286,7 @@ export function Wall(handle: Handle<WallProps>) {
             </div>
             {hasState ?
               <div mix={sourceListStyle}>
-                {state.encoders.map((source) => (
+                {display.state.encoders.map((source) => (
                   <Source
                     key={source.uri}
                     id={source.uri}
@@ -385,7 +426,7 @@ export function Wall(handle: Handle<WallProps>) {
             <div mix={buttonRowStyle}>
               <button
                 type="button"
-                disabled={routePending || !form.uri}
+                disabled={routePending > 0 || !form.uri}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -415,7 +456,7 @@ export function Wall(handle: Handle<WallProps>) {
               </button>
               <button
                 type="button"
-                disabled={movePending}
+                disabled={movePending > 0}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -427,7 +468,7 @@ export function Wall(handle: Handle<WallProps>) {
               </button>
               <button
                 type="button"
-                disabled={destroyPending}
+                disabled={destroyPending > 0}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -439,7 +480,7 @@ export function Wall(handle: Handle<WallProps>) {
               </button>
               <button
                 type="button"
-                disabled={destroyPending}
+                disabled={destroyPending > 0}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -456,11 +497,11 @@ export function Wall(handle: Handle<WallProps>) {
             <h2 mix={titleStyle}>Templates</h2>
             {hasState ?
               <div mix={templateListStyle}>
-                {state.template.choices.map((template) => (
+                {display.state.template.choices.map((template) => (
                   <button
-                    key={template.id}
+                    key={`template-${template.name}-${template.id}`}
                     type="button"
-                    disabled={changeTemplatePending}
+                    disabled={changeTemplatePending > 0}
                     mix={[
                       buttonStyle,
                       on("click", () => {
@@ -469,18 +510,18 @@ export function Wall(handle: Handle<WallProps>) {
                     ]}
                     style={{
                       background:
-                        state.template.state.id === template.id ?
+                        display.state.template.state.id === template.id ?
                           "#fff"
                         : undefined,
                       color:
-                        state.template.state.id === template.id ?
+                        display.state.template.state.id === template.id ?
                           "#000"
                         : undefined,
                     }}
                   >
                     {(
                       changeTemplatePending &&
-                      state.template.state.id === template.id
+                      display.state.template.state.id === template.id
                     ) ?
                       "Switching..."
                     : template.name}
@@ -495,7 +536,7 @@ export function Wall(handle: Handle<WallProps>) {
               <h2 mix={titleStyle}>Debug</h2>
               <button
                 type="button"
-                disabled={debugPending}
+                disabled={debugPending > 0}
                 mix={[
                   buttonStyle,
                   on("click", () => {
@@ -507,7 +548,9 @@ export function Wall(handle: Handle<WallProps>) {
               </button>
             </div>
             {hasState ?
-              <pre mix={stateStyle}>{JSON.stringify(state, null, 2)}</pre>
+              <pre mix={stateStyle}>
+                {JSON.stringify(display.state, null, 2)}
+              </pre>
             : <div mix={emptyStyle}>No state yet.</div>}
           </section>
         </aside>

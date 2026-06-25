@@ -111,6 +111,36 @@ export namespace Events {
       change: { name?: string };
     };
 
+    export type DriverEventBase = {
+      id: number;
+    };
+
+    type RequestMethodInfo<T, Prefix extends string = ""> = {
+      [K in keyof T & string]: T[K] extends (...args: infer A) => infer R ?
+        {
+          method: `${Prefix}${K}`;
+          args: A;
+          data: R extends Promise<infer D> ? D : R;
+        }
+      : T[K] extends object ? RequestMethodInfo<T[K], `${Prefix}${K}/`>
+      : never;
+    }[keyof T & string];
+
+    type BeforePayload<T> =
+      T extends { method: string; args: any[] } ? Pick<T, "method" | "args">
+      : never;
+
+    type OkPayload<T> =
+      T extends { method: string; data: any } ? Pick<T, "method" | "data">
+      : never;
+
+    type MethodNames<T, Prefix extends string = ""> = {
+      [K in keyof T & string]: T[K] extends (...args: any[]) => any ?
+        `${Prefix}${K}`
+      : T[K] extends object ? MethodNames<T[K], `${Prefix}${K}/`>
+      : never;
+    }[keyof T & string];
+
     export type DriverMap<
       N extends Drivers.Array = Drivers.Array,
       Name extends Drivers.Names<N> = Drivers.Names<N>,
@@ -118,6 +148,23 @@ export namespace Events {
       change: {
         name: Name;
         state: Drivers.State<N, Name> | undefined;
+      };
+      "before:request": DriverEventBase &
+        BeforePayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+
+      "after:response": DriverEventBase &
+        (
+          | OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>
+          | {
+              method: MethodNames<Drivers.Api<N, Name>>;
+              error: NRpc.Error;
+            }
+        );
+      "after:response:ok": DriverEventBase &
+        OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+      "after:response:error": DriverEventBase & {
+        method: MethodNames<Drivers.Api<N, Name>>;
+        error: NRpc.Error;
       };
     };
   }

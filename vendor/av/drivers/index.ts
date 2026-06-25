@@ -210,55 +210,26 @@ export class Manager<
       configs = filter(this.configs);
     }
 
-    const promises = configs.map(async (d) => {
-      const name = d.name;
-      if (!this.IsDriverName(name)) {
+    const inited = new Set<string>();
+
+    const initTree = async (d: Driver) => {
+      if (inited.has(d.name)) {
         throw new Rpc.Error({
-          code: Rpc.Error.Codes.DriverNotFound,
-          message: `Manager.Start: ${name}`,
+          code: Rpc.Error.Codes.ManagerFoundMultipleNames,
+          message: `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.configs)}`,
         });
       }
 
-      d.on("driver:state-updated", (event) =>
-        this.bus.dispatch("natav:state:update", {
-          name,
-          data: event.data,
-        }),
-      );
+      // Start the dependent drivers first
+      for (const dep of d.deps ?? []) {
+        await initTree(dep);
+      }
 
-      d.socket?.on?.("debug", (event) => {
-        const data = {
-          name,
-          data: event.data,
-        };
-        this.bus.dispatch("natav:debug:socket", data);
+      await this.initDriver(d);
+      inited.add(d.name);
+    };
 
-        if (data.data.direction === "tx") {
-          d.tel.info("delimited", data);
-        }
-      });
-
-      d.on("driver:delimited", (event) => {
-        const payload = Format.Convert.toUint8Array(event);
-
-        const data = {
-          name,
-          data: {
-            traceName: d.socket?.name ?? name,
-            direction: "rx-delimited",
-            time: Date.now(),
-            encoding: "utf8",
-            data: payload,
-          },
-        } as const;
-
-        d.tel.info("delimited", data);
-
-        this.bus.dispatch("natav:debug:socket", data);
-      });
-
-      await d.start();
-    });
+    const promises = configs.map((d) => initTree(d));
 
     await Promise.all(promises);
   }
@@ -269,5 +240,55 @@ export class Manager<
     });
 
     await Promise.all(promises);
+  }
+
+  private async initDriver(d: Driver) {
+    const name = d.name;
+    if (!this.IsDriverName(name)) {
+      throw new Rpc.Error({
+        code: Rpc.Error.Codes.DriverNotFound,
+        message: `Manager.Start: ${name}`,
+      });
+    }
+
+    d.on("driver:state-updated", (event) =>
+      this.bus.dispatch("natav:state:update", {
+        name,
+        data: event.data,
+      }),
+    );
+
+    d.socket?.on?.("debug", (event) => {
+      const data = {
+        name,
+        data: event.data,
+      };
+      this.bus.dispatch("natav:debug:socket", data);
+
+      if (data.data.direction === "tx") {
+        d.tel.info("delimited", data);
+      }
+    });
+
+    d.on("driver:delimited", (event) => {
+      const payload = Format.Convert.toUint8Array(event);
+
+      const data = {
+        name,
+        data: {
+          traceName: d.socket?.name ?? name,
+          direction: "rx-delimited",
+          time: Date.now(),
+          encoding: "utf8",
+          data: payload,
+        },
+      } as const;
+
+      d.tel.info("delimited", data);
+
+      this.bus.dispatch("natav:debug:socket", data);
+    });
+
+    await d.start();
   }
 }

@@ -11,6 +11,7 @@ export class ClientRpcDriver<
   private apiProxy: Rpc.Client.Api<N["configs"], Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
+  private proxyCallId = 0;
 
   readonly event: Rpc.Client.Events.Handle<N["configs"], Name> = {
     on: async (event, callback) => {
@@ -54,7 +55,30 @@ export class ClientRpcDriver<
 
         return this.createApiProxy([...path, methodName]);
       },
-      apply: (_, __, args: unknown[]) => this.call(path.join("/"), args),
+      apply: (_, __, args: unknown[]) => {
+        const method = path.join("/");
+        const id = this.proxyCallId++;
+
+        // TSAS: proxy method path and args are always valid per the driver's API type
+        this.dispatch("before:request", { id, method, args } as any);
+
+        const promise = this.call(method, args);
+
+        promise.then(
+          // TSAS: proxy method/data match the resolved API type at runtime
+          (data) => {
+            this.dispatch("after:response", { id, method, data } as any);
+            this.dispatch("after:response:ok", { id, method, data } as any);
+          },
+          // TSAS: RPC rejections from requests module are always Rpc.Error instances
+          (error) => {
+            this.dispatch("after:response", { id, method, error } as any);
+            this.dispatch("after:response:error", { id, method, error } as any);
+          },
+        );
+
+        return promise;
+      },
       // TSAS: Proxy
     }) as unknown as Rpc.Client.Api<N["configs"], Name>;
   }

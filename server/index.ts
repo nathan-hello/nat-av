@@ -31,7 +31,7 @@ const drivers = [
       new Decoder({
         name: "decoder-1",
         socket: new Tcp({
-          addr: "127.0.0.1",
+          addr: "decoder-e8d8d1599092.local",
           port: 12345,
           keepAlive: true,
         }),

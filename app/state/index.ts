@@ -1,16 +1,17 @@
-import { Rpc, RpcClient } from "@av/client";
+import { Rpc, RpcClient, Telemetry } from "@av/client";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
-let rpcClient: RpcClient<natav> | null = null;
+Telemetry.Sdk.AddExporters([
+  new Telemetry.Exporters.SimpleConsoleExporter("DEBUG"),
+]);
+
+const rpcClient = new RpcClient<natav>();
+await rpcClient.connect();
+
 const subscriptions = new WeakMap<Handle, () => void>();
 
 export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav> {
-  if (!rpcClient) {
-    rpcClient = new RpcClient();
-    rpcClient.connect();
-  }
-
   if (subscriptions.has(handle)) {
     return rpcClient;
   }

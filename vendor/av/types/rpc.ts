@@ -380,6 +380,7 @@ export namespace Rpc {
       RpcTimeout: -32004,
       RpcDisconnected: -32005,
       CtxNotFound: -36001,
+      ManagerFoundMultipleNames: -37001,
     } as const;
   }
 

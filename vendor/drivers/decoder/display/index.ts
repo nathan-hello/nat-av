@@ -77,10 +77,46 @@ export default class DisplayManager<
         output,
       })),
     );
+
     this.placement = placement;
-    this.computeCanvasDimensions();
-    this.checkOverlaps();
-    this.subscribeToDecoders();
+
+    // compute canvas size
+    for (const { output } of this.loutputs) {
+      this.canvasWidth = Math.max(
+        this.canvasWidth,
+        output.canvasX + output.resX,
+      );
+      this.canvasHeight = Math.max(
+        this.canvasHeight,
+        output.canvasY + output.resY,
+      );
+    }
+
+    // compute if any of the decoder outputs overlap
+    for (let i = 0; i < this.loutputs.length; i++) {
+      for (let j = i + 1; j < this.loutputs.length; j++) {
+        const a = this.loutputs[i].output;
+        const b = this.loutputs[j].output;
+
+        const overlapX =
+          a.canvasX < b.canvasX + b.resX && a.canvasX + a.resX > b.canvasX;
+        const overlapY =
+          a.canvasY < b.canvasY + b.resY && a.canvasY + a.resY > b.canvasY;
+
+        if (overlapX && overlapY) {
+          throw new Error(
+            `Monitors overlap: decoder ${this.loutputs[i].decoderIndex} output ${a.outputId} and decoder ${this.loutputs[j].decoderIndex} output ${b.outputId}`,
+          );
+        }
+      }
+    }
+
+    for (const driver of this.deps) {
+      driver.on("driver:state-updated", () => {
+        this.rebuildWindows();
+        this.dispatch("driver:state-updated", { data: this.state });
+      });
+    }
   }
 
   get state(): DisplayState {
@@ -271,51 +307,9 @@ export default class DisplayManager<
     },
   };
 
-  private subscribeToDecoders(): void {
-    for (const driver of this.deps) {
-      driver.on("driver:state-updated", () => {
-        this.rebuildWindows();
-        this.dispatch("driver:state-updated", { data: this.state });
-      });
-    }
-  }
-
   private rebuildWindows(): void {
     const routesByDecoder = this.deps.map((c) => c.state.routes.video);
     this.lwindows = this.videoRoutesToWindows(routesByDecoder);
-  }
-
-  private computeCanvasDimensions(): void {
-    for (const { output } of this.loutputs) {
-      this.canvasWidth = Math.max(
-        this.canvasWidth,
-        output.canvasX + output.resX,
-      );
-      this.canvasHeight = Math.max(
-        this.canvasHeight,
-        output.canvasY + output.resY,
-      );
-    }
-  }
-
-  private checkOverlaps(): void {
-    for (let i = 0; i < this.loutputs.length; i++) {
-      for (let j = i + 1; j < this.loutputs.length; j++) {
-        const a = this.loutputs[i].output;
-        const b = this.loutputs[j].output;
-
-        const overlapX =
-          a.canvasX < b.canvasX + b.resX && a.canvasX + a.resX > b.canvasX;
-        const overlapY =
-          a.canvasY < b.canvasY + b.resY && a.canvasY + a.resY > b.canvasY;
-
-        if (overlapX && overlapY) {
-          throw new Error(
-            `Monitors overlap: decoder ${this.loutputs[i].decoderIndex} output ${a.outputId} and decoder ${this.loutputs[j].decoderIndex} output ${b.outputId}`,
-          );
-        }
-      }
-    }
   }
 
   /**

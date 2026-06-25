@@ -53,18 +53,51 @@ export class TypedEventTarget<
 
   once<K extends keyof Events>(
     type: K & string,
+    handler: (payload: Events[K]) => void,
+    options?: boolean | AddEventListenerOptions,
+  ): () => void;
+  once<K extends keyof Events>(
+    type: K & string,
     options?: { signal?: AbortSignal },
-  ): Promise<Events[K]> {
+  ): Promise<Events[K]>;
+  once<K extends keyof Events>(
+    type: K & string,
+    handlerOrOptions?:
+      | ((payload: Events[K]) => void)
+      | { signal?: AbortSignal },
+    options?: boolean | AddEventListenerOptions,
+  ): (() => void) | Promise<Events[K]> {
+    if (typeof handlerOrOptions === "function") {
+      const listener = (event: Event) => {
+        if (event instanceof CustomEvent) {
+          handlerOrOptions(event.detail);
+        }
+      };
+
+      super.addEventListener(type, listener, {
+        ...(options as AddEventListenerOptions),
+        once: true,
+      });
+
+      return () =>
+        super.removeEventListener(type, listener, options);
+    }
+
     return new Promise<Events[K]>((resolve, reject) => {
       const listener = (event: Event) => {
         if (event instanceof CustomEvent) resolve(event.detail);
       };
 
-      options?.signal?.addEventListener(
+      (
+        handlerOrOptions as { signal?: AbortSignal } | undefined
+      )?.signal?.addEventListener(
         "abort",
         () => {
           super.removeEventListener(type, listener);
-          reject(options.signal?.reason);
+          reject(
+            (handlerOrOptions as { signal?: AbortSignal } | undefined)?.signal
+              ?.reason,
+          );
         },
         { once: true },
       );
