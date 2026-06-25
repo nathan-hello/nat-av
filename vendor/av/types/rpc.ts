@@ -98,11 +98,11 @@ export namespace Rpc {
     };
 
     export type DriverHandle<
-      N extends Manager,
-      Name extends Drivers.Names<N["configs"]>,
+      N extends Manager = Manager,
+      Name extends Drivers.Names<N["configs"]> = Drivers.Names<N["configs"]>,
     > = Pick<
       ClientRpcDriver<N, Name>,
-      "api" | "state" | "on" | "event" | "once" | "pendingCount"
+      "name" | "api" | "state" | "on" | "event" | "once" | "pendingCount"
     > & {
       dep: <DepName extends Drivers.DepNames<N, Name>>(
         depName: DepName,

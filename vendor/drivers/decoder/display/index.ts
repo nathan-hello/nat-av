@@ -2,7 +2,6 @@ import { Driver, type Drivers } from "@av/index";
 import config from "../config";
 import type Decoder from "../index";
 import type { VideoRoute } from "../types";
-import { DisplaySchema } from "./schema";
 import { BUILTIN_TEMPLATES } from "./templates/1x1/templates";
 import type { GridTemplate } from "./templates/builder";
 
@@ -65,10 +64,6 @@ export default class DisplayManager<
   private placement: { [K in Drivers.Names<D>]: OutputPlacement[] };
 
   private template = BUILTIN_TEMPLATES[0];
-
-  schema = () => {
-    return DisplaySchema;
-  };
 
   constructor(
     name: N,

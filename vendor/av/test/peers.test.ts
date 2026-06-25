@@ -1,6 +1,6 @@
 import { Driver, Manager } from "@av/drivers";
 import { Test } from "@av/test/data.test";
-import type { Drivers, Schema } from "@av/types";
+import type { Drivers } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -13,10 +13,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
       },
     };
     socket = undefined;
-
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
 
     constructor() {
       super({ name: "left-peer" });
@@ -32,10 +28,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
     socket = undefined;
 
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
-
     constructor() {
       super({ name: "right-peer" });
     }
@@ -46,10 +38,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     api = {};
     socket = undefined;
     natav: Drivers.ManagerView<readonly [RightPeer, RightDeferred]>;
-
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
 
     constructor(
       natav: Drivers.ManagerView<readonly [RightPeer, RightDeferred]>,
@@ -73,10 +61,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     api = {};
     socket = undefined;
 
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
-
     constructor(natav: Drivers.ManagerView<readonly [LeftPeer]>) {
       super({ name: "right-deferred" });
       this.natav = natav;
@@ -98,10 +82,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     };
     socket = undefined;
 
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
-
     constructor() {
       super({ name: "child-peer" });
     }
@@ -111,10 +91,6 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     state = { ready: true };
     api = {};
     socket = undefined;
-
-    schema = (): Schema.Schema<typeof this.api> => {
-      return [];
-    };
 
     constructor(child: ChildPeer) {
       super({ name: "parent-peer", deps: [child] });

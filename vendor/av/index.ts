@@ -20,7 +20,7 @@ export { RequestManager } from "@av/lib/requests";
 export { Delimiters } from "@av/sockets/delimiters";
 export { Test } from "@av/test/data.test";
 export { Format, Rpc } from "@av/types";
-export type { Drivers, Events, Requests, Schema, Sockets } from "@av/types";
+export type { Drivers, Events, Requests, Sockets } from "@av/types";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,

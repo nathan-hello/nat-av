@@ -1,5 +1,5 @@
 import { getRpc } from "@/state";
-import { type Drivers, RpcDriver } from "@av/client";
+import { type Drivers, RpcDriver, Rpc } from "@av/client";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
@@ -11,7 +11,7 @@ export function DebugPage(handle: Handle) {
   const debug = rpc.driver("debugger");
 
   let selectedDriverName: string | null = null;
-  let selectedNode: RpcDriver<natav> | null = null;
+  let selectedNode: Rpc.Client.DriverHandle | null = null;
 
   return () => {
     const tree = debug.api.tree();

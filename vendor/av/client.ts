@@ -14,7 +14,7 @@ export { RpcClient } from "@av/rpc/client";
 export { ClientRpcDriver as RpcDriver } from "@av/rpc/client/driver";
 export { ClientWebsocket } from "@av/rpc/client/websocket";
 export { Format, Rpc } from "@av/types";
-export type { Drivers, Events, Requests, Schema, Sockets } from "@av/types";
+export type { Drivers, Events, Requests, Sockets } from "@av/types";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,

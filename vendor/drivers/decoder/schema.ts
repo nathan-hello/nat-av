@@ -1,8 +1,4 @@
-import type { Schema } from "@av/index";
-import type Decoder from "./index";
-import type * as T from "./types";
-
-export const SchemaAudioRoute: Schema.Map<T.AudioRoute>["object"] = {
+export const SchemaAudioRoute = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -11,12 +7,12 @@ export const SchemaAudioRoute: Schema.Map<T.AudioRoute>["object"] = {
   ],
 };
 
-export const SchemaAudioRouteArray: Schema.Map<T.AudioRoute[]>["array"] = {
+export const SchemaAudioRouteArray = {
   type: "array",
   items: [SchemaAudioRoute],
 };
 
-export const SchemaVideoRoute: Schema.Map<T.VideoRoute>["object"] = {
+export const SchemaVideoRoute = {
   type: "object",
   fields: [
     { name: "height", value: { type: "number" } },
@@ -30,12 +26,12 @@ export const SchemaVideoRoute: Schema.Map<T.VideoRoute>["object"] = {
   ],
 };
 
-export const SchemaVideoRouteArray: Schema.Map<T.VideoRoute[]>["array"] = {
+export const SchemaVideoRouteArray = {
   type: "array",
   items: [SchemaVideoRoute],
 };
 
-export const SchemaMoveWindowArgs: Schema.Map<T.MoveWindowArgs>["object"] = {
+export const SchemaMoveWindowArgs = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -48,9 +44,7 @@ export const SchemaMoveWindowArgs: Schema.Map<T.MoveWindowArgs>["object"] = {
   ],
 };
 
-export const SchemaRouteDestroyParams: Schema.Map<
-  T.RouteDestroyRequest["params"]
->["object"] = {
+export const SchemaRouteDestroyParams = {
   type: "object",
   fields: [
     {
@@ -83,9 +77,7 @@ export const SchemaRouteDestroyParams: Schema.Map<
   ],
 };
 
-export const SchemaVideoOutputContext: Schema.Map<
-  T.DecoderContext["video"][number]
->["object"] = {
+export const SchemaVideoOutputContext = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -95,9 +87,7 @@ export const SchemaVideoOutputContext: Schema.Map<
   ],
 };
 
-export const SchemaAudioOutputContext: Schema.Map<
-  T.DecoderContext["audio"][number]
->["object"] = {
+export const SchemaAudioOutputContext = {
   type: "object",
   fields: [
     { name: "output", value: { type: "number" } },
@@ -105,7 +95,7 @@ export const SchemaAudioOutputContext: Schema.Map<
   ],
 };
 
-export const SchemaDecoderContext: Schema.Map<T.DecoderContext>["object"] = {
+export const SchemaDecoderContext = {
   type: "object",
   fields: [
     {
@@ -135,7 +125,7 @@ export const VideoAndAudioReturn = {
   ],
 } as const;
 
-export const DecoderSchema = (): Schema.Schema<Decoder> => [
+export const DecoderSchema = () => [
   {
     name: "fetchRoutes",
     args: [],

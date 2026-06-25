@@ -7,7 +7,7 @@ import type {
   ServerRpcTransport as ServerRpcTransportShape,
 } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
-import type { Events, Rpc, Schema, Sockets } from "@av/types";
+import type { Events, Rpc, Sockets } from "@av/types";
 
 export namespace Test {
   export type Equal<A, B> =
@@ -122,21 +122,6 @@ export namespace Test {
       invalid: async (_: () => void) => {
         return new Date();
       },
-    };
-
-    schema = (): Schema.Schema<Driver> => {
-      return [
-        {
-          name: "ping",
-          returns: { type: "string" },
-          args: [],
-        },
-        {
-          name: "send",
-          args: [{ type: "string" }],
-          returns: { type: "number" },
-        },
-      ];
     };
 
     constructor({ name, socket }: { name: N; socket: Sockets.Client }) {
