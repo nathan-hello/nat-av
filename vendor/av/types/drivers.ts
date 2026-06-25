@@ -31,6 +31,7 @@ export namespace Drivers {
     Context extends Drivers.Context = Drivers.Context,
   > {
     readonly configs: N;
+    readonly configs_flat: Driver[];
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;
     GetDriver<Name extends Drivers.Names<N>>(
       name: Name,

@@ -68,6 +68,10 @@ export class ClientRpcDriver<
     }
   }
 
+  isPending(method: string) {
+    return this.pendingCount(method) > 0;
+  }
+
   pendingCount(method: string) {
     return this.pendingCounts.get(method) ?? 0;
   }

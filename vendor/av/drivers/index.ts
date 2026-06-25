@@ -8,7 +8,6 @@ import {
   Rpc,
   type Drivers,
   type Events,
-  type Schema,
   type Sockets,
 } from "@av/types";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -28,8 +27,6 @@ export abstract class Driver<
   public abstract api: Api;
   // TSAS:
   public socket: Socket = undefined as Socket;
-  public schema?: () => Schema.Schema<Api> | Promise<Schema.Schema<Api>> =
-    undefined;
 
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;

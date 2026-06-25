@@ -1,10 +1,9 @@
-import { Debugger } from "@av/drivers/builtin/debug";
 import { RpcClient } from "@av/rpc/client";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { RpcServer } from "@av/rpc/server";
 import { ServerTransportWebsocket } from "@av/rpc/server/websocket";
-import { Tcp } from "@av/sockets/tcp";
-import { Udp } from "@av/sockets/udp";
+export { Tcp } from "@av/sockets/tcp";
+export { Udp } from "@av/sockets/udp";
 import {
   Telemetry as BaseTelemetry,
   type TelemetryLogSchema as BaseTelemetryLogSchema,
@@ -33,16 +32,6 @@ export namespace Telemetry {
   export import Exporters = TelemetryExportersMod;
   export import Sdk = TelemetrySdkMod;
   export import Server = TelemetryServerExportersMod;
-}
-
-export namespace Builtin {
-  export const Drivers = {
-    Debugger,
-  };
-  export const Sockets = {
-    Tcp,
-    Udp,
-  };
 }
 
 export const Client = {

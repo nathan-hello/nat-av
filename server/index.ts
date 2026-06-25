@@ -1,6 +1,7 @@
-import { Builtin, Manager, Server, Telemetry, type Rpc } from "@av/index";
+import { Manager, Server, Tcp, Telemetry, type Rpc } from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
+import { Debugger } from "@drivers/natav/debug";
 import { System } from "@server/system";
 
 // TSAS:
@@ -29,7 +30,7 @@ const drivers = [
     [
       new Decoder({
         name: "decoder-1",
-        socket: new Builtin.Sockets.Tcp({
+        socket: new Tcp({
           addr: "127.0.0.1",
           port: 12345,
           keepAlive: true,
@@ -46,7 +47,7 @@ const drivers = [
 
 export type drivers = typeof drivers;
 
-const deferred = [Builtin.Drivers.Debugger, System] as const;
+const deferred = [Debugger, System] as const;
 
 export type deferred = typeof deferred;
 

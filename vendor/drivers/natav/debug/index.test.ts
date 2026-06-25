@@ -1,8 +1,8 @@
 import { Manager } from "@av/drivers";
-import { Debugger } from "@av/drivers/builtin/debug";
 import { Test } from "@av/test/data.test";
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { Debugger } from "./index";
 
 it("preloads the debugger tree and appends messages to each node", async () => {
   const eventDriver = new Test.EventDriver("event-1");

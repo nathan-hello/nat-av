@@ -1,4 +1,4 @@
-import { Driver, TypedEventTarget, type Schema, type Sockets } from "@av/index";
+import { Driver, TypedEventTarget, type Sockets } from "@av/index";
 
 type MediasiteStatus = "IDLE" | "RECBUSY" | "RECORD" | "PAUSED" | "PUBLISH";
 
@@ -214,11 +214,6 @@ export default class Mediasite<
         break;
     }
   }
-
-  schema = (): Schema.Schema<Mediasite> => {
-    // TSAS: TODO: Implement schema.
-    return [] as unknown as Schema.Schema<Mediasite>;
-  };
 
   private send(command: string) {
     const msg = `* ${command} \r`;
