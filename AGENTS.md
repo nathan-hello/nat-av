@@ -15,7 +15,7 @@ The `./vendor/av/` directory is a vendored library called `nat-av`. Refer to
 
 ## Rules
 
-### TSAS comments for Typescript assertions 
+### TSAS comments for Typescript assertions
 
 Whenever creating a Typescript assertion by using the `as` keyword, you must
 add a `// TSAS: ` comment above the assertion explaining why the assertion
@@ -50,9 +50,8 @@ When importing from the `vendor/av` folder into another folder, such as `app`,
 or `vendor/drivers`, you should always import either `@av/client` or
 `@av/index` if importing into a file that will never be ran on client.
 
-For files within `vendor/drivers`, use relative paths for imports that are 
+For files within `vendor/drivers`, use relative paths for imports that are
 local to that driver and `@av/index` for everything else. `@av/index` has
 access to all of the apis that a driver will need. The reason why relative
 imports here are okay is because we are prioritizing the portability of
 folders wtihin the `vendor/drivers` folder.
-

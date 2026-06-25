@@ -2,8 +2,6 @@ import { RpcClient } from "@av/rpc/client";
 import { ClientWebsocket } from "@av/rpc/client/websocket";
 import { RpcServer } from "@av/rpc/server";
 import { ServerTransportWebsocket } from "@av/rpc/server/websocket";
-export { Tcp } from "@av/sockets/tcp";
-export { Udp } from "@av/sockets/udp";
 import {
   Telemetry as BaseTelemetry,
   type TelemetryLogSchema as BaseTelemetryLogSchema,
@@ -13,6 +11,8 @@ import * as TelemetryRuntimeMod from "@av/telemetry/runtime";
 import * as TelemetrySdkMod from "@av/telemetry/sdk";
 import * as TelemetryServerExportersMod from "@av/telemetry/server/exporters";
 import * as TelemetryTypesMod from "@av/telemetry/types";
+export { Tcp } from "@av/sockets/tcp";
+export { Udp } from "@av/sockets/udp";
 
 export { Driver, Manager } from "@av/drivers";
 export { TypedEventTarget } from "@av/lib/eventtarget";

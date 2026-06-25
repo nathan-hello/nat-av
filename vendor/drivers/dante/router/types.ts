@@ -35,7 +35,10 @@ export interface RouteEntry {
 }
 
 export interface DanteRouterMatrix {
-  [rxServerName: string]: Record<number, { txDevice: string; txChannelName: string }>;
+  [rxServerName: string]: Record<
+    number,
+    { txDevice: string; txChannelName: string }
+  >;
 }
 
 export interface DanteRouterState {

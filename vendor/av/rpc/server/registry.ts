@@ -1,6 +1,8 @@
 import type { Rpc } from "@av/types";
 
-export class RpcPeerRegistry<ContextType extends Rpc.Server.Context = Rpc.Server.Context> {
+export class RpcPeerRegistry<
+  ContextType extends Rpc.Server.Context = Rpc.Server.Context,
+> {
   private peers = new WeakMap<Rpc.WebSocket.Peer, ContextType>();
 
   constructor(
@@ -8,10 +10,11 @@ export class RpcPeerRegistry<ContextType extends Rpc.Server.Context = Rpc.Server
   ) {}
 
   open(peer: Rpc.WebSocket.Peer): ContextType {
-    const context = this.peerToContext
-      ? this.peerToContext(peer)
-      : // TSAS: The default context always satisfies Rpc.Server.Context.
-        ({ addr: peer.addr, name: peer.addr } as ContextType);
+    const context =
+      this.peerToContext ?
+        this.peerToContext(peer)
+        // TSAS: The default context always satisfies Rpc.Server.Context.
+      : ({ addr: peer.addr, name: peer.addr } as ContextType);
     this.peers.set(peer, context);
     return context;
   }

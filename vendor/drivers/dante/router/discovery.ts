@@ -1,4 +1,4 @@
-import { execFile, type ChildProcess, spawn } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import type {
   DiscoveredService,
   DiscoveryBackend,
@@ -49,10 +49,11 @@ function parseAvahiLine(line: string): DiscoveredService | null {
 }
 
 function avahiServiceType(serviceType: string): string {
-  return serviceType.endsWith(".local.") ?
-      serviceType.slice(0, -7)
+  return (
+    serviceType.endsWith(".local.") ? serviceType.slice(0, -7)
     : serviceType.endsWith(".") ? serviceType.slice(0, -1)
-    : serviceType;
+    : serviceType
+  );
 }
 
 export class AvahiDiscovery implements DiscoveryBackend {

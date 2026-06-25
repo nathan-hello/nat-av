@@ -42,7 +42,8 @@ function cmdList() {
     return;
   }
   for (const d of devices) {
-    const rate = d.sampleRate ? ` [${(d.sampleRate / 1000).toFixed(0)}kHz]` : "";
+    const rate =
+      d.sampleRate ? ` [${(d.sampleRate / 1000).toFixed(0)}kHz]` : "";
     console.log(`${d.name}  (${d.serverName} @ ${d.ipv4}:${d.arcPort})${rate}`);
     console.log(`  TX (${d.txCount}): ${formatChannels(d.txChannels)}`);
     console.log(`  RX (${d.rxCount}): ${formatChannels(d.rxChannels)}`);
@@ -70,7 +71,9 @@ function cmdMatrix() {
 
 async function cmdRoute(args: string[]) {
   if (args.length < 4) {
-    console.log("Usage: route <rx-device> <rx-channel> <tx-device> <tx-channel>");
+    console.log(
+      "Usage: route <rx-device> <rx-channel> <tx-device> <tx-channel>",
+    );
     return;
   }
   const rxDev = resolveDevice(args[0]);
@@ -193,10 +196,7 @@ rl.on("line", async (line: string) => {
         );
     }
   } catch (err) {
-    console.error(
-      "Error:",
-      err instanceof Error ? err.message : String(err),
-    );
+    console.error("Error:", err instanceof Error ? err.message : String(err));
   }
 
   rl.prompt();

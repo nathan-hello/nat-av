@@ -71,21 +71,18 @@ describe("rpc driver events", () => {
     assert.deepEqual(received, [{ count: 1 }]);
     const sent = () => transport.sent.map((message) => JSON.parse(message));
 
-    assert.deepEqual(
-      sent().slice(1),
-      [
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.subscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 1,
+    assert.deepEqual(sent().slice(1), [
+      {
+        jsonrpc: "2.0",
+        method: "driver.events.subscribe",
+        params: {
+          driver: "event-1",
+          method: "tick",
+          args: [],
         },
-      ],
-    );
+        id: 1,
+      },
+    ]);
 
     // Verify that off() works
     await off1();
@@ -100,51 +97,48 @@ describe("rpc driver events", () => {
     assert.deepEqual(received, [{ count: 1 }, { count: 3 }]);
     await off2();
 
-    assert.deepEqual(
-      sent().slice(1),
-      [
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.subscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 1,
+    assert.deepEqual(sent().slice(1), [
+      {
+        jsonrpc: "2.0",
+        method: "driver.events.subscribe",
+        params: {
+          driver: "event-1",
+          method: "tick",
+          args: [],
         },
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.unsubscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 2,
+        id: 1,
+      },
+      {
+        jsonrpc: "2.0",
+        method: "driver.events.unsubscribe",
+        params: {
+          driver: "event-1",
+          method: "tick",
+          args: [],
         },
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.subscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 3,
+        id: 2,
+      },
+      {
+        jsonrpc: "2.0",
+        method: "driver.events.subscribe",
+        params: {
+          driver: "event-1",
+          method: "tick",
+          args: [],
         },
-        {
-          jsonrpc: "2.0",
-          method: "driver.events.unsubscribe",
-          params: {
-            driver: "event-1",
-            method: "tick",
-            args: [],
-          },
-          id: 4,
+        id: 3,
+      },
+      {
+        jsonrpc: "2.0",
+        method: "driver.events.unsubscribe",
+        params: {
+          driver: "event-1",
+          method: "tick",
+          args: [],
         },
-      ],
-    );
+        id: 4,
+      },
+    ]);
 
     client.close();
   });

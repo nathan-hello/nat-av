@@ -5,7 +5,6 @@ import { css, type Handle } from "remix/ui";
 export function HomePage(handle: Handle) {
   let rpc = getRpc(handle);
 
-
   return () => {
     return (
       <main mix={shellStyle}>

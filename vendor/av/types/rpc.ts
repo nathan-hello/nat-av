@@ -91,7 +91,10 @@ export namespace Rpc {
       Name extends Drivers.Names<N> = Drivers.Names<N>,
     > = Drivers.Api<N, Name>;
 
-    export type Handle<N extends Manager> = Pick<RpcClient<N>, "ctx" | "isOnline"> & {
+    export type Handle<N extends Manager> = Pick<
+      RpcClient<N>,
+      "ctx" | "isOnline"
+    > & {
       driver<Name extends Drivers.Names<N["configs"]>>(
         name: Name,
       ): DriverHandle<N, Name>;

@@ -55,7 +55,8 @@ export function buildTxChannelsQuery(
   friendlyNames: boolean,
   transactionId: number,
 ): Buffer {
-  const opcode = friendlyNames ? OPCODE_TX_CHANNEL_NAMES : OPCODE_TX_CHANNEL_INFO;
+  const opcode =
+    friendlyNames ? OPCODE_TX_CHANNEL_NAMES : OPCODE_TX_CHANNEL_INFO;
   const startingChannel = page * CHANNELS_PER_TX_PAGE + 1;
   const payload = Buffer.alloc(8);
   payload.writeUInt16BE(0, 0);
@@ -86,8 +87,7 @@ export function buildAddSubscriptions(
   const additionalRecordSize = 6;
   const recordsTotal = firstRecordSize + additionalRecordSize * (count - 1);
   const paddingSize = Math.max(0, 44 - recordsTotal);
-  const stringTableOffset =
-    arcHeaderSize + recordsTotal + paddingSize;
+  const stringTableOffset = arcHeaderSize + recordsTotal + paddingSize;
 
   const strings: Buffer[] = [];
   const records: { rxChannel: number; txOffset: number; devOffset: number }[] =

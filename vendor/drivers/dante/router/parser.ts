@@ -40,7 +40,9 @@ export function parseRxChannels(
   const subscriptions: DanteSubscription[] = [];
   const body = response.subarray(RESPONSE_HEADER_SIZE);
   const maxRecords = Math.min(
-    device.rxCount - page * 16 > 0 ? Math.min(device.rxCount - page * 16, 16) : 0,
+    device.rxCount - page * 16 > 0 ?
+      Math.min(device.rxCount - page * 16, 16)
+    : 0,
     Math.floor((body.length - BODY_HEADER_SIZE) / RX_RECORD_SIZE),
   );
 
@@ -66,7 +68,8 @@ export function parseRxChannels(
         const sampleRate = response.readUInt32BE(sampleRateOffset);
         if (device.sampleRate === undefined && sampleRate > 0) {
           // TSAS: augmenting device record at discovery time
-          (device as unknown as Record<string, unknown>).sampleRate = sampleRate;
+          (device as unknown as Record<string, unknown>).sampleRate =
+            sampleRate;
         }
       }
     }

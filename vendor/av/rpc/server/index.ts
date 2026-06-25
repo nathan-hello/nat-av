@@ -171,10 +171,7 @@ export class RpcServer<
     });
   }
 
-  private pushPeerContext(
-    peer: Rpc.WebSocket.Peer,
-    context: ContextType,
-  ) {
+  private pushPeerContext(peer: Rpc.WebSocket.Peer, context: ContextType) {
     peer.send(
       Rpc.Json.stringify(new Rpc.Notification.Server("natav:peer", context)),
     );
@@ -238,5 +235,4 @@ export class RpcServer<
     const response = await this.handleRequest(req, peer);
     peer.send(Rpc.Json.stringify(response));
   }
-
 }
