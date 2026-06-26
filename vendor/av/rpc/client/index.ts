@@ -82,7 +82,7 @@ export class RpcClient<
     return this._context;
   }
 
-  driver<Name extends Drivers.Names<N["configs"]>>(
+  driver<Name extends Drivers.Names<N["drivers"]>>(
     name: Name,
   ): ClientRpcDriver<N, Name> {
     const cached = this.driverHandles.get(name);
@@ -125,9 +125,9 @@ export class RpcClient<
 
       for (const [name, state] of Object.entries(result.states)) {
         // TSAS: driver names from server response are guaranteed to match registered drivers
-        const driver = this.driver(name as Drivers.Names<N["configs"]>);
+        const driver = this.driver(name as Drivers.Names<N["drivers"]>);
         driver.handleStateUpdate(
-          state as Drivers.State<N["configs"], (typeof driver)["name"]>,
+          state as Drivers.State<N["drivers"], (typeof driver)["name"]>,
         );
       }
 

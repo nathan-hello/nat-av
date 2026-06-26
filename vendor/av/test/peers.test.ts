@@ -131,7 +131,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     deferred: [] as const,
   });
 
-  type names = Drivers.Names<(typeof depManager)["configs"]>;
+  type names = Drivers.Names<(typeof depManager)["drivers"]>;
 
   type _ = Test.Assert<Test.Equal<names, "parent-peer" | "child-peer">>;
   type __ = Test.Assert<Test.NotEqual<names, string>>;

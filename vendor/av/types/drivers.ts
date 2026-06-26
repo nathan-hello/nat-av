@@ -30,8 +30,8 @@ export namespace Drivers {
     N extends Drivers.Array = Drivers.Array,
     Context extends Drivers.Context = Drivers.Context,
   > {
-    readonly configs: N;
-    readonly configs_flat: Driver[];
+    readonly drivers: N;
+    readonly drivers_flat: Driver[];
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;
     GetDriver<Name extends Drivers.Names<N>>(
       name: Name,
@@ -186,8 +186,8 @@ export namespace Drivers {
 
   export type DepNames<
     N extends Drivers.Manager,
-    Name extends Drivers.Names<N["configs"]>,
-  > = NonNullable<Drivers.FromName<N["configs"], Name>["deps"]>[number]["name"];
+    Name extends Drivers.Names<N["drivers"]>,
+  > = NonNullable<Drivers.FromName<N["drivers"], Name>["deps"]>[number]["name"];
 
   export type Handle<D extends Driver> = {
     deps: D["deps"];

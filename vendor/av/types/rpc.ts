@@ -95,14 +95,14 @@ export namespace Rpc {
       RpcClient<N>,
       "ctx" | "isOnline"
     > & {
-      driver<Name extends Drivers.Names<N["configs"]>>(
+      driver<Name extends Drivers.Names<N["drivers"]>>(
         name: Name,
       ): DriverHandle<N, Name>;
     };
 
     export type DriverHandle<
       N extends Manager = Manager,
-      Name extends Drivers.Names<N["configs"]> = Drivers.Names<N["configs"]>,
+      Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
     > = Pick<
       ClientRpcDriver<N, Name>,
       "name" | "api" | "state" | "on" | "event" | "once" | "pendingCount"

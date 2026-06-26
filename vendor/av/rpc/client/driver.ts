@@ -6,14 +6,14 @@ import { Rpc } from "@av/types";
 
 export class ClientRpcDriver<
   N extends Manager = Manager,
-  Name extends Drivers.Names<N["configs"]> = Drivers.Names<N["configs"]>,
-> extends TypedEventTarget<Events.Rpc.DriverMap<N["configs"], Name>> {
-  private apiProxy: Rpc.Client.Api<N["configs"], Name>;
+  Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
+> extends TypedEventTarget<Events.Rpc.DriverMap<N["drivers"], Name>> {
+  private apiProxy: Rpc.Client.Api<N["drivers"], Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
   private proxyCallId = 0;
 
-  readonly event: Rpc.Client.Events.Handle<N["configs"], Name> = {
+  readonly event: Rpc.Client.Events.Handle<N["drivers"], Name> = {
     on: async (event, callback) => {
       await this.subscribeToEvent(event, callback);
       return async () => {
@@ -35,10 +35,10 @@ export class ClientRpcDriver<
     return this.apiProxy;
   }
 
-  public state: Drivers.State<N["configs"], Name> =
+  public state: Drivers.State<N["drivers"], Name> =
     // TSAS: this assertion depends on client getting
     // accurate state before this class is used for rendering.
-    {} as unknown as Drivers.State<N["configs"], Name>;
+    {} as unknown as Drivers.State<N["drivers"], Name>;
 
   dep<DepName extends Drivers.DepNames<N, Name>>(depName: DepName) {
     return this.client.driver(depName);
@@ -46,7 +46,7 @@ export class ClientRpcDriver<
 
   private createApiProxy(
     path: string[] = [],
-  ): Rpc.Client.Api<N["configs"], Name> {
+  ): Rpc.Client.Api<N["drivers"], Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
         if (typeof methodName !== "string" || methodName === "then") {
@@ -80,7 +80,7 @@ export class ClientRpcDriver<
         return promise;
       },
       // TSAS: Proxy
-    }) as unknown as Rpc.Client.Api<N["configs"], Name>;
+    }) as unknown as Rpc.Client.Api<N["drivers"], Name>;
   }
 
   async call(method: string, args: any[] = []) {
@@ -100,7 +100,7 @@ export class ClientRpcDriver<
     return this.pendingCounts.get(method) ?? 0;
   }
 
-  handleStateUpdate(patch: Partial<Rpc.Client.State<N["configs"], Name>>) {
+  handleStateUpdate(patch: Partial<Rpc.Client.State<N["drivers"], Name>>) {
     const currentState = this.state;
     // TSAS: Partial patches are reconciled into the driver's cached state.
     this.state =
@@ -128,8 +128,8 @@ export class ClientRpcDriver<
   }
 
   private async subscribeToEvent<
-    K extends keyof Drivers.Events<N["configs"], Name> & string,
-  >(event: K, callback: Rpc.Client.Events.Callback<N["configs"], Name, K>) {
+    K extends keyof Drivers.Events<N["drivers"], Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
     const state = this.eventState.get(event) ?? {
       callbacks: new Set<(payload: any) => void>(),
       subscribed: false,
@@ -159,8 +159,8 @@ export class ClientRpcDriver<
   }
 
   private async unsubscribeFromEvent<
-    K extends keyof Drivers.Events<N["configs"], Name> & string,
-  >(event: K, callback: Rpc.Client.Events.Callback<N["configs"], Name, K>) {
+    K extends keyof Drivers.Events<N["drivers"], Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
     const state = this.eventState.get(event);
     if (!state) {
       return;

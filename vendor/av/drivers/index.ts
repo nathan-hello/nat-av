@@ -84,8 +84,8 @@ export class Manager<
     readonly Drivers.AnyDeferred[],
   Context extends Drivers.Context = Drivers.Context,
 > implements Drivers.Manager<D, S, Context> {
-  readonly configs: Drivers.Merged<D, S>;
-  readonly configs_flat: Driver[] = [];
+  readonly drivers: Drivers.Merged<D, S>;
+  readonly drivers_flat: Driver[] = [];
   private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
@@ -119,7 +119,7 @@ export class Manager<
     }
 
     // TSAS: The public configs property is the tuple-shaped merged driver set for type inference.
-    this.configs = configs as unknown as Drivers.Merged<D, S>;
+    this.drivers = configs as unknown as Drivers.Merged<D, S>;
 
     const collect = (driver: Driver): Driver[] => {
       const out: Driver[] = [driver];
@@ -129,7 +129,7 @@ export class Manager<
       return out;
     };
 
-    this.configs_flat = this.configs.flatMap(collect);
+    this.drivers_flat = this.drivers.flatMap(collect);
   }
 
   runWithContext<T>(context: Context, fn: () => T): T {
@@ -151,13 +151,13 @@ export class Manager<
   }
 
   FindDriver(name: string): Driver | undefined {
-    return this.configs_flat.find((d) => d.name === name);
+    return this.drivers_flat.find((d) => d.name === name);
   }
 
   private FindDriverTyped<N extends Drivers.Names<Drivers.Merged<D, S>>>(
     name: N,
   ): Drivers.FromName<Drivers.Merged<D, S>, N> | undefined {
-    return this.configs_flat.find(
+    return this.drivers_flat.find(
       (d): d is Drivers.FromName<Drivers.Merged<D, S>, N> => d.name === name,
     );
   }
@@ -165,11 +165,11 @@ export class Manager<
   private IsDriverName(
     name: string,
   ): name is Drivers.Names<Drivers.Merged<D, S>> {
-    return this.configs_flat.some((driver) => driver.name === name);
+    return this.drivers_flat.some((driver) => driver.name === name);
   }
 
   GetAllDriverNames(): Drivers.Names<Drivers.Merged<D, S>>[] {
-    return this.configs_flat
+    return this.drivers_flat
       .map((d) => d.name)
       .filter((name): name is Drivers.Names<Drivers.Merged<D, S>> =>
         this.IsDriverName(name),
@@ -197,7 +197,7 @@ export class Manager<
       };
     };
 
-    return this.configs.map((driver) => toNode(driver));
+    return this.drivers.map((driver) => toNode(driver));
   }
 
   async Start(
@@ -205,9 +205,9 @@ export class Manager<
       drivers: Drivers.Merged<D, S>,
     ) => Drivers.PartialArray<Drivers.Merged<D, S>>,
   ) {
-    let configs: Drivers.PartialArray<Drivers.Merged<D, S>> = this.configs;
+    let configs: Drivers.PartialArray<Drivers.Merged<D, S>> = this.drivers;
     if (filter) {
-      configs = filter(this.configs);
+      configs = filter(this.drivers);
     }
 
     const inited = new Set<string>();
@@ -216,7 +216,7 @@ export class Manager<
       if (inited.has(d.name)) {
         throw new Rpc.Error({
           code: Rpc.Error.Codes.ManagerFoundMultipleNames,
-          message: `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.configs)}`,
+          message: `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.drivers)}`,
         });
       }
 
@@ -235,7 +235,7 @@ export class Manager<
   }
 
   async End() {
-    const promises = this.configs.map(async (d) => {
+    const promises = this.drivers.map(async (d) => {
       await d.end();
     });
 

@@ -87,7 +87,7 @@ const natav = new Manager({
 Then you can access the dependency using either:
 
 ```typescript
-const client = new RpcClient<(typeof graph)["configs"]>({
+const client = new RpcClient<(typeof graph)["drivers"]>({
   transport: transport,
 });
 client.device("parent-1").deps.get("child-1").name  // "child-1"

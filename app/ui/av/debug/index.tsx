@@ -18,7 +18,7 @@ export function DebugPage(handle: Handle) {
     const fallbackSelection = findFirstSocketDriver(tree);
     if (selectedDriverName) {
       selectedNode = rpc.driver(
-        selectedDriverName as Drivers.Names<natav["configs"]>,
+        selectedDriverName as Drivers.Names<natav["drivers"]>,
       );
     }
 

@@ -1,5 +1,5 @@
 import { Telemetry } from "@av/client";
-import { Client, Rpc } from "@av/index";
+import { Client, Rpc, type Drivers } from "@av/index";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
@@ -40,4 +40,8 @@ export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav> {
   handle.signal.addEventListener("abort", cleanup, { once: true });
 
   return rpcClient;
+}
+
+export function Asdf(name: Drivers.Names<natav["drivers"]>) {
+
 }
