@@ -1,7 +1,8 @@
-import { RpcClient, type Drivers } from "@av/client";
 import { Driver, Manager } from "@av/drivers";
+import { RpcClient } from "@av/rpc/client";
 import { RpcServer } from "@av/rpc/server";
 import { Test } from "@av/test/data.test";
+import type { Drivers } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

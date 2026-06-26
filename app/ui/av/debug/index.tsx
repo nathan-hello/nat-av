@@ -1,5 +1,5 @@
 import { getRpc } from "@/state";
-import { type Drivers, Rpc } from "@av/client";
+import type { Drivers, Rpc } from "@av/client";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";

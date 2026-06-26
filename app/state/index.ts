@@ -1,4 +1,5 @@
-import { Rpc, RpcClient, Telemetry } from "@av/client";
+import { Telemetry } from "@av/client";
+import { Client, Rpc } from "@av/index";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
@@ -6,7 +7,7 @@ Telemetry.Sdk.AddExporters([
   new Telemetry.Exporters.SimpleConsoleExporter("DEBUG"),
 ]);
 
-const rpcClient = new RpcClient<natav>();
+const rpcClient = new Client.Rpc<natav>();
 await rpcClient.connect();
 
 const subscriptions = new WeakMap<Handle, () => void>();
