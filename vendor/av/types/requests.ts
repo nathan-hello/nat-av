@@ -1,4 +1,3 @@
-import { toBuffer, toString, toUint8Array } from "@av/lib/convert";
 import type { TaskResult } from "@av/telemetry";
 import type { Sockets } from "@av/types/socket";
 
@@ -25,34 +24,4 @@ export namespace Requests {
     sent: boolean;
     timeout?: ReturnType<typeof setTimeout>;
   };
-}
-
-export namespace Format {
-  export const Convert = {
-    toBuffer,
-    toUint8Array,
-    toString,
-  };
-  export namespace JsonRpc {
-    export type Id = string | number;
-
-    export type Request<M extends string = string, P = any> = {
-      jsonrpc: "2.0";
-      method: M;
-      params: P;
-      id: Id;
-    };
-
-    export type Response<R = any> = {
-      jsonrpc: "2.0";
-      result: R;
-      id: Id;
-    };
-
-    export type Notification<M extends string = string, R = any> = {
-      jsonrpc: "2.0";
-      method: M;
-      params: R;
-    };
-  }
 }

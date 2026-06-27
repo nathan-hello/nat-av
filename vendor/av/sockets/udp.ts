@@ -1,4 +1,4 @@
-import { toUint8Array } from "@av/lib/convert";
+import { Convert } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
@@ -43,7 +43,7 @@ export class Udp
         direction: "rx",
         time: Date.now(),
         encoding: "utf8",
-        data: toUint8Array(buf),
+        data: Convert.toUint8Array(buf),
       },
     });
     this.emit("receive", buf);
@@ -92,7 +92,7 @@ export class Udp
         direction: "tx",
         time: Date.now(),
         encoding: "utf8",
-        data: toUint8Array(data),
+        data: Convert.toUint8Array(data),
       },
     });
 

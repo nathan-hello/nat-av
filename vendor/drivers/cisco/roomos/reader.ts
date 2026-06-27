@@ -1,4 +1,4 @@
-import { Format, Proto } from "@av/index";
+import { Convert, Proto } from "@av/index";
 import { RoomOS } from "./types";
 
 function FromJsonRpcError(err: Proto.JsonRpc.Error): RoomOS.ReadOperation {
@@ -30,7 +30,7 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-            message: Format.Convert.toString(data),
+            message: Convert.toString(data),
           },
         };
       }
@@ -63,9 +63,9 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.XSET_RETURNED_FALSE,
-            message: Format.Convert.toString(request),
+            message: Convert.toString(request),
 
-            data: Format.Convert.toString(data),
+            data: Convert.toString(data),
           },
         };
       }
@@ -80,8 +80,8 @@ function FromJsonRpcResponse(
           kind: "error",
           data: {
             code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-            message: Format.Convert.toString(request),
-            data: Format.Convert.toString(data),
+            message: Convert.toString(request),
+            data: Convert.toString(data),
           },
         };
       }

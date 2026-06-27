@@ -1,10 +1,10 @@
+import { Convert } from "@av/lib/convert";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import {
-  Format,
   Rpc,
   type Drivers,
   type Events,
@@ -269,7 +269,7 @@ export class Manager<
     });
 
     d.on("driver:delimited", (event) => {
-      const payload = Format.Convert.toUint8Array(event);
+      const payload = Convert.toUint8Array(event);
 
       const data = {
         name,

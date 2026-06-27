@@ -1,4 +1,4 @@
-import { toUint8Array } from "@av/lib/convert";
+import { Convert } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import type { Events, Sockets } from "@av/types";
@@ -61,7 +61,7 @@ export class Tcp
         direction: "tx",
         time: Date.now(),
         encoding: this.config.encoding ?? "unknown",
-        data: toUint8Array(buffer),
+        data: Convert.toUint8Array(buffer),
       },
     });
 
@@ -121,7 +121,7 @@ export class Tcp
           direction: "rx",
           time: Date.now(),
           encoding: "utf8",
-          data: toUint8Array(data),
+          data: Convert.toUint8Array(data),
         },
       });
 

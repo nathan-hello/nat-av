@@ -1,4 +1,4 @@
-import type { Format } from "@av/index";
+import type { Proto } from "@av/index";
 import { removeBrackets } from "./typegen/scripts/parse";
 import type { RoomOS } from "./types";
 
@@ -232,7 +232,7 @@ function ToTerminal(
 
 function ToJsonRpc(
   operation: RoomOS.WriteOperation,
-  id: Format.JsonRpc.Id,
+  id: Proto.JsonRpc.Id,
 ): string {
   switch (operation.kind) {
     case "command": {

@@ -23,7 +23,6 @@ export type { Test } from "@av/test/data.test";
 export type {
   Drivers,
   Events,
-  Format,
   Requests,
   Rpc,
   Sockets,

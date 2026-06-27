@@ -1,7 +1,7 @@
 import {
+  Convert,
   Delimiters,
   Driver,
-  Format,
   Proto,
   RequestManager,
   TypedEventTarget,
@@ -29,7 +29,7 @@ export class CiscoRoomOS<
 > extends Driver<N> {
   private requests: RequestManager<
     RoomOS.WriteOperation & { id: number },
-    Format.JsonRpc.Response | Format.JsonRpc.Notification
+    Proto.JsonRpc.Response | Proto.JsonRpc.Notification
   >;
   private proxy!: RoomOSProxy;
   private subscriptions: RoomOS.HeldSubscription[] = [];
@@ -65,7 +65,7 @@ export class CiscoRoomOS<
 
     this.requests = new RequestManager<
       RoomOS.WriteOperation & { id: number },
-      Format.JsonRpc.Response | Format.JsonRpc.Notification
+      Proto.JsonRpc.Response | Proto.JsonRpc.Notification
     >({
       socket,
       tel: this.tel,
@@ -86,7 +86,7 @@ export class CiscoRoomOS<
         minGapMs: 10,
       },
       delimiter: Delimiters.json<
-        Format.JsonRpc.Response | Format.JsonRpc.Notification
+        Proto.JsonRpc.Response | Proto.JsonRpc.Notification
       >,
     });
 
@@ -98,7 +98,7 @@ export class CiscoRoomOS<
     });
 
     this.requests.on("delimited", (message) => {
-      this.dispatch("driver:delimited", Format.Convert.toBuffer(message));
+      this.dispatch("driver:delimited", Convert.toString(message));
       const notification = Proto.JsonRpc.Notification.is(message);
       if (notification) {
         const read = reader.JsonRpc.Notification(notification);
@@ -234,7 +234,7 @@ export class CiscoRoomOS<
         error: {
           code: RoomOS.ErrorCodes.INVALID_WRITE_OPERATION,
           data: rx,
-          message: Format.Convert.toString(operation),
+          message: JSON.stringify(operation),
         },
       };
     }
@@ -262,7 +262,7 @@ export class CiscoRoomOS<
       ok: false,
       error: {
         code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-        message: Format.Convert.toString(rx),
+        message: JSON.stringify(rx),
         data: operation,
       },
     };

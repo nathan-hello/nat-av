@@ -1,5 +1,5 @@
 import { Driver as NDriver } from "@av/drivers";
-import { toBuffer } from "@av/lib/convert";
+import { Convert } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { ClientRpcTransport } from "@av/rpc/client/websocket";
 import type {
@@ -203,7 +203,7 @@ export namespace Test {
     end() {}
 
     write(data: string | Uint8Array | Buffer): number {
-      const buffer = toBuffer(data);
+      const buffer = Convert.toBuffer(data);
       this.writes.push(buffer);
 
       this.tel.info("WROTE", {
@@ -213,7 +213,7 @@ export namespace Test {
 
       if (this.script && this.script?.length > 0) {
         const index = this.script.findIndex((step) =>
-          buffer.equals(toBuffer(step.onWrite)),
+          buffer.equals(Convert.toBuffer(step.onWrite)),
         );
 
         if (index === -1) {
@@ -240,7 +240,7 @@ export namespace Test {
     }
 
     receive(message: unknown) {
-      const buffer = toBuffer(message);
+      const buffer = Convert.toBuffer(message);
       this.dispatch("receive", buffer);
     }
   }

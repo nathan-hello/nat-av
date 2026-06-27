@@ -1,3 +1,4 @@
+import type { Proto } from "@av/index";
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { Rpc as NRpc } from "@av/types";
 import type { Drivers } from "@av/types/drivers";
@@ -32,7 +33,10 @@ export namespace Events {
       "driver:state-updated": {
         data: Partial<StateData>;
       };
-      "driver:delimited": string | Uint8Array | Buffer;
+      "driver:delimited":
+        | string
+        | Uint8Array
+        | Buffer
     };
   }
 

@@ -11,16 +11,18 @@ import * as TelemetryRuntimeMod from "@av/telemetry/runtime";
 import * as TelemetrySdkMod from "@av/telemetry/sdk";
 import * as TelemetryServerExportersMod from "@av/telemetry/server/exporters";
 import * as TelemetryTypesMod from "@av/telemetry/types";
+
+export { Convert } from "@av/lib/convert";
+export * as Proto from "@av/protocol";
 export { Tcp } from "@av/sockets/tcp";
 export { Udp } from "@av/sockets/udp";
-export * as Proto from "@av/protocol";
 
 export { Driver, Manager } from "@av/drivers";
 export { TypedEventTarget } from "@av/lib/eventtarget";
 export { RequestManager } from "@av/lib/requests";
 export { Delimiters } from "@av/sockets/delimiters";
 export { Test } from "@av/test/data.test";
-export { Format, Rpc } from "@av/types";
+export { Rpc } from "@av/types";
 export type { Drivers, Events, Requests, Sockets } from "@av/types";
 
 export class Telemetry<

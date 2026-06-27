@@ -1,5 +1,5 @@
 import type { Sockets } from "@av/index";
-import { Delimiters, Driver, Format, RequestManager, Rpc } from "@av/index";
+import { Delimiters, Driver, Convert, RequestManager, Rpc } from "@av/index";
 import { DecoderSchema } from "./schema";
 import {
   type AudioRoute,
@@ -58,7 +58,7 @@ export default class Decoder<
       if (!("id" in event)) {
         this.tel.debug("got-jsonrpc-notification", { notification: event });
       }
-      this.dispatch("driver:delimited", Format.Convert.toBuffer(event));
+      this.dispatch("driver:delimited", Convert.toBuffer(event));
     });
 
     socket.on("connected", async () => {

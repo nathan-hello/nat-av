@@ -1,4 +1,4 @@
-import type { Format } from "@av/index";
+import type { Proto } from "@av/index";
 
 /** Domain Entities */
 export type VideoRoute = {
@@ -28,7 +28,7 @@ export type AudioRoute = {
   uri: string;
 };
 
-export type DebugToggle = Format.JsonRpc.Request<"debug_toggle", []>;
+export type DebugToggle = Proto.JsonRpc.Request<"debug_toggle", []>;
 
 type VideoOutputContext = {
   output: number;
@@ -43,44 +43,44 @@ type AudioOutputContext = {
 };
 
 /** Method: fetch_routes */
-export type FetchRoutesRequest = Format.JsonRpc.Request<"fetch_routes", []>;
-export type FetchRoutesResponse = Format.JsonRpc.Response<{
+export type FetchRoutesRequest = Proto.JsonRpc.Request<"fetch_routes", []>;
+export type FetchRoutesResponse = Proto.JsonRpc.Response<{
   video: VideoRoute[];
   audio: AudioRoute[];
 }>;
 
 /** Method: route */
-export type RouteRequest = Format.JsonRpc.Request<
+export type RouteRequest = Proto.JsonRpc.Request<
   "route",
   {
     video?: VideoRoute[];
     audio?: AudioRoute[];
   }
 >;
-export type ExitCodeResponse = Format.JsonRpc.Response<number>;
+export type ExitCodeResponse = Proto.JsonRpc.Response<number>;
 
 /** Method: fetch_context */
-export type FetchContextRequest = Format.JsonRpc.Request<"fetch_context", []>;
+export type FetchContextRequest = Proto.JsonRpc.Request<"fetch_context", []>;
 export type DecoderContext = {
   video: VideoOutputContext[];
   audio: AudioOutputContext[];
 };
-export type FetchContextResponse = Format.JsonRpc.Response<DecoderContext>;
+export type FetchContextResponse = Proto.JsonRpc.Response<DecoderContext>;
 
 /** Method: route_destroy */
-export type RouteDestroyRequest = Format.JsonRpc.Request<
+export type RouteDestroyRequest = Proto.JsonRpc.Request<
   "route_destroy",
   {
     video: { output: number; window: number }[];
     audio: { output: number }[];
   }
 >;
-export type RouteDestroyResponse = Format.JsonRpc.Response<number>;
+export type RouteDestroyResponse = Proto.JsonRpc.Response<number>;
 
 export type DecoderNotificationMonitorDisconnected =
-  Format.JsonRpc.Notification<"monitor_disconnected", number[]>;
+  Proto.JsonRpc.Notification<"monitor_disconnected", number[]>;
 
-export type DecoderNotificationMonitorConnected = Format.JsonRpc.Notification<
+export type DecoderNotificationMonitorConnected = Proto.JsonRpc.Notification<
   "monitor_connected",
   number[]
 >;
