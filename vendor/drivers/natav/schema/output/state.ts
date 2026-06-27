@@ -4,4 +4,4 @@ import type { Schema } from "../types";
 
 export const state: Record<string, Schema.Schema<Driver>> = {
   "video-wall": schema,
-} as const;
+};

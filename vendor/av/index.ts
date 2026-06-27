@@ -13,6 +13,7 @@ import * as TelemetryServerExportersMod from "@av/telemetry/server/exporters";
 import * as TelemetryTypesMod from "@av/telemetry/types";
 export { Tcp } from "@av/sockets/tcp";
 export { Udp } from "@av/sockets/udp";
+export * as Proto from "@av/protocol";
 
 export { Driver, Manager } from "@av/drivers";
 export { TypedEventTarget } from "@av/lib/eventtarget";

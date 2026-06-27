@@ -2,8 +2,8 @@ import {
   Delimiters,
   Driver,
   Format,
+  Proto,
   RequestManager,
-  Rpc,
   TypedEventTarget,
   type Sockets,
 } from "@av/index";
@@ -99,7 +99,7 @@ export class CiscoRoomOS<
 
     this.requests.on("delimited", (message) => {
       this.dispatch("driver:delimited", Format.Convert.toBuffer(message));
-      const notification = Rpc.Notification.is(message);
+      const notification = Proto.JsonRpc.Notification.is(message);
       if (notification) {
         const read = reader.JsonRpc.Notification(notification);
         this.tel.debug("READ_NOTIFICATION", { read });
@@ -239,7 +239,7 @@ export class CiscoRoomOS<
       };
     }
 
-    const err = Rpc.Error.is(rx.data);
+    const err = Proto.JsonRpc.Error.is(rx.data);
     if (err) {
       return {
         ok: false,
@@ -251,7 +251,7 @@ export class CiscoRoomOS<
       };
     }
 
-    const resp = Rpc.Response.is(rx.data);
+    const resp = Proto.JsonRpc.Response.is(rx.data);
     if (resp) {
       return this.read(
         reader.JsonRpc.Response(operation, resp.result, this.subscriptions),

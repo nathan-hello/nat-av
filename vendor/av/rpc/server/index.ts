@@ -3,7 +3,7 @@ import { DriverRpcRouter } from "@av/rpc/server/driver";
 import { RpcPeerRegistry } from "@av/rpc/server/registry";
 import type { ServerRpcTransport } from "@av/rpc/server/websocket";
 import { Telemetry } from "@av/telemetry";
-import { Rpc } from "@av/types";
+import { Rpc, type Drivers } from "@av/types";
 
 export class RpcServer<
   ContextType extends Rpc.Server.Context = Rpc.Server.Context,
@@ -12,7 +12,7 @@ export class RpcServer<
   private router: DriverRpcRouter;
   private peers: RpcPeerRegistry<ContextType>;
   private clients = new Set<Rpc.WebSocket.Peer>();
-  private natav: Manager<any, any, ContextType>;
+  private natav: Drivers.ManagerView<Drivers.Array, ContextType>;
 
   constructor(args: {
     natav: Manager<any, any, ContextType>;
@@ -183,6 +183,10 @@ export class RpcServer<
     for (const name of this.natav.GetAllDriverNames()) {
       states[name] = this.natav.GetDriver(name).state;
     }
+
+    const tree = this.natav.GetTree();
+    const names = this.natav.GetAllDriverNames();
+
     // TSAS: Driver states and context are JSON-serializable for RPC transport.
     return message.response({ context, states } as Rpc.Json.Value);
   }

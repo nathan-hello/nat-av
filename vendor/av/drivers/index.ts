@@ -31,14 +31,12 @@ export abstract class Driver<
   // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
   public events: Events = undefined as Events;
   public name: Name;
-  public deps: Deps = [] as unknown as Deps;
+  public deps: Deps;
   public tel: Telemetry;
 
   constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
-    if (deps) {
-      this.deps = deps;
-    }
+    this.deps = deps ?? ([] as unknown as Deps);
     this.name = name;
     this.tel = new Telemetry(`Driver::${this.name}`);
   }

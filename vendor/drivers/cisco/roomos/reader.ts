@@ -1,7 +1,7 @@
-import { Format, Rpc } from "@av/index";
+import { Format, Proto } from "@av/index";
 import { RoomOS } from "./types";
 
-function FromJsonRpcError(err: Rpc.Error): RoomOS.ReadOperation {
+function FromJsonRpcError(err: Proto.JsonRpc.Error): RoomOS.ReadOperation {
   const code: RoomOS.ErrorCode =
     // TSAS: Object.keys takes out the string definitions
     (Object.keys(RoomOS.ErrorCodes) as RoomOS.ErrorCode[]).find(
@@ -102,7 +102,7 @@ function FromJsonRpcResponse(
 }
 
 function FromJsonRpcNotification(
-  notification: Rpc.Notification,
+  notification: Proto.JsonRpc.Notification,
 ): RoomOS.ReadOperation | null {
   if (notification.method === "xFeedback/Event") {
     const params = parse.xFeedbackEvent(notification.params);

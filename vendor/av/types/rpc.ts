@@ -5,6 +5,7 @@ import type { Drivers } from "@av/types/drivers";
 import type { Events } from "@av/types/events";
 
 export namespace Rpc {
+
   export namespace Json {
     export function is(value: unknown): value is Rpc.Json.Value {
       if (
@@ -38,10 +39,14 @@ export namespace Rpc {
 
     export type Value =
       | null
+      | undefined
       | boolean
       | number
       | string
+      | Uint8Array
+      | Map<Value, Value>
       | Value[]
+      | readonly Value[]
       | { [key: string]: Value };
 
     export type IsJSON<T> =

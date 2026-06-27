@@ -1,11 +1,11 @@
-export interface DanteChannel {
+export type DanteChannel ={
   number: number;
   name: string;
   friendlyName?: string;
   statusCode: number;
 }
 
-export interface DanteSubscription {
+export type DanteSubscription ={
   rxChannelName: string;
   rxDeviceName: string;
   txChannelName: string;
@@ -13,7 +13,7 @@ export interface DanteSubscription {
   statusCode: number;
 }
 
-export interface DanteDeviceRecord {
+export type DanteDeviceRecord ={
   serverName: string;
   name: string;
   ipv4: string;
@@ -27,21 +27,21 @@ export interface DanteDeviceRecord {
   modelId?: string;
 }
 
-export interface RouteEntry {
+export type RouteEntry ={
   rxDevice: string;
   rxChannel: number;
   txDevice: string;
   txChannelName: string;
 }
 
-export interface DanteRouterMatrix {
+export type DanteRouterMatrix ={
   [rxServerName: string]: Record<
     number,
     { txDevice: string; txChannelName: string }
   >;
 }
 
-export interface DanteRouterState {
+export type DanteRouterState ={
   devices: Record<string, DanteDeviceRecord>;
   matrix: DanteRouterMatrix;
   scanStatus: "idle" | "scanning" | "ready" | "error";
@@ -49,7 +49,7 @@ export interface DanteRouterState {
   liveMdns: boolean;
 }
 
-export interface DiscoveredService {
+export type DiscoveredService ={
   serverName: string;
   name: string;
   ipv4: string;
@@ -57,12 +57,12 @@ export interface DiscoveredService {
   properties: Record<string, string>;
 }
 
-export interface DiscoveryEvent {
+export type DiscoveryEvent ={
   type: "added" | "removed" | "resolved";
   service: DiscoveredService;
 }
 
-export interface DiscoveryBackend {
+export type DiscoveryBackend ={
   discover(
     serviceType: string,
     timeoutMs: number,

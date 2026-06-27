@@ -12,7 +12,15 @@ await rpcClient.connect();
 
 const subscriptions = new WeakMap<Handle, () => void>();
 
-export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav> {
+export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav>;
+export function getRpc<N extends Drivers.Names<natav["drivers"]>>(
+  handle: Handle<any, any>,
+  name: N,
+): Rpc.Client.DriverHandle<natav, N>;
+export function getRpc<N extends Drivers.Names<natav["drivers"]>>(
+  handle: Handle<any, any>,
+  name?: N,
+): Rpc.Client.Handle<natav> | Rpc.Client.DriverHandle<natav, N> {
   if (subscriptions.has(handle)) {
     return rpcClient;
   }
@@ -25,8 +33,10 @@ export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav> {
     await handle.update();
   });
 
-  const offChange = rpcClient.on("change", async () => {
-    await handle.update();
+  const offChange = rpcClient.on("change", async (event) => {
+    if (name && name === event?.name) {
+      await handle.update();
+    }
   });
 
   const cleanup = () => {
@@ -39,9 +49,9 @@ export function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<natav> {
   subscriptions.set(handle, cleanup);
   handle.signal.addEventListener("abort", cleanup, { once: true });
 
-  return rpcClient;
-}
-
-export function Asdf(name: Drivers.Names<natav["drivers"]>) {
-
+  if (name) {
+    return rpcClient.driver(name);
+  } else {
+    return rpcClient;
+  }
 }

@@ -199,4 +199,7 @@ export namespace Drivers {
   };
 
   export type DepsOf<D extends Driver> = NonNullable<D["deps"]>[number];
+
+  export type StateFromInterface<T> =
+    T extends object ? { [K in keyof T]: StateFromInterface<T[K]> } : T;
 }
