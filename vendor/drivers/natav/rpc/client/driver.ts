@@ -1,4 +1,4 @@
-import type { Drivers, Events, Manager } from "@av/index";
+import type { Drivers, Manager } from "@av/index";
 import { TypedEventTarget } from "@av/index";
 import { Rpc } from "../types";
 import type { RpcClient } from "./index";
@@ -6,7 +6,7 @@ import type { RpcClient } from "./index";
 export class ClientRpcDriver<
   N extends Manager = Manager,
   Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
-> extends TypedEventTarget<Events.Rpc.DriverMap<N["drivers"], Name>> {
+> extends TypedEventTarget<Rpc.Events.DriverMap<N["drivers"], Name>> {
   private apiProxy: Rpc.Client.Api<N["drivers"], Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();

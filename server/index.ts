@@ -4,8 +4,8 @@ import DisplayManager from "@drivers/decoder/display";
 import { Debugger } from "@drivers/natav/debug";
 import { RpcServer } from "@drivers/natav/rpc/server";
 import { RpcTransportWebsocket } from "@drivers/natav/rpc/server/websocket";
-import type { Rpc } from "@drivers/natav/rpc/types";
 import { System } from "@server/system";
+import { Server } from "node:http";
 
 // TSAS:
 if ((globalThis as any).__manager__) {
@@ -72,8 +72,8 @@ type AppContext = {
   name: string;
 };
 
-export async function start(app: Rpc.WebSocket.App) {
-  const websocket = new RpcTransportWebsocket(app);
+export async function start(server: Server) {
+  const websocket = new RpcTransportWebsocket(server);
   new RpcServer<AppContext>({
     natav: natav as Manager<any, any, AppContext>,
     transport: websocket,
@@ -86,4 +86,5 @@ export async function start(app: Rpc.WebSocket.App) {
   await natav.Start();
   // TSAS:
   (globalThis as any).__manager__ = natav;
+  return async () => await natav.End();
 }

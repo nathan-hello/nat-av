@@ -1,4 +1,4 @@
-import type { Events, Manager } from "@av/index";
+import type { Manager, Events as NEvents } from "@av/index";
 import type { Drivers } from "@av/types/drivers";
 import type { RpcClient } from "./client";
 import type { ClientRpcDriver } from "./client/driver";
@@ -410,17 +410,17 @@ export namespace Rpc {
 
   export namespace Notification {
     export class Server<
-      T extends keyof Events.Natav.Map = keyof Events.Natav.Map,
+      T extends keyof NEvents.Natav.Map = keyof NEvents.Natav.Map,
     > extends Rpc.Notification<
       typeof Rpc.Notification.Server.Methods,
-      Events.Natav.MapWithTypes[T]
+      NEvents.Natav.MapWithTypes[T]
     > {
-      constructor(type: T, params: Events.Natav.Map[T]) {
+      constructor(type: T, params: NEvents.Natav.Map[T]) {
         // TSAS: TypeScript loses the key-specific mapped type through generic object spread here.
         const notificationParams = {
           ...params,
           type,
-        } as Events.Natav.MapWithTypes[T];
+        } as NEvents.Natav.MapWithTypes[T];
 
         super(Rpc.Notification.Server.Methods, notificationParams);
       }
@@ -514,8 +514,8 @@ export namespace Rpc {
 
     export namespace Server {
       export type Any = {
-        [K in keyof Events.Natav.Map]: Rpc.Notification.Server<K>;
-      }[keyof Events.Natav.Map];
+        [K in keyof NEvents.Natav.Map]: Rpc.Notification.Server<K>;
+      }[keyof NEvents.Natav.Map];
 
       export const Methods = "notification";
     }
@@ -556,5 +556,76 @@ export namespace Rpc {
 
   function isObject(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
+
+  export namespace Events {
+    export type Map = {
+      ready: boolean;
+      peer: Rpc.Server.Context;
+      close: CloseEvent;
+      error:
+        | { reason: "transport"; event: Event }
+        | { reason: "init-promises-threw"; error: Error }
+        | { reason: "json-parse-failed"; raw: string }
+        | { reason: "rpc-error"; error: Rpc.Error };
+      change: { name?: string };
+    };
+
+    export type DriverEventBase = {
+      id: number;
+    };
+
+    type RequestMethodInfo<T, Prefix extends string = ""> = {
+      [K in keyof T & string]: T[K] extends (...args: infer A) => infer R ?
+        {
+          method: `${Prefix}${K}`;
+          args: A;
+          data: R extends Promise<infer D> ? D : R;
+        }
+      : T[K] extends object ? RequestMethodInfo<T[K], `${Prefix}${K}/`>
+      : never;
+    }[keyof T & string];
+
+    type BeforePayload<T> =
+      T extends { method: string; args: any[] } ? Pick<T, "method" | "args">
+      : never;
+
+    type OkPayload<T> =
+      T extends { method: string; data: any } ? Pick<T, "method" | "data">
+      : never;
+
+    type MethodNames<T, Prefix extends string = ""> = {
+      [K in keyof T & string]: T[K] extends (...args: any[]) => any ?
+        `${Prefix}${K}`
+      : T[K] extends object ? MethodNames<T[K], `${Prefix}${K}/`>
+      : never;
+    }[keyof T & string];
+
+    export type DriverMap<
+      N extends Drivers.Array = Drivers.Array,
+      Name extends Drivers.Names<N> = Drivers.Names<N>,
+    > = {
+      change: {
+        name: Name;
+        state: Drivers.State<N, Name> | undefined;
+      };
+      "before:request": DriverEventBase &
+        BeforePayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+
+      "after:response": DriverEventBase &
+        (
+          | OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>
+          | {
+              method: MethodNames<Drivers.Api<N, Name>>;
+              error: Rpc.Error;
+            }
+        );
+      "after:response:ok": DriverEventBase &
+        OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+      "after:response:error": DriverEventBase & {
+        method: MethodNames<Drivers.Api<N, Name>>;
+        error: Rpc.Error;
+      };
+    };
   }
 }

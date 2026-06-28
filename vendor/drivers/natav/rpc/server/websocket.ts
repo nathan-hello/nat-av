@@ -23,11 +23,13 @@ export class RpcTransportWebsocket
   extends TypedEventTarget<ServerRpcTransportEvents>
   implements ServerRpcTransport
 {
+  private app: Rpc.WebSocket.App;
   constructor(
-    private app: Rpc.WebSocket.App,
+    app: http.Server,
     private path = "/ws",
   ) {
     super();
+    this.app = createWebSocketApp(app);
   }
 
   listen(): void {
@@ -55,7 +57,7 @@ export class RpcTransportWebsocket
   }
 }
 
-export function createWebSocketApp(server: http.Server): Rpc.WebSocket.App {
+function createWebSocketApp(server: http.Server): Rpc.WebSocket.App {
   const sockets = new Map<string, WebSocketServer>();
 
   server.on("upgrade", (request, socket, head) => {

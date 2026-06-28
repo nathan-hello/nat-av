@@ -1,6 +1,5 @@
 import { router } from "@/router";
 import { Telemetry } from "@av/index";
-import { createWebSocketApp } from "@drivers/natav/rpc/server/websocket";
 import { start } from "@server/index";
 import * as http from "node:http";
 import { createRequestListener } from "remix/node-fetch-server";
@@ -20,9 +19,7 @@ const server = http.createServer(
   }),
 );
 
-const websocketApp = createWebSocketApp(server);
-
-await start(websocketApp);
+const end = await start(server);
 
 await new Promise<void>((resolve) => {
   server.listen(port, resolve);
@@ -32,13 +29,14 @@ tel.info(`http://localhost:${port}`);
 
 let shuttingDown = false;
 
-function shutdown() {
+async function shutdown() {
   if (shuttingDown) {
     return;
   }
 
   shuttingDown = true;
   server.close();
+  await end();
   process.exit(0);
 }
 

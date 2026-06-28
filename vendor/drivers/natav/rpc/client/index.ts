@@ -1,10 +1,4 @@
-import {
-  type Drivers,
-  type Events,
-  type Manager,
-  Err,
-  TypedEventTarget,
-} from "@av/index";
+import { type Drivers, type Manager, Err, TypedEventTarget } from "@av/index";
 import { Telemetry } from "@av/telemetry";
 import { Rpc } from "../types";
 import { ClientRpcDriver } from "./driver";
@@ -14,7 +8,7 @@ import { ClientWebsocket } from "./websocket";
 
 export class RpcClient<
   N extends Manager = Manager,
-> extends TypedEventTarget<Events.Rpc.Map> {
+> extends TypedEventTarget<Rpc.Events.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
@@ -119,33 +113,24 @@ export class RpcClient<
   }
 
   private async init() {
-    try {
-      const result = await this.requests.request<{
-        context: Rpc.Server.Context;
-        states: Record<string, Rpc.Json.Value>;
-      }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
+    const result = await this.requests.request<{
+      context: Rpc.Server.Context;
+      states: Record<string, Rpc.Json.Value>;
+    }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
 
-      this._context = result.context;
-      this.dispatch("peer", result.context);
+    this._context = result.context;
+    this.dispatch("peer", result.context);
 
-      for (const [name, state] of Object.entries(result.states)) {
-        // TSAS: driver names from server response are guaranteed to match registered drivers
-        const driver = this.driver(name as Drivers.Names<N["drivers"]>);
-        driver.handleStateUpdate(
-          state as Drivers.State<N["drivers"], (typeof driver)["name"]>,
-        );
-      }
-
-      this.dispatch("ready", true);
-      this.initResolve?.();
-    } catch (err) {
-      this.tel.error("init-failed", { error: err });
-      this.initReject?.(err);
-      this.dispatch("error", {
-        reason: "init-promises-threw",
-        error: err as Error,
-      });
+    for (const [name, state] of Object.entries(result.states)) {
+      // TSAS: driver names from server response are guaranteed to match registered drivers
+      const driver = this.driver(name as Drivers.Names<N["drivers"]>);
+      driver.handleStateUpdate(
+        state as Drivers.State<N["drivers"], (typeof driver)["name"]>,
+      );
     }
+
+    this.dispatch("ready", true);
+    this.initResolve?.();
   }
 
   private onMessage(raw: string) {
