@@ -1,5 +1,7 @@
 import { Telemetry } from "@av/client";
-import { Client, Rpc, type Drivers } from "@av/index";
+import { type Drivers } from "@av/index";
+import { RpcClient } from "@drivers/natav/rpc/client";
+import type { Rpc } from "@drivers/natav/rpc/types";
 import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 
@@ -7,7 +9,7 @@ Telemetry.Sdk.AddExporters([
   new Telemetry.Exporters.SimpleConsoleExporter("DEBUG"),
 ]);
 
-const rpcClient = new Client.Rpc<natav>();
+const rpcClient = new RpcClient<natav>();
 await rpcClient.connect();
 
 const subscriptions = new WeakMap<Handle, () => void>();

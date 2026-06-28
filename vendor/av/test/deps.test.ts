@@ -1,6 +1,6 @@
 import { Driver, Manager } from "@av/drivers";
-import { RpcClient } from "@av/rpc/client";
-import { RpcServer } from "@av/rpc/server";
+import { RpcClient } from "@drivers/natav/rpc/client";
+import { RpcServer } from "@drivers/natav/rpc/server";
 import { Test } from "@av/test/data.test";
 import type { Drivers } from "@av/types";
 import assert from "node:assert/strict";

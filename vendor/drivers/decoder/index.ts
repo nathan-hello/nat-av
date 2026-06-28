@@ -1,5 +1,5 @@
 import type { Sockets } from "@av/index";
-import { Delimiters, Driver, Convert, RequestManager, Rpc } from "@av/index";
+import { Convert, Delimiters, Driver, RequestManager } from "@av/index";
 import { DecoderSchema } from "./schema";
 import {
   type AudioRoute,
@@ -91,7 +91,7 @@ export default class Decoder<
 
     const result = await this.requests.request<DecoderMap[Method]["res"]>(req);
     if (!result.ok) {
-      throw new Rpc.Error({ code: 400, message: result.error });
+      throw result.error;
     }
 
     if (typeof result.data.result === "number" && result.data.result !== 0) {
@@ -125,10 +125,8 @@ export default class Decoder<
           (v) => v.output === r.video?.output,
         );
         if (!output) {
-          throw new Rpc.Error({
-            code: 401,
-            message: "output-or-monitor-not-found",
-            data: this.context,
+          throw new Error("output-or-monitor-not-found", {
+            cause: this.context,
           });
         }
         params.video[0] = {
@@ -180,10 +178,8 @@ export default class Decoder<
     moveRelative: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new Rpc.Error({
-          code: 401,
-          message: "output-or-monitor-not-found",
-          data: this.context,
+        throw new Error("output-or-monitor-not-found", {
+          cause: this.context,
         });
       }
       const n: VideoRoute = {
@@ -203,10 +199,8 @@ export default class Decoder<
     moveAbsolute: async (v: MoveWindowArgs) => {
       const current = this.routes.video[v.output]?.[v.window];
       if (!current) {
-        throw new Rpc.Error({
-          code: 401,
-          message: "output-or-monitor-not-found",
-          data: this.context,
+        throw new Error("output-or-monitor-not-found", {
+          cause: this.context,
         });
       }
       return this.api.route({ video: { ...current, ...v, uri: current.uri } });
@@ -214,10 +208,8 @@ export default class Decoder<
 
     fetchContext: async () => {
       if (this.mock === null) {
-        throw new Rpc.Error({
-          code: 401,
-          message: "output-or-monitor-not-found",
-          data: this.context,
+        throw new Error("output-or-monitor-not-found", {
+          cause: this.context,
         });
       }
       const response = await this.request("fetch_context", []);

@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
-import { DriverRpcRouter } from "@av/rpc/server/driver";
+import { DriverRpcRouter } from "@drivers/natav/rpc/server/driver";
 import { Test } from "@av/test/data.test";
-import { Rpc } from "@av/types";
+import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

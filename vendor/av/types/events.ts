@@ -1,6 +1,5 @@
-import type { Proto } from "@av/index";
 import type { ReadableLogRecord } from "@av/telemetry/types";
-import type { Rpc as NRpc } from "@av/types";
+import type { Rpc as NRpc } from "@drivers/natav/rpc/types";
 import type { Drivers } from "@av/types/drivers";
 
 export namespace Events {
@@ -92,10 +91,10 @@ export namespace Events {
     export type Map<Request, Message> = {
       delimited: Message;
       timeout: { request: Request };
-      "write-error": { request: Request; error: string };
+      "write-error": { request: Request; error: Error };
       error: {
         phase: "receive" | "match" | "send";
-        error: string;
+        error: Error;
         request?: Request;
         message?: Message;
       };

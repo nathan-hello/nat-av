@@ -1,13 +1,14 @@
 import { Driver as NDriver } from "@av/drivers";
 import { Convert } from "@av/lib/convert";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { ClientRpcTransport } from "@av/rpc/client/websocket";
+import { Telemetry } from "@av/telemetry";
+import type { Events, Sockets } from "@av/types";
+import type { ClientRpcTransport } from "@drivers/natav/rpc/client/websocket";
 import type {
   ServerRpcTransportEvents,
   ServerRpcTransport as ServerRpcTransportShape,
-} from "@av/rpc/server/websocket";
-import { Telemetry } from "@av/telemetry";
-import type { Events, Rpc, Sockets } from "@av/types";
+} from "@drivers/natav/rpc/server/websocket";
+import type { Rpc } from "@drivers/natav/rpc/types";
 
 export namespace Test {
   export type Equal<A, B> =

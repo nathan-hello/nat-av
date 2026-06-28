@@ -1,4 +1,6 @@
-import { Client, Manager, Server, Test } from "@av/index";
+import { Manager, Test } from "@av/index";
+import { RpcClient } from "@drivers/natav/rpc/client";
+import { RpcServer } from "@drivers/natav/rpc/server";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index";
@@ -113,8 +115,8 @@ describe("rpc roomos driver", () => {
     });
     type natav = typeof natav;
     const transport = new Test.RpcTransport();
-    new Server.Rpc({ natav, transport: transport.server });
-    const client = new Client.Rpc<natav>({
+    new RpcServer({ natav, transport: transport.server });
+    const client = new RpcClient<natav>({
       transport,
     });
     await natav.Start();

@@ -1,7 +1,8 @@
+import { Err } from "@av/client";
 import { TypedEventTarget } from "@av/lib/eventtarget";
 import type { DataDelimiter, DataFormatter } from "@av/sockets/delimiters";
 import { Telemetry, type TaskResult } from "@av/telemetry";
-import { Rpc, type Events, type Requests } from "@av/types";
+import { type Events, type Sockets } from "@av/types";
 
 export class RequestManager<Tx, Rx> extends TypedEventTarget<
   Events.Request.Map<Tx, Rx>
@@ -70,11 +71,7 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
     if (this.ended) {
       return Promise.resolve({
         ok: false,
-        error: "requests-ended",
-        data: new Rpc.Error({
-          code: Rpc.Error.Codes.InternalError,
-          message: "requestmanager was disconnected",
-        }),
+        error: new Error("requestmanager was disconnected"),
       });
     }
 
@@ -90,10 +87,8 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
         this.removePending(entry);
         resolve({
           ok: false,
-          error: "request-timeout",
-          data: new Rpc.Error({
-            code: Rpc.Error.Codes.RequestTimeout,
-            message: "request timed out",
+          error: new Error("request timed out", {
+            cause: Err.Codes.RequestTimeout,
           }),
         });
         this.dispatch("timeout", { request });
@@ -114,11 +109,6 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
         resolve({
           ok: false,
           error: enqueue.error,
-
-          data: new Rpc.Error({
-            code: Rpc.Error.Codes.RequestTimeout,
-            message: enqueue.error,
-          }),
         });
         this.dispatch("error", {
           phase: "send",
@@ -133,11 +123,7 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
     if (this.ended) {
       return Promise.resolve({
         ok: false,
-        error: "requests-ended",
-        data: new Rpc.Error({
-          code: Rpc.Error.Codes.InternalError,
-          message: "requestmanager was disconnected",
-        }),
+        error: new Error("requestmanager was disconnected"),
       });
     }
 
@@ -170,10 +156,8 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
       }
       entry.resolve({
         ok: false,
-        error: reason,
-        data: new Rpc.Error({
-          code: Rpc.Error.Codes.RequestsShutdown,
-          message: reason,
+        error: new Error(reason, {
+          cause: Err.Codes.RequestsShutdown,
         }),
       });
     }
@@ -316,4 +300,29 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
   private getMinGapMs() {
     return this.responseStrategy?.minGapMs ?? 0;
   }
+}
+
+export namespace Requests {
+  export type Socket = Pick<Sockets.Client, "on" | "write">;
+
+  type Matcher<Request, Message> = (
+    request: Request,
+    message: Message,
+  ) => boolean;
+
+  export type Strategy<Request, Message> =
+    | {
+        strategy: "match";
+        matchFn: Matcher<Request, Message>;
+        maxInFlight?: number;
+        minGapMs?: number;
+      }
+    | { strategy: "blocking-queue"; minGapMs?: number };
+
+  export type Pending<Request, Message> = {
+    request: Request;
+    resolve: (result: TaskResult<Message>) => void;
+    sent: boolean;
+    timeout?: ReturnType<typeof setTimeout>;
+  };
 }

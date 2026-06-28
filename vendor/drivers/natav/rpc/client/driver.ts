@@ -1,8 +1,7 @@
-import type { Manager } from "@av/drivers";
-import { TypedEventTarget } from "@av/lib/eventtarget";
-import type { RpcClient } from "@av/rpc/client";
-import type { Drivers, Events } from "@av/types";
-import { Rpc } from "@av/types";
+import type { Drivers, Events, Manager } from "@av/index";
+import { TypedEventTarget } from "@av/index";
+import { Rpc } from "../types";
+import type { RpcClient } from "./index";
 
 export class ClientRpcDriver<
   N extends Manager = Manager,

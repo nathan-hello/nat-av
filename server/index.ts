@@ -1,7 +1,10 @@
-import { Manager, Server, Tcp, Telemetry, type Rpc } from "@av/index";
+import { Manager, Tcp, Telemetry } from "@av/index";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import { Debugger } from "@drivers/natav/debug";
+import { RpcServer } from "@drivers/natav/rpc/server";
+import { RpcTransportWebsocket } from "@drivers/natav/rpc/server/websocket";
+import type { Rpc } from "@drivers/natav/rpc/types";
 import { System } from "@server/system";
 
 // TSAS:
@@ -70,8 +73,8 @@ type AppContext = {
 };
 
 export async function start(app: Rpc.WebSocket.App) {
-  const websocket = new Server.Websocket(app);
-  new Server.Rpc<AppContext>({
+  const websocket = new RpcTransportWebsocket(app);
+  new RpcServer<AppContext>({
     natav: natav as Manager<any, any, AppContext>,
     transport: websocket,
     peerToContext: (peer): AppContext => ({

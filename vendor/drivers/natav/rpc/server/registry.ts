@@ -1,4 +1,4 @@
-import type { Rpc } from "@av/types";
+import type { Rpc } from "../types";
 
 export class RpcPeerRegistry<
   ContextType extends Rpc.Server.Context = Rpc.Server.Context,

@@ -1,15 +1,20 @@
-import type { Manager } from "@av/drivers";
-import { ProtectedTypedEventTarget } from "@av/lib/eventtarget";
-import { ClientRpcDriver } from "@av/rpc/client/driver";
-import { ClientRpcRequests } from "@av/rpc/client/requests";
-import type { ClientRpcTransport } from "@av/rpc/client/websocket";
-import { ClientWebsocket } from "@av/rpc/client/websocket";
+import {
+  type Drivers,
+  type Events,
+  type Manager,
+  Err,
+  TypedEventTarget,
+} from "@av/index";
 import { Telemetry } from "@av/telemetry";
-import { Rpc, type Drivers, type Events } from "@av/types";
+import { Rpc } from "../types";
+import { ClientRpcDriver } from "./driver";
+import { ClientRpcRequests } from "./requests";
+import type { ClientRpcTransport } from "./websocket";
+import { ClientWebsocket } from "./websocket";
 
 export class RpcClient<
   N extends Manager = Manager,
-> extends ProtectedTypedEventTarget<Events.Rpc.Map> {
+> extends TypedEventTarget<Events.Rpc.Map> {
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
@@ -38,7 +43,7 @@ export class RpcClient<
     this.transport.on("close", (event) => {
       this.requests.rejectAll(
         new Rpc.Error({
-          code: Rpc.Error.Codes.RpcDisconnected,
+          code: Err.Codes.RpcDisconnected,
           message: `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
         }),
       );
@@ -75,7 +80,7 @@ export class RpcClient<
   get ctx() {
     if (!this._context) {
       throw new Rpc.Error({
-        code: Rpc.Error.Codes.CtxNotFound,
+        code: Err.Codes.CtxNotFound,
         message: "client",
       });
     }

@@ -1,6 +1,6 @@
-import type { ClientRpcTransport } from "@av/rpc/client/websocket";
-import { Telemetry } from "@av/telemetry";
-import { Rpc } from "@av/types";
+import { Err, Telemetry } from "@av/index";
+import { Rpc } from "../types";
+import type { ClientRpcTransport } from "./websocket";
 
 export class ClientRpcRequests {
   private tel = new Telemetry("Rpc::Requests");
@@ -48,7 +48,7 @@ export class ClientRpcRequests {
         this.rejectPendingRequest(
           new Rpc.Error(
             {
-              code: Rpc.Error.Codes.RpcTimeout,
+              code: Err.Codes.RpcTimeout,
               message: `RPC call timed out after ${this.timeout}ms id ${message.id}`,
             },
             message.id,
@@ -67,7 +67,7 @@ export class ClientRpcRequests {
         Rpc.Json.stringify(message),
       );
       if (!str.ok) {
-        this.rejectPendingRequest(new Rpc.Error(str.data.error, message.id));
+        this.rejectPendingRequest(new Rpc.Error(str.error, message.id));
         return;
       }
 
@@ -75,7 +75,7 @@ export class ClientRpcRequests {
         this.transport.send(str.data),
       );
       if (!send.ok) {
-        this.rejectPendingRequest(new Rpc.Error(send.data.error, message.id));
+        this.rejectPendingRequest(new Rpc.Error(send.error, message.id));
       }
     });
   }

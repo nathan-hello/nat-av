@@ -1,5 +1,6 @@
+import { Err } from "@av/client";
 import { Driver } from "@av/drivers";
-import { Rpc, type Drivers, type Events } from "@av/types";
+import { type Drivers, type Events } from "@av/types";
 
 type SerializableMessage = Omit<Events.Natav.SocketMessage, "data"> & {
   data: number[];
@@ -48,10 +49,8 @@ export class Debugger extends Driver<"debugger"> {
     getNode: (name: Drivers.Names): Drivers.DriverView => {
       const found = this.state.tree[name]?.meta;
       if (!found) {
-        this.tel.error("node not found", { name });
-        throw new Rpc.Error({
-          code: Rpc.Error.Codes.InvalidRequest,
-          message: "node not found",
+        throw new Error("node not found", {
+          cause: Err.Codes.InvalidRequest,
         });
       }
       return found;
@@ -103,34 +102,38 @@ export class Debugger extends Driver<"debugger"> {
     encoding?: BufferEncoding;
   }): Promise<{ bytesWritten: number }> {
     if (!params || typeof params !== "object") {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.InvalidParams,
-        message: "Invalid debug socket write params",
+      throw new Error("Invalid debug socket write params", {
+        cause: Err.Codes.InvalidParams,
       });
     }
 
     if (typeof params.name !== "string" || typeof params.text !== "string") {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.InvalidParams,
-        message: "Debug socket write requires string driverName and text",
-      });
+      throw new Error(
+        "Debug socket write requires string driverName and text",
+        {
+          cause: Err.Codes.InvalidParams,
+        },
+      );
     }
 
     const result = await this.tel.task("debugger:socket-write", async () => {
       const driver = this.natav.FindDriver(params.name);
       if (!driver) {
-        throw new Rpc.Error({
-          code: Rpc.Error.Codes.DriverNotFound,
-          message: `Driver "${params.name}" not found`,
-          data: { availableDrivers: this.natav.GetAllDriverNames() },
-        });
+        throw new Error(
+          `Driver "${params.name}" not found in ${this.natav.GetAllDriverNames()}`,
+          {
+            cause: Err.Codes.DriverNotFound,
+          },
+        );
       }
 
       if (typeof driver.socket?.write !== "function") {
-        throw new Rpc.Error({
-          code: Rpc.Error.Codes.MethodNotFound,
-          message: `Drivers "${params.name}" does not expose a writable socket`,
-        });
+        throw new Error(
+          `Drivers "${params.name}" does not expose a writable socket`,
+          {
+            cause: Err.Codes.MethodNotFound,
+          },
+        );
       }
 
       const bytesWritten = await driver.socket.write(params.text);
@@ -141,9 +144,6 @@ export class Debugger extends Driver<"debugger"> {
       return result.data;
     }
 
-    throw new Rpc.Error({
-      code: Rpc.Error.Codes.InternalError,
-      message: result.error,
-    });
+    throw result.error;
   }
 }

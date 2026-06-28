@@ -1,6 +1,5 @@
-import { TypedEventTarget } from "@av/lib/eventtarget";
-import { Telemetry } from "@av/telemetry";
-import { Rpc } from "@av/types";
+import { Telemetry, TypedEventTarget } from "@av/index";
+import { Rpc } from "../types";
 
 export type ClientRpcTransport = Pick<
   TypedEventTarget<WebSocketEventMap>,

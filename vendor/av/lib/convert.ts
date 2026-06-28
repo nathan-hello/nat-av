@@ -60,4 +60,22 @@ export namespace Convert {
     // Fallback for Buffer or array-like objects
     return new Uint8Array(data);
   }
+
+  export function toArrayBuffer(
+    data: string | Buffer | ArrayBufferLike | Buffer[],
+  ): ArrayBuffer {
+    if (typeof data === "string") {
+      return new TextEncoder().encode(data).buffer;
+    }
+
+    if (Array.isArray(data)) {
+      return Uint8Array.from(Buffer.concat(data)).buffer;
+    }
+
+    if (ArrayBuffer.isView(data)) {
+      return Uint8Array.from(data).buffer;
+    }
+
+    return Uint8Array.from(new Uint8Array(data)).buffer;
+  }
 }

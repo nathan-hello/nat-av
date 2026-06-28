@@ -1,12 +1,7 @@
-import {
-  Client,
-  Driver,
-  Manager,
-  Rpc,
-  Server,
-  Test,
-  type Drivers,
-} from "@av/index";
+import { Driver, Manager, Test, type Drivers } from "@av/index";
+import { RpcClient } from "@drivers/natav/rpc/client";
+import { RpcServer } from "@drivers/natav/rpc/server";
+import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -45,8 +40,8 @@ describe("rpc driver events", () => {
     });
     type natav = typeof natav;
     const transport = new Test.RpcTransport();
-    new Server.Rpc({ natav, transport: transport.server });
-    const client = new Client.Rpc<natav>({
+    new RpcServer({ natav, transport: transport.server });
+    const client = new RpcClient<natav>({
       transport,
     });
 
@@ -180,7 +175,7 @@ describe("rpc driver events", () => {
     });
     type natav = typeof natav;
     const transport = new Test.RpcTransport();
-    new Server.Rpc({
+    new RpcServer({
       natav,
       transport: transport.server,
       peerToContext: (peer): PeerContext => ({
@@ -188,7 +183,7 @@ describe("rpc driver events", () => {
         name: "CLIENT_1" as const,
       }),
     });
-    const client = new Client.Rpc<natav>({
+    const client = new RpcClient<natav>({
       transport,
     });
 

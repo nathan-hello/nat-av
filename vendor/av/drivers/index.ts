@@ -1,15 +1,11 @@
+import { Err } from "@av/client";
 import { Convert } from "@av/lib/convert";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
-import {
-  Rpc,
-  type Drivers,
-  type Events,
-  type Sockets,
-} from "@av/types";
+import { type Drivers, type Events, type Sockets } from "@av/types";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
@@ -66,9 +62,8 @@ export abstract class Driver<
     );
 
     if (!child) {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.DriverNotFound,
-        message: `Driver.dep: ${name}`,
+      throw new Error(`Driver.dep: ${name}`, {
+        cause: Err.Codes.DriverNotFound,
       });
     }
 
@@ -92,10 +87,12 @@ export class Manager<
   GetContext() {
     const ctx = this.contextStore.getStore();
     if (!ctx) {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.CtxNotFound,
-        message: `Manager.GetContext: ${JSON.stringify(this.contextStore)}`,
-      });
+      throw new Error(
+        `Manager.GetContext: ${JSON.stringify(this.contextStore)}`,
+        {
+          cause: Err.Codes.CtxNotFound,
+        },
+      );
     }
     return ctx;
   }
@@ -139,9 +136,8 @@ export class Manager<
   ): Drivers.FromName<Drivers.Merged<D, S>, N> {
     const found = this.FindDriverTyped(name);
     if (!found) {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.DriverCallFailed,
-        message: `Manager.GetDriver: ${name}`,
+      throw new Error(`Manager.GetDriver: ${name}`, {
+        cause: Err.Codes.DriverCallFailed,
       });
     }
 
@@ -212,10 +208,12 @@ export class Manager<
 
     const initTree = async (d: Driver) => {
       if (inited.has(d.name)) {
-        throw new Rpc.Error({
-          code: Rpc.Error.Codes.ManagerFoundMultipleNames,
-          message: `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.drivers)}`,
-        });
+        throw new Error(
+          `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.drivers)}`,
+          {
+            cause: Err.Codes.ManagerFoundMultipleNames,
+          },
+        );
       }
 
       // Start the dependent drivers first
@@ -243,9 +241,8 @@ export class Manager<
   private async initDriver(d: Driver) {
     const name = d.name;
     if (!this.IsDriverName(name)) {
-      throw new Rpc.Error({
-        code: Rpc.Error.Codes.DriverNotFound,
-        message: `Manager.Start: ${name}`,
+      throw new Error(`Manager.Start: ${name}`, {
+        cause: Err.Codes.DriverNotFound,
       });
     }
 

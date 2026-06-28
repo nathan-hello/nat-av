@@ -1,4 +1,3 @@
-import { Rpc } from "@av/types";
 import * as RuntimeMod from "./runtime";
 import { getLoggerProvider } from "./sdk";
 import {
@@ -15,16 +14,7 @@ export type TelemetryLogSchema = {
   error: [string, Record<string, AttributeValue>];
 };
 
-export type TaskResult<R> =
-  | { ok: true; data: R }
-  | { ok: false; error: string; data: Rpc.Error };
-
-function Bad(message: string) {
-  return new Rpc.Error({
-    code: Rpc.Error.Codes.InternalError,
-    message: message,
-  });
-}
+export type TaskResult<R> = { ok: true; data: R } | { ok: false; error: Error };
 
 export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
   namespace: string;
@@ -56,21 +46,13 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
             })
             .catch((err): TaskResult<R> => {
               const error = this.handleError(span, name, err);
-              if (err instanceof Rpc.Error) {
-                return {
-                  ok: false as const,
-                  error: err.error.message,
-                  data: err,
-                };
-              }
               if (err instanceof Error) {
                 return {
                   ok: false as const,
-                  error: err.message,
-                  data: Bad(err.message),
+                  error: err,
                 };
               }
-              return { ok: false as const, error, data: Bad(error) };
+              return { ok: false as const, error: new Error(error) };
             })
             .finally(() => span.end());
         }
@@ -81,13 +63,10 @@ export class Telemetry<T extends TelemetryLogSchema = TelemetryLogSchema> {
       } catch (err) {
         const error = this.handleError(span, name, err);
         span.end();
-        if (err instanceof Rpc.Error) {
-          return { ok: false as const, error, data: err };
-        }
         if (err instanceof Error) {
-          return { ok: false as const, error, data: Bad(err.message) };
+          return { ok: false as const, error: err };
         }
-        return { ok: false as const, error, data: Bad(error) };
+        return { ok: false as const, error: new Error(error) };
       }
     });
   }

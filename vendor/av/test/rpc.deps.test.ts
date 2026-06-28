@@ -1,10 +1,10 @@
 import { Driver, Manager } from "@av/drivers";
 import { TypedEventTarget } from "@av/lib/eventtarget";
-import { RpcClient } from "@av/rpc/client";
-import { RpcServer } from "@av/rpc/server";
-import { DriverRpcRouter } from "@av/rpc/server/driver";
 import { Test } from "@av/test/data.test";
-import { Rpc } from "@av/types";
+import { RpcClient } from "@drivers/natav/rpc/client";
+import { RpcServer } from "@drivers/natav/rpc/server";
+import { DriverRpcRouter } from "@drivers/natav/rpc/server/driver";
+import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

@@ -1,9 +1,9 @@
-import type { Manager } from "@av/drivers";
-import { DriverRpcRouter } from "@av/rpc/server/driver";
-import { RpcPeerRegistry } from "@av/rpc/server/registry";
-import type { ServerRpcTransport } from "@av/rpc/server/websocket";
-import { Telemetry } from "@av/telemetry";
-import { Rpc, type Drivers } from "@av/types";
+import type { Drivers, Manager } from "@av/index";
+import { Err, Telemetry } from "@av/index";
+import { Rpc } from "../types";
+import { DriverRpcRouter } from "./driver";
+import { RpcPeerRegistry } from "./registry";
+import type { ServerRpcTransport } from "./websocket";
 
 export class RpcServer<
   ContextType extends Rpc.Server.Context = Rpc.Server.Context,
@@ -86,7 +86,7 @@ export class RpcServer<
     } catch (error) {
       return new Rpc.Error(
         {
-          code: Rpc.Error.Codes.InternalError,
+          code: Err.Codes.InternalError,
           message:
             error instanceof Error ? error.message : "missing peer context",
         },
@@ -128,7 +128,7 @@ export class RpcServer<
     });
 
     return new Rpc.Error(
-      { code: Rpc.Error.Codes.InternalError, message: result.error },
+      { code: Err.Codes.InternalError, message: result.error.message },
       message?.id,
     );
   }
@@ -200,7 +200,7 @@ export class RpcServer<
       peer.send(
         Rpc.Json.stringify(
           new Rpc.Error({
-            code: Rpc.Error.Codes.InternalError,
+            code: Err.Codes.InternalError,
             message: "json stringify",
           }),
         ),
@@ -226,7 +226,7 @@ export class RpcServer<
         Rpc.Json.stringify(
           new Rpc.Error(
             {
-              code: Rpc.Error.Codes.InvalidRequest,
+              code: Err.Codes.InvalidRequest,
               message: "got_unknown_message",
             },
             requestId,

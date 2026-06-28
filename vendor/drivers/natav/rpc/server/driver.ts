@@ -1,7 +1,6 @@
-import type { Driver } from "@av/drivers";
-import { TypedEventTarget } from "@av/lib/eventtarget";
-import { Telemetry } from "@av/telemetry";
-import { Rpc, type Events } from "@av/types";
+import type { Driver } from "@av/index";
+import { Err, type Events, Telemetry, TypedEventTarget } from "@av/index";
+import { Rpc } from "../types";
 
 type DriverRpcManager = {
   FindDriver(name: string): Driver | undefined;
@@ -36,16 +35,15 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     peer: Rpc.WebSocket.Peer,
   ): Promise<Rpc.Response | Rpc.Error> {
     const params = message.DriverParams();
-    const err = new Rpc.Error(
-      {
-        code: Rpc.Error.Codes.InvalidParams,
-        message: "Invalid driver call params",
-      },
-      message.id,
-    );
 
     if (!params) {
-      return err;
+      return new Rpc.Error(
+        {
+          code: Err.Codes.InvalidParams,
+          message: "Invalid driver call params",
+        },
+        message.id,
+      );
     }
 
     const result = await this.tel.task(
@@ -60,7 +58,7 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
         if (!driver) {
           return new Rpc.Error(
             {
-              code: Rpc.Error.Codes.DriverNotFound,
+              code: Err.Codes.DriverNotFound,
               message: `Driver \"${params.driver}\" not found`,
               data: { availableDriver: this.natav.GetAllDriverNames() },
             },
@@ -77,7 +75,7 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
           default:
             return new Rpc.Error(
               {
-                code: Rpc.Error.Codes.InvalidParams,
+                code: Err.Codes.InvalidParams,
                 message: "Invalid driver call params",
               },
               message.id,
@@ -88,19 +86,9 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
 
     if (result.ok) {
       return result.data;
+    } else {
+      return new Rpc.Error(result.error, message.id);
     }
-
-    if (result.data) {
-      return new Rpc.Error(result.data.error, message.id);
-    }
-
-    return new Rpc.Error(
-      {
-        code: Rpc.Error.Codes.InternalError,
-        message: result.error,
-      },
-      message.id,
-    );
   }
 
   private subscribe(
@@ -116,7 +104,7 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     if (!hasJsonEventTarget(events)) {
       return new Rpc.Error(
         {
-          code: Rpc.Error.Codes.InvalidParams,
+          code: Err.Codes.InvalidParams,
           message: "driver did not implement events",
         },
         message.id,
@@ -184,7 +172,7 @@ export class DriverRpcRouter extends TypedEventTarget<Events.Natav.Map> {
     if (!method) {
       return new Rpc.Error(
         {
-          code: Rpc.Error.Codes.DriverMethodNotFound,
+          code: Err.Codes.DriverMethodNotFound,
           message: `Method \"${params.method}\" not found on driver \"${params.driver}\"`,
           data: { availableMethods: Object.keys(driver.api ?? {}) },
         },
