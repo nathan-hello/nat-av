@@ -1,4 +1,4 @@
-import { Driver, Manager, Test, type Drivers } from "@av/index";
+import { Manager, Test } from "@av/index";
 import { RpcClient } from "@drivers/natav/rpc/client";
 import { RpcServer } from "@drivers/natav/rpc/server";
 import { Rpc } from "@drivers/natav/rpc/types";
@@ -134,79 +134,6 @@ describe("rpc driver events", () => {
         id: 4,
       },
     ]);
-
-    client.close();
-  });
-
-  it("injects a typed client id into driver api calls", async () => {
-    type PeerContext = Rpc.Server.Context<"CLIENT_1">;
-
-    class PeerAwareDriver extends Driver<
-      "peer-aware",
-      [],
-      { identify: () => Promise<string> },
-      { label: string }
-    > {
-      api = {
-        identify: async () => this.natav.GetContext()?.name ?? "UNKNOWN",
-      };
-
-      constructor(
-        private natav: Drivers.ManagerView<
-          readonly [PeerAwareDriver],
-          PeerContext
-        >,
-      ) {
-        super({ name: "peer-aware" });
-      }
-
-      get state() {
-        return { label: this.natav.GetContext().name ?? "UNKNOWN" };
-      }
-    }
-
-    const natav = new Manager<
-      readonly [],
-      readonly [typeof PeerAwareDriver],
-      PeerContext
-    >({
-      drivers: [] as const,
-      deferred: [PeerAwareDriver] as const,
-    });
-    type natav = typeof natav;
-    const transport = new Test.RpcTransport();
-    new RpcServer({
-      natav,
-      transport: transport.server,
-      peerToContext: (peer): PeerContext => ({
-        addr: peer.addr,
-        name: "CLIENT_1" as const,
-      }),
-    });
-    const client = new RpcClient<natav>({
-      transport,
-    });
-
-    const ready = new Promise<void>((resolve) => {
-      const off = client.on("ready", () => {
-        off();
-        resolve();
-      });
-    });
-    const peer = new Promise<Rpc.Server.Context>((resolve) => {
-      const off = client.on("peer", (value) => {
-        off();
-        resolve(value);
-      });
-    });
-
-    transport.connect();
-    await ready;
-
-    assert.equal((await peer).name, "CLIENT_1");
-    assert.equal(client.ctx?.name, "CLIENT_1");
-    assert.equal(client.driver("peer-aware").state?.label, "CLIENT_1");
-    assert.equal(await client.driver("peer-aware").api.identify(), "CLIENT_1");
 
     client.close();
   });

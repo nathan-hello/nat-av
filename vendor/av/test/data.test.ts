@@ -29,7 +29,7 @@ export namespace Test {
     }
   }
 
-  class RpcServerTransport
+  export class RpcServerTransport
     extends TypedEventTarget<ServerRpcTransportEvents>
     implements ServerRpcTransportShape
   {

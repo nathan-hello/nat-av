@@ -13,7 +13,6 @@ export class RpcClient<
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
   private driverHandles = new Map<string, ClientRpcDriver<N, any>>();
-  private _context: Rpc.Server.Context | undefined;
   private initPromise: Promise<void> | undefined;
   private initResolve: (() => void) | undefined;
   private initReject: ((err: unknown) => void) | undefined;
@@ -71,16 +70,6 @@ export class RpcClient<
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  get ctx() {
-    if (!this._context) {
-      throw new Rpc.Error({
-        code: Err.Codes.CtxNotFound,
-        message: "client",
-      });
-    }
-    return this._context;
-  }
-
   driver<Name extends Drivers.Names<N["drivers"]>>(
     name: Name,
   ): ClientRpcDriver<N, Name> {
@@ -118,7 +107,6 @@ export class RpcClient<
       states: Record<string, Rpc.Json.Value>;
     }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
 
-    this._context = result.context;
     this.dispatch("peer", result.context);
 
     for (const [name, state] of Object.entries(result.states)) {
@@ -154,10 +142,6 @@ export class RpcClient<
       let driver: ClientRpcDriver;
 
       switch (notification.type) {
-        case "natav:peer":
-          this._context = notification.params;
-          this.dispatch("peer", notification.params);
-          break;
         case "natav:driver:event":
           driver = this.driver(notification.params.name);
           driver.handleEvent(

@@ -65,7 +65,7 @@ Telemetry.Sdk.AddExporters([
   }),
 ]);
 
-export type natav = Manager<drivers, deferred, AppContext>;
+export type natav = Manager<drivers, deferred>;
 
 type AppContext = {
   addr: string;
@@ -75,7 +75,7 @@ type AppContext = {
 export async function start(server: Server) {
   const websocket = new RpcTransportWebsocket(server);
   new RpcServer<AppContext>({
-    natav: natav as Manager<any, any, AppContext>,
+    natav: natav,
     transport: websocket,
     peerToContext: (peer): AppContext => ({
       addr: peer.addr,

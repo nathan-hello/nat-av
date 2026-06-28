@@ -455,18 +455,6 @@ export namespace Rpc {
         }
 
         switch (params.type) {
-          case "natav:peer":
-            if (
-              typeof params.addr !== "string" ||
-              typeof params.clientId !== "string"
-            ) {
-              return null;
-            }
-
-            return new Rpc.Notification.Server("natav:peer", {
-              addr: params.addr,
-              name: params.clientId,
-            });
           case "natav:driver:event":
             if (typeof params.name !== "string") {
               return null;

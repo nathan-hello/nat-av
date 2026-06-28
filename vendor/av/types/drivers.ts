@@ -8,9 +8,6 @@ import type { Rpc } from "@drivers/natav/rpc/types";
 // to get the Natav.Names<N> for example will cause a circular
 // dependency that Typescript cannot resolve.
 export namespace Drivers {
-  export type Context<ClientId extends string = string> =
-    Rpc.Server.Context<ClientId>;
-
   export type Array = readonly Drivers.AnyDriver[];
 
   export type PartialArray<T extends readonly unknown[]> =
@@ -27,10 +24,7 @@ export namespace Drivers {
     };
   };
 
-  export interface ManagerView<
-    N extends Drivers.Array = Drivers.Array,
-    Context extends Drivers.Context = Drivers.Context,
-  > {
+  export interface ManagerView<N extends Drivers.Array = Drivers.Array> {
     readonly drivers: N;
     readonly drivers_flat: Driver[];
     bus: TypedEventTarget<TEvents.Natav.Map<N>>;
@@ -42,18 +36,12 @@ export namespace Drivers {
     Start(): Promise<void>;
     GetTree(): DriverView[];
     End(): Promise<void>;
-    runWithContext<T>(context: Context, fn: () => T): T;
-    GetContext(): Context;
   }
 
   export interface Manager<
     D extends Drivers.Array = Drivers.Array,
     S extends readonly Drivers.AnyDeferred[] = readonly Drivers.AnyDeferred[],
-    Context extends Drivers.Context = Drivers.Context,
-  > extends ManagerView<Drivers.Merged<D, S>, Context> {}
-
-  export type ManagerParams<M extends Drivers.Manager> =
-    M extends Drivers.Manager<infer A, infer B, infer C> ? [A, B, C] : never;
+  > extends ManagerView<Drivers.Merged<D, S>> {}
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -78,14 +66,9 @@ export namespace Drivers {
   export type Deferred<
     N extends Drivers.Array = Drivers.Array,
     T extends Driver = Driver,
-    Context extends Drivers.Context = Drivers.Context,
   > =
-    | ((
-        natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>,
-      ) => T)
-    | (new (
-        natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[], Context>,
-      ) => T);
+    | ((natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[]>) => T)
+    | (new (natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[]>) => T);
 
   type DeferredFunction<T extends Driver = Driver> = ((natav: any) => T) & {
     prototype?: undefined;

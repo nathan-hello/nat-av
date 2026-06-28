@@ -1,6 +1,6 @@
 import { Manager } from "@av/drivers";
-import { DriverRpcRouter } from "@drivers/natav/rpc/server/driver";
 import { Test } from "@av/test/data.test";
+import { RpcServer } from "@drivers/natav/rpc/server";
 import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -30,10 +30,13 @@ describe("test driver", () => {
   it("forwards driver events through the rpc server per subscription", async () => {
     const eventDriver = new Test.EventDriver("event-1");
     const natav = new Manager({ drivers: [eventDriver], deferred: [] });
-    const router = new DriverRpcRouter(natav);
+
+    const transport = new Test.RpcServerTransport();
+    new RpcServer({ natav, transport });
+
     const makePeer = (addr: string) => {
       const sent: string[] = [];
-      return {
+      const peer = {
         addr,
         readyState: 1,
         sent,
@@ -42,40 +45,30 @@ describe("test driver", () => {
         },
         close() {},
       };
+      transport.open(peer);
+      return peer;
     };
+
+    const send = (peer: { sent: string[] }, request: Rpc.Request) =>
+      transport.message(
+        peer as unknown as Rpc.WebSocket.Peer,
+        Rpc.Json.stringify(request),
+      );
 
     const peer1 = makePeer("peer-1");
     const peer2 = makePeer("peer-2");
 
-    await router.handle(
-      Rpc.Request.driverSubscribe(1, {
-        driver: "event-1",
-        method: "tick",
-      }),
-      peer1,
-    );
+    send(peer1, Rpc.Request.driverSubscribe(1, { driver: "event-1", method: "tick" }));
+    send(peer1, Rpc.Request.driverSubscribe(2, { driver: "event-1", method: "tick" }));
+    send(peer2, Rpc.Request.driverSubscribe(3, { driver: "event-1", method: "tick" }));
 
-    await router.handle(
-      Rpc.Request.driverSubscribe(2, {
-        driver: "event-1",
-        method: "tick",
-      }),
-      peer1,
-    );
-
-    await router.handle(
-      Rpc.Request.driverSubscribe(3, {
-        driver: "event-1",
-        method: "tick",
-      }),
-      peer2,
-    );
+    await Test.AwaitNextMicrotask();
 
     eventDriver.emitTick(1);
 
-    assert.equal(peer1.sent.length, 2);
-    assert.equal(peer2.sent.length, 1);
-    assert.deepEqual(JSON.parse(peer1.sent[0]), {
+    assert.equal(peer1.sent.length, 5);
+    assert.equal(peer2.sent.length, 3);
+    assert.deepEqual(JSON.parse(peer1.sent[2] ?? "{}"), {
       jsonrpc: "2.0",
       method: "notification",
       params: {
@@ -86,17 +79,11 @@ describe("test driver", () => {
       },
     });
 
-    await router.handle(
-      Rpc.Request.driverUnsubscribe(4, {
-        driver: "event-1",
-        method: "tick",
-      }),
-      peer1,
-    );
+    send(peer1, Rpc.Request.driverUnsubscribe(4, { driver: "event-1", method: "tick" }));
 
     eventDriver.emitTick(2);
 
-    assert.equal(peer1.sent.length, 3);
-    assert.equal(peer2.sent.length, 2);
+    assert.equal(peer1.sent.length, 6);
+    assert.equal(peer2.sent.length, 4);
   });
 });

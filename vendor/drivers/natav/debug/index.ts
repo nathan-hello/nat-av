@@ -50,7 +50,7 @@ export class Debugger extends Driver<"debugger"> {
       const found = this.state.tree[name]?.meta;
       if (!found) {
         throw new Error("node not found", {
-          cause: Err.Codes.InvalidRequest,
+          cause: Err.Codes.RpcInvalidRequestObject,
         });
       }
       return found;
@@ -103,7 +103,7 @@ export class Debugger extends Driver<"debugger"> {
   }): Promise<{ bytesWritten: number }> {
     if (!params || typeof params !== "object") {
       throw new Error("Invalid debug socket write params", {
-        cause: Err.Codes.InvalidParams,
+        cause: Err.Codes.RpcInvalidParams,
       });
     }
 
@@ -111,7 +111,7 @@ export class Debugger extends Driver<"debugger"> {
       throw new Error(
         "Debug socket write requires string driverName and text",
         {
-          cause: Err.Codes.InvalidParams,
+          cause: Err.Codes.RpcInvalidParams,
         },
       );
     }
@@ -131,7 +131,7 @@ export class Debugger extends Driver<"debugger"> {
         throw new Error(
           `Drivers "${params.name}" does not expose a writable socket`,
           {
-            cause: Err.Codes.MethodNotFound,
+            cause: Err.Codes.RpcMethodNotFound,
           },
         );
       }

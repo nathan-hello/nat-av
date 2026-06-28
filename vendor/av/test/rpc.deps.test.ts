@@ -3,7 +3,6 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Test } from "@av/test/data.test";
 import { RpcClient } from "@drivers/natav/rpc/client";
 import { RpcServer } from "@drivers/natav/rpc/server";
-import { DriverRpcRouter } from "@drivers/natav/rpc/server/driver";
 import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -76,22 +75,6 @@ describe("rpc deps", () => {
     }
   }
 
-  type TestPeer = Rpc.WebSocket.Peer & { sent: string[] };
-
-  function makePeer(addr: string): TestPeer {
-    const sent: string[] = [];
-
-    return {
-      addr,
-      readyState: 1,
-      sent,
-      send(message: string) {
-        sent.push(message);
-      },
-      close() {},
-    };
-  }
-
   it("walks a four-level dependency tree on the server and through rpc", async () => {
     const leaf = new LeafDriver();
     const level3 = new Level3Driver(leaf);
@@ -108,50 +91,6 @@ describe("rpc deps", () => {
     ]);
     assert.equal(natav.GetDriver("leaf"), leaf);
     assert.equal(natav.FindDriver("level-3"), level3);
-
-    const router = new DriverRpcRouter(natav);
-    const serverPeer = makePeer("server-peer");
-
-    const serverCall = await router.handle(
-      Rpc.Request.driverCall(1, {
-        driver: "leaf",
-        method: "ping",
-        args: [],
-      }),
-      serverPeer,
-    );
-
-    assert.deepEqual(
-      JSON.stringify(serverCall),
-      JSON.stringify({
-        id: 1,
-        result: "leaf-pong",
-        jsonrpc: "2.0",
-      }),
-    );
-
-    await router.handle(
-      Rpc.Request.driverSubscribe(2, {
-        driver: "leaf",
-        method: "tick",
-        args: [],
-      }),
-      serverPeer,
-    );
-
-    leaf.emitTick(1);
-
-    assert.equal(serverPeer.sent.length, 1);
-    assert.deepEqual(JSON.parse(serverPeer.sent[0] ?? "{}"), {
-      jsonrpc: "2.0",
-      method: "notification",
-      params: {
-        type: "natav:driver:event",
-        name: "leaf",
-        event: "tick",
-        data: { count: 1 },
-      },
-    });
 
     const transport = new Test.RpcTransport();
     new RpcServer({ natav, transport: transport.server });

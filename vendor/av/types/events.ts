@@ -1,6 +1,5 @@
 import type { ReadableLogRecord } from "@av/telemetry/types";
 import type { Drivers } from "@av/types/drivers";
-import type { Rpc as NRpc } from "@drivers/natav/rpc/types";
 
 export namespace Events {
   export namespace Socket {
@@ -41,7 +40,7 @@ export namespace Events {
       [Name in Drivers.Names<N>]: {
         name: Name;
         event: string;
-        data: NRpc.Json.Value;
+        data: any;
       };
     }[Drivers.Names<N>];
     type StateEventFor<N extends Drivers.Array> = {
@@ -63,10 +62,9 @@ export namespace Events {
       "natav:driver:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
-      "natav:peer": NRpc.Server.Context;
       "natav:driver:connected": { name: Drivers.Names<N> };
       "natav:driver:disconnected": { name: Drivers.Names<N> };
-      "natav:driver:error": { name: Drivers.Names<N>; error?: NRpc.Error };
+      "natav:driver:error": { name: Drivers.Names<N>; error?: Error };
       "natav:debug:socket": {
         name: Drivers.Names<N>;
         data: SocketMessage;

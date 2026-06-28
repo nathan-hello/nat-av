@@ -75,27 +75,12 @@ export class Manager<
   const D extends Drivers.Array = Drivers.Array,
   const S extends readonly Drivers.AnyDeferred[] =
     readonly Drivers.AnyDeferred[],
-  Context extends Drivers.Context = Drivers.Context,
-> implements Drivers.Manager<D, S, Context> {
+> implements Drivers.Manager<D, S> {
   readonly drivers: Drivers.Merged<D, S>;
   readonly drivers_flat: Driver[] = [];
-  private contextStore = new AsyncLocalStorage<Context>();
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
   >();
-
-  GetContext() {
-    const ctx = this.contextStore.getStore();
-    if (!ctx) {
-      throw new Error(
-        `Manager.GetContext: ${JSON.stringify(this.contextStore)}`,
-        {
-          cause: Err.Codes.CtxNotFound,
-        },
-      );
-    }
-    return ctx;
-  }
 
   constructor(args: { drivers?: D; deferred?: S }) {
     let configs: Driver[] = [];
@@ -125,10 +110,6 @@ export class Manager<
     };
 
     this.drivers_flat = this.drivers.flatMap(collect);
-  }
-
-  runWithContext<T>(context: Context, fn: () => T): T {
-    return this.contextStore.run(context, fn);
   }
 
   GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
