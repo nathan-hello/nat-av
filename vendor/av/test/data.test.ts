@@ -47,8 +47,8 @@ export namespace Test {
       this.dispatch("close", { peer, code, reason });
     }
 
-    error(peer: Rpc.WebSocket.Peer) {
-      this.dispatch("error", { peer });
+    error(peer: Rpc.WebSocket.Peer, error: Error) {
+      this.dispatch("error", { peer, error });
     }
   }
 

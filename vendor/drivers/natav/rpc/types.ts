@@ -521,7 +521,7 @@ export namespace Rpc {
           open(ws: Peer): void;
           message(ws: Peer, message: ArrayBuffer, isBinary: boolean): void;
           close(ws: Peer, code: number, message: ArrayBuffer): void;
-          error(ws: Peer): void;
+          error(ws: Peer, error: globalThis.Error): void;
         },
       ): void;
     };

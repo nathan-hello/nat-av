@@ -79,7 +79,7 @@ export class RpcServer extends Driver<"rpc-server"> {
       this.closePeer(peer);
     });
 
-    transport.on("error", () => {});
+    transport.on("error", (peer) => {});
   }
 
   async handleRequest(

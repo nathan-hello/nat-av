@@ -7,7 +7,7 @@ export type ServerRpcTransportEvents = {
   open: { peer: Rpc.WebSocket.Peer };
   message: { peer: Rpc.WebSocket.Peer; data: string };
   close: { peer: Rpc.WebSocket.Peer; code: number; reason: string };
-  error: { peer: Rpc.WebSocket.Peer };
+  error: { peer: Rpc.WebSocket.Peer; error: Error };
 };
 
 export type ServerRpcTransport = Pick<
@@ -50,8 +50,8 @@ export class RpcTransportWebsocket
           reason: decoder.decode(message),
         });
       },
-      error: (peer) => {
-        this.dispatch("error", { peer });
+      error: (peer, error) => {
+        this.dispatch("error", { peer, error });
       },
     });
   }
@@ -100,8 +100,8 @@ function createWebSocketApp(server: http.Server): Rpc.WebSocket.App {
           handlers.close(peer, code, Convert.toArrayBuffer(reason));
         });
 
-        ws.on("error", () => {
-          handlers.error(peer);
+        ws.on("error", (error) => {
+          handlers.error(peer, error);
         });
       });
     },
