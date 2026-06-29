@@ -79,8 +79,7 @@ export class TypedEventTarget<
         once: true,
       });
 
-      return () =>
-        super.removeEventListener(type, listener, options);
+      return () => super.removeEventListener(type, listener, options);
     }
 
     return new Promise<Events[K]>((resolve, reject) => {

@@ -77,8 +77,10 @@ export type RouteDestroyRequest = Proto.JsonRpc.Request<
 >;
 export type RouteDestroyResponse = Proto.JsonRpc.Response<number>;
 
-export type DecoderNotificationMonitorDisconnected =
-  Proto.JsonRpc.Notification<"monitor_disconnected", number[]>;
+export type DecoderNotificationMonitorDisconnected = Proto.JsonRpc.Notification<
+  "monitor_disconnected",
+  number[]
+>;
 
 export type DecoderNotificationMonitorConnected = Proto.JsonRpc.Notification<
   "monitor_connected",

@@ -1,10 +1,8 @@
 import { Error } from "./error";
-import { Response } from "./response";
 import type { Id, JsonValue } from "./index";
+import { Response } from "./response";
 
-function isObject(
-  value: unknown,
-): value is Record<string, unknown> {
+function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 

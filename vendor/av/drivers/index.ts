@@ -6,7 +6,6 @@ import {
 } from "@av/lib/eventtarget";
 import { Telemetry } from "@av/telemetry";
 import { type Drivers, type Events, type Sockets } from "@av/types";
-import { AsyncLocalStorage } from "node:async_hooks";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
 type SocketMaybe = Partial<Sockets.Client> | undefined;

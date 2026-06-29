@@ -8,7 +8,7 @@ export type JsonValue =
 
 export type Id = string | number;
 
-export { Request } from "./request";
-export { Response } from "./response";
 export { Error } from "./error";
 export { Notification } from "./notification";
+export { Request } from "./request";
+export { Response } from "./response";
