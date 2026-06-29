@@ -1,7 +1,6 @@
 import type { Manager } from "@av/index";
 import { Driver, Err, type Events, TypedEventTarget } from "@av/index";
 import { Rpc } from "../types";
-import { RpcPeerRegistry } from "./registry";
 import type { ServerRpcTransport } from "./websocket";
 
 function hasJsonEventTarget(
@@ -11,15 +10,11 @@ function hasJsonEventTarget(
     typeof value === "object" &&
     value !== null &&
     "on" in value &&
-    // TSAS: We only need the runtime `on` slot to validate the event target shape.
-    typeof (value as { on?: unknown }).on === "function"
+    typeof value.on === "function"
   );
 }
 
-export class RpcServer<
-  ContextType extends Rpc.Server.Context = Rpc.Server.Context,
-> extends Driver<"rpc-server"> {
-  private peers: RpcPeerRegistry<ContextType>;
+export class RpcServer extends Driver<"rpc-server"> {
   private clients = new Set<Rpc.WebSocket.Peer>();
   private subscriptions = new Map<
     Rpc.WebSocket.Peer,
@@ -27,9 +22,7 @@ export class RpcServer<
   >();
 
   state = {};
-  api = {
-    whoami: (): ContextType => {},
-  };
+  api = {};
 
   public override start() {
     this.transport.listen();
@@ -38,10 +31,8 @@ export class RpcServer<
   constructor(
     private natav: Manager,
     private transport: ServerRpcTransport,
-    private peerToContext?: (peer: Rpc.WebSocket.Peer) => ContextType,
   ) {
     super({ name: "rpc-server" });
-    this.peers = new RpcPeerRegistry<ContextType>(peerToContext);
 
     natav.bus.on("natav:state:update", (payload) => {
       this.broadcastState(payload.name);
@@ -95,17 +86,6 @@ export class RpcServer<
     message: Rpc.Request,
     peer: Rpc.WebSocket.Peer,
   ): Promise<Rpc.Response | Rpc.Error> {
-    let context: ContextType;
-
-    try {
-      context = this.peers.get(peer);
-    } catch (error) {
-      return new Rpc.Error(
-        error instanceof Error ? error : new Error("unknown error"),
-        message.id,
-      );
-    }
-
     const result = await this.tel.task("handlerequest", async (span) => {
       span.setAttributes({
         "rpc.id": message.id,
@@ -113,7 +93,7 @@ export class RpcServer<
       });
 
       if (message.method === Rpc.Request.Methods.DriverInit) {
-        return this.handleInit(message, peer);
+        return this.handleInit(message);
       }
       return this.handleDriverRequest(message, peer);
     });
@@ -132,7 +112,6 @@ export class RpcServer<
 
   private closePeer(peer: Rpc.WebSocket.Peer) {
     this.clients.delete(peer);
-    this.peers.close(peer);
 
     const peerSubscriptions = this.subscriptions.get(peer);
     if (peerSubscriptions) {
@@ -171,10 +150,7 @@ export class RpcServer<
     );
   }
 
-  private handleInit(
-    message: Rpc.Request,
-    peer: Rpc.WebSocket.Peer,
-  ): Rpc.Response | Rpc.Error {
+  private handleInit(message: Rpc.Request): Rpc.Response | Rpc.Error {
     const states: Record<string, unknown> = {};
     for (const name of this.natav.GetAllDriverNames()) {
       states[name] = this.natav.GetDriver(name).state;
@@ -183,11 +159,9 @@ export class RpcServer<
     const tree = this.natav.GetTree();
     const names = this.natav.GetAllDriverNames();
 
-    const context = this.peers.get(peer);
-
     const stateIsGood = Rpc.Json.is(states);
     if (stateIsGood) {
-      return message.response({ context, states, tree, names });
+      return message.response({ states, tree, names });
     } else {
       return message.error({
         code: Err.Codes.JsonStringifyFailed,

@@ -34,13 +34,17 @@ describe("rpc driver events", () => {
 
   it("subscribes, receives, and unsubscribes through rpc", async () => {
     const eventDriver = new Test.EventDriver("event-1");
+    const transport = new Test.RpcTransport();
+
     const natav = new Manager({
       drivers: [eventDriver],
-      deferred: [() => new Test.EventDriver("defer")],
+      deferred: [
+        () => new Test.EventDriver("defer"),
+        (n) => new RpcServer(n, transport.server),
+      ],
     });
+
     type natav = typeof natav;
-    const transport = new Test.RpcTransport();
-    new RpcServer({ natav, transport: transport.server });
     const client = new RpcClient<natav>({
       transport,
     });

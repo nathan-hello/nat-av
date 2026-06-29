@@ -1,7 +1,4 @@
 import { Driver, Manager } from "@av/drivers";
-import { RpcClient } from "@drivers/natav/rpc/client";
-import { RpcServer } from "@drivers/natav/rpc/server";
-import { Test } from "@av/test/data.test";
 import type { Drivers } from "@av/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -66,35 +63,5 @@ describe("driver deps", () => {
       "child-1",
       "child-2",
     ]);
-  });
-
-  it("lets client handles navigate to lifted deps", async () => {
-    const transport = new Test.RpcTransport();
-    new RpcServer({ natav: natav, transport: transport.server });
-    await natav.Start();
-
-    const client = new RpcClient<natav>({
-      transport: transport,
-    });
-
-    const ready = new Promise<void>((resolve) => {
-      const off = client.on("ready", () => {
-        off();
-        resolve();
-      });
-    });
-
-    transport.connect();
-    await ready;
-
-    assert.equal(client.driver("parent-1").dep("child-1").name, "child-1");
-    assert.equal(client.driver("parent-1").dep("child-2").name, "child-2");
-
-    assert.deepEqual(client.driver("child-1").state, {
-      ready: true,
-    });
-    assert.deepEqual(client.driver("parent-1").dep("child-1").state, {
-      ready: true,
-    });
   });
 });

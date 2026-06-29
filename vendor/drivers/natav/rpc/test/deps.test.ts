@@ -3,7 +3,6 @@ import { TypedEventTarget } from "@av/lib/eventtarget";
 import { Test } from "@av/test/data.test";
 import { RpcClient } from "@drivers/natav/rpc/client";
 import { RpcServer } from "@drivers/natav/rpc/server";
-import { Rpc } from "@drivers/natav/rpc/types";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -81,19 +80,24 @@ describe("rpc deps", () => {
     const level2 = new Level2Driver(level3);
     const root = new RootDriver(level2);
 
-    const natav = new Manager({ drivers: [root] });
+    const transport = new Test.RpcTransport();
+
+    const natav = new Manager({
+      drivers: [root],
+      deferred: [(n) => new RpcServer(n, transport.server)],
+    });
+
     type natav = typeof natav;
     assert.deepEqual(natav.GetAllDriverNames(), [
       "root",
       "level-2",
       "level-3",
       "leaf",
+      "rpc-server",
     ]);
     assert.equal(natav.GetDriver("leaf"), leaf);
     assert.equal(natav.FindDriver("level-3"), level3);
 
-    const transport = new Test.RpcTransport();
-    new RpcServer({ natav, transport: transport.server });
     const client = new RpcClient<natav>({ transport });
 
     const ready = new Promise<void>((resolve) => {

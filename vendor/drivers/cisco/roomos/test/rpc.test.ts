@@ -109,13 +109,13 @@ describe("rpc roomos driver", () => {
       },
     });
 
+    const transport = new Test.RpcTransport();
     const natav = new Manager({
       drivers: [roomos],
-      deferred: [],
+      deferred: [(n) => new RpcServer(n, transport.server)],
     });
     type natav = typeof natav;
-    const transport = new Test.RpcTransport();
-    new RpcServer({ natav, transport: transport.server });
+
     const client = new RpcClient<natav>({
       transport,
     });
@@ -321,53 +321,116 @@ describe("rpc roomos driver", () => {
       },
     ]);
 
-    const parsedReceived = () =>
-      transport.received.map((message) => JSON.parse(message));
-
-    assert.deepEqual(parsedReceived()[0], {
-      jsonrpc: "2.0",
-      method: "notification",
-      params: {
-        addr: "in-memory",
-        name: "in-memory",
-        type: "natav:peer",
-      },
-    });
-
-    const initResponse = parsedReceived()[1];
-    assert.equal(initResponse.id, 0);
-    assert.equal(typeof initResponse.result, "object");
-    assert.equal(initResponse.result.context.addr, "in-memory");
-    assert.equal(typeof initResponse.result.states["roomos-rpc"], "object");
-
-    assert.deepEqual(parsedReceived().slice(2), [
-      { jsonrpc: "2.0", result: null, id: 1 },
-      {
-        jsonrpc: "2.0",
-        method: "notification",
-        params: {
-          data: {
-            internal: {
-              highestId: 1,
-              subscriptions: {
-                xFeedback: {
-                  Bluetooth: {
-                    Streaming: {
-                      PlaybackPosition: true,
+    assert.deepEqual(
+      transport.received.map((message) => JSON.parse(message)),
+      [
+        {
+          id: 0,
+          jsonrpc: "2.0",
+          result: {
+            names: ["roomos-rpc", "rpc-server"],
+            states: {
+              "roomos-rpc": {
+                internal: {
+                  highestId: 0,
+                  subscriptions: {
+                    xFeedback: {
+                      Bluetooth: {
+                        Streaming: {
+                          PlaybackPosition: true,
+                        },
+                      },
+                    },
+                    xStatus: {
+                      Cameras: {
+                        Camera: true,
+                      },
                     },
                   },
                 },
-                xStatus: {
-                  Cameras: {
-                    Camera: true,
+              },
+              "rpc-server": {},
+            },
+            tree: [
+              {
+                deps: [],
+                name: "roomos-rpc",
+                socket: {
+                  canReceive: true,
+                  canWrite: true,
+                  traceName: "test-socket",
+                },
+              },
+              {
+                deps: [],
+                name: "rpc-server",
+              },
+            ],
+          },
+        },
+        {
+          id: 1,
+          jsonrpc: "2.0",
+          result: null,
+        },
+        {
+          jsonrpc: "2.0",
+          method: "notification",
+          params: {
+            data: {
+              internal: {
+                highestId: 1,
+                subscriptions: {
+                  xFeedback: {
+                    Bluetooth: {
+                      Streaming: {
+                        PlaybackPosition: true,
+                      },
+                    },
+                  },
+                  xStatus: {
+                    Cameras: {
+                      Camera: true,
+                    },
+                  },
+                },
+              },
+              xStatus: {
+                Cameras: {
+                  Camera: {
+                    0: {
+                      DetectedConnector: 1,
+                      Flip: "Off",
+                      HardwareID: "cam-1",
+                      MacAddress: "aa:bb:cc:dd:ee:01",
+                      Position: { Focus: 10, Lens: "Wide" },
+                      SerialNumber: "S1",
+                    },
+                    1: {
+                      DetectedConnector: 2,
+                      Flip: "On",
+                      HardwareID: "cam-2",
+                      MacAddress: "aa:bb:cc:dd:ee:02",
+                      Position: { Focus: 20, Lens: "Tele" },
+                      SerialNumber: "S2",
+                    },
+                    length: 2,
                   },
                 },
               },
             },
-            xStatus: {
+            name: "roomos-rpc",
+            type: "natav:state:update",
+          },
+        },
+        {
+          jsonrpc: "2.0",
+          result: {
+            ok: true,
+            data: {
               Cameras: {
-                Camera: {
-                  0: {
+                Camera: [
+                  {
                     DetectedConnector: 1,
                     Flip: "Off",
                     HardwareID: "cam-1",
@@ -375,7 +438,7 @@ describe("rpc roomos driver", () => {
                     Position: { Focus: 10, Lens: "Wide" },
                     SerialNumber: "S1",
                   },
-                  1: {
+                  {
                     DetectedConnector: 2,
                     Flip: "On",
                     HardwareID: "cam-2",
@@ -383,139 +446,108 @@ describe("rpc roomos driver", () => {
                     Position: { Focus: 20, Lens: "Tele" },
                     SerialNumber: "S2",
                   },
-                  length: 2,
-                },
+                ],
               },
             },
           },
-          name: "roomos-rpc",
-          type: "natav:state:update",
+          id: 2,
         },
-      },
-      {
-        jsonrpc: "2.0",
-        result: {
-          ok: true,
-          data: {
-            Cameras: {
-              Camera: [
-                {
-                  DetectedConnector: 1,
-                  Flip: "Off",
-                  HardwareID: "cam-1",
-                  MacAddress: "aa:bb:cc:dd:ee:01",
-                  Position: { Focus: 10, Lens: "Wide" },
-                  SerialNumber: "S1",
-                },
-                {
-                  DetectedConnector: 2,
-                  Flip: "On",
-                  HardwareID: "cam-2",
-                  MacAddress: "aa:bb:cc:dd:ee:02",
-                  Position: { Focus: 20, Lens: "Tele" },
-                  SerialNumber: "S2",
-                },
-              ],
+        {
+          jsonrpc: "2.0",
+          result: {
+            ok: true,
+            data: { Id: "booking-123", Title: "Design Review" },
+          },
+          id: 3,
+        },
+        {
+          jsonrpc: "2.0",
+          result: { ok: true, data: { Activated: true } },
+          id: 4,
+        },
+        {
+          jsonrpc: "2.0",
+          result: {
+            ok: true,
+            data: {
+              id: 1,
+              path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
             },
           },
+          id: 5,
         },
-        id: 2,
-      },
-      {
-        jsonrpc: "2.0",
-        result: {
-          ok: true,
-          data: { Id: "booking-123", Title: "Design Review" },
-        },
-        id: 3,
-      },
-      {
-        jsonrpc: "2.0",
-        result: { ok: true, data: { Activated: true } },
-        id: 4,
-      },
-      {
-        jsonrpc: "2.0",
-        result: {
-          ok: true,
-          data: {
-            id: 1,
-            path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-          },
-        },
-        id: 5,
-      },
-      {
-        jsonrpc: "2.0",
-        method: "notification",
-        params: {
-          data: {
-            internal: {
-              highestId: 4,
-              subscriptions: {
-                xFeedback: {
-                  Bluetooth: {
-                    Streaming: {
-                      PlaybackPosition: true,
+        {
+          jsonrpc: "2.0",
+          method: "notification",
+          params: {
+            data: {
+              internal: {
+                highestId: 4,
+                subscriptions: {
+                  xFeedback: {
+                    Bluetooth: {
+                      Streaming: {
+                        PlaybackPosition: true,
+                      },
+                    },
+                  },
+                  xStatus: {
+                    Cameras: {
+                      Camera: true,
                     },
                   },
                 },
-                xStatus: {
-                  Cameras: {
-                    Camera: true,
+              },
+              xFeedback: {
+                Bluetooth: {
+                  Streaming: {
+                    PlaybackPosition: {
+                      Position: 6,
+                    },
+                  },
+                },
+              },
+              xStatus: {
+                Cameras: {
+                  Camera: {
+                    0: {
+                      DetectedConnector: 1,
+                      Flip: "Off",
+                      HardwareID: "cam-1",
+                      MacAddress: "aa:bb:cc:dd:ee:01",
+                      Position: { Focus: 10, Lens: "Wide" },
+                      SerialNumber: "S1",
+                    },
+                    1: {
+                      DetectedConnector: 2,
+                      Flip: "On",
+                      HardwareID: "cam-2",
+                      MacAddress: "aa:bb:cc:dd:ee:02",
+                      Position: { Focus: 20, Lens: "Tele" },
+                      SerialNumber: "S2",
+                    },
+                    length: 2,
                   },
                 },
               },
             },
-            xFeedback: {
-              Bluetooth: {
-                Streaming: {
-                  PlaybackPosition: {
-                    Position: 6,
-                  },
-                },
-              },
-            },
-            xStatus: {
-              Cameras: {
-                Camera: {
-                  0: {
-                    DetectedConnector: 1,
-                    Flip: "Off",
-                    HardwareID: "cam-1",
-                    MacAddress: "aa:bb:cc:dd:ee:01",
-                    Position: { Focus: 10, Lens: "Wide" },
-                    SerialNumber: "S1",
-                  },
-                  1: {
-                    DetectedConnector: 2,
-                    Flip: "On",
-                    HardwareID: "cam-2",
-                    MacAddress: "aa:bb:cc:dd:ee:02",
-                    Position: { Focus: 20, Lens: "Tele" },
-                    SerialNumber: "S2",
-                  },
-                  length: 2,
-                },
-              },
-            },
+            type: "natav:state:update",
+            name: "roomos-rpc",
           },
-          type: "natav:state:update",
-          name: "roomos-rpc",
         },
-      },
-      {
-        jsonrpc: "2.0",
-        method: "notification",
-        params: {
-          type: "natav:driver:event",
-          name: "roomos-rpc",
-          event: "Bluetooth Streaming PlaybackPosition",
-          data: { Position: 6 },
+        {
+          jsonrpc: "2.0",
+          method: "notification",
+          params: {
+            type: "natav:driver:event",
+            name: "roomos-rpc",
+            event: "Bluetooth Streaming PlaybackPosition",
+            data: { Position: 6 },
+          },
         },
-      },
-      { jsonrpc: "2.0", result: null, id: 6 },
-    ]);
+        { jsonrpc: "2.0", result: null, id: 6 },
+      ],
+    );
 
     client.close();
   });

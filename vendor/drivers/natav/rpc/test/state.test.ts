@@ -1,7 +1,7 @@
 import { Manager } from "@av/drivers";
+import { Test } from "@av/test/data.test";
 import { RpcClient } from "@drivers/natav/rpc/client";
 import { RpcServer } from "@drivers/natav/rpc/server";
-import { Test } from "@av/test/data.test";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 
@@ -12,13 +12,16 @@ it("gets state automatically on connect", async () => {
     socket,
   });
 
-  const natav = new Manager({ drivers: [driver], deferred: [] });
+  const transport = new Test.RpcTransport();
+
+  const natav = new Manager({
+    drivers: [driver],
+    deferred: [(n) => new RpcServer(n, transport.server)],
+  });
   type natav = typeof natav;
 
   await natav.Start();
 
-  const transport = new Test.RpcTransport();
-  new RpcServer({ natav, transport: transport.server });
   const client = new RpcClient<natav>({ transport });
 
   const ready = new Promise<void>((resolve) => {
