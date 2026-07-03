@@ -21,10 +21,7 @@ export const assets = createAssetServer({
     "./vendor/drivers/**/**",
     "./node_modules/**",
   ],
-  deny: [
-    "app/**/*.server.*",
-    "./**/server/**"
-  ],
+  deny: ["app/**/*.server.*", "./**/server/**"],
   sourceMaps: process.env.NODE_ENV === "development" ? "external" : undefined,
   scripts: {
     define: {

@@ -58,7 +58,8 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
     const driverName = handle.props.selectedDriverName as any;
     const selected = driverName ? rpc.driver(driverName) : undefined;
     const messages = debug.state?.messages[driverName] ?? [];
-    const node = driverName ? findNode(debug.state?.view ?? [], driverName) : undefined;
+    const node =
+      driverName ? findNode(debug.state?.view ?? [], driverName) : undefined;
 
     return (
       <>
