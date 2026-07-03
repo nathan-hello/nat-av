@@ -1,9 +1,11 @@
 import { getRpc } from "@/state";
-import { Wall } from "@/ui/av/wall";
-import { css, type Handle } from "remix/ui";
+import { DebugPage } from "@/ui/debug";
+import { Wall } from "@/ui/wall";
+import { css, on, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {
   let rpc = getRpc(handle);
+  let sys = rpc.driver("system");
 
   return () => {
     return (
@@ -21,14 +23,57 @@ export function HomePage(handle: Handle) {
             <span mix={pillStyle(rpc.isOnline)}>
               {rpc.isOnline ? "RPC Connected" : "RPC Disconnected"}
             </span>
-            <a href={"/debug"} mix={linkStyle}>
+            <button
+              mix={[
+                linkStyle,
+                on("click", () => {
+                  sys.api.route("debug");
+                }),
+              ]}
+            >
               Debug
-            </a>
+            </button>
+            <button
+              mix={[
+                linkStyle,
+                on("click", () => {
+                  sys.api.route("dante");
+                }),
+              ]}
+            >
+              Dante
+            </button>
+            <button
+              mix={[
+                linkStyle,
+                on("click", () => {
+                  sys.api.route("wall");
+                }),
+              ]}
+            >
+              Wall
+            </button>
           </div>
+          <SystemRoute />
         </header>
-        <Wall driverName="video-wall" />
       </main>
     );
+  };
+}
+
+function SystemRoute(handle: Handle) {
+  let rpc = getRpc(handle, "system");
+
+  return () => {
+    switch (rpc.state.ui.page) {
+      case "off":
+        return null;
+      case "wall":
+        return <Wall driverName="video-wall" />;
+      case "debug":
+        return <DebugPage />;
+      case "dante":
+    }
   };
 }
 

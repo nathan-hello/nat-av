@@ -22,15 +22,3 @@ router.map(
     );
   }),
 );
-
-router.map(
-  routes.debug,
-  createAction(routes.debug, ({ request }) => {
-    return render(
-      <Document title="Natav Debug Console">
-        <div id="spa-debug" />
-      </Document>,
-      request,
-    );
-  }),
-);

@@ -79,7 +79,9 @@ export class RpcServer extends Driver<"rpc-server"> {
       this.closePeer(peer);
     });
 
-    transport.on("error", (peer) => {});
+    transport.on("error", ({ peer, error }) => {
+      this.tel.error("transport got error", { error, peer: peer.addr });
+    });
   }
 
   async handleRequest(
@@ -270,6 +272,11 @@ export class RpcServer extends Driver<"rpc-server"> {
     if (result.ok) {
       return result.data;
     } else {
+      this.natav.bus.dispatch("natav:driver:error", {
+        caughtBy: this.name,
+        name: params.driver,
+        error: result.error,
+      });
       return new Rpc.Error(result.error, message.id);
     }
   }

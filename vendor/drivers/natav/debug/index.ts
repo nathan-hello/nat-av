@@ -7,21 +7,15 @@ type SerializableMessage = Omit<Events.Natav.SocketMessage, "data"> & {
 };
 
 type State = {
-  tree: Record<
-    Drivers.Names,
-    { meta: Drivers.DriverView; messages: SerializableMessage[] }
-  >;
+  view: Drivers.DriverView[];
+  messages: Record<Drivers.Names, SerializableMessage[]>;
 };
 
-function buildTree(nodes: Drivers.DriverView[]): State["tree"] {
-  const tree: State["tree"] = {};
+function buildState(nodes: Drivers.DriverView[]): State {
+  const messages: State["messages"] = {};
 
   const visit = (node: Drivers.DriverView) => {
-    tree[node.name] ??= {
-      meta: node,
-      messages: [],
-    };
-
+    messages[node.name] ??= [];
     for (const child of node.deps) {
       visit(child);
     }
@@ -31,23 +25,24 @@ function buildTree(nodes: Drivers.DriverView[]): State["tree"] {
     visit(node);
   }
 
-  return tree;
+  return { view: nodes, messages };
 }
 
 export class Debugger extends Driver<"debugger"> {
   natav: Drivers.ManagerView;
   state: State = {
-    tree: {},
+    view: [],
+    messages: {},
   };
 
   api = {
     clear: (name: Drivers.Names) => {
-      if (this.state.tree[name]) {
-        this.state.tree[name].messages = [];
+      if (this.state.messages[name]) {
+        this.state.messages[name] = [];
       }
     },
     getNode: (name: Drivers.Names): Drivers.DriverView => {
-      const found = this.state.tree[name]?.meta;
+      const found = this.findNode(this.state.view, name);
       if (!found) {
         throw new Error("node not found", {
           cause: Err.Codes.RpcInvalidRequestObject,
@@ -69,8 +64,21 @@ export class Debugger extends Driver<"debugger"> {
   }
 
   public override start() {
-    this.state.tree = buildTree(this.natav.GetTree());
+    this.state = buildState(this.natav.GetTree());
+    this.dispatch("driver:state-updated", { data: this.state });
     this.subscribe();
+  }
+
+  private findNode(
+    nodes: Drivers.DriverView[],
+    name: string,
+  ): Drivers.DriverView | undefined {
+    for (const node of nodes) {
+      if (node.name === name) return node;
+      const found = this.findNode(node.deps, name);
+      if (found) return found;
+    }
+    return undefined;
   }
 
   private subscribe() {
@@ -83,16 +91,9 @@ export class Debugger extends Driver<"debugger"> {
         data: Array.from(event.data.data),
       };
 
-      const current = this.state.tree[event.name];
-      if (!current) {
-        this.state.tree[event.name] = {
-          meta: this.api.getNode(event.name),
-          messages: [entry],
-        };
-        return;
-      }
-
-      current.messages.push(entry);
+      this.state.messages[event.name] ??= [];
+      this.state.messages[event.name].push(entry);
+      this.dispatch("driver:state-updated", { data: this.state });
     });
   }
 

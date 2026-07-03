@@ -1,4 +1,4 @@
-import { Err, Telemetry } from "@av/index";
+import { Err, Telemetry } from "@av/client";
 import { Rpc } from "../types";
 import type { ClientRpcTransport } from "./websocket";
 

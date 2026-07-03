@@ -1,6 +1,19 @@
 import { getRpc } from "@/state";
+import type { Drivers } from "@av/client";
 import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
+
+function findNode(
+  nodes: Drivers.DriverView[],
+  name: string,
+): Drivers.DriverView | undefined {
+  for (const node of nodes) {
+    if (node.name === name) return node;
+    const found = findNode(node.deps, name);
+    if (found) return found;
+  }
+  return undefined;
+}
 
 type DebugSocketPanelProps = {
   selectedDriverName: string | null;
@@ -44,8 +57,8 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   return () => {
     const driverName = handle.props.selectedDriverName as any;
     const selected = driverName ? rpc.driver(driverName) : undefined;
-    const messages = debug.state?.tree[driverName]?.messages ?? [];
-    const node = debug.state?.tree[driverName];
+    const messages = debug.state?.messages[driverName] ?? [];
+    const node = driverName ? findNode(debug.state?.view ?? [], driverName) : undefined;
 
     return (
       <>
@@ -56,8 +69,8 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
                 {selected?.name ?? "Select a driver"}
               </h2>
               <p mix={panelSubtitleStyle}>
-                {debug.state?.tree[driverName].messages ?
-                  `trace: ${node?.meta.socket?.traceName}`
+                {debug.state?.messages[driverName] ?
+                  `trace: ${node?.socket?.traceName}`
                 : "No socket selected yet."}
               </p>
             </div>
@@ -79,32 +92,38 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
 
           <div mix={messageListStyle}>
             {messages.length > 0 ?
-              messages.map((message, index) => (
-                <article
-                  key={`${message.time}:${message.direction}:${index}`}
-                  mix={messageCardStyle(message.direction)}
-                >
-                  <div mix={messageMetaRowStyle}>
-                    <span mix={messageDirectionStyle(message.direction)}>
-                      {message.direction === "rx-delimited" ?
-                        "RX"
-                      : message.direction === "rx" ?
-                        "RX"
-                      : "TX"}
-                    </span>
-                    <span>{message.time}</span>
-                    <span>
-                      {message.data.length ?? message.data.length} bytes
-                    </span>
-                  </div>
-                  <pre mix={messageBodyStyle}>
-                    {message.data || "<empty utf8 payload>"}
-                  </pre>
-                  {message.data ?
-                    <code mix={hexStyle}>{message.data}</code>
-                  : null}
-                </article>
-              ))
+              messages
+                .filter((m) => {
+                  if (m.direction === "rx") {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((message, index) => (
+                  <article
+                    key={`${message.time}:${message.direction}:${index}`}
+                    mix={messageCardStyle(message.direction)}
+                  >
+                    <div mix={messageMetaRowStyle}>
+                      <span mix={messageDirectionStyle(message.direction)}>
+                        {message.direction === "rx-delimited" ?
+                          "RX"
+                        : message.direction === "rx" ?
+                          "RX"
+                        : "TX"}
+                      </span>
+                      <span>{message.time}</span>
+                      <span>
+                        {message.data.length ?? message.data.length} bytes
+                      </span>
+                    </div>
+                    {message.data ?
+                      <code mix={hexStyle}>
+                        {new TextDecoder().decode(new Uint8Array(message.data))}
+                      </code>
+                    : null}
+                  </article>
+                ))
             : <p mix={emptyStyle}>
                 {handle.props.selectedDriverName ?
                   "No socket traffic yet."

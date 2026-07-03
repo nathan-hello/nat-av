@@ -6,6 +6,7 @@ export const assets = createAssetServer({
   fileMap: {
     "app/*path": "app/*path",
     "./vendor/av/*path": "./vendor/av/*path",
+    "./vendor/drivers/*path": "./vendor/drivers/*path",
     "node_modules/*path": "node_modules/*path",
   },
   allow: [
@@ -17,10 +18,13 @@ export const assets = createAssetServer({
     "./app/spa/**",
     "./app/ui/**",
     "./vendor/av/**",
-    "./vendor/drivers/**",
+    "./vendor/drivers/**/**",
     "./node_modules/**",
   ],
-  deny: ["app/**/*.server.*"],
+  deny: [
+    "app/**/*.server.*",
+    "./**/server/**"
+  ],
   sourceMaps: process.env.NODE_ENV === "development" ? "external" : undefined,
   scripts: {
     define: {

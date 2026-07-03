@@ -1,34 +1,31 @@
 import { Driver } from "@av/drivers";
 import type { Drivers } from "@av/types";
-import type { drivers } from "@server/index";
 
 type State = {
   ui: {
-    mode: "vtc" | "local" | "off";
-    page: "home" | "vtc" | "local" | "tv";
+    page: "wall" | "dante" | "debug" | "off";
   };
 };
 
 export class System extends Driver<"system"> {
-  private natav: Drivers.ManagerView<drivers>;
+  private natav: Drivers.ManagerView;
 
-  constructor(natav: Drivers.ManagerView<drivers>) {
+  constructor(natav: Drivers.ManagerView) {
     super({ name: "system" });
     this.natav = natav;
+    this.api.route.bind(this);
   }
 
   public override async start() {}
 
   api = {
-    asdf: () => {
-      return null;
-    },
-    fdsa: () => {
-      return null;
+    route: (p: State["ui"]["page"]) => {
+      this.state.ui.page = p;
+      this.dispatch("driver:state-updated", { data: this.state });
     },
   };
 
-  get state() {
-    return {};
-  }
+  state: State = {
+    ui: { page: "off" },
+  };
 }

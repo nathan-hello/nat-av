@@ -1,5 +1,5 @@
-import type { Drivers, Manager } from "@av/index";
-import { TypedEventTarget } from "@av/index";
+import type { Drivers, Manager } from "@av/client";
+import { TypedEventTarget } from "@av/client";
 import { Rpc } from "../types";
 import type { RpcClient } from "./index";
 

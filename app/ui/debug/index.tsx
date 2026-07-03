@@ -15,15 +15,16 @@ export function DebugPage(handle: Handle) {
   let selectedNode: Rpc.Client.DriverHandle | null = null;
 
   return () => {
-    const tree = debug.api.tree();
-    const fallbackSelection = findFirstSocketDriver(tree);
+    console.log("debug.state", debug.state);
+    const view = debug.state.view;
+    const fallbackSelection = findFirstSocketDriver(view);
     if (selectedDriverName) {
       selectedNode = rpc.driver(
         selectedDriverName as Drivers.Names<natav["drivers"]>,
       );
     }
 
-    const dnode = tree.find((t) => t.name === selectedNode?.name);
+    const dnode = view.find((t) => t.name === selectedNode?.name);
 
     if (!dnode?.socket?.canWrite || !dnode?.socket?.canReceive) {
       selectedDriverName = fallbackSelection?.name ?? null;
@@ -46,7 +47,7 @@ export function DebugPage(handle: Handle) {
               <h2>Drivers</h2>
             </div>
             <DebugDriverTree
-              tree={tree}
+              tree={view}
               selectedDriverName={selectedDriverName}
               onSelect={(name) => {
                 selectedDriverName = name;
@@ -71,16 +72,16 @@ export function DebugPage(handle: Handle) {
 }
 
 function findFirstSocketDriver(
-  nodes: Drivers.DriverView[],
+  view: Drivers.DriverView[],
 ): Drivers.DriverView | undefined {
-  for (const node of nodes) {
+  for (const node of view) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;
     }
-
-    const child = findFirstSocketDriver(node.deps);
-    if (child) {
-      return child;
+    for (const dep of node.deps) {
+      if (dep.socket?.canWrite && dep.socket.canReceive) {
+        return dep;
+      }
     }
   }
 

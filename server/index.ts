@@ -1,4 +1,5 @@
 import { Manager, Tcp, Telemetry } from "@av/index";
+import DanteRouter from "@drivers/dante/router";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import { Debugger } from "@drivers/natav/debug";
@@ -26,37 +27,30 @@ Telemetry.Sdk.AddExporters([
 //     keepAlive: true,
 //   }),
 // });
-//
-const drivers = [
-  new DisplayManager(
-    "video-wall",
-    [
-      new Decoder({
-        name: "decoder-1",
-        socket: new Tcp({
-          addr: "decoder-e8d8d1599092.local",
-          port: 12345,
-          keepAlive: true,
-        }),
-      }),
-    ],
-    {
-      "decoder-1": [
-        { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
-      ],
-    },
-  ),
-] as const;
-
-export type drivers = typeof drivers;
-
-const deferred = [Debugger, System] as const;
-
-export type deferred = typeof deferred;
 
 const natav = new Manager({
-  drivers,
-  deferred,
+  drivers: [
+    new DisplayManager(
+      "video-wall",
+      [
+        new Decoder({
+          name: "decoder-1",
+          socket: new Tcp({
+            addr: "decoder-e8d8d1599092.local",
+            port: 12345,
+            keepAlive: true,
+          }),
+        }),
+      ],
+      {
+        "decoder-1": [
+          { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
+        ],
+      },
+    ),
+    new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
+  ],
+  deferred: [Debugger, System],
 });
 
 Telemetry.Sdk.AddExporters([
@@ -65,13 +59,16 @@ Telemetry.Sdk.AddExporters([
   }),
 ]);
 
-export type natav = Manager<drivers, deferred>;
+export type natav = typeof natav;
 
 export async function start(server: Server) {
   const websocket = new RpcTransportWebsocket(server);
-  new RpcServer(natav, websocket);
+  const rpcServer = new RpcServer(natav, websocket);
 
   await natav.Start();
+
+  rpcServer.start();
+
   // TSAS:
   (globalThis as any).__manager__ = natav;
   return async () => await natav.End();

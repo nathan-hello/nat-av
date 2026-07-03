@@ -1,15 +1,9 @@
-import { DebugPage } from "@/spa/debug";
-import { HomePage } from "@/spa/home";
+import { HomePage } from "@/ui";
 import { createRoot, run } from "remix/ui";
 
 const homeContainer = document.getElementById("spa-home");
 if (homeContainer) {
   createRoot(homeContainer).render(<HomePage />);
-}
-
-const debugContainer = document.getElementById("spa-debug");
-if (debugContainer) {
-  createRoot(debugContainer).render(<DebugPage />);
 }
 
 run({

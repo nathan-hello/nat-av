@@ -15,10 +15,10 @@ it("preloads the debugger tree and appends messages to each node", async () => {
 
   const debug = natav.GetDriver("debugger");
 
-  console.log(JSON.stringify(debug.state.tree));
+  console.log(JSON.stringify(debug.state.view));
   assert.ok(debug);
-  assert.equal(debug?.state.tree["event-1"]?.meta.name, "event-1");
-  assert.deepEqual(debug?.state.tree["event-1"]?.messages, []);
+  assert.equal(debug?.state.view[0]?.name, "event-1");
+  assert.deepEqual(debug?.state.messages["event-1"], []);
 
   natav.bus.dispatch("natav:debug:socket", {
     name: "event-1",
@@ -31,7 +31,7 @@ it("preloads the debugger tree and appends messages to each node", async () => {
     },
   });
 
-  assert.deepEqual(debug?.state.tree["event-1"]?.messages, [
+  assert.deepEqual(debug?.state.messages["event-1"], [
     {
       traceName: "event-1",
       direction: "rx",

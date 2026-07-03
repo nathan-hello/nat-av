@@ -1,5 +1,10 @@
-import { type Drivers, type Manager, Err, TypedEventTarget } from "@av/index";
-import { Telemetry } from "@av/telemetry";
+import {
+  type Drivers,
+  type Manager,
+  Err,
+  Telemetry,
+  TypedEventTarget,
+} from "@av/client";
 import { Rpc } from "../types";
 import { ClientRpcDriver } from "./driver";
 import { ClientRpcRequests } from "./requests";

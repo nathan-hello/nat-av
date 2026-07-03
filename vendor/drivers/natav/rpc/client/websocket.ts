@@ -1,4 +1,4 @@
-import { Telemetry, TypedEventTarget } from "@av/index";
+import { Telemetry, TypedEventTarget } from "@av/client";
 import { Rpc } from "../types";
 
 export type ClientRpcTransport = Pick<
