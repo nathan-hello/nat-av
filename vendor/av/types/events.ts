@@ -64,7 +64,11 @@ export namespace Events {
       "natav:state:override": StateEventFor<N>;
       "natav:driver:connected": { name: Drivers.Names<N> };
       "natav:driver:disconnected": { name: Drivers.Names<N> };
-      "natav:driver:error": { name: Drivers.Names<N>; error?: Error };
+      "natav:driver:error": {
+        caughtBy: string;
+        name: Drivers.Names<N>;
+        error?: Error;
+      };
       "natav:debug:socket": {
         name: Drivers.Names<N>;
         data: SocketMessage;

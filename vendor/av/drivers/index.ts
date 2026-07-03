@@ -171,7 +171,41 @@ export class Manager<
       };
     };
 
-    return this.drivers.map((driver) => toNode(driver));
+    const raw = this.drivers.map((driver) => toNode(driver));
+
+    // Dedupe: keep each driver only at its deepest occurrence.
+    const maxDepth = new Map<string, number>();
+    const measure = (node: Drivers.DriverView, depth: number) => {
+      const prev = maxDepth.get(node.name);
+      if (prev === undefined || depth > prev) {
+        maxDepth.set(node.name, depth);
+      }
+      for (const child of node.deps) {
+        measure(child, depth + 1);
+      }
+    };
+    for (const node of raw) {
+      measure(node, 0);
+    }
+
+    const rebuild = (
+      node: Drivers.DriverView,
+      depth: number,
+    ): Drivers.DriverView | null => {
+      if (depth < (maxDepth.get(node.name) ?? 0)) {
+        return null;
+      }
+      return {
+        ...node,
+        deps: node.deps
+          .map((child) => rebuild(child, depth + 1))
+          .filter((n): n is Drivers.DriverView => n !== null),
+      };
+    };
+
+    return raw
+      .map((node) => rebuild(node, 0))
+      .filter((n): n is Drivers.DriverView => n !== null);
   }
 
   async Start(
