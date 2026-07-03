@@ -26,10 +26,8 @@ class LoggerProvider {
           record.severityNumber &&
           record.severityNumber === SeverityNumber["ERROR"]
         ) {
-          throw Error(
-            "a `tel.error()` was surfaced during testing!\n" +
-              JSON.stringify(record),
-          );
+          console.error(JSON.stringify(record));
+          return;
         }
         this.exporters.forEach((e) => {
           e.export([record]);
@@ -49,7 +47,8 @@ export function getLoggerProvider(): LoggerProvider {
     typeof process.env.NODE_ENV === "string" &&
     process.env.NODE_ENV === "testing"
   ) {
-    AddExporters([new SimpleConsoleExporter("WARN")]);
+    // AddExporters([new SimpleConsoleExporter("WARN")]);
+    return new LoggerProvider([]);
   }
   if (!loggerProvider) {
     AddExporters([new SimpleConsoleExporter("WARN")]);

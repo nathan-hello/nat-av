@@ -1,6 +1,8 @@
 import type { Telemetry } from "@av/telemetry";
 
-export type DataDelimiter<T = any> = (buffer: Buffer) => T[] | null;
+export type DataDelimiter<T = any> = ((buffer: Buffer) => T[] | null) & {
+  reset?: () => void;
+};
 export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<
   ReturnType<T>
 >;
@@ -86,9 +88,39 @@ export const Delimiters = {
     formatter: DataFormatter<Tx>;
     delimiter: DataDelimiter<Rx>;
   } => {
-    // TODO: this buffer basically exists forever. could
-    // be the cause of memory leaks in the future.
     let rxBuf = Buffer.alloc(0);
+
+    const delimiter: DataDelimiter<Rx> = (chunk) => {
+      const results: Rx[] = [];
+
+      rxBuf = Buffer.concat([rxBuf, chunk]);
+
+      while (true) {
+        const payload = Delimiters.lengthPrefixed32BE(rxBuf);
+        if (payload === null) {
+          return results;
+        }
+
+        rxBuf = rxBuf.subarray(4 + payload.length);
+
+        const parsed = tel.task("JSON_PARSE", () => {
+          return JSON.parse(payload.toString("utf8"));
+        });
+
+        if (!parsed.ok) {
+          tel.warn("JSON_PARSE_FAILED", {
+            error: parsed.error.message,
+            payload: payload.toString("utf8"),
+          });
+          continue;
+        }
+
+        results.push(parsed.data);
+      }
+    };
+    delimiter.reset = () => {
+      rxBuf = Buffer.alloc(0);
+    };
 
     return {
       formatter: (value) => {
@@ -100,33 +132,7 @@ export const Delimiters = {
 
         return buf;
       },
-
-      delimiter: (chunk) => {
-        const results: Rx[] = [];
-
-        rxBuf = Buffer.concat([rxBuf, chunk]);
-
-        while (true) {
-          const payload = Delimiters.lengthPrefixed32BE(rxBuf);
-          if (payload === null) {
-            return results;
-          }
-
-          rxBuf = rxBuf.subarray(4 + payload.length);
-
-          const parsed = tel.task("JSON_PARSE", () => {
-            return JSON.parse(payload.toString("utf8"));
-          });
-
-          if (!parsed.ok) {
-            return null;
-          }
-
-          if (parsed !== null) {
-            results.push(parsed.data);
-          }
-        }
-      },
+      delimiter,
     };
   },
 

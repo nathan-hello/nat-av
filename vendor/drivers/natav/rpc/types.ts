@@ -5,13 +5,28 @@ import type { ClientRpcDriver } from "./client/driver";
 
 export namespace Rpc {
   export namespace Json {
+    const TAG_KEY = "__rpc_t__";
+    const VAL_KEY = "__rpc_v__";
+
     export function is(value: unknown): value is Rpc.Json.Value {
       if (
         value === null ||
+        value === undefined ||
         typeof value === "string" ||
         typeof value === "number" ||
         typeof value === "boolean"
       ) {
+        return true;
+      }
+
+      if (value instanceof Map) {
+        for (const [k, v] of value) {
+          if (!is(k) || !is(v)) return false;
+        }
+        return true;
+      }
+
+      if (value instanceof Uint8Array) {
         return true;
       }
 
@@ -25,14 +40,60 @@ export namespace Rpc {
 
       return false;
     }
+
     export function stringify(
-      value: Value | Rpc.Request | Rpc.Response | Rpc.Error | Rpc.Notification,
+      value:
+        | Value
+        | Rpc.Request
+        | Rpc.Response
+        | Rpc.Error
+        | Rpc.Notification,
     ): string {
-      return globalThis.JSON.stringify(value);
+      return globalThis.JSON.stringify(value, replacer);
     }
 
     export function parse(value: string | unknown): Value {
-      return globalThis.JSON.parse(value as any);
+      return globalThis.JSON.parse(value as any, reviver);
+    }
+
+    function replacer(this: unknown, _key: string, value: unknown): unknown {
+      if (value === undefined) {
+        value = null;
+      }
+      if (value instanceof Map) {
+        return { [TAG_KEY]: "map", [VAL_KEY]: [...value.entries()] };
+      }
+      if (value instanceof Uint8Array) {
+        return { [TAG_KEY]: "u8", [VAL_KEY]: [...value] };
+      }
+      // TSAS: Node's Buffer.toJSON runs before the replacer, leaving { type: "Buffer", data: number[] }.
+      if (
+        isObject(value) &&
+        value.type === "Buffer" &&
+        Array.isArray(value.data)
+      ) {
+        return { [TAG_KEY]: "u8", [VAL_KEY]: value.data };
+      }
+      return value;
+    }
+
+    function reviver(this: unknown, _key: string, value: unknown): unknown {
+      if (
+        isObject(value) &&
+        TAG_KEY in value &&
+        VAL_KEY in value &&
+        typeof value[TAG_KEY] === "string"
+      ) {
+        switch (value[TAG_KEY]) {
+          case "map":
+            // TSAS: "map" payloads are emitted only by replacer as an iterable of [key, value] pairs.
+            return new Map(value[VAL_KEY] as Iterable<[unknown, unknown]>);
+          case "u8":
+            // TSAS: "u8" payloads are emitted only by replacer as an array of byte numbers.
+            return new Uint8Array(value[VAL_KEY] as number[]);
+        }
+      }
+      return value;
     }
 
     export type Value =

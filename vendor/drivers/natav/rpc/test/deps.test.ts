@@ -137,6 +137,7 @@ describe("rpc deps", () => {
       id: 0,
       jsonrpc: "2.0",
       method: "driver.init",
+      params: null
     });
 
     assert.deepEqual(
@@ -146,6 +147,7 @@ describe("rpc deps", () => {
           id: 0,
           jsonrpc: "2.0",
           method: "driver.init",
+          params: null
         },
         {
           jsonrpc: "2.0",

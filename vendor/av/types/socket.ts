@@ -25,7 +25,13 @@ export namespace Sockets {
     export type Tcp = Base & {
       addr: string;
       port: number;
-      keepAlive: boolean;
+      // When set, enables OS-level TCP keepalive probes with this initial
+      // delay (ms). Subsequent probe interval/count are governed by the OS.
+      // When undefined, keepalive is disabled and the client will not
+      // auto-retry on disconnect.
+      keepAliveMs?: number;
+      // Delay (ms) between reconnection attempts. Defaults to 5000ms.
+      retryDelayMs?: number;
     };
 
     export type Udp = Base & {

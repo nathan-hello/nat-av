@@ -3,7 +3,7 @@ import type { Drivers } from "@av/types";
 
 type State = {
   ui: {
-    page: "wall" | "dante" | "debug" | "off";
+    page: "wall" | "dante" | "debug" | "paint" | "off";
   };
 };
 

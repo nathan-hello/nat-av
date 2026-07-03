@@ -5,6 +5,7 @@ import type { Events, Sockets } from "@av/types";
 import * as net from "node:net";
 
 const RETRY_DELAY = 5000;
+const CONNECT_TIMEOUT = 5000;
 
 export class Tcp
   extends TypedEventTarget<Events.Socket.TcpMap>
@@ -29,12 +30,13 @@ export class Tcp
   }
 
   private async scheduleRetry(): Promise<void> {
-    if (this.retrying || this.stopped || !this.config.keepAlive) {
+    if (this.retrying || this.stopped || this.config.keepAliveMs === undefined) {
       return;
     }
     this.retrying = true;
+    const delay = this.config.retryDelayMs ?? RETRY_DELAY;
     this.tel.warn("RETRY_SCHEDULED");
-    this.dispatch("retryScheduled", { delay: RETRY_DELAY });
+    this.dispatch("retryScheduled", { delay });
     return new Promise((resolve) => {
       this.retryTimeout = setTimeout(async () => {
         this.retryTimeout = undefined;
@@ -43,7 +45,7 @@ export class Tcp
           await this.start();
         }
         resolve();
-      }, RETRY_DELAY);
+      }, delay);
     });
   }
 
@@ -82,31 +84,57 @@ export class Tcp
       this.tel.info("CONNECTION_PARAMS", this.config);
       span.setAttributes({ addr: this.config.addr, port: this.config.port });
 
-      return net.createConnection(
-        { host: this.config.addr, port: this.config.port },
-        () => {
-          this.tel.info("HANDLER_OPEN_SLEEP_1_SECOND");
+      return new Promise<net.Socket>((resolve, reject) => {
+        const socket = net.createConnection({
+          host: this.config.addr,
+          port: this.config.port,
+        });
 
-          setTimeout(() => {
-            this.tel.info("HANDLER_OPEN");
-            this.retrying = false;
-            if (this.retryTimeout) {
-              this.tel.info("HANDLER_OPEN_RESET_TIMEOUT");
-              clearTimeout(this.retryTimeout);
-              this.retryTimeout = undefined;
-            }
+        const cleanup = () => {
+          socket.off("connect", onConnect);
+          socket.off("error", onError);
+          clearTimeout(timer);
+        };
 
-            this.dispatch("connected", undefined);
-          }, 1000);
-        },
-      );
+        const onConnect = () => {
+          cleanup();
+          resolve(socket);
+        };
+
+        const onError = (error: Error) => {
+          cleanup();
+          socket.destroy();
+          reject(error);
+        };
+
+        const timer = setTimeout(() => {
+          cleanup();
+          socket.destroy();
+          reject(new Error(`connect timeout after ${CONNECT_TIMEOUT}ms`));
+        }, CONNECT_TIMEOUT);
+
+        socket.once("connect", onConnect);
+        socket.once("error", onError);
+      });
     });
 
     if (!result.ok) {
+      this.tel.warn("CONNECTION_START_FAILED", {
+        message: result.error.message,
+        code: result.error.name,
+      });
       await this.scheduleRetry();
       return;
     }
+
     this.socket = result.data;
+
+    if (this.config.keepAliveMs !== undefined) {
+      this.socket.setKeepAlive(true, this.config.keepAliveMs);
+      this.tel.info("KEEPALIVE_ENABLED", {
+        initialDelay: this.config.keepAliveMs,
+      });
+    }
 
     this.socket.on("data", (data) => {
       this.tel.info("RECIEVED_DATA", {
@@ -139,20 +167,26 @@ export class Tcp
       this.tel.info("SOCKET_END");
     });
 
-    this.socket.on("error", async (error) => {
-      this.tel.info("HANDLER_ERROR");
+    this.socket.on("error", (error) => {
+      this.tel.info("HANDLER_ERROR", {
+        message: error.message,
+        code: error.name,
+      });
       this.dispatch("error", { error: error.message, code: error.name });
     });
 
-    this.socket.on("close", async (hadError) => {
+    this.socket.on("close", (hadError) => {
       this.tel.info("HANDLER_CLOSE", { stopped: this.stopped });
       this.socket = undefined;
       this.dispatch("disconnected", {
         error:
           hadError ? "socket closed with error" : "socket closed with no error",
       });
-      await this.scheduleRetry();
+      void this.scheduleRetry();
     });
+
+    this.tel.info("HANDLER_OPEN");
+    this.dispatch("connected", undefined);
   }
 
   end(): void {

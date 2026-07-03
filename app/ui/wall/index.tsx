@@ -1,6 +1,6 @@
 import { getRpc } from "@/state";
-import { Decoder } from "@/ui/av/wall/decoder";
-import { Source, type SourceSelectDetail } from "@/ui/av/wall/source";
+import { Decoder } from "@/ui/wall/decoder";
+import { Source, type SourceSelectDetail } from "@/ui/wall/source";
 import type { LogicalWindow } from "@drivers/decoder/display";
 import { css, on, type Handle } from "remix/ui";
 
@@ -163,8 +163,7 @@ export function Wall(handle: Handle<WallProps>) {
                 </p>
               </div>
               <div mix={modeToggleStyle}>
-                // TSAS:
-                {(["free", "snap"] as InteractionMode[]).map((nextMode) => (
+                {(["free", "snap"] as const).map((nextMode) => (
                   <button
                     key={nextMode}
                     type="button"

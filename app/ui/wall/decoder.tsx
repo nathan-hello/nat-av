@@ -1,4 +1,4 @@
-import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/av/wall/source";
+import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/wall/source";
 import type { LogicalWindow } from "@drivers/decoder/display";
 import type {
   GridTemplate,

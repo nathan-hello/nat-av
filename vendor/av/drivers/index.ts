@@ -42,7 +42,7 @@ export abstract class Driver<
   ): void {
     super.dispatch(type, payload);
 
-    this.tel.info("EVENT_DISPATCHED", { type });
+    this.tel.info("EVENT_DISPATCHED", { type, payload });
   }
 
   public start(): Promise<void> | void {
@@ -277,6 +277,14 @@ export class Manager<
       if (data.data.direction === "tx") {
         d.tel.info("delimited", data);
       }
+    });
+
+    d.socket?.on?.("connected", () => {
+      this.bus.dispatch("natav:driver:connected", { name });
+    });
+
+    d.socket?.on?.("disconnected", (event) => {
+      this.bus.dispatch("natav:driver:disconnected", { name });
     });
 
     d.on("driver:delimited", (event) => {

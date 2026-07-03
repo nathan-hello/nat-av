@@ -141,6 +141,9 @@ export default class DisplayManager<
   }
 
   api = {
+    foo: {
+      bar: (asdf: string) => 1,
+    },
     changeTemplate: async (t: GridTemplate) => {
       const gridCols = t.dimensions.cols;
       const gridRows = t.dimensions.rows;

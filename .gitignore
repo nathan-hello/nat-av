@@ -2,3 +2,5 @@ node_modules
 app/assets/tailwind.css
 logs/*
 !logs/*.gitkeep
+tmp
+vendor/drivers/natav/schema/output

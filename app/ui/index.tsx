@@ -1,5 +1,7 @@
 import { getRpc } from "@/state";
+import { DantePage } from "@/ui/dante";
 import { DebugPage } from "@/ui/debug";
+import { PaintPage } from "@/ui/paint";
 import { Wall } from "@/ui/wall";
 import { css, on, type Handle } from "remix/ui";
 
@@ -47,6 +49,16 @@ export function HomePage(handle: Handle) {
               mix={[
                 linkStyle,
                 on("click", () => {
+                  sys.api.route("paint");
+                }),
+              ]}
+            >
+              Paint
+            </button>
+            <button
+              mix={[
+                linkStyle,
+                on("click", () => {
                   sys.api.route("wall");
                 }),
               ]}
@@ -72,7 +84,10 @@ function SystemRoute(handle: Handle) {
         return <Wall driverName="video-wall" />;
       case "debug":
         return <DebugPage />;
+      case "paint":
+        return <PaintPage />;
       case "dante":
+        return <DantePage />;
     }
   };
 }

@@ -1,6 +1,5 @@
 import type { Proto } from "@av/index";
 
-/** Domain Entities */
 export type VideoRoute = {
   output: number;
   window: number;
@@ -42,14 +41,12 @@ type AudioOutputContext = {
   type: "aux" | "hdmi" | "dp" | string;
 };
 
-/** Method: fetch_routes */
 export type FetchRoutesRequest = Proto.JsonRpc.Request<"fetch_routes", []>;
 export type FetchRoutesResponse = Proto.JsonRpc.Response<{
   video: VideoRoute[];
   audio: AudioRoute[];
 }>;
 
-/** Method: route */
 export type RouteRequest = Proto.JsonRpc.Request<
   "route",
   {
@@ -59,7 +56,6 @@ export type RouteRequest = Proto.JsonRpc.Request<
 >;
 export type ExitCodeResponse = Proto.JsonRpc.Response<number>;
 
-/** Method: fetch_context */
 export type FetchContextRequest = Proto.JsonRpc.Request<"fetch_context", []>;
 export type DecoderContext = {
   video: VideoOutputContext[];
@@ -67,7 +63,6 @@ export type DecoderContext = {
 };
 export type FetchContextResponse = Proto.JsonRpc.Response<DecoderContext>;
 
-/** Method: route_destroy */
 export type RouteDestroyRequest = Proto.JsonRpc.Request<
   "route_destroy",
   {
@@ -87,7 +82,6 @@ export type DecoderNotificationMonitorConnected = Proto.JsonRpc.Notification<
   number[]
 >;
 
-/** Union type for all possible requests/responses */
 export type DecoderRequest =
   | FetchRoutesRequest
   | RouteRequest

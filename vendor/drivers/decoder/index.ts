@@ -207,11 +207,6 @@ export default class Decoder<
     },
 
     fetchContext: async () => {
-      if (this.mock === null) {
-        throw new Error("output-or-monitor-not-found", {
-          cause: this.context,
-        });
-      }
       const response = await this.request("fetch_context", []);
       this.context = response;
       this.dispatch("driver:state-updated", {

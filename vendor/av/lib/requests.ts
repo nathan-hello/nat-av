@@ -15,6 +15,7 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
   private readonly responseStrategy?: Requests.Strategy<Tx, Rx>;
   private readonly pending: Requests.Pending<Tx, Rx>[] = [];
   private readonly offReceive: () => void;
+  private readonly offDisconnected: () => void;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
   private nextSendAt = 0;
   private ended = false;
@@ -62,6 +63,26 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
           continue;
         }
       }
+    });
+
+    this.offDisconnected = this.socket.on("disconnected", () => {
+      if (typeof this.delimiter.reset === "function") {
+        this.delimiter.reset();
+      }
+
+      for (const entry of this.pending.splice(0)) {
+        if (entry.timeout !== undefined) {
+          clearTimeout(entry.timeout);
+        }
+        entry.resolve({
+          ok: false,
+          error: new Error("socket disconnected", {
+            cause: Err.Codes.RequestTimeout,
+          }),
+        });
+      }
+
+      this.flush();
     });
   }
 
@@ -145,6 +166,7 @@ export class RequestManager<Tx, Rx> extends TypedEventTarget<
 
     this.ended = true;
     this.offReceive();
+    this.offDisconnected();
     if (this.flushTimer !== undefined) {
       clearTimeout(this.flushTimer);
       this.flushTimer = undefined;

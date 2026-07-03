@@ -1,4 +1,4 @@
-const DECODER_IP = "10.0.2.15";
+const DECODER_IP = "10.1.0.14";
 
 // prettier-ignore
 const config = {"encoders": [

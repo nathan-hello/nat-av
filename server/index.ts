@@ -3,8 +3,10 @@ import DanteRouter from "@drivers/dante/router";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
 import { Debugger } from "@drivers/natav/debug";
+import { Paint } from "@drivers/natav/paint";
 import { RpcServer } from "@drivers/natav/rpc/server";
 import { RpcTransportWebsocket } from "@drivers/natav/rpc/server/websocket";
+import { SchemaGenerator } from "@drivers/natav/schema";
 import { System } from "@server/system";
 import { Server } from "node:http";
 
@@ -36,9 +38,9 @@ const natav = new Manager({
         new Decoder({
           name: "decoder-1",
           socket: new Tcp({
-            addr: "decoder-e8d8d1599092.local",
+            addr: "decoder-0c7a1566cf92.local",
             port: 12345,
-            keepAlive: true,
+            keepAliveMs: 10000,
           }),
         }),
       ],
@@ -49,8 +51,14 @@ const natav = new Manager({
       },
     ),
     new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
+    new Paint({
+      outputDir: "./tmp/paint",
+      paints: {
+        main: { width: 1920, height: 1080 },
+      } as const,
+    }),
   ],
-  deferred: [Debugger, System],
+  deferred: [Debugger, System, SchemaGenerator],
 });
 
 Telemetry.Sdk.AddExporters([
