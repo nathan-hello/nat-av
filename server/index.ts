@@ -1,4 +1,5 @@
-import { Manager, Tcp, Telemetry } from "@av/index";
+import { Manager, Tcp, Telemetry, type Sockets } from "@av/index";
+import { CiscoRoomOS } from "@drivers/cisco/roomos";
 import DanteRouter from "@drivers/dante/router";
 import Decoder from "@drivers/decoder";
 import DisplayManager from "@drivers/decoder/display";
@@ -50,6 +51,11 @@ const natav = new Manager({
         ],
       },
     ),
+    new CiscoRoomOS({
+      name: "roomos",
+      socket: [] as unknown as Sockets.Client,
+      strict: false,
+    }),
     new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
     new Paint({
       outputDir: "./tmp/paint",

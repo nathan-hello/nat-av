@@ -4,56 +4,9 @@ import ts from "typescript";
 
 type Json = any;
 
-interface Target {
-  name: string;
-  file: string;
-  className: string;
-}
-
-const TARGETS: readonly Target[] = [
-  {
-    name: "video-wall",
-    file: "vendor/drivers/decoder/display/index.ts",
-    className: "DisplayManager",
-  },
-  {
-    name: "roomos",
-    file: "vendor/drivers/cisco/roomos/index.ts",
-    className: "CiscoRoomOS",
-  },
-];
-
 const OUTPUT_DIR = new URL("../output/", import.meta.url);
 const STATE_FILE = new URL("../output/state.ts", import.meta.url);
-
-function driverImportPath(file: string): string {
-  let p = file.replace(/\/index\.ts$/, "").replace(/\.ts$/, "");
-  if (p.startsWith("vendor/drivers/"))
-    p = "@drivers/" + p.slice("vendor/drivers/".length);
-  else if (p.startsWith("vendor/av/"))
-    p = "@av/" + p.slice("vendor/av/".length);
-  return p;
-}
-
-function findClass(
-  sourceFile: ts.SourceFile,
-  className: string,
-): ts.ClassDeclaration | undefined {
-  let result: ts.ClassDeclaration | undefined;
-  function visit(node: ts.Node): void {
-    if (
-      !result &&
-      ts.isClassDeclaration(node) &&
-      node.name?.text === className
-    ) {
-      result = node;
-      return;
-    }
-    ts.forEachChild(node, visit);
-  }
-  visit(sourceFile);
-  return result;
-}
+const TEMP_DIR = new URL("../output/.tmp/", import.meta.url);
 
 function isPromiseType(checker: ts.TypeChecker, type: ts.Type): boolean {
   const sym = type.symbol ?? (type as ts.TypeReference).target?.symbol;
@@ -61,15 +14,13 @@ function isPromiseType(checker: ts.TypeChecker, type: ts.Type): boolean {
 }
 
 function awaitType(checker: ts.TypeChecker, type: ts.Type): ts.Type {
-  const awaited = (
-    checker as unknown as {
-      getAwaitedType?(t: ts.Type): ts.Type | undefined;
-    }
-  ).getAwaitedType?.(type);
+  const awaited = (checker as unknown as {
+    getAwaitedType?(t: ts.Type): ts.Type | undefined;
+  }).getAwaitedType?.(type);
   if (awaited) return awaited;
   if (isPromiseType(checker, type)) {
     const args = checker.getTypeArguments(type as ts.TypeReference);
-    if (args.length) return args[0];
+    if (args.length) return args[0]!;
   }
   return type;
 }
@@ -79,8 +30,7 @@ function isVoidOrUndefined(type: ts.Type): boolean {
 }
 
 function isTuple(type: ts.Type): boolean {
-  const objFlags =
-    (type as unknown as { objectFlags?: number }).objectFlags ?? 0;
+  const objFlags = (type as unknown as { objectFlags?: number }).objectFlags ?? 0;
   if (objFlags & ts.ObjectFlags.Tuple) return true;
   const target = (type as unknown as { target?: ts.ObjectType }).target;
   return !!target && !!(target.objectFlags & ts.ObjectFlags.Tuple);
@@ -101,6 +51,7 @@ function typeToSchema(
   checker: ts.TypeChecker,
   type: ts.Type,
   optional = false,
+  visiting: WeakSet<ts.Type> = new WeakSet(),
 ): Json {
   const opt = optional ? { optional: true as const } : {};
 
@@ -135,59 +86,71 @@ function typeToSchema(
     return { type: "literal", value: v, ...opt };
   }
 
-  if (type.flags & ts.TypeFlags.Union) {
-    const parts = (type as ts.UnionType).types.filter(
-      (t) => !(t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void)),
-    );
-    if (parts.length === 0) return { type: "undefined", ...opt };
-    const allBooleanLits = parts.every(
-      (t) => (t.flags & ts.TypeFlags.BooleanLiteral) !== 0,
-    );
-    if (allBooleanLits) {
-      return { type: "boolean", ...opt };
-    }
-    if (parts.length === 1) return typeToSchema(checker, parts[0]!, optional);
-    return {
-      type: "union",
-      anyOf: parts.map((t) => typeToSchema(checker, t)),
-      ...opt,
-    };
+  if (visiting.has(type)) {
+    return { type: "any", ...opt };
   }
+  visiting.add(type);
 
-  if (checker.isArrayType(type)) {
-    const elem =
-      type.getNumberIndexType?.() ??
-      checker.getTypeArguments(type as ts.TypeReference)[0];
-    return {
-      type: "array",
-      items: [typeToSchema(checker, elem)],
-      ...opt,
-    };
-  }
-
-  if (isTuple(type)) {
-    const elems = checker.getTypeArguments(type as ts.TypeReference);
-    const items = elems.map((e, i) =>
-      typeToSchema(checker, e, tupleElementOptional(type, i)),
-    );
-    return { type: "tuple", items, ...opt };
-  }
-
-  if (type.flags & ts.TypeFlags.Object) {
-    const props = checker.getPropertiesOfType(type);
-    const fields = props.map((sym) => {
-      const propType = checker.getTypeOfSymbol(sym);
-      const propOpt =
-        (sym.flags & ts.SymbolFlags.Optional) !== 0 || isPropertyOptional(sym);
+  try {
+    if (type.flags & ts.TypeFlags.Union) {
+      const parts = (type as ts.UnionType).types.filter(
+        (t) => !(t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void)),
+      );
+      if (parts.length === 0) return { type: "undefined", ...opt };
+      const allBooleanLits = parts.every(
+        (t) => (t.flags & ts.TypeFlags.BooleanLiteral) !== 0,
+      );
+      if (allBooleanLits) {
+        return { type: "boolean", ...opt };
+      }
+      if (parts.length === 1) {
+        return typeToSchema(checker, parts[0]!, optional, visiting);
+      }
       return {
-        name: sym.name,
-        value: typeToSchema(checker, propType, propOpt),
+        type: "union",
+        anyOf: parts.map((t) => typeToSchema(checker, t, false, visiting)),
+        ...opt,
       };
-    });
-    return { type: "object", fields, ...opt };
-  }
+    }
 
-  return { type: "any", ...opt };
+    if (checker.isArrayType(type)) {
+      const elem =
+        type.getNumberIndexType?.() ??
+        checker.getTypeArguments(type as ts.TypeReference)[0];
+      return {
+        type: "array",
+        items: [typeToSchema(checker, elem, false, visiting)],
+        ...opt,
+      };
+    }
+
+    if (isTuple(type)) {
+      const elems = checker.getTypeArguments(type as ts.TypeReference);
+      const items = elems.map((e, i) =>
+        typeToSchema(checker, e, tupleElementOptional(type, i), visiting),
+      );
+      return { type: "tuple", items, ...opt };
+    }
+
+    if (type.flags & ts.TypeFlags.Object) {
+      const props = checker.getPropertiesOfType(type);
+      const fields = props.map((sym) => {
+        const propType = checker.getTypeOfSymbol(sym);
+        const propOpt =
+          (sym.flags & ts.SymbolFlags.Optional) !== 0 ||
+          isPropertyOptional(sym);
+        return {
+          name: sym.name,
+          value: typeToSchema(checker, propType, propOpt, visiting),
+        };
+      });
+      return { type: "object", fields, ...opt };
+    }
+
+    return { type: "any", ...opt };
+  } finally {
+    visiting.delete(type);
+  }
 }
 
 function isPropertyOptional(sym: ts.Symbol): boolean {
@@ -204,18 +167,22 @@ function isPropertyOptional(sym: ts.Symbol): boolean {
   return (sym.flags & ts.SymbolFlags.Optional) !== 0;
 }
 
-function schemaOfReturn(checker: ts.TypeChecker, returnType: ts.Type): Json {
+function schemaOfReturn(
+  checker: ts.TypeChecker,
+  returnType: ts.Type,
+  visiting: WeakSet<ts.Type>,
+): Json {
   const awaited = awaitType(checker, returnType);
   if (isVoidOrUndefined(awaited)) {
     return { type: "literal", value: null };
   }
-  return typeToSchema(checker, awaited);
+  return typeToSchema(checker, awaited, false, visiting);
 }
 
 function generateApiNodes(
   checker: ts.TypeChecker,
   apiType: ts.Type,
-  basePath = "",
+  visiting: WeakSet<ts.Type>,
 ): Json[] {
   const props = checker.getPropertiesOfType(apiType);
   const nodes: Json[] = [];
@@ -223,13 +190,27 @@ function generateApiNodes(
   for (const prop of props) {
     const propType = checker.getTypeOfSymbol(prop);
     const signatures = propType.getCallSignatures();
-    const fullName = prop.name;
 
     if (signatures.length > 0) {
       const sig = signatures[0]!;
       const params = sig.getParameters();
-      const args = params.map((p) => {
+      const args: Json[] = [];
+      for (const p of params) {
         const decl = p.valueDeclaration;
+        if (decl && ts.isParameter(decl) && decl.dotDotDotToken) {
+          const restType = checker.getTypeOfSymbolAtLocation(
+            p,
+            decl ?? ({} as ts.Node),
+          );
+          if (isTuple(restType)) {
+            const elems = checker.getTypeArguments(restType as ts.TypeReference);
+            elems.forEach((e, i) => {
+              const opt = tupleElementOptional(restType, i);
+              args.push(typeToSchema(checker, e, opt, visiting));
+            });
+            continue;
+          }
+        }
         const opt =
           !!decl &&
           ts.isParameter(decl) &&
@@ -238,13 +219,13 @@ function generateApiNodes(
           p,
           decl ?? ({} as ts.Node),
         );
-        return typeToSchema(checker, ptype, opt);
-      });
-      const ret = schemaOfReturn(checker, sig.getReturnType());
-      nodes.push({ name: fullName, returns: ret, args });
+        args.push(typeToSchema(checker, ptype, opt, visiting));
+      }
+      const ret = schemaOfReturn(checker, sig.getReturnType(), visiting);
+      nodes.push({ name: prop.name, returns: ret, args });
     } else {
-      const children = generateApiNodes(checker, propType, fullName);
-      nodes.push({ name: fullName, children });
+      const children = generateApiNodes(checker, propType, visiting);
+      nodes.push({ name: prop.name, children });
     }
   }
 
@@ -277,67 +258,72 @@ function formatSchema(nodes: Json[]): string {
     .join(",\n")},\n]`;
 }
 
-async function emitSchemaFile(target: Target, nodes: Json[]): Promise<void> {
-  const importPath = driverImportPath(target.file);
-  const body = formatSchema(nodes).replace(/^/gm, "  ").trimStart();
+interface DriverEntry {
+  name: string;
+  nodes: Json[];
+}
+
+function extractDrivers(
+  checker: ts.TypeChecker,
+  driversType: ts.Type,
+): DriverEntry[] {
+  if (!isTuple(driversType)) {
+    throw new Error(
+      "natav[\"drivers\"] is not a tuple; cannot enumerate driver instances",
+    );
+  }
+
+  const elements = checker.getTypeArguments(driversType as ts.TypeReference);
+  const entries: DriverEntry[] = [];
+
+  for (const elementType of elements) {
+    const nameSym = checker.getPropertyOfType(elementType, "name");
+    if (!nameSym) continue;
+    const nameType = checker.getTypeOfSymbol(nameSym);
+    if (!(nameType.flags & ts.TypeFlags.StringLiteral)) continue;
+    const driverName = (nameType as ts.StringLiteralType).value;
+    if (driverName === "schema") continue;
+
+    const apiSym = checker.getPropertyOfType(elementType, "api");
+    if (!apiSym) continue;
+    const apiType = checker.getTypeOfSymbol(apiSym);
+
+    const visiting: WeakSet<ts.Type> = new WeakSet();
+    const nodes = generateApiNodes(checker, apiType, visiting);
+    entries.push({ name: driverName, nodes });
+  }
+
+  return entries;
+}
+
+async function emitSchemaFile(entry: DriverEntry): Promise<void> {
+  const safeName = entry.name.replace(/[^a-zA-Z0-9_]/g, "_");
+  const body = formatSchema(entry.nodes).replace(/^/gm, "  ").trimStart();
   const contents =
-    `import type ${target.className} from "${importPath}";\n` +
-    `import { type Schema } from "../types";\n\n` +
-    `const schema: Schema.Schema<${target.className}> = ${body};\n\n` +
+    `const schema = ${body} as const;\n\n` +
     `export default schema;\n`;
-  const fileUrl = new URL(`${target.name}.ts`, OUTPUT_DIR);
+  const fileUrl = new URL(`${safeName}.ts`, OUTPUT_DIR);
   await fs.writeFile(fileUrl, contents, "utf8");
 }
 
-async function emitStateFile(targets: readonly Target[]): Promise<void> {
-  const imports = targets
-    .map((t) => `import schema from "@drivers/natav/schema/output/${t.name}";`)
+async function emitStateFile(entries: readonly DriverEntry[]): Promise<void> {
+  const imports = entries
+    .map((e) => {
+      const safeName = e.name.replace(/[^a-zA-Z0-9_]/g, "_");
+      return `import schema_${safeName} from "@drivers/natav/schema/output/${safeName}";`;
+    })
     .join("\n");
-  const entries = targets
-    .map((t) => `  ${JSON.stringify(t.name)}: schema,`)
+  const fields = entries
+    .map((e) => {
+      const safeName = e.name.replace(/[^a-zA-Z0-9_]/g, "_");
+      return `  ${JSON.stringify(e.name)}: schema_${safeName},`;
+    })
     .join("\n");
   const contents =
-    `import type { Driver } from "@av/drivers";\n` +
     imports +
-    `\nimport type { Schema } from "../types";\n\n` +
-    `export const state: Record<string, Schema.Schema<Driver>> = {\n${entries}\n};\n`;
+    `\n\n` +
+    `export const state: Record<string, readonly unknown[]> = {\n${fields}\n};\n`;
   await fs.writeFile(STATE_FILE, contents, "utf8");
-}
-
-async function generate(
-  checker: ts.TypeChecker,
-  target: Target,
-): Promise<Json[]> {
-  const sourceFile = program.getSourceFile(target.file);
-  if (!sourceFile) throw new Error(`source not found: ${target.file}`);
-
-  const classDecl = findClass(sourceFile, target.className);
-  if (!classDecl) throw new Error(`class ${target.className} not found`);
-
-  let apiType: ts.Type | undefined;
-  for (const member of classDecl.members) {
-    if (
-      ts.isPropertyDeclaration(member) &&
-      member.name &&
-      ts.isIdentifier(member.name) &&
-      member.name.text === "api"
-    ) {
-      apiType = checker.getTypeAtLocation(member.initializer ?? member);
-      break;
-    }
-  }
-
-  if (!apiType) {
-    const classSymbol = checker.getSymbolAtLocation(classDecl.name!);
-    if (classSymbol) {
-      const instType = checker.getDeclaredTypeOfSymbol(classSymbol);
-      const apiSym = instType.getProperty("api");
-      if (apiSym) apiType = checker.getTypeOfSymbol(apiSym);
-    }
-  }
-
-  if (!apiType) throw new Error(`api not found on ${target.className}`);
-  return generateApiNodes(checker, apiType);
 }
 
 let program: ts.Program;
@@ -346,24 +332,71 @@ async function main(): Promise<void> {
   const configPath = ts.findConfigFile(".", ts.sys.fileExists, "tsconfig.json");
   if (!configPath) throw new Error("tsconfig.json not found");
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
-  const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, ".");
+  const parsed = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    ".",
+  );
 
-  program = ts.createProgram({
-    rootNames: [...TARGETS.map((t) => t.file), configPath],
-    options: { ...parsed.options, noEmit: true },
-  });
-  const checker = program.getTypeChecker();
+  await fs.mkdir(TEMP_DIR, { recursive: true });
+  const tempFile = new URL("_drivers.ts", TEMP_DIR);
+  await fs.writeFile(
+    tempFile,
+    `import type { natav } from "@server/index";\n` +
+      `type _Drivers = natav["drivers"];\n`,
+    "utf8",
+  );
 
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  try {
+    program = ts.createProgram({
+      rootNames: [tempFile.pathname, configPath],
+      options: { ...parsed.options, noEmit: true },
+    });
+    const checker = program.getTypeChecker();
 
-  for (const target of TARGETS) {
-    const nodes = await generate(checker, target);
-    await emitSchemaFile(target, nodes);
-    console.log(`generated output/${target.name}.ts`);
+    const sourceFile = program.getSourceFile(tempFile.pathname);
+    if (!sourceFile) throw new Error("temp file not loaded into program");
+
+    let typeAlias: ts.TypeAliasDeclaration | undefined;
+    function visit(node: ts.Node): void {
+      if (
+        !typeAlias &&
+        ts.isTypeAliasDeclaration(node) &&
+        node.name.text === "_Drivers"
+      ) {
+        typeAlias = node;
+        return;
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(sourceFile);
+    if (!typeAlias) throw new Error("_Drivers type alias not found");
+
+    const driversType = checker.getTypeAtLocation(typeAlias);
+    const entries = extractDrivers(checker, driversType);
+
+    await fs.mkdir(OUTPUT_DIR, { recursive: true });
+
+    // Clear stale generated schema files (except state.ts and .tmp/)
+    const existing = await fs.readdir(OUTPUT_DIR);
+    for (const file of existing) {
+      if (file === ".tmp" || file === "state.ts") continue;
+      if (file.endsWith(".ts")) {
+        await fs.unlink(new URL(file, OUTPUT_DIR)).catch(() => {});
+      }
+    }
+
+    for (const entry of entries) {
+      await emitSchemaFile(entry);
+      const safeName = entry.name.replace(/[^a-zA-Z0-9_]/g, "_");
+      console.log(`generated output/${safeName}.ts`);
+    }
+
+    await emitStateFile(entries);
+    console.log("generated output/state.ts");
+  } finally {
+    await fs.rm(TEMP_DIR, { recursive: true, force: true }).catch(() => {});
   }
-
-  await emitStateFile(TARGETS);
-  console.log("generated output/state.ts");
 }
 
 if (
