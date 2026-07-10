@@ -1,13 +1,28 @@
+import fs from "node:fs";
 import { Err } from "@av/client";
 import { Driver } from "@av/drivers";
 import { type Drivers } from "@av/index";
-import { state } from "@drivers/natav/schema/output/state";
 
 type SchemaState = Record<string, readonly unknown[]>;
 
+function loadState(): SchemaState {
+  const output = new URL("./output/", import.meta.url);
+  // TSAS: state.json is written by the schema generator as a string-to-string map.
+  const manifest = JSON.parse(fs.readFileSync(new URL("state.json", output), "utf8")) as Record<
+    string,
+    string
+  >;
+  return Object.fromEntries(
+    Object.entries(manifest).map(([name, filename]) => {
+        const contents = fs.readFileSync(new URL(filename, output), "utf8");
+        return [name, JSON.parse(contents)];
+      }),
+  );
+}
+
 export class SchemaGenerator extends Driver<"schema"> {
   natav: Drivers.ManagerView;
-  state: SchemaState = state;
+  state: SchemaState = loadState();
 
   api = {
     get: (name: string): readonly unknown[] => {

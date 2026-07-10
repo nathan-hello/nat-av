@@ -555,10 +555,10 @@ function renderStateSection(
   });
 
   output.push(
-    `export type ${baseName}Any = Merge<${[
+    `export type ${baseName}Any = ${baseName === "Configuration" ? "MergeUnion" : "Merge"}<${[
       `${baseName}Common`,
       ...setNames,
-    ].join(" & ")}>;`,
+    ].join(baseName === "Configuration" ? " | " : " & ")}>;`,
   );
 
   output.push(
@@ -585,6 +585,9 @@ function render(model: GeneratedModel): string {
   return [
     "export namespace GeneratedRoomOS {",
     "type Merge<T> = { [K in keyof T]: T[K] };",
+    "type UnionKeys<T> = T extends unknown ? keyof T : never;",
+    "type UnionValue<T, K extends PropertyKey> = T extends { [P in K]?: infer Value } ? Value : never;",
+    "type MergeUnion<T> = [T] extends [readonly unknown[]] ? T : [T] extends [object] ? { [K in UnionKeys<T>]: MergeUnion<UnionValue<T, K>> } : T;",
     "export type JsonValue = | null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }",
     `export type Product = ${model.products.map((product) => JSON.stringify(product)).join(" | ")};`,
     `export type Kind = ${model.kinds.map((kind) => JSON.stringify(kind)).join(" | ")};`,

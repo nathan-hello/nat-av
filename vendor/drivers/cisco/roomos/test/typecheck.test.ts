@@ -56,10 +56,12 @@ describe("typecheck", () => {
 
   const roomos = new CiscoRoomOS({
     name: "roomos-typecheck",
+    product: "any",
     socket,
     strict: false,
     subscriptions: {
       xConfiguration: {
+        UserInterface: true,
         Bluetooth: {
           Allowed: true,
         },
@@ -84,6 +86,8 @@ describe("typecheck", () => {
     },
   });
 
+  roomos.api.xConfiguration.Configuration.UserInterface.OSD
+
   const strictRoomos = new CiscoRoomOS({
     name: "roomos-strict-typecheck",
     socket,
@@ -97,6 +101,13 @@ describe("typecheck", () => {
         },
       },
     },
+  });
+
+  const anyProductRoomos = new CiscoRoomOS({
+    name: "roomos-any-product-typecheck",
+    socket,
+    product: "any",
+    strict: false,
   });
   it("does not throw when accessing nested state obj", async () => {
     assert.doesNotThrow(async () => {
@@ -115,6 +126,15 @@ describe("typecheck", () => {
       if (!test2.ok) {
         throw Error("asdf.ok");
       }
+
+      await anyProductRoomos.api.xConfiguration.Configuration.UserInterface.OSD.EncryptionIndicator.set(
+        "AlwaysOn",
+      );
+
+      await anyProductRoomos.api.xConfiguration.Configuration.UserInterface.OSD.EncryptionIndicator.set(
+        // @ts-expect-error EncryptionIndicator accepts only documented literals.
+        "On",
+      );
 
       // Should be 'number'
       void roomos.state.xFeedback.Bluetooth.Streaming.PlaybackPosition.Position;

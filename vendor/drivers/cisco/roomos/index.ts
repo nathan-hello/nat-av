@@ -13,6 +13,9 @@ import type { JsonValue } from "./typegen/scripts/types";
 import { RoomOS } from "./types";
 import { RoomOSFormatter } from "./writer";
 
+type ResolvedProduct<Product extends RoomOS.ProductTarget> =
+  [Product] extends [never] ? "any" : Product;
+
 export type State<
   Product extends RoomOS.ProductTarget = "any",
   StrictState extends boolean = boolean,
@@ -49,8 +52,8 @@ export class CiscoRoomOS<
   }: {
     name: N;
     socket: Sockets.Client;
-    product?: Product;
-    subscriptions?: RoomOS.Sub<Product> & Sub;
+    product?: NoInfer<Product>;
+    subscriptions?: RoomOS.Sub<NoInfer<Product>> & Sub;
     strict: Strict;
   }) {
     super({ name });
@@ -269,29 +272,52 @@ export class CiscoRoomOS<
   }
 
   // TSAS:
-  api!: RoomOS.Api<Product, RoomOS.State<Product, Sub, Strict>>;
+  api!: RoomOS.Api<
+    ResolvedProduct<Product>,
+    RoomOS.State<
+      ResolvedProduct<Product>,
+      RoomOS.Sub<ResolvedProduct<Product>>,
+      Strict
+    >
+  >;
 
   private initApi() {
     this.api = {
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xCommand: this.proxy.Command() as unknown as RoomOS.Api<
-        Product,
-        RoomOS.State<Product, Sub, Strict>
+        ResolvedProduct<Product>,
+        RoomOS.State<
+          ResolvedProduct<Product>,
+          RoomOS.Sub<ResolvedProduct<Product>>,
+          Strict
+        >
       >["xCommand"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xConfiguration: this.proxy.Configuration() as RoomOS.Api<
-        Product,
-        RoomOS.State<Product, Sub, Strict>
+        ResolvedProduct<Product>,
+        RoomOS.State<
+          ResolvedProduct<Product>,
+          RoomOS.Sub<ResolvedProduct<Product>>,
+          Strict
+        >
       >["xConfiguration"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xStatus: this.proxy.Status() as RoomOS.Api<
-        Product,
-        RoomOS.State<Product, Sub, Strict>
+        ResolvedProduct<Product>,
+        RoomOS.State<
+          ResolvedProduct<Product>,
+          RoomOS.Sub<ResolvedProduct<Product>>,
+          Strict
+        >
       >["xStatus"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xFeedback: this.proxy.Feedback() as RoomOS.Api<
-        Product,
-        RoomOS.State<Product, Sub, Strict>
+        ResolvedProduct<Product>,
+        RoomOS.State<
+          ResolvedProduct<Product>,
+          RoomOS.Sub<ResolvedProduct<Product>>,
+          Strict
+        >
       >["xFeedback"],
     };
   }

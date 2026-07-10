@@ -10,19 +10,27 @@ type PrimitiveName<T> =
 
 type IsUnion<T, U = T> =
   [T] extends [boolean] ? false
-  : T extends any ?
+  : T extends U ?
     [U] extends [T] ?
       false
     : true
   : never;
 
+type IsUnionType<T> = true extends IsUnion<T> ? true : false;
+
 type WithoutUndefined<T> = Exclude<T, undefined>;
+
+// The generator represents `T | undefined` as T and carries optionality on
+// the containing field or parameter. A bare undefined remains explicit.
+type SchemaValue<T> =
+  [WithoutUndefined<T>] extends [never] ? T : WithoutUndefined<T>;
 
 type WithOptional<S> = S & {
   readonly optional: true;
 };
 
-type IsOptionalKey<T, K extends keyof T> = {} extends Pick<T, K> ? true : false;
+type IsOptionalKey<T, K extends keyof T> =
+  undefined extends T[K] ? true : false;
 
 type TupleOptionalKeys<T extends readonly any[]> = {
   [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
@@ -47,77 +55,115 @@ type LiteralSchema<T> = {
   readonly value: T;
 };
 
-type UnionSchema<T> = {
+type RecursiveSchema = {
+  readonly type: "recursive";
+};
+
+type AnySchema = {
+  readonly type: "any";
+};
+
+type MapSchema<K, V, Seen = never> = {
+  readonly type: "map";
+  readonly keys: SchemaOf<K, Seen>;
+  readonly values: SchemaOf<V, Seen>;
+};
+
+type SetSchema<T, Seen = never> = {
+  readonly type: "set";
+  readonly items: SchemaOf<T, Seen>;
+};
+
+type BytesSchema = {
+  readonly type: "bytes";
+};
+
+type DateSchema = {
+  readonly type: "date";
+};
+
+type UnionSchema<T, Seen = never> = {
   readonly type: "union";
-  readonly anyOf: SchemaFromUnion<T>;
+  readonly anyOf: SchemaFromUnion<T, Seen>;
 };
 
-type ArraySchema<T> = {
+type ArraySchema<T, Seen = never> = {
   readonly type: "array";
-  readonly items: readonly [SchemaOf<T>];
+  // TypeScript can erase distinct structural union members (for example,
+  // repeated object aliases) before SchemaOf sees them. The generator still
+  // preserves that union as an explicit schema node.
+  readonly items: readonly [SchemaOf<T, Seen> | UnionSchema<any>];
 };
 
-type TupleSchema<T extends readonly any[]> = {
+type TupleSchema<T extends readonly any[], Seen = never> = {
   readonly type: "tuple";
-  readonly items: SchemaFromTuple<T>;
+  readonly items: SchemaFromTuple<T, Seen>;
 };
 
-type ObjectSchema<T> = {
+type ObjectSchema<T, Seen = never> = {
   readonly type: "object";
-  readonly fields: ObjectFields<T>;
+  readonly properties: ObjectProperties<T, Seen>;
 };
 
 type SchemaKind<T> =
-  IsUnion<T> extends true ? "union"
+  IsUnionType<T> extends true ? "union"
   : IsLiteral<T> extends true ? "literal"
   : [T] extends [readonly any[]] ?
     number extends T["length"] ?
       "array"
     : "tuple"
+  : [T] extends [Map<unknown, unknown>] ? "map"
+  : [T] extends [ReadonlyMap<unknown, unknown>] ? "map"
+  : [T] extends [Set<unknown>] ? "set"
+  : [T] extends [ReadonlySet<unknown>] ? "set"
+  : [T] extends [Uint8Array] ? "bytes"
+  : [T] extends [Date] ? "date"
   : [T] extends [object] ? "object"
   : "primitive";
 
-type SchemaOf<T> = Schema.Map<T>[SchemaKind<T>];
+type IsAny<T> = 0 extends 1 & T ? true : false;
 
-type SchemaFromUnion<T> = Permutation<T extends any ? SchemaOf<T> : never>;
+// A recursive reference is emitted only after the generator encounters the
+// same compiler type on its active traversal path. It is intentionally an
+// explicit schema node rather than the previous unchecked `any` fallback.
+type SchemaOf<T, Seen = never> =
+  IsAny<SchemaValue<T>> extends true ? AnySchema
+  : | RecursiveSchema
+    // The compiler may collapse unions of structurally identical arrays.
+    | ([SchemaValue<T>] extends [readonly any[]] ?
+        UnionSchema<SchemaValue<T>, Seen>
+      : never)
+    | Schema.Map<SchemaValue<T>, Seen | SchemaValue<T>>[SchemaKind<
+        SchemaValue<T>
+      >];
 
-type SchemaOfOptional<T> = WithOptional<SchemaOf<WithoutUndefined<T>>>;
+// JSON Schema unions are order-independent. Checking each generated member
+// against the source union avoids factorial permutations of large unions.
+type SchemaFromUnion<T, Seen> = readonly (T extends unknown ? SchemaOf<T, Seen>
+: never)[];
 
-type SchemaOfObjectProperty<T, K extends keyof T> =
-  IsOptionalKey<T, K> extends true ? SchemaOfOptional<T[K]> : SchemaOf<T[K]>;
+type SchemaOfOptional<T, Seen> = WithOptional<SchemaOf<T, Seen>>;
 
-type SchemaOfTupleElement<T extends readonly any[], K extends keyof T> =
-  K extends TupleOptionalKeys<T> ? SchemaOfOptional<T[K]> : SchemaOf<T[K]>;
+type SchemaOfObjectProperty<T, K extends keyof T, Seen> =
+  IsOptionalKey<T, K> extends true ? SchemaOfOptional<T[K], Seen>
+  : SchemaOf<T[K], Seen>;
 
-type SchemaFromTuple<T extends readonly any[]> = {
-  readonly [K in keyof T]: SchemaOfTupleElement<T, K>;
+type SchemaOfTupleElement<T extends readonly any[], K extends keyof T, Seen> =
+  K extends TupleOptionalKeys<T> ? SchemaOfOptional<T[K], Seen>
+  : SchemaOf<T[K], Seen>;
+
+type SchemaFromTuple<T extends readonly any[], Seen = never> = {
+  readonly [K in keyof T]: SchemaOfTupleElement<T, K, Seen>;
 };
 
-type ObjectField<T> = {
-  readonly [K in keyof T & string]: {
-    readonly name: K;
-    readonly value: SchemaOfObjectProperty<T, K>;
-  };
-}[keyof T & string];
-
-type Permutation<T, U = T> =
-  [T] extends [never] ? readonly []
-  : T extends T ? readonly [T, ...Permutation<Exclude<U, T>>]
-  : never;
-
-type ObjectFields<T> = Permutation<ObjectField<T>>;
+type ObjectProperties<T, Seen> = {
+  readonly [K in keyof T & string]: SchemaOfObjectProperty<T, K, Seen>;
+};
 
 type Leaf<Name extends string, Fn extends Drivers.ApiMethod> = {
   readonly name: Name;
 
-  // Source API return type, after Promise resolution and JSON wire coercion.
-  // undefined/void return values are represented as null over the wire.
   readonly returns: SchemaOf<Schema.ReturnWire<ReturnType<Fn>>>;
-
-  // Source API argument types.
-  // null and undefined remain distinct here. A parameter expecting undefined
-  // should be decoded from wire null by the transport layer, not by pretending
-  // the API parameter type is null.
   readonly args: SchemaFromTuple<Parameters<Fn>>;
 
   readonly ui?: Schema.Ui.Args<Parameters<Fn>>;
@@ -135,12 +181,17 @@ type ApiSchemaNode<Name extends string, T> =
 
 export namespace Schema {
   export type Node =
+    | AnySchema
     | PrimitiveSchema<any>
     | LiteralSchema<any>
     | UnionSchema<any>
-    | ArraySchema<any>
-    | TupleSchema<readonly any[]>
-    | ObjectSchema<any>;
+     | ArraySchema<any>
+     | TupleSchema<readonly any[]>
+     | ObjectSchema<any>
+     | MapSchema<any, any>
+     | SetSchema<any>
+     | BytesSchema
+     | DateSchema;
 
   export namespace Ui {
     type Primitive<T> = {
@@ -189,12 +240,19 @@ export namespace Schema {
     };
   }
 
-  export type Map<T> = {
-    readonly union: UnionSchema<T>;
+  export type Map<T, Seen = never> = {
+    readonly union: UnionSchema<T, Seen>;
     readonly literal: LiteralSchema<T>;
-    readonly array: [T] extends [readonly (infer U)[]] ? ArraySchema<U> : never;
-    readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T> : never;
-    readonly object: ObjectSchema<T>;
+    readonly array: [T] extends [readonly any[]] ? ArraySchema<T[number], Seen>
+    : never;
+    readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T, Seen> : never;
+    readonly map: T extends Map<infer K, infer V> ? MapSchema<K, V, Seen> :
+      T extends ReadonlyMap<infer K, infer V> ? MapSchema<K, V, Seen> : never;
+    readonly set: T extends Set<infer V> ? SetSchema<V, Seen> :
+      T extends ReadonlySet<infer V> ? SetSchema<V, Seen> : never;
+    readonly bytes: [T] extends [Uint8Array] ? BytesSchema : never;
+    readonly date: [T] extends [Date] ? DateSchema : never;
+    readonly object: ObjectSchema<T, Seen>;
     readonly primitive: PrimitiveSchema<T>;
   };
 
@@ -218,4 +276,6 @@ export namespace Schema {
         }[keyof T["api"] & string]
       >
     : never;
+
+  export type ApiNode<Name extends string, T> = ApiSchemaNode<Name, T>;
 }
