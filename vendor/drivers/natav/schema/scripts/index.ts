@@ -311,7 +311,7 @@ function formatNode(node: Json, indent: number): string {
   if (Array.isArray(node)) {
     if (node.length === 0) return "[]";
     const items = node.map((item) => formatNode(item, indent + 1));
-    return `[\n${padInner}${items.join(`,\n${padInner}`)},\n${pad}]`;
+    return `[\n${padInner}${items.join(`,\n${padInner}`)}\n${pad}]`;
   }
   if (node !== null && typeof node === "object") {
     const entries = Object.entries(node).filter(
@@ -322,7 +322,7 @@ function formatNode(node: Json, indent: number): string {
       ([k, v]) =>
         `${padInner}${JSON.stringify(k)}: ${formatNode(v, indent + 1)}`,
     );
-    return `{\n${fields.join(",\n")},\n${pad}}`;
+    return `{\n${fields.join(",\n")}\n${pad}}`;
   }
   return JSON.stringify(node);
 }
@@ -330,7 +330,7 @@ function formatNode(node: Json, indent: number): string {
 function formatSchema(nodes: Json[]): string {
   return `[\n${nodes
     .map((n) => `  ${formatNode(n, 1).replace(/^/gm, "")}`)
-    .join(",\n")},\n]`;
+    .join(",\n")}\n]`;
 }
 
 interface DriverEntry {

@@ -182,6 +182,7 @@ type ApiSchemaNode<Name extends string, T> =
 export namespace Schema {
   export type Node =
     | AnySchema
+    | RecursiveSchema
     | PrimitiveSchema<any>
     | LiteralSchema<any>
     | UnionSchema<any>
