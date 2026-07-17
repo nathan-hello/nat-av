@@ -2,6 +2,7 @@ import { getRpc } from "@/state";
 import { DantePage } from "@/ui/dante";
 import { DebugPage } from "@/ui/debug";
 import { PaintPage } from "@/ui/paint";
+import { RelayBoardPage } from "@/ui/relay-board";
 import { Wall } from "@/ui/wall";
 import { css, on, type Handle } from "remix/ui";
 
@@ -13,14 +14,6 @@ export function HomePage(handle: Handle) {
     return (
       <main mix={shellStyle}>
         <header mix={headerStyle}>
-          <div>
-            <p mix={eyebrowStyle}>Control surface</p>
-            <h1 mix={titleStyle}>Decoder Control</h1>
-            <p mix={subtitleStyle}>
-              Live router for the `video-wall` driver. Route, move,
-              template-switch, and wipe from one page.
-            </p>
-          </div>
           <div mix={statusPillsStyle}>
             <span mix={pillStyle(rpc.isOnline)}>
               {rpc.isOnline ? "RPC Connected" : "RPC Disconnected"}
@@ -49,6 +42,16 @@ export function HomePage(handle: Handle) {
               mix={[
                 linkStyle,
                 on("click", () => {
+                  sys.api.route("relays");
+                }),
+              ]}
+            >
+              Relays
+            </button>
+            <button
+              mix={[
+                linkStyle,
+                on("click", () => {
                   sys.api.route("paint");
                 }),
               ]}
@@ -66,8 +69,8 @@ export function HomePage(handle: Handle) {
               Wall
             </button>
           </div>
-          <SystemRoute />
         </header>
+        <SystemRoute />
       </main>
     );
   };
@@ -78,6 +81,8 @@ function SystemRoute(handle: Handle) {
 
   return () => {
     switch (rpc.state.ui.page) {
+      case "relays":
+        return <RelayBoardPage />;
       case "off":
         return null;
       case "wall":

@@ -3,7 +3,7 @@ import type { Drivers } from "@av/types";
 
 type State = {
   ui: {
-    page: "wall" | "dante" | "debug" | "paint" | "off";
+    page: "wall" | "dante" | "debug" | "paint" | "relays" | "off";
   };
 };
 
@@ -26,6 +26,6 @@ export class System extends Driver<"system"> {
   };
 
   state: State = {
-    ui: { page: "off" },
+    ui: { page: "relays" },
   };
 }
