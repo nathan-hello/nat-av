@@ -26,6 +26,6 @@ export class System extends Driver<"system"> {
   };
 
   state: State = {
-    ui: { page: "relays" },
+    ui: { page: "off" },
   };
 }

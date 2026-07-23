@@ -37,7 +37,7 @@ export class RelayBoard<const N extends string = string> extends Driver<
     const index = this.relayIndex(relay);
     const operation = this.pending[index].catch(() => {}).then(async () => {
       const command = (index * 2 + (closed ? 1 : 0))
-        .toString(16)
+        .toString(10)
         .padStart(2, "0");
       const result = await this.tel.task(
         `relay-board:${closed ? "close" : "open"}:${relay}`,
