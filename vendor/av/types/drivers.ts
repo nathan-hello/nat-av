@@ -8,6 +8,7 @@ import type { Rpc } from "@drivers/natav/rpc/types";
 // to get the Natav.Names<N> for example will cause a circular
 // dependency that Typescript cannot resolve.
 export namespace Drivers {
+
   export type Array = readonly Drivers.AnyDriver[];
 
   export type PartialArray<T extends readonly unknown[]> =
@@ -52,7 +53,7 @@ export namespace Drivers {
     ApiRecord,
     Record<string, any>,
     TypedEventTarget<{ [x: string]: Rpc.Json.Value }> | undefined,
-    Partial<Sockets.Client> | undefined
+    Partial<Sockets.Socket> | undefined
   >;
 
   export type Merged<
@@ -62,13 +63,6 @@ export namespace Drivers {
     number extends D["length"] ?
       readonly (D[number] | Drivers.DeferredInstances<S>[number])[]
     : readonly [...D, ...Drivers.DeferredInstances<S>];
-
-  export type Deferred<
-    N extends Drivers.Array = Drivers.Array,
-    T extends Driver = Driver,
-  > =
-    | ((natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[]>) => T)
-    | (new (natav: Drivers.Manager<N, readonly Drivers.AnyDeferred[]>) => T);
 
   type DeferredFunction<T extends Driver = Driver> = ((natav: any) => T) & {
     prototype?: undefined;
@@ -84,13 +78,13 @@ export namespace Drivers {
     | DeferredFunction<T>
     | DeferredConstructor<T>;
 
-  export type DeferredReturn<T> =
+  type DeferredReturn<T> =
     T extends new (...args: any[]) => infer R ? R
     : T extends (...args: any[]) => infer R ? R
     : never;
 
   export type DeferredInstances<S extends readonly Drivers.AnyDeferred[]> = {
-    [K in keyof S]: Drivers.DeferredReturn<S[K]>;
+    [K in keyof S]: DeferredReturn<S[K]>;
   };
 
   type PromisifyApi<Obj> = {
@@ -120,11 +114,6 @@ export namespace Drivers {
   type ShiftDepth<Depth extends readonly unknown[]> =
     Depth extends readonly [unknown, ...infer Rest] ? Rest : readonly [];
 
-  type FlattenedMembers<
-    D extends Driver,
-    Depth extends readonly unknown[],
-  > = Drivers.WithDeps<D, Depth>[number];
-
   export type WithDeps<
     D extends Driver | Drivers.Array,
     Depth extends readonly unknown[] = DriverTypeDepthLimit,
@@ -145,13 +134,11 @@ export namespace Drivers {
         ...Drivers.WithDeps<Rest, Depth>,
       ]
     : D extends readonly (infer Item extends Driver)[] ?
-      readonly FlattenedMembers<Item, Depth>[]
+      readonly Drivers.WithDeps<Item, Depth>[number][]
     : readonly [];
 
-  export type Resolved<N extends Drivers.Array = Drivers.Array> = Extract<
-    Drivers.WithDeps<N>[number],
-    Driver
-  >;
+  export type Resolved<N extends Drivers.Array = Drivers.Array> =
+    Drivers.WithDeps<N>[number];
 
   type NamedDriver<DriverUnion, Name extends string> =
     DriverUnion extends Driver ?
@@ -181,9 +168,4 @@ export namespace Drivers {
     events: D["state"];
     on: D["on"];
   };
-
-  export type DepsOf<D extends Driver> = NonNullable<D["deps"]>[number];
-
-  export type StateFromInterface<T> =
-    T extends object ? { [K in keyof T]: StateFromInterface<T[K]> } : T;
 }

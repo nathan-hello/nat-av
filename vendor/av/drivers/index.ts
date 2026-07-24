@@ -8,7 +8,7 @@ import { Telemetry } from "@av/telemetry";
 import { type Drivers, type Events, type Sockets } from "@av/types";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
-type SocketMaybe = Partial<Sockets.Client> | undefined;
+type SocketMaybe = Partial<Sockets.Socket> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
@@ -153,7 +153,10 @@ export class Manager<
   GetTree(): Drivers.DriverView[] {
     const toNode = (driver: Drivers.AnyDriver): Drivers.DriverView => {
       const socket = driver.socket;
-      const canWrite = typeof socket?.write === "function";
+      const canWrite =
+        socket !== undefined &&
+        "write" in socket &&
+        typeof socket.write === "function";
       const canReceive = typeof socket?.on === "function";
 
       return {

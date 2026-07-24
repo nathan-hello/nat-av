@@ -1,14 +1,20 @@
 import type { Events } from "@av/types/events";
 
 export namespace Sockets {
+  export type Data = string | Uint8Array | Buffer;
+
+  export type Address = {
+    addr: string;
+    port: number;
+  };
+
   export type WriteResult = {
     bytesWritten: number;
   };
 
-  export interface Client {
+  export interface Socket {
     start(): Promise<void> | void;
     end(): Promise<void> | void;
-    write(data: string | Uint8Array | Buffer): Promise<number> | number;
     on<K extends keyof Events.Socket.Map>(
       event: K,
       handler: (payload: Events.Socket.Map[K]) => void,
@@ -16,6 +22,33 @@ export namespace Sockets {
     ): () => void;
     name: string;
   }
+
+  export interface Connection extends Socket {
+    write(data: Data): Promise<number> | number;
+  }
+
+  export interface Client extends Connection {
+    // A client represents one outgoing connection.
+  }
+
+  export interface Server extends Socket {
+    onConnection(handler: (connection: Connection) => void): () => void;
+  }
+
+  export interface Datagram extends Socket {
+    send(data: Data, address: Address): Promise<number> | number;
+    onMessage(handler: (message: DatagramMessage) => void): () => void;
+  }
+
+  export interface Multicast extends Datagram {
+    join(group: Address): Promise<void> | void;
+    leave(group: Address): Promise<void> | void;
+  }
+
+  export type DatagramMessage = {
+    data: Buffer;
+    source: Address;
+  };
 
   export namespace Args {
     type Base = {
@@ -34,9 +67,6 @@ export namespace Sockets {
       retryDelayMs?: number;
     };
 
-    export type Udp = Base & {
-      addr: string;
-      port: number;
-    };
+    export type Udp = Base & Address;
   }
 }

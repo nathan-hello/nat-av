@@ -1,9 +1,14 @@
-import { Manager, Telemetry } from "@av/index";
-import RelayBoard from "@drivers/bewinner/relay-board";
+import { Manager, Tcp, Telemetry, type Sockets } from "@av/index";
+import { CiscoRoomOS } from "@drivers/cisco/roomos";
+import DanteRouter from "@drivers/dante/router";
+import Decoder from "@drivers/decoder";
+import DisplayManager from "@drivers/decoder/display";
 import { Debugger } from "@drivers/natav/debug";
+import { Paint } from "@drivers/natav/paint";
 import { RpcServer } from "@drivers/natav/rpc/server";
 import { RpcTransportWebsocket } from "@drivers/natav/rpc/server/websocket";
 import { SchemaGenerator } from "@drivers/natav/schema";
+import RelayBoard from "@drivers/bewinner/relay-board";
 import { System } from "@server/system";
 import { Server } from "node:http";
 
@@ -29,37 +34,37 @@ Telemetry.Sdk.AddExporters([
 
 const natav = new Manager({
   drivers: [
-    // new DisplayManager(
-    //   "video-wall",
-    //   [
-    //     new Decoder({
-    //       name: "decoder-1",
-    //       socket: new Tcp({
-    //         addr: "decoder-0c7a1566cf92.local",
-    //         port: 12345,
-    //         keepAliveMs: 10000,
-    //       }),
-    //     }),
-    //   ],
-    //   {
-    //     "decoder-1": [
-    //       { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
-    //     ],
-    //   },
-    // ),
-    // new CiscoRoomOS({
-    //   name: "roomos",
-    //   socket: [] as unknown as Sockets.Client,
-    //   strict: false,
-    // }),
-    // new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
+    new DisplayManager(
+      "video-wall",
+      [
+        new Decoder({
+          name: "decoder-1",
+          socket: new Tcp({
+            addr: "decoder-0c7a1566cf92.local",
+            port: 12345,
+            keepAliveMs: 10000,
+          }),
+        }),
+      ],
+      {
+        "decoder-1": [
+          { outputId: 0, resX: 1920, resY: 1080, canvasX: 0, canvasY: 0 },
+        ],
+      },
+    ),
+    new CiscoRoomOS({
+      name: "roomos",
+      socket: [] as unknown as Sockets.Client,
+      strict: false,
+    }),
+    new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
     new RelayBoard({ name: "relay-board", address: "192.168.1.4" }),
-    // new Paint({
-    //   outputDir: "./tmp/paint",
-    //   paints: {
-    //     main: { width: 1920, height: 1080 },
-    //   } as const,
-    // }),
+    new Paint({
+      outputDir: "./tmp/paint",
+      paints: {
+        main: { width: 1920, height: 1080 },
+      } as const,
+    }),
   ],
   deferred: [Debugger, System, SchemaGenerator],
 });

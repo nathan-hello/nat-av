@@ -128,7 +128,12 @@ export class Debugger extends Driver<"debugger"> {
         );
       }
 
-      if (typeof driver.socket?.write !== "function") {
+      const socket = driver.socket;
+      if (
+        !socket ||
+        !("write" in socket) ||
+        typeof socket.write !== "function"
+      ) {
         throw new Error(
           `Drivers "${params.name}" does not expose a writable socket`,
           {
@@ -137,7 +142,7 @@ export class Debugger extends Driver<"debugger"> {
         );
       }
 
-      const bytesWritten = await driver.socket.write(params.text);
+      const bytesWritten = await socket.write(params.text);
       return { bytesWritten };
     });
 
