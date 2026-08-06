@@ -28,14 +28,14 @@ test out the ergonomics. For now.
 ### Why not an NPM package?
 
 Often, when I'm on site, I don't have access to the internet. If I were to use
-an NPM package, then I would need to a) remember to clone the repo before
+an NPM package, then I would need to remember to clone the repo before
 deployment, and if I needed to change something about the library because I
 encountered a bug, I would need to point my `package.json` towards the local
 copy anyways. The ability to change almost every part of the program offline is
 extremely important to me. So for me, I will be sticking to using git
 submodules at the very least, and this repo will likely turn into just the
 `./vendor/av` folder with `./vendor/drivers/` being a separate repo. I haven't
-done this yet because *I have not used this library in production so far*. This
+done this yet because **I have not used this library in production yet**. This
 repo is a proof of concept, and I just so happen to enjoy the currently-in-beta
 project [Remix 3](https://github.com/remix-run/remix). There is no reason why
 this project wouldn't work just as well in React, Vue, etc.
