@@ -22,7 +22,8 @@ you don't have that set up then it won't pass.
 I haven't done much on the UI side other than testing the client-side RPC
 bindings. This repo isn't about creating an [Abstract Program
 Factory](https://reluekiss.com/nathan/p/100039), it's about creating the Driver
-class, the type system around it, RPC bindings, and drivers. For now.
+class, the type system around it, RPC bindings, and driver implementations to
+test out the ergonomics. For now.
 
 ### Why not an NPM package?
 
