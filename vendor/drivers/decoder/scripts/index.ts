@@ -1,6 +1,6 @@
 import { Tcp } from "@av/index";
+import { config } from "@server/data/encoders";
 import * as readline from "node:readline";
-import config from "../config.ts";
 import Decoder from "../index.ts";
 
 const DECODER_ADDR = process.argv[2];
@@ -117,7 +117,9 @@ async function cmdRoute(args: string[]) {
   if (z !== undefined) video.z = z;
   // TSAS: api.route fills x/y/z/width/height from output defaults when omitted
   await decoder.api.route({ video: video as never });
-  console.log(`Routed video [${output}:${window}] ← ${enc.name}${z !== undefined ? ` (z=${z})` : ""}`);
+  console.log(
+    `Routed video [${output}:${window}] ← ${enc.name}${z !== undefined ? ` (z=${z})` : ""}`,
+  );
   cmdRoutes();
 }
 
@@ -194,7 +196,9 @@ async function cmdMove(args: string[], absolute: boolean) {
   if (v.z !== undefined && isNaN(v.z)) throw new Error(`Invalid z: ${args[6]}`);
   const fn = absolute ? decoder.api.moveAbsolute : decoder.api.moveRelative;
   await fn(v);
-  console.log(`${absolute ? "Moved (abs)" : "Moved (rel)"} [${v.output}:${v.window}]${v.z !== undefined ? ` (z=${v.z})` : ""}`);
+  console.log(
+    `${absolute ? "Moved (abs)" : "Moved (rel)"} [${v.output}:${v.window}]${v.z !== undefined ? ` (z=${v.z})` : ""}`,
+  );
   cmdRoutes();
 }
 
@@ -207,7 +211,9 @@ async function cmdRefresh() {
 
 async function cmdDebug() {
   const result = await decoder.api.debug();
-  console.log(`debug toggled -> ${decoder.state.debug ? "ON" : "OFF"} (code ${result})`);
+  console.log(
+    `debug toggled -> ${decoder.state.debug ? "ON" : "OFF"} (code ${result})`,
+  );
 }
 
 function cmdHelp() {

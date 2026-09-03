@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import ts from "typescript";
+import ts from "typescript-api";
 
 const VALIDATE_DIR = new URL("../output/validate/", import.meta.url);
 const BATCH_SIZE = 250;

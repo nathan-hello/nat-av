@@ -4,6 +4,7 @@ import { DebugPage } from "@/ui/debug";
 import { PaintPage } from "@/ui/paint";
 import { RelayBoardPage } from "@/ui/relay-board";
 import { Wall } from "@/ui/wall";
+import { config } from "@server/data/encoders";
 import { css, on, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {
@@ -86,7 +87,7 @@ function SystemRoute(handle: Handle) {
       case "off":
         return null;
       case "wall":
-        return <Wall driverName="video-wall" />;
+        return <Wall driverName="video-wall" encoders={config.encoders} />;
       case "debug":
         return <DebugPage />;
       case "paint":
@@ -104,23 +105,6 @@ const headerStyle = css({
   gap: "12px",
   flexWrap: "wrap",
   alignItems: "start",
-});
-const eyebrowStyle = css({
-  margin: 0,
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  color: "#64748b",
-  fontSize: "11px",
-});
-const titleStyle = css({
-  margin: "4px 0 0",
-  fontSize: "32px",
-  lineHeight: 1.1,
-});
-const subtitleStyle = css({
-  margin: "10px 0 0",
-  color: "#94a3b8",
-  maxWidth: "72ch",
 });
 const statusPillsStyle = css({
   display: "flex",

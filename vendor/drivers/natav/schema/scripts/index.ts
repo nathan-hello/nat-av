@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import ts from "typescript";
+import ts from "typescript-api";
 
 type Json = any;
 

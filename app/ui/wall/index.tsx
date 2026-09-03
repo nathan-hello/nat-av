@@ -1,11 +1,12 @@
 import { getRpc } from "@/state";
 import { Decoder } from "@/ui/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/wall/source";
-import type { LogicalWindow } from "@drivers/decoder/display";
+import type { Encoder, LogicalWindow } from "@drivers/decoder/display";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
   driverName: "video-wall";
+  encoders: Encoder[];
 }
 
 type RouteFormState = {
@@ -133,10 +134,10 @@ export function Wall(handle: Handle<WallProps>) {
       loadWindow(display.state.windows[0], selectedSource);
     }
 
-    if (hasState && !form.uri && display.state.encoders?.[0]) {
+    if (hasState && !form.uri && handle.props.encoders?.[0]) {
       selectedSource = selectedSource ?? {
-        id: display.state.encoders[0].uri,
-        name: display.state.encoders[0].name,
+        id: handle.props.encoders[0].uri,
+        name: handle.props.encoders[0].name,
       };
       form = { ...form, uri: selectedSource.id };
     }
@@ -201,7 +202,7 @@ export function Wall(handle: Handle<WallProps>) {
                     canvas={display.state.canvas}
                     windows={display.state.windows}
                     template={display.state.template.state}
-                    encoders={display.state.encoders}
+                    encoders={handle.props.encoders}
                     scale={scale}
                     mode={mode}
                     movePending={movePending > 0}
@@ -285,7 +286,7 @@ export function Wall(handle: Handle<WallProps>) {
             </div>
             {hasState ?
               <div mix={sourceListStyle}>
-                {display.state.encoders.map((source) => (
+                {handle.props.encoders.map((source) => (
                   <Source
                     key={source.uri}
                     id={source.uri}
