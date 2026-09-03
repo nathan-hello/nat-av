@@ -3,7 +3,7 @@ import * as readline from "node:readline";
 import config from "../config.ts";
 import Decoder from "../index.ts";
 
-const DECODER_ADDR = process.argv[2] ?? "decoder-0c7a1566cf92.local";
+const DECODER_ADDR = process.argv[2];
 const DECODER_PORT = Number(process.argv[3] ?? 12345);
 
 const socket = new Tcp({

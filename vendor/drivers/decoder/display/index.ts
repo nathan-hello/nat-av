@@ -1,5 +1,4 @@
 import { Driver, type Drivers } from "@av/index";
-import config from "../config";
 import type Decoder from "../index";
 import type { VideoRoute } from "../types";
 import { BUILTIN_TEMPLATES } from "./templates/1x1/templates";
@@ -42,11 +41,15 @@ export type AudioOutputPlacement = {
   type: string;
 };
 
+export type Encoder = {
+  name: string;
+  uri: string;
+};
+
 export type DisplayState = {
   canvas: { width: number; height: number };
   audioOutputs: AudioOutputPlacement[];
   windows: LogicalWindow[];
-  encoders: typeof config.encoders;
   decoders: Array<DecoderConfig["driver"]["state"]>;
   template: { choices: typeof BUILTIN_TEMPLATES; state: GridTemplate };
 };
@@ -61,14 +64,12 @@ export default class DisplayManager<
   private lwindows: LogicalWindow[] = [];
   private canvasWidth: number = 0;
   private canvasHeight: number = 0;
-  private placement: { [K in Drivers.Names<D>]: OutputPlacement[] };
-
   private template = BUILTIN_TEMPLATES[0];
 
   constructor(
     name: N,
     deps: D,
-    placement: { [K in Drivers.Names<D>]: OutputPlacement[] },
+    public placement: { [K in Drivers.Names<D>]: OutputPlacement[] },
   ) {
     super({ name, deps: deps });
     this.loutputs = this.deps.flatMap((config, decoderIndex) =>
@@ -131,7 +132,6 @@ export default class DisplayManager<
           })) ?? [],
       ),
       windows: this.lwindows,
-      encoders: config.encoders,
       decoders: this.deps.map((c) => c.state),
       template: {
         choices: BUILTIN_TEMPLATES,
@@ -141,9 +141,6 @@ export default class DisplayManager<
   }
 
   api = {
-    foo: {
-      bar: (asdf: string) => 1,
-    },
     changeTemplate: async (t: GridTemplate) => {
       const gridCols = t.dimensions.cols;
       const gridRows = t.dimensions.rows;
