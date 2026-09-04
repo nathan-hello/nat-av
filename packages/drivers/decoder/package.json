@@ -1,0 +1,34 @@
+{
+  "name": "@nat-av/driver-decoder",
+  "version": "0.1.0",
+  "type": "module",
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./display": {
+      "types": "./dist/display/index.d.ts",
+      "import": "./dist/display/index.js"
+    },
+    "./display/*": {
+      "types": "./dist/display/*.d.ts",
+      "import": "./dist/display/*.js"
+    },
+    "./display/templates/*": {
+      "types": "./dist/display/templates/*.d.ts",
+      "import": "./dist/display/templates/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx ../../../tools/fix-esm-extensions.ts dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@nat-av/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@nat-av/core": "workspace:*"
+  }
+}

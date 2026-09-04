@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@nat-av/core": ["./vendor/nat-av/packages/core/src/index.ts"],
+      "@nat-av/core/*": ["./vendor/nat-av/packages/core/src/*"],
+      "@nat-av/driver-cisco-roomos": ["./vendor/nat-av/packages/drivers/cisco-roomos/src/index.ts"],
+      "@nat-av/driver-dante-router": ["./vendor/nat-av/packages/drivers/dante-router/src/index.ts"],
+      "@nat-av/driver-dante-router/*": ["./vendor/nat-av/packages/drivers/dante-router/src/*"],
+      "@nat-av/driver-decoder": ["./vendor/nat-av/packages/drivers/decoder/src/index.ts"],
+      "@nat-av/driver-decoder/*": ["./vendor/nat-av/packages/drivers/decoder/src/*"],
+      "@nat-av/driver-paint": ["./vendor/nat-av/packages/drivers/paint/src/index.ts"],
+      "@nat-av/driver-bewinner-relay-board": ["./vendor/nat-av/packages/drivers/bewinner-relay-board/src/index.ts"],
+      "@nat-av/plugin-debugger": ["./vendor/nat-av/packages/plugins/debugger/src/index.ts"],
+      "@nat-av/plugin-schema": ["./vendor/nat-av/packages/plugins/schema/src/index.ts"],
+      "@nat-av/plugin-system": ["./vendor/nat-av/packages/plugins/system/src/index.ts"]
+    }
+  }
+}

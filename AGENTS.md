@@ -1,17 +1,20 @@
-# Remix Agent Guide
+# Workspace Agent Guide
 
 ## Commands
 
-`npm install` `npm run start` `npm test` `npm run typecheck`
+`pnpm install` `pnpm run dev` `pnpm run test` `pnpm run typecheck`
 
 ## Building Remix Features
 
-Refer to ./agents/skills/remix/SKILL.md for all changes in the app/ folder.
+Refer to `.agents/skills/remix/SKILL.md` for changes in an example Remix app.
 
-# Natav Library
+# Natav Packages
 
-The `./vendor/av/` directory is a vendored library called `nat-av`. Refer to
-`.agents/Natav.md` for more information.
+The reusable packages live under `packages/`. `@nat-av/core` owns the runtime
+and retains its internal `lib/` source directory. Device drivers live under
+`packages/drivers/`, and manager plugins live under `packages/plugins/`.
+Examples are applications and must not become dependencies of reusable
+packages.
 
 ## Rules
 
@@ -43,15 +46,23 @@ lessen any typescript compiler guarantees.
 
 ### Importing via alias vs relative path
 
-For files with `vendor/av`, use the path from the alias, such as
-`@av/rpc/client` or `@av/telemetry/server/exporters`.
+Use real package names for package-to-package imports, such as
+`@nat-av/core` or `@nat-av/core/rpc/server`. Use relative paths for modules
+inside the same package when that makes the package independently portable.
 
-When importing from the `vendor/av` folder into another folder, such as `app`,
-or `vendor/drivers`, you should always import either `@av/client` or
-`@av/index` if importing into a file that will never be ran on client.
+The Git-submodule example may add TypeScript and Vite aliases that resolve
+`@nat-av/*` package names to `vendor/nat-av/packages/*/src`.
 
-For files within `vendor/drivers`, use relative paths for imports that are
-local to that driver and `@av/index` for everything else. `@av/index` has
-access to all of the apis that a driver will need. The reason why relative
-imports here are okay is because we are prioritizing the portability of
-folders wtihin the `vendor/drivers` folder.
+### Package Runtime Identity
+
+`@nat-av/core` must resolve to one runtime copy whenever possible. Do not
+bundle core into a driver or plugin. Drivers and plugins should declare core
+as a peer dependency and use a compatible version range.
+
+Do not rely on `instanceof` across package boundaries unless the package graph
+guarantees that both values use the same physical core package copy. Duplicate
+installations create distinct JavaScript class identities even when the
+source is identical. Packed-package tests must cover this boundary.
+
+Drivers and plugins may use core capabilities, but must not import concrete
+drivers or plugins from one another. Put shared contracts in core.

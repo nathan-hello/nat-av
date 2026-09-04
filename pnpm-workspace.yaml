@@ -1,0 +1,13 @@
+packages:
+  - "packages/core"
+  - "packages/drivers"
+  - "packages/drivers/*"
+  - "packages/plugins"
+  - "packages/plugins/*"
+  - "examples/*"
+  - "examples/remix/git-submodule"
+
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  esbuild: set this to true or false

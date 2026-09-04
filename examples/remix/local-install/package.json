@@ -1,0 +1,29 @@
+{
+  "name": "@nat-av/example-remix-local-install",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch ./server.ts",
+    "start": "tsx ./server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nat-av/core": "file:./vendor/nat-av-core-0.1.0.tgz",
+    "@nat-av/driver-bewinner-relay-board": "file:./vendor/nat-av-driver-bewinner-relay-board-0.1.0.tgz",
+    "@nat-av/driver-cisco-roomos": "file:./vendor/nat-av-driver-cisco-roomos-0.1.0.tgz",
+    "@nat-av/driver-dante-router": "file:./vendor/nat-av-driver-dante-router-0.1.0.tgz",
+    "@nat-av/driver-decoder": "file:./vendor/nat-av-driver-decoder-0.1.0.tgz",
+    "@nat-av/driver-paint": "file:./vendor/nat-av-driver-paint-0.1.0.tgz",
+    "@nat-av/plugin-debugger": "file:./vendor/nat-av-plugin-debugger-0.1.0.tgz",
+    "@nat-av/plugin-schema": "file:./vendor/nat-av-plugin-schema-0.1.0.tgz",
+    "@nat-av/plugin-system": "file:./vendor/nat-av-plugin-system-0.1.0.tgz",
+    "remix": "3.0.0-beta.5",
+    "tsx": "latest",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "latest",
+    "@types/ws": "^8.18.1"
+  }
+}

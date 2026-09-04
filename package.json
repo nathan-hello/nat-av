@@ -1,28 +1,22 @@
 {
-  "name": "natav-remix",
+  "name": "nat-av-workspace",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.8.0",
   "scripts": {
-    "dev": "tsx watch ./server.ts",
-    "start": "tsx ./server.ts",
-    "test": "NODE_ENV=testing tsx --test",
-    "generate-schemas": "tsx vendor/drivers/natav/schema/scripts/index.ts",
-    "validate-schemas": "tsx vendor/drivers/natav/schema/scripts/validate.ts",
-    "typecheck": "tsc --noEmit",
-    "tsc": "tsc --noEmit"
-  },
-  "engines": {
-    "node": ">=24.3.0"
-  },
-  "dependencies": {
-    "@types/ws": "^8.18.1",
-    "remix": "^3.0.0-beta.5",
-    "tsx": "latest",
-    "ws": "^8.21.0"
+    "build": "pnpm -r --if-present run build",
+    "dev": "pnpm --filter @nat-av/example-remix-git-submodule dev",
+    "test": "pnpm run build && pnpm -r --if-present run test",
+    "typecheck": "pnpm run build && pnpm -r --if-present run typecheck",
+    "generate-schemas": "pnpm --filter @nat-av/plugin-schema generate",
+    "validate-schemas": "pnpm --filter @nat-av/plugin-schema validate",
+    "pack:local-install": "pnpm run build && tsx tools/pack-local-install.ts && npm install --prefix examples/remix/local-install --package-lock=false && npm run --prefix examples/remix/local-install typecheck"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",
+    "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",
+    "tsx": "latest",
     "typescript": "^7.0.2",
     "typescript-api": "npm:typescript@6.0.3"
   }

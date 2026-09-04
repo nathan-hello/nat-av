@@ -1,0 +1,22 @@
+{
+  "name": "@nat-av/plugins",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx ../../tools/fix-esm-extensions.ts dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nat-av/plugin-debugger": "workspace:*",
+    "@nat-av/plugin-schema": "workspace:*",
+    "@nat-av/plugin-system": "workspace:*"
+  }
+}

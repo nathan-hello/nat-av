@@ -1,0 +1,314 @@
+import { Err } from "@nat-av/core/client";
+import { Convert } from "@nat-av/core/lib/convert";
+import {
+  ProtectedTypedEventTarget,
+  TypedEventTarget,
+} from "@nat-av/core/lib/eventtarget";
+import { Telemetry } from "@nat-av/core/telemetry";
+import { type Drivers, type Events, type Sockets } from "@nat-av/core/types";
+
+type EventsMaybe = TypedEventTarget<any> | undefined;
+type SocketMaybe = Partial<Sockets.Socket> | undefined;
+
+export abstract class Driver<
+  Name extends string = string,
+  Deps extends Drivers.Array = Drivers.Array,
+  Api extends Drivers.ApiRecord = Drivers.ApiRecord,
+  State extends Record<string, any> = Record<string, any>,
+  Events extends EventsMaybe = EventsMaybe,
+  Socket extends SocketMaybe = SocketMaybe,
+> extends ProtectedTypedEventTarget<Events.Driver.Map> {
+  public abstract state: State;
+  public abstract api: Api;
+  // TSAS:
+  public socket: Socket = undefined as Socket;
+
+  // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
+  public events: Events = undefined as Events;
+  public name: Name;
+  public deps: Deps;
+  public tel: Telemetry;
+
+  constructor({ name, deps }: { name: Name; deps?: Deps }) {
+    super();
+    this.deps = deps ?? ([] as unknown as Deps);
+    this.name = name;
+    this.tel = new Telemetry(`Driver::${this.name}`);
+  }
+
+  protected dispatch<K extends keyof Events.Driver.Map>(
+    type: K,
+    payload: Events.Driver.Map[K],
+  ): void {
+    super.dispatch(type, payload);
+
+    this.tel.info("EVENT_DISPATCHED", { type, payload });
+  }
+
+  public start(): Promise<void> | void {
+    this.socket?.start?.();
+  }
+  public end(): Promise<void> | void {
+    this.socket?.end?.();
+  }
+
+  public dep<K extends NonNullable<Deps>[number]["name"]>(
+    name: K,
+  ): Extract<NonNullable<Deps>[number], { name: K }> {
+    const child = this.deps?.find(
+      (d): d is Extract<NonNullable<Deps>[number], { name: K }> =>
+        d.name === name,
+    );
+
+    if (!child) {
+      throw new Error(`Driver.dep: ${name}`, {
+        cause: Err.Codes.DriverNotFound,
+      });
+    }
+
+    return child;
+  }
+}
+
+export class Manager<
+  const D extends Drivers.Array = Drivers.Array,
+  const S extends readonly Drivers.AnyDeferred[] =
+    readonly Drivers.AnyDeferred[],
+> implements Drivers.Manager<D, S> {
+  readonly drivers: Drivers.Merged<D, S>;
+  readonly drivers_flat: Driver[] = [];
+  public readonly bus = new TypedEventTarget<
+    Events.Natav.Map<Drivers.Merged<D, S>>
+  >();
+
+  constructor(args: { drivers?: D; deferred?: S }) {
+    let configs: Driver[] = [];
+    if (args.drivers) {
+      configs = [...args.drivers];
+    }
+
+    if (args.deferred) {
+      for (const deferred of args.deferred) {
+        if ("prototype" in deferred && typeof deferred.prototype === "object") {
+          configs.push(new deferred(this));
+        } else {
+          configs.push(deferred(this));
+        }
+      }
+    }
+
+    // TSAS: The public configs property is the tuple-shaped merged driver set for type inference.
+    this.drivers = configs as unknown as Drivers.Merged<D, S>;
+
+    const collect = (driver: Driver): Driver[] => {
+      const out: Driver[] = [driver];
+      for (const dep of driver.deps ?? []) {
+        out.push(...collect(dep));
+      }
+      return out;
+    };
+
+    this.drivers_flat = this.drivers.flatMap(collect);
+  }
+
+  GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
+    name: N,
+  ): Drivers.FromName<Drivers.Merged<D, S>, N> {
+    const found = this.FindDriverTyped(name);
+    if (!found) {
+      throw new Error(`Manager.GetDriver: ${name}`, {
+        cause: Err.Codes.DriverCallFailed,
+      });
+    }
+
+    return found;
+  }
+
+  FindDriver(name: string): Driver | undefined {
+    return this.drivers_flat.find((d) => d.name === name);
+  }
+
+  private FindDriverTyped<N extends Drivers.Names<Drivers.Merged<D, S>>>(
+    name: N,
+  ): Drivers.FromName<Drivers.Merged<D, S>, N> | undefined {
+    return this.drivers_flat.find(
+      (d): d is Drivers.FromName<Drivers.Merged<D, S>, N> => d.name === name,
+    );
+  }
+
+  private IsDriverName(
+    name: string,
+  ): name is Drivers.Names<Drivers.Merged<D, S>> {
+    return this.drivers_flat.some((driver) => driver.name === name);
+  }
+
+  GetAllDriverNames(): Drivers.Names<Drivers.Merged<D, S>>[] {
+    return this.drivers_flat
+      .map((d) => d.name)
+      .filter((name): name is Drivers.Names<Drivers.Merged<D, S>> =>
+        this.IsDriverName(name),
+      );
+  }
+
+  GetTree(): Drivers.DriverView[] {
+    const toNode = (driver: Drivers.AnyDriver): Drivers.DriverView => {
+      const socket = driver.socket;
+      const canWrite =
+        socket !== undefined &&
+        "write" in socket &&
+        typeof socket.write === "function";
+      const canReceive = typeof socket?.on === "function";
+
+      return {
+        name: driver.name,
+        deps: driver.deps.map((child) => toNode(child)),
+        ...(typeof socket?.name === "string" ?
+          {
+            socket: {
+              traceName: socket.name,
+              canWrite,
+              canReceive,
+            },
+          }
+        : {}),
+      };
+    };
+
+    const raw = this.drivers.map((driver) => toNode(driver));
+
+    // Dedupe: keep each driver only at its deepest occurrence.
+    const maxDepth = new Map<string, number>();
+    const measure = (node: Drivers.DriverView, depth: number) => {
+      const prev = maxDepth.get(node.name);
+      if (prev === undefined || depth > prev) {
+        maxDepth.set(node.name, depth);
+      }
+      for (const child of node.deps) {
+        measure(child, depth + 1);
+      }
+    };
+    for (const node of raw) {
+      measure(node, 0);
+    }
+
+    const rebuild = (
+      node: Drivers.DriverView,
+      depth: number,
+    ): Drivers.DriverView | null => {
+      if (depth < (maxDepth.get(node.name) ?? 0)) {
+        return null;
+      }
+      return {
+        ...node,
+        deps: node.deps
+          .map((child) => rebuild(child, depth + 1))
+          .filter((n): n is Drivers.DriverView => n !== null),
+      };
+    };
+
+    return raw
+      .map((node) => rebuild(node, 0))
+      .filter((n): n is Drivers.DriverView => n !== null);
+  }
+
+  async Start(
+    filter?: (
+      drivers: Drivers.Merged<D, S>,
+    ) => Drivers.PartialArray<Drivers.Merged<D, S>>,
+  ) {
+    let configs: Drivers.PartialArray<Drivers.Merged<D, S>> = this.drivers;
+    if (filter) {
+      configs = filter(this.drivers);
+    }
+
+    const inited = new Set<string>();
+
+    const initTree = async (d: Driver) => {
+      if (inited.has(d.name)) {
+        throw new Error(
+          `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.drivers)}`,
+          {
+            cause: Err.Codes.ManagerFoundMultipleNames,
+          },
+        );
+      }
+
+      // Start the dependent drivers first
+      for (const dep of d.deps ?? []) {
+        await initTree(dep);
+      }
+
+      await this.initDriver(d);
+      inited.add(d.name);
+    };
+
+    const promises = configs.map((d) => initTree(d));
+
+    await Promise.all(promises);
+  }
+
+  async End() {
+    const promises = this.drivers.map(async (d) => {
+      await d.end();
+    });
+
+    await Promise.all(promises);
+  }
+
+  private async initDriver(d: Driver) {
+    const name = d.name;
+    if (!this.IsDriverName(name)) {
+      throw new Error(`Manager.Start: ${name}`, {
+        cause: Err.Codes.DriverNotFound,
+      });
+    }
+
+    d.on("driver:state-updated", (event) =>
+      this.bus.dispatch("natav:state:update", {
+        name,
+        data: event.data,
+      }),
+    );
+
+    d.socket?.on?.("debug", (event) => {
+      const data = {
+        name,
+        data: event.data,
+      };
+      this.bus.dispatch("natav:debug:socket", data);
+
+      if (data.data.direction === "tx") {
+        d.tel.info("delimited", data);
+      }
+    });
+
+    d.socket?.on?.("connected", () => {
+      this.bus.dispatch("natav:driver:connected", { name });
+    });
+
+    d.socket?.on?.("disconnected", (event) => {
+      this.bus.dispatch("natav:driver:disconnected", { name });
+    });
+
+    d.on("driver:delimited", (event) => {
+      const payload = Convert.toUint8Array(event);
+
+      const data = {
+        name,
+        data: {
+          traceName: d.socket?.name ?? name,
+          direction: "rx-delimited",
+          time: Date.now(),
+          encoding: "utf8",
+          data: payload,
+        },
+      } as const;
+
+      d.tel.info("delimited", data);
+
+      this.bus.dispatch("natav:debug:socket", data);
+    });
+
+    await d.start();
+  }
+}

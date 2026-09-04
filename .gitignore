@@ -3,4 +3,6 @@ app/assets/tailwind.css
 logs/*
 !logs/*.gitkeep
 tmp
-vendor/drivers/natav/schema/output
+dist
+examples/remix/local-install/vendor/*.tgz
+packages/plugins/schema/src/output/validate

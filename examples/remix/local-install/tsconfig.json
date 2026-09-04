@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "remix/ui",
+    "paths": {
+      "@/*": ["./app/*"],
+      "@nat-av/core": ["./node_modules/@nat-av/core/dist/index.d.ts"],
+      "@nat-av/core/*": ["./node_modules/@nat-av/core/dist/*"],
+      "@server/*": ["./server/*"]
+    }
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx", "server/**/*.ts", "server.ts", "../../rpc-websocket.ts"]
+}

@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "remix/ui",
+    "paths": {
+      "@/*": ["./app/*"],
+      "@server/*": ["./server/*"],
+      "@nat-av/core": ["../../../packages/core/src/index.ts"],
+      "@nat-av/core/*": ["../../../packages/core/src/*"],
+      "@nat-av/driver-cisco-roomos": ["../../../packages/drivers/cisco-roomos/src/index.ts"],
+      "@nat-av/driver-dante-router": ["../../../packages/drivers/dante-router/src/index.ts"],
+      "@nat-av/driver-dante-router/*": ["../../../packages/drivers/dante-router/src/*"],
+      "@nat-av/driver-decoder": ["../../../packages/drivers/decoder/src/index.ts"],
+      "@nat-av/driver-decoder/*": ["../../../packages/drivers/decoder/src/*"],
+      "@nat-av/driver-bewinner-relay-board": ["../../../packages/drivers/bewinner-relay-board/src/index.ts"],
+      "@nat-av/driver-paint": ["../../../packages/drivers/paint/src/index.ts"],
+      "@nat-av/plugin-debugger": ["../../../packages/plugins/debugger/src/index.ts"],
+      "@nat-av/plugin-schema": ["../../../packages/plugins/schema/src/index.ts"],
+      "@nat-av/plugin-system": ["../../../packages/plugins/system/src/index.ts"]
+    }
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx", "server/**/*.ts", "server.ts", "../../rpc-websocket.ts"]
+}

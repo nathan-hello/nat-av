@@ -1,6 +1,6 @@
 # nat-av Library
 
-Natav is a vendored library that is in the `vendor/av` directory.
+Natav is the reusable library in the `packages/core` package.
 
 Its primary goal is to provide a high quality programming environment for
 communicating directly with other devices on a local area network. Programs
@@ -9,7 +9,7 @@ single digit, constant number of clients connecting to the server.
 
 # Folders
 
-## ./vendor/av/drivers/
+## ./packages/core/src/drivers/
 
 The Driver is an abstract base class used mostly for typing any implementations.
 Inheriters of Driver only require four things: a `name`, `driverName`, `api`,
@@ -103,12 +103,12 @@ client.device("child-1").state // { online: true }
 client.device("child-1").name  // "child-1"
 ```
 
-# ./vendor/av/lib/eventtarget.ts
+# ./packages/core/src/lib/eventtarget.ts
 
 This is a typed event target wrapper that just means that when we dispatch or
 listen to events, it is type safe and reliable.
 
-# ./vendor/av/rpc/
+# ./packages/core/src/rpc/
 
 This is the RPC layer. We use a Proxy object on client to instead of actually
 calling a Driver implementation, we serialize the request into a JSONRPC
@@ -123,7 +123,7 @@ over the RPC layer, including overriding a Driver's state, the System's state,
 listening to events propagated by the Websocket or notifications from the
 server.
 
-# ./vendor/av/sockets
+# ./packages/core/src/sockets
 
 This is the transport mediums between Driver implementations and the devices
 over the network. These protocols include but are not limited to tcp, udp, ssh,
@@ -131,7 +131,7 @@ telnet, rs232 over usb, ir over usb, http/s. Obviously telnet, ssh, and http/s
 are also over tcp, but they are complicated and different enough than normal
 tcp that they deserve their own Socket implementation.
 
-# ./vendor/av/telemetry
+# ./packages/core/src/telemetry
 
 This is a slightly over-engineered logging system that I like. It creates spans
 and allows me to never have to try/catch because I can wrap and piece of code

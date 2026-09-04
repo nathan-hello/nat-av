@@ -1,0 +1,15 @@
+{
+  "name": "@nat-av/plugin-schema",
+  "version": "0.1.0",
+  "type": "module",
+  "files": ["dist"],
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx ../../../tools/fix-esm-extensions.ts dist && tsx src/scripts/copy-output.ts",
+    "generate": "tsx src/scripts/index.ts",
+    "validate": "tsx src/scripts/validate.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": { "@nat-av/core": "^0.1.0" },
+  "devDependencies": { "@nat-av/core": "workspace:*", "tsx": "latest", "typescript-api": "npm:typescript@6.0.3" }
+}

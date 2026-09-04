@@ -1,0 +1,39 @@
+{
+  "name": "@nat-av/drivers",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cisco-roomos": {
+      "types": "./dist/cisco-roomos.d.ts",
+      "import": "./dist/cisco-roomos.js"
+    },
+    "./dante-router": {
+      "types": "./dist/dante-router.d.ts",
+      "import": "./dist/dante-router.js"
+    },
+    "./decoder": {
+      "types": "./dist/decoder.d.ts",
+      "import": "./dist/decoder.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx ../../tools/fix-esm-extensions.ts dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nat-av/driver-bewinner-relay-board": "workspace:*",
+    "@nat-av/driver-cisco-roomos": "workspace:*",
+    "@nat-av/driver-dante-router": "workspace:*",
+    "@nat-av/driver-decoder": "workspace:*",
+    "@nat-av/driver-linux": "workspace:*",
+    "@nat-av/driver-mediasite": "workspace:*",
+    "@nat-av/driver-paint": "workspace:*",
+    "@nat-av/driver-turtle": "workspace:*"
+  }
+}
