@@ -19,6 +19,10 @@
     "./display/templates/*": {
       "types": "./.dist/display/templates/*.d.ts",
       "import": "./.dist/display/templates/*.js"
+    },
+    "./repl": {
+      "types": "./.dist/scripts/index.d.ts",
+      "import": "./.dist/scripts/index.js"
     }
   },
   "scripts": {

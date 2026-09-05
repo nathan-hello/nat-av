@@ -11,6 +11,10 @@
     "./types": {
       "types": "./.dist/types.d.ts",
       "import": "./.dist/types.js"
+    },
+    "./repl": {
+      "types": "./.dist/scripts/index.d.ts",
+      "import": "./.dist/scripts/index.js"
     }
   },
   "scripts": {

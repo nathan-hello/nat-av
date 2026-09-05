@@ -84,11 +84,12 @@ participate in audio multicast groups.
   Emits `driver:state-updated` on scan progress and matrix rebuilds.
   `socket` is set to `undefined` because transport is managed internally.
 
-- `scripts/index.ts` — Interactive CLI shell for live Dante routing. Runs
-with `npx tsx ./packages/drivers/dante-router/src/scripts/index.ts [interface-ip]`.
-  Supports commands: `list`, `matrix`, `route`, `unroute`, `clear`, `refresh`,
-  `help`, `exit`. Resolves device names case-insensitively with partial
-  matching. Auto-refreshes the matrix after each route/unroute/clear operation.
+- `scripts/index.ts` — Exported interactive CLI shell for live Dante routing.
+  Import `createRepl` from `@nat-av/driver-dante-router/repl` and inject a
+  configured `DanteRouter`. Supports commands: `list`, `matrix`, `route`,
+  `unroute`, `clear`, `refresh`, `help`, `exit`. Resolves device names
+  case-insensitively with partial matching. Auto-refreshes the matrix after
+  each route/unroute/clear operation.
 
 ## Dependencies
 

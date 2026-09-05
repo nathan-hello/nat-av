@@ -1,127 +1,134 @@
-import * as readline from "node:readline";
+import {
+  createRepl as createCoreRepl,
+  type Repl,
+} from "@nat-av/core/tools/repl";
 import DanteRouter from "../index.js";
 
-const INTERFACE_IP = process.argv[2] || undefined;
-
-const router = new DanteRouter({ name: "dante", interfaceIp: INTERFACE_IP });
-
-function formatChannels(ch: Map<number, { name: string }>): string {
-  const entries = [...ch.values()];
-  if (entries.length === 0) return "(none)";
-  return entries.map((c) => c.name).join(", ");
+export interface DanteReplOptions {
+  router: DanteRouter<string>;
+  prompt?: string;
 }
 
-function resolveDevice(query: string) {
+const formatChannels = (channels: Map<number, { name: string }>): string => {
+  const entries = [...channels.values()];
+  if (entries.length === 0) return "(none)";
+  return entries.map((channel) => channel.name).join(", ");
+};
+
+const resolveDevice = (router: DanteRouter<string>, query: string) => {
   const devices = router.api.getDevices();
   const byName = devices.filter(
-    (d) => d.name.toLowerCase() === query.toLowerCase(),
+    (device) => device.name.toLowerCase() === query.toLowerCase(),
   );
   if (byName.length === 1) return byName[0];
+
   const byServer = devices.find(
-    (d) => d.serverName.toLowerCase() === query.toLowerCase(),
+    (device) => device.serverName.toLowerCase() === query.toLowerCase(),
   );
   if (byServer) return byServer;
-  const byIp = devices.find((d) => d.ipv4 === query);
+  const byIp = devices.find((device) => device.ipv4 === query);
   if (byIp) return byIp;
-  const partial = devices.filter((d) =>
-    d.name.toLowerCase().includes(query.toLowerCase()),
+
+  const partial = devices.filter((device) =>
+    device.name.toLowerCase().includes(query.toLowerCase()),
   );
   if (partial.length === 1) return partial[0];
   if (partial.length > 1) {
     throw new Error(
-      `Ambiguous: "${query}" matches ${partial.map((d) => d.name).join(", ")}`,
+      `Ambiguous: "${query}" matches ${partial.map((device) => device.name).join(", ")}`,
     );
   }
   return null;
-}
+};
 
-function cmdList() {
+const formatDevices = (router: DanteRouter<string>) => {
   const devices = router.api.getDevices();
   if (devices.length === 0) {
-    console.log("(no devices found — try running 'refresh' first)");
-    return;
+    return "(no devices found - try running 'refresh' first)";
   }
-  for (const d of devices) {
-    const rate =
-      d.sampleRate ? ` [${(d.sampleRate / 1000).toFixed(0)}kHz]` : "";
-    console.log(`${d.name}  (${d.serverName} @ ${d.ipv4}:${d.arcPort})${rate}`);
-    console.log(`  TX (${d.txCount}): ${formatChannels(d.txChannels)}`);
-    console.log(`  RX (${d.rxCount}): ${formatChannels(d.rxChannels)}`);
-    console.log();
-  }
-}
 
-function cmdMatrix() {
-  const matrix = router.api.getMatrix();
-  const entries = Object.entries(matrix);
+  return devices
+    .map((device) => {
+      const rate =
+        device.sampleRate ?
+          ` [${(device.sampleRate / 1000).toFixed(0)}kHz]`
+        : "";
+      return [
+        `${device.name}  (${device.serverName} @ ${device.ipv4}:${device.arcPort})${rate}`,
+        `  TX (${device.txCount}): ${formatChannels(device.txChannels)}`,
+        `  RX (${device.rxCount}): ${formatChannels(device.rxChannels)}`,
+      ].join("\n");
+    })
+    .join("\n\n");
+};
+
+const formatMatrix = (router: DanteRouter<string>) => {
+  const entries = Object.entries(router.api.getMatrix());
   if (entries.length === 0) {
-    console.log("(no routes)");
-    return;
+    return "(no routes)";
   }
-  for (const [rxServer, routes] of entries) {
-    const rxDev = router.api.getDevice(rxServer);
-    const rxLabel = rxDev?.name ?? rxServer;
-    for (const [ch, route] of Object.entries(routes)) {
-      const txLabel =
-        router.api.getDevice(route.txDevice)?.name ?? route.txDevice;
-      console.log(`${rxLabel}:${ch} ← ${txLabel}:${route.txChannelName}`);
-    }
-  }
-}
 
-async function cmdRoute(args: string[]) {
+  return entries
+    .flatMap(([rxServer, routes]) => {
+      const rxLabel = router.api.getDevice(rxServer)?.name ?? rxServer;
+      return Object.entries(routes).map(([channel, route]) => {
+        const txLabel =
+          router.api.getDevice(route.txDevice)?.name ?? route.txDevice;
+        return `${rxLabel}:${channel} <- ${txLabel}:${route.txChannelName}`;
+      });
+    })
+    .join("\n");
+};
+
+const route = async (router: DanteRouter<string>, args: string[]) => {
   if (args.length < 4) {
-    console.log(
-      "Usage: route <rx-device> <rx-channel> <tx-device> <tx-channel>",
-    );
-    return;
+    return "Usage: route <rx-device> <rx-channel> <tx-device> <tx-channel>";
   }
-  const rxDev = resolveDevice(args[0]);
-  if (!rxDev) throw new Error(`Device not found: ${args[0]}`);
-  const rxCh = Number(args[1]);
-  if (isNaN(rxCh)) throw new Error(`Invalid channel: ${args[1]}`);
-  const txDev = resolveDevice(args[2]);
-  if (!txDev) throw new Error(`Device not found: ${args[2]}`);
-  const txCh = args[3];
-  await router.api.route(rxDev.serverName, rxCh, txDev.serverName, txCh);
-  console.log(`Routed ${rxDev.name}:${rxCh} ← ${txDev.name}:${txCh}`);
-  await refreshMatrix();
-}
 
-async function cmdUnroute(args: string[]) {
-  if (args.length < 2) {
-    console.log("Usage: unroute <rx-device> <rx-channel>");
-    return;
-  }
-  const rxDev = resolveDevice(args[0]);
-  if (!rxDev) throw new Error(`Device not found: ${args[0]}`);
-  const rxCh = Number(args[1]);
-  if (isNaN(rxCh)) throw new Error(`Invalid channel: ${args[1]}`);
-  await router.api.unroute(rxDev.serverName, rxCh);
-  console.log(`Unrouted ${rxDev.name}:${rxCh}`);
-  await refreshMatrix();
-}
-
-async function cmdClear(args: string[]) {
-  if (args.length < 1) {
-    console.log("Usage: clear <rx-device>");
-    return;
-  }
-  const rxDev = resolveDevice(args[0]);
-  if (!rxDev) throw new Error(`Device not found: ${args[0]}`);
-  await router.api.clearRoutes(rxDev.serverName);
-  console.log(`Cleared all routes for ${rxDev.name}`);
-  await refreshMatrix();
-}
-
-async function refreshMatrix() {
-  process.stdout.write("  Refreshing... ");
+  const rxDevice = resolveDevice(router, args[0]);
+  if (!rxDevice) throw new Error(`Device not found: ${args[0]}`);
+  const rxChannel = Number(args[1]);
+  if (isNaN(rxChannel)) throw new Error(`Invalid channel: ${args[1]}`);
+  const txDevice = resolveDevice(router, args[2]);
+  if (!txDevice) throw new Error(`Device not found: ${args[2]}`);
+  const txChannel = args[3];
+  await router.api.route(
+    rxDevice.serverName,
+    rxChannel,
+    txDevice.serverName,
+    txChannel,
+  );
   await router.api.refresh();
-  console.log("done.");
-}
+  return `Routed ${rxDevice.name}:${rxChannel} <- ${txDevice.name}:${txChannel}\n${formatMatrix(router)}`;
+};
 
-function cmdHelp() {
-  console.log(`Commands:
+const unroute = async (router: DanteRouter<string>, args: string[]) => {
+  if (args.length < 2) {
+    return "Usage: unroute <rx-device> <rx-channel>";
+  }
+
+  const rxDevice = resolveDevice(router, args[0]);
+  if (!rxDevice) throw new Error(`Device not found: ${args[0]}`);
+  const rxChannel = Number(args[1]);
+  if (isNaN(rxChannel)) throw new Error(`Invalid channel: ${args[1]}`);
+  await router.api.unroute(rxDevice.serverName, rxChannel);
+  await router.api.refresh();
+  return `Unrouted ${rxDevice.name}:${rxChannel}\n${formatMatrix(router)}`;
+};
+
+const clear = async (router: DanteRouter<string>, args: string[]) => {
+  if (args.length < 1) {
+    return "Usage: clear <rx-device>";
+  }
+
+  const rxDevice = resolveDevice(router, args[0]);
+  if (!rxDevice) throw new Error(`Device not found: ${args[0]}`);
+  await router.api.clearRoutes(rxDevice.serverName);
+  await router.api.refresh();
+  return `Cleared all routes for ${rxDevice.name}\n${formatMatrix(router)}`;
+};
+
+const help = `Commands:
   list                List all discovered devices and channels
   matrix              Show current routing matrix
   route  <rx> <ch> <tx> <tx-ch>   Route a TX channel to an RX channel
@@ -129,80 +136,25 @@ function cmdHelp() {
   clear  <rx>          Clear all routes for a device
   refresh             Re-scan the network for devices
   help                Show this help
-  exit | quit         Exit`);
-}
+  exit | quit         Exit`;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  prompt: "dante> ",
-});
-
-router.start();
-
-console.log("Scanning for Dante devices...");
-try {
-  await router.api.refresh();
-  console.log(`Found ${router.api.getDevices().length} device(s).`);
-} catch (error) {
-  console.log("Scan failed. ", error);
-}
-
-rl.prompt();
-
-rl.on("line", async (line: string) => {
-  const trimmed = line.trim();
-  if (!trimmed) {
-    rl.prompt();
-    return;
-  }
-
-  const [cmd, ...args] = trimmed.split(/\s+/);
-  const command = cmd.toLowerCase();
-
-  try {
-    switch (command) {
-      case "list":
-        cmdList();
-        break;
-      case "matrix":
-        cmdMatrix();
-        break;
-      case "route":
-        await cmdRoute(args);
-        break;
-      case "unroute":
-        await cmdUnroute(args);
-        break;
-      case "clear":
-        await cmdClear(args);
-        break;
-      case "refresh":
-        process.stdout.write("Scanning... ");
+export const createRepl = ({
+  router,
+  prompt = "dante> ",
+}: DanteReplOptions): Repl => {
+  return createCoreRepl({
+    prompt,
+    commands: {
+      list: () => formatDevices(router),
+      matrix: () => formatMatrix(router),
+      route: (args) => route(router, args),
+      unroute: (args) => unroute(router, args),
+      clear: (args) => clear(router, args),
+      refresh: async () => {
         await router.api.refresh();
-        console.log(`found ${router.api.getDevices().length} device(s).`);
-        break;
-      case "help":
-        cmdHelp();
-        break;
-      case "exit":
-      case "quit":
-        console.log("bye");
-        rl.close();
-        return;
-      default:
-        console.log(
-          `Unknown command: ${cmd}. Type 'help' for available commands.`,
-        );
-    }
-  } catch (err) {
-    console.error("Error:", err instanceof Error ? err.message : String(err));
-  }
-
-  rl.prompt();
-});
-
-rl.on("close", () => {
-  router.end();
-  process.exit(0);
-});
+        return `Found ${router.api.getDevices().length} device(s).`;
+      },
+      help: () => help,
+    },
+  });
+};
