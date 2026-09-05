@@ -2,9 +2,9 @@
   "name": "@nat-av/driver-paint",
   "version": "0.1.0",
   "type": "module",
-  "files": ["dist"],
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "scripts": { "build": "tsc -p tsconfig.build.json && tsx ../../../tools/fix-esm-extensions.ts dist", "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "files": [".dist"],
+  "exports": { ".": { "types": "./.dist/index.d.ts", "import": "./.dist/index.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json --outDir .dist --rootDir .", "typecheck": "tsc -p tsconfig.json --noEmit" },
   "peerDependencies": { "@nat-av/core": "^0.1.0" },
   "devDependencies": { "@nat-av/core": "workspace:*" }
 }

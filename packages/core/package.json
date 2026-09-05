@@ -2,60 +2,60 @@
   "name": "@nat-av/core",
   "version": "0.1.0",
   "type": "module",
-  "files": ["dist"],
+  "files": [".dist"],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js"
+      "types": "./.dist/client.d.ts",
+      "import": "./.dist/client.js"
     },
     "./rpc": {
-      "types": "./dist/rpc/index.d.ts",
-      "import": "./dist/rpc/index.js"
+      "types": "./.dist/rpc/index.d.ts",
+      "import": "./.dist/rpc/index.js"
     },
     "./rpc/client": {
-      "types": "./dist/rpc/client/index.d.ts",
-      "import": "./dist/rpc/client/index.js"
+      "types": "./.dist/rpc/client/index.d.ts",
+      "import": "./.dist/rpc/client/index.js"
     },
     "./rpc/server": {
-      "types": "./dist/rpc/server/index.d.ts",
-      "import": "./dist/rpc/server/index.js"
+      "types": "./.dist/rpc/server/index.d.ts",
+      "import": "./.dist/rpc/server/index.js"
     },
     "./rpc/*": {
-      "types": "./dist/rpc/*.d.ts",
-      "import": "./dist/rpc/*.js"
+      "types": "./.dist/rpc/*.d.ts",
+      "import": "./.dist/rpc/*.js"
     },
     "./drivers": {
-      "types": "./dist/drivers/index.d.ts",
-      "import": "./dist/drivers/index.js"
+      "types": "./.dist/drivers/index.d.ts",
+      "import": "./.dist/drivers/index.js"
     },
     "./telemetry": {
-      "types": "./dist/telemetry/index.d.ts",
-      "import": "./dist/telemetry/index.js"
+      "types": "./.dist/telemetry/index.d.ts",
+      "import": "./.dist/telemetry/index.js"
     },
     "./protocol": {
-      "types": "./dist/protocol/index.d.ts",
-      "import": "./dist/protocol/index.js"
+      "types": "./.dist/protocol/index.d.ts",
+      "import": "./.dist/protocol/index.js"
     },
     "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
+      "types": "./.dist/types/index.d.ts",
+      "import": "./.dist/types/index.js"
     },
     "./test/*": {
-      "types": "./dist/test/*.d.ts",
-      "import": "./dist/test/*.js"
+      "types": "./.dist/test/*.d.ts",
+      "import": "./.dist/test/*.js"
     },
     "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js"
+      "types": "./.dist/*.d.ts",
+      "import": "./.dist/*.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsx ../../tools/fix-esm-extensions.ts dist",
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test dist/rpc/test/*.test.js"
+    "test": "node --test .dist/rpc/test/*.test.js"
   }
 }

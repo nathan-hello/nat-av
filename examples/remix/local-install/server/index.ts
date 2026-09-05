@@ -9,7 +9,6 @@ import { RpcServer } from "@nat-av/core/rpc/server";
 import { RpcTransportWebsocket } from "../../rpc-websocket";
 import { SchemaGenerator } from "@nat-av/plugin-schema";
 import RelayBoard from "@nat-av/driver-bewinner-relay-board";
-import { System } from "@nat-av/plugin-system";
 import { Server } from "node:http";
 
 // TSAS:
@@ -66,7 +65,11 @@ const natav = new Manager({
       } as const,
     }),
   ],
-  deferred: [RpcServer, Debugger, System, SchemaGenerator],
+  deferred: [
+    RpcServer,
+    Debugger,
+    (manager) => new SchemaGenerator(manager, {}),
+  ],
 });
 
 Telemetry.Sdk.AddExporters([

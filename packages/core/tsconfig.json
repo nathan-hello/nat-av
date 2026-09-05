@@ -1,12 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.packages.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "noEmit": true,
     "paths": {
-      "@nat-av/core": ["./src/index.ts"],
-      "@nat-av/core/*": ["./src/*"]
+      "@nat-av/core": ["./index.ts"],
+      "@nat-av/core/*": ["./*"]
     }
-  },
-  "include": ["src/**/*.ts"]
+  }
 }

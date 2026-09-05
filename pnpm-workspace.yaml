@@ -5,7 +5,6 @@ packages:
   - "packages/plugins"
   - "packages/plugins/*"
   - "examples/*"
-  - "examples/remix/git-submodule"
 
 onlyBuiltDependencies:
   - esbuild

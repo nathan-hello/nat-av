@@ -2,17 +2,17 @@
   "name": "@nat-av/driver-cisco-roomos",
   "version": "0.1.0",
   "type": "module",
-  "files": ["dist"],
+  "files": [".dist"],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsx ../../../tools/fix-esm-extensions.ts dist",
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test dist/test/**/*.test.js"
+    "test": "node --test .dist/test/**/*.test.js"
   },
   "peerDependencies": {
     "@nat-av/core": "^0.1.0"

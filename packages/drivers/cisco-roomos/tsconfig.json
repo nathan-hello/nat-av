@@ -1,9 +1,3 @@
 {
-  "extends": "../../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "noEmit": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/test/**/*.ts", "src/typegen/schemas/**/*.json"]
+  "extends": "../../../tsconfig.packages.json"
 }

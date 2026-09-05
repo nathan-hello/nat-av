@@ -1,14 +1,10 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  "extends": "../../../tsconfig.packages.json",
   "compilerOptions": {
-    "noEmit": true,
     "paths": {
-      "@nat-av/core": ["../../../packages/core/dist/index.d.ts"],
-      "@nat-av/core/*": ["../../../packages/core/dist/*"],
-      "@nat-av/plugin-schema/*": ["./src/*"],
-      "@server/*": ["../../../examples/remix/git-submodule/server/*"]
+      "@nat-av/core": ["../../../packages/core/.dist/index.d.ts"],
+      "@nat-av/core/*": ["../../../packages/core/.dist/*"],
+      "@nat-av/plugin-schema/*": ["./*.ts"]
     }
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/output/**/*.ts", "src/test/**/*.ts"]
+  }
 }

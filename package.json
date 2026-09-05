@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "pnpm -r --if-present run build",
-    "dev": "pnpm --filter @nat-av/example-remix-git-submodule dev",
+    "dev": "pnpm --dir examples/remix/local-install dev",
     "test": "pnpm run build && pnpm -r --if-present run test",
     "typecheck": "pnpm run build && pnpm -r --if-present run typecheck",
     "generate-schemas": "pnpm --filter @nat-av/plugin-schema generate",

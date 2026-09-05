@@ -4,5 +4,5 @@ logs/*
 !logs/*.gitkeep
 tmp
 dist
+.dist
 examples/remix/local-install/vendor/*.tgz
-packages/plugins/schema/src/output/validate

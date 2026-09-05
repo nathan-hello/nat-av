@@ -3,27 +3,27 @@
   "version": "0.1.0",
   "type": "module",
   "private": false,
-  "files": ["dist"],
+  "files": [".dist"],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
     },
     "./cisco-roomos": {
-      "types": "./dist/cisco-roomos.d.ts",
-      "import": "./dist/cisco-roomos.js"
+      "types": "./.dist/cisco-roomos.d.ts",
+      "import": "./.dist/cisco-roomos.js"
     },
     "./dante-router": {
-      "types": "./dist/dante-router.d.ts",
-      "import": "./dist/dante-router.js"
+      "types": "./.dist/dante-router.d.ts",
+      "import": "./.dist/dante-router.js"
     },
     "./decoder": {
-      "types": "./dist/decoder.d.ts",
-      "import": "./dist/decoder.js"
+      "types": "./.dist/decoder.d.ts",
+      "import": "./.dist/decoder.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsx ../../tools/fix-esm-extensions.ts dist",
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -31,7 +31,8 @@
     "@nat-av/driver-cisco-roomos": "workspace:*",
     "@nat-av/driver-dante-router": "workspace:*",
     "@nat-av/driver-decoder": "workspace:*",
-    "@nat-av/driver-linux": "workspace:*",
+    "@nat-av/driver-linux-pipewire": "workspace:*",
+    "@nat-av/driver-linux-network-manager": "workspace:*",
     "@nat-av/driver-mediasite": "workspace:*",
     "@nat-av/driver-paint": "workspace:*",
     "@nat-av/driver-turtle": "workspace:*"

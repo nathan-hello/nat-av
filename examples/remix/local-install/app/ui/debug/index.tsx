@@ -5,7 +5,7 @@ import type { natav } from "@server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { DebugSocketPanel } from "./socket";
-import { DebugDriverTree } from "./tree";
+import { DebugDriverTree } from "./tree.js";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);

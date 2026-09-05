@@ -1,8 +1,8 @@
 import { Document } from "@/ui/document";
 import { render } from "@/utils/render";
 import { createAction, createRouter } from "remix/fetch-router";
-import { assets } from "./assets.ts";
-import { routes } from "./routes.ts";
+import { assets } from "./assets.js";
+import { routes } from "./routes.js";
 
 export const router = createRouter();
 

@@ -14,7 +14,6 @@ const packages = [
   "@nat-av/driver-paint",
   "@nat-av/plugin-debugger",
   "@nat-av/plugin-schema",
-  "@nat-av/plugin-system",
 ];
 
 for (const packageName of packages) {
