@@ -14,6 +14,7 @@ import { ClientWebsocket } from "./websocket.js";
 export class RpcClient<
   N extends Manager = Manager,
 > extends TypedEventTarget<Rpc.Events.Map> {
+  readonly driver: Rpc.Client.DriverAccessor<N>;
   private tel = new Telemetry("Rpc");
   private transport: ClientRpcTransport;
   private requests: ClientRpcRequests;
@@ -24,6 +25,22 @@ export class RpcClient<
 
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
+    // TSAS: The callable accessor is augmented with virtual name properties by the Proxy below.
+    const accessor = ((name: Drivers.Names<N["drivers"]>) =>
+      this.getDriver(name)) as unknown as Rpc.Client.DriverAccessor<N>;
+    // TSAS: Proxy properties are created from the same literal driver names as the callable accessor.
+    this.driver = new Proxy(accessor, {
+      get: (target, property, receiver) => {
+        if (typeof property === "string" && property in target) {
+          return Reflect.get(target, property, receiver);
+        }
+        if (typeof property === "string") {
+          // TSAS: Proxy property access is checked against the registered catalog by the server.
+          return this.getDriver(property as Drivers.Names<N["drivers"]>);
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
     this.transport =
       args.transport ??
       new ClientWebsocket("/ws", {
@@ -75,7 +92,7 @@ export class RpcClient<
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  driver<Name extends Drivers.Names<N["drivers"]>>(
+  private getDriver<Name extends Drivers.Names<N["drivers"]>>(
     name: Name,
   ): ClientRpcDriver<N, Name> {
     const cached = this.driverHandles.get(name);
@@ -98,8 +115,10 @@ export class RpcClient<
     );
   }
 
-  request<T = any>(message: Rpc.Request): Promise<T> {
-    return this.requests.request<T>(message);
+  request<Request extends Rpc.Request>(
+    message: Request,
+  ): Promise<Rpc.Request.ResultOf<Request>> {
+    return this.requests.request(message);
   }
 
   nextRequestId() {
@@ -107,17 +126,17 @@ export class RpcClient<
   }
 
   private async init() {
-    const result = await this.requests.request<{
-      context: Rpc.Server.Context;
-      states: Record<string, Rpc.Json.Value>;
-    }>(Rpc.Request.driverInit(this.requests.nextRequestId()));
+    const result = await this.requests.request(
+      Rpc.Request.driverInit(this.requests.nextRequestId()),
+    );
 
     this.dispatch("peer", result.context);
 
     for (const [name, state] of Object.entries(result.states)) {
       // TSAS: driver names from server response are guaranteed to match registered drivers
-      const driver = this.driver(name as Drivers.Names<N["drivers"]>);
+      const driver = this.getDriver(name as Drivers.Names<N["drivers"]>);
       driver.handleStateUpdate(
+        // TSAS: The init response state belongs to this catalog entry.
         state as Drivers.State<N["drivers"], (typeof driver)["name"]>,
       );
     }
@@ -144,18 +163,20 @@ export class RpcClient<
 
       this.tel.info("got-notification", notification);
 
-      let driver: ClientRpcDriver;
+       let driver: ClientRpcDriver<N, Drivers.Names<N["drivers"]>>;
 
       switch (notification.type) {
         case "natav:driver:event":
-          driver = this.driver(notification.params.name);
+          // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
+          driver = this.getDriver(notification.params.name as Drivers.Names<N["drivers"]>);
           driver.handleEvent(
             notification.params.event,
             notification.params.data,
           );
           break;
         case "natav:state:update":
-          driver = this.driver(notification.params.name);
+          // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
+          driver = this.getDriver(notification.params.name as Drivers.Names<N["drivers"]>);
           driver.handleStateUpdate(notification.params.data);
           break;
         default:

@@ -172,6 +172,14 @@ export namespace Rpc {
         depName: DepName,
       ) => DriverHandle<N, DepName>;
     };
+
+    export type DriverAccessor<N extends Manager> = {
+      <Name extends Drivers.Names<N["drivers"]>>(
+        name: Name,
+      ): DriverHandle<N, Name>;
+    } & {
+      [Name in Drivers.Names<N["drivers"]>]: DriverHandle<N, Name>;
+    };
   }
 
   type Id = string | number;
@@ -279,7 +287,7 @@ export namespace Rpc {
     }
 
     static driverCall(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request(
+      return new Rpc.Request<typeof REQUEST_METHOD.DriverCall, Rpc.Request.DriverParams, Rpc.Json.Value>(
         id,
         REQUEST_METHOD.DriverCall,
         normalizeDriverParams(params),
@@ -287,7 +295,7 @@ export namespace Rpc {
     }
 
     static driverSubscribe(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request(
+      return new Rpc.Request<typeof REQUEST_METHOD.DriverSubscribe, Rpc.Request.DriverParams, null>(
         id,
         REQUEST_METHOD.DriverSubscribe,
         normalizeDriverParams(params),
@@ -295,7 +303,7 @@ export namespace Rpc {
     }
 
     static driverUnsubscribe(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request(
+      return new Rpc.Request<typeof REQUEST_METHOD.DriverUnsubscribe, Rpc.Request.DriverParams, null>(
         id,
         REQUEST_METHOD.DriverUnsubscribe,
         normalizeDriverParams(params),
@@ -303,7 +311,11 @@ export namespace Rpc {
     }
 
     static driverInit(id: Id) {
-      return new Rpc.Request(id, REQUEST_METHOD.DriverInit);
+      return new Rpc.Request<
+        typeof REQUEST_METHOD.DriverInit,
+        undefined,
+        Rpc.Request.DriverInitResult
+      >(id, REQUEST_METHOD.DriverInit);
     }
   }
 
@@ -328,7 +340,11 @@ export namespace Rpc {
     export type DriverInit = {
       method: typeof REQUEST_METHOD.DriverInit;
       params: undefined;
-      result: { context: Rpc.Server.Context; states: Record<string, unknown> };
+      result: DriverInitResult;
+    };
+    export type DriverInitResult = {
+      context: Rpc.Server.Context;
+      states: Record<string, Rpc.Json.Value>;
     };
     export type ResultOf<TRequest extends Rpc.Request> =
       TRequest extends Rpc.Request<string, Rpc.Json.Value, infer ResultType> ?

@@ -1,4 +1,4 @@
-import { Driver } from "@nat-av/core/drivers";
+import { Driver } from "@nat-av/core";
 
 export type RelayBoardState = {
   /** True means the relay is currently closed. */
@@ -12,8 +12,6 @@ export type RelayBoardApi = {
 
 export class RelayBoard<const N extends string = string> extends Driver<
   N,
-  [],
-  RelayBoardApi,
   RelayBoardState
 > {
   private readonly baseUrl: string;

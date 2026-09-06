@@ -1,7 +1,4 @@
-import {
-  createRepl as createCoreRepl,
-  type Repl,
-} from "@nat-av/core/tools/repl";
+import { Repl } from "@nat-av/core";
 import DanteRouter from "../index.js";
 
 export interface DanteReplOptions {
@@ -141,8 +138,8 @@ const help = `Commands:
 export const createRepl = ({
   router,
   prompt = "dante> ",
-}: DanteReplOptions): Repl => {
-  return createCoreRepl({
+}: DanteReplOptions): Repl.Repl => {
+  return Repl.createRepl({
     prompt,
     commands: {
       list: () => formatDevices(router),

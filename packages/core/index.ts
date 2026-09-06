@@ -1,24 +1,28 @@
 import {
   Telemetry as BaseTelemetry,
   type TelemetryLogSchema as BaseTelemetryLogSchema,
-} from "@nat-av/core/telemetry";
-import * as TelemetryExportersMod from "@nat-av/core/telemetry/exporters";
-import * as TelemetrySdkMod from "@nat-av/core/telemetry/sdk";
-import * as TelemetryServerExportersMod from "@nat-av/core/telemetry/server/exporters";
-import * as TelemetryTypesMod from "@nat-av/core/telemetry/types";
+} from "./telemetry/index.js";
+import * as TelemetryExportersMod from "./telemetry/exporters.js";
+import * as TelemetrySdkMod from "./telemetry/sdk.js";
+import * as TelemetryServerExportersMod from "./telemetry/server/exporters.js";
+import * as TelemetryTypesMod from "./telemetry/types.js";
 
-export { Convert } from "@nat-av/core/lib/convert";
-export * as Proto from "@nat-av/core/protocol";
-export { Tcp } from "@nat-av/core/sockets/tcp";
-export { Udp } from "@nat-av/core/sockets/udp";
+export { Convert } from "./lib/convert.js";
+export * as Proto from "./protocol/index.js";
+export { Tcp } from "./sockets/tcp.js";
+export { Udp } from "./sockets/udp.js";
 
-export { Driver, Manager } from "@nat-av/core/drivers";
-export { Err } from "@nat-av/core/lib/errors";
-export { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-export { RequestManager } from "@nat-av/core/lib/requests";
-export { Delimiters } from "@nat-av/core/sockets/delimiters";
-export { Test } from "@nat-av/core/test/data.test";
-export type { Drivers, Events, Sockets } from "@nat-av/core/types";
+export { Driver, Manager } from "./drivers/index.js";
+export { Err } from "./lib/errors.js";
+export { TypedEventTarget } from "./lib/eventtarget.js";
+export { RequestManager } from "./lib/requests.js";
+export { Delimiters } from "./sockets/delimiters.js";
+export { Test } from "./test/data.test.js";
+export type { Drivers, Events, Sockets } from "./types/index.js";
+
+export type {ClientRpcTransport, Rpc} from "./rpc/index.js";
+export { RpcClient, RpcServer } from "./rpc/index.js";
+export type { ServerRpcTransport, ServerRpcTransportEvents, } from "./rpc/server/transport.js";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,
@@ -30,3 +34,5 @@ export namespace Telemetry {
   export import Sdk = TelemetrySdkMod;
   export import Server = TelemetryServerExportersMod;
 }
+
+export * as Repl from "./tools/repl/index.js";

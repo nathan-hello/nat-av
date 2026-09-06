@@ -8,29 +8,25 @@ import { Telemetry } from "@nat-av/core/telemetry";
 import { type Drivers, type Events, type Sockets } from "@nat-av/core/types";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
-type SocketMaybe = Partial<Sockets.Socket> | undefined;
+type SocketMaybe = Sockets.Socket | undefined;
 
 export abstract class Driver<
   Name extends string = string,
-  State extends Record<string, any> = Record<string, any>,
-  Deps extends Drivers.Array = Drivers.Array,
-  Api extends Drivers.ApiRecord = Drivers.ApiRecord,
-  Events extends EventsMaybe = EventsMaybe,
-  Socket extends SocketMaybe = SocketMaybe,
+  State extends Record<string, unknown> = Record<string, unknown>,
+  Deps extends readonly Drivers.DriverShape[] = readonly [],
 > extends ProtectedTypedEventTarget<Events.Driver.Map<State>> {
   public abstract state: State;
-  public abstract api: Api;
-  // TSAS:
-  public socket: Socket = undefined as Socket;
+  public abstract api: Drivers.ApiRecord;
 
-  // TSAS: Subclasses or runtime wiring provide the concrete event target shape before use.
-  public events: Events = undefined as Events;
+  public socket: SocketMaybe = undefined;
+  public events: EventsMaybe = undefined;
   public name: Name;
   public deps: Deps;
   public tel: Telemetry;
 
   constructor({ name, deps }: { name: Name; deps?: Deps }) {
     super();
+    // TSAS: An omitted dependency list is represented by the default empty tuple.
     this.deps = deps ?? ([] as unknown as Deps);
     this.name = name;
     this.tel = new Telemetry(`Driver::${this.name}`);
@@ -52,12 +48,11 @@ export abstract class Driver<
     this.socket?.end?.();
   }
 
-  public dep<K extends NonNullable<Deps>[number]["name"]>(
+  public dep<K extends Deps[number]["name"]>(
     name: K,
-  ): Extract<NonNullable<Deps>[number], { name: K }> {
+  ): Extract<Deps[number], { name: K }> {
     const child = this.deps?.find(
-      (d): d is Extract<NonNullable<Deps>[number], { name: K }> =>
-        d.name === name,
+      (d): d is Extract<Deps[number], { name: K }> => d.name === name,
     );
 
     if (!child) {
@@ -74,15 +69,19 @@ export class Manager<
   const D extends Drivers.Array = Drivers.Array,
   const S extends readonly Drivers.AnyDeferred[] =
     readonly Drivers.AnyDeferred[],
-> implements Drivers.Manager<D, S> {
+  const P extends readonly Drivers.AnyDeferred[] =
+    readonly Drivers.AnyDeferred[],
+> implements Drivers.Manager<D, S, P> {
   readonly drivers: Drivers.Merged<D, S>;
-  readonly drivers_flat: Driver[] = [];
+  readonly drivers_flat: Drivers.AnyDriver[] = [];
+  readonly driver: Drivers.Catalog<Drivers.Merged<D, S>>;
+  readonly plugin: Drivers.Catalog<Drivers.DeferredInstances<P>>;
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<Drivers.Merged<D, S>>
   >();
 
-  constructor(args: { drivers?: D; deferred?: S }) {
-    let configs: Driver[] = [];
+  constructor(args: { drivers?: D; deferred?: S; plugins?: P }) {
+    let configs: Drivers.AnyDriver[] = [];
     if (args.drivers) {
       configs = [...args.drivers];
     }
@@ -100,15 +99,66 @@ export class Manager<
     // TSAS: The public configs property is the tuple-shaped merged driver set for type inference.
     this.drivers = configs as unknown as Drivers.Merged<D, S>;
 
-    const collect = (driver: Driver): Driver[] => {
-      const out: Driver[] = [driver];
+    const collect = (
+      driver: Drivers.AnyDriver,
+      seen = new Set<Drivers.AnyDriver>(),
+    ): Drivers.AnyDriver[] => {
+      if (seen.has(driver)) return [];
+      seen.add(driver);
+      const out: Drivers.AnyDriver[] = [driver];
       for (const dep of driver.deps ?? []) {
-        out.push(...collect(dep));
+        out.push(...collect(dep, seen));
       }
       return out;
     };
 
-    this.drivers_flat = this.drivers.flatMap(collect);
+    const flat = this.drivers.flatMap((driver) => collect(driver));
+    const byName = new Map<string, Drivers.AnyDriver>();
+    for (const driver of flat) {
+      const existing = byName.get(driver.name);
+      if (existing && existing !== driver) {
+        throw new Error(
+          `Manager found multiple drivers of the same name: ${driver.name}`,
+          {
+            cause: Err.Codes.ManagerFoundMultipleNames,
+          },
+        );
+      }
+      byName.set(driver.name, driver);
+    }
+    this.drivers_flat = [...byName.values()];
+
+    const drivers = Object.fromEntries(
+      this.drivers_flat.map((driver) => [driver.name, driver]),
+    );
+    // TSAS: The runtime catalog is populated from every collected driver's literal name.
+    this.driver = drivers as Drivers.Catalog<Drivers.Merged<D, S>>;
+
+    const plugins: Drivers.AnyDriver[] = [];
+    for (const plugin of args.plugins ?? []) {
+      const instance =
+        "prototype" in plugin && typeof plugin.prototype === "object" ?
+          new plugin(this)
+        : plugin(this);
+      plugins.push(instance);
+    }
+
+    const pluginByName = new Map<string, Drivers.AnyDriver>();
+    for (const plugin of plugins) {
+      if (plugin.name in this.driver) {
+        throw new Error(`Plugin name conflicts with driver: ${plugin.name}`);
+      }
+      if (pluginByName.has(plugin.name)) {
+        throw new Error(
+          `Manager found multiple plugins of the same name: ${plugin.name}`,
+        );
+      }
+      pluginByName.set(plugin.name, plugin);
+    }
+    // TSAS: Plugin constructors are checked by P and the map is keyed by each plugin name.
+    this.plugin = Object.fromEntries(pluginByName) as Drivers.Catalog<
+      Drivers.DeferredInstances<P>
+    >;
   }
 
   GetDriver<N extends Drivers.Names<Drivers.Merged<D, S>>>(
@@ -124,7 +174,7 @@ export class Manager<
     return found;
   }
 
-  FindDriver(name: string): Driver | undefined {
+  FindDriver(name: string): Drivers.AnyDriver | undefined {
     return this.drivers_flat.find((d) => d.name === name);
   }
 
@@ -221,33 +271,58 @@ export class Manager<
       configs = filter(this.drivers);
     }
 
-    const inited = new Set<string>();
+    const inited = new Set<Drivers.AnyDriver>();
+    const initializing = new Map<Drivers.AnyDriver, Promise<void>>();
 
-    const initTree = async (d: Driver) => {
-      if (inited.has(d.name)) {
-        throw new Error(
-          `Manager found multiple drivers of the same name: ${d.name}.\nthis.configs: ${JSON.stringify(this.drivers)}`,
-          {
-            cause: Err.Codes.ManagerFoundMultipleNames,
-          },
-        );
+    const initTree = async (
+      d: Drivers.AnyDriver,
+      path = new Set<Drivers.AnyDriver>(),
+    ) => {
+      if (inited.has(d)) {
+        return;
+      }
+      if (path.has(d)) {
+        throw new Error(`Manager found a dependency cycle at: ${d.name}`);
+      }
+      const existing = initializing.get(d);
+      if (existing) {
+        await existing;
+        return;
       }
 
-      // Start the dependent drivers first
-      for (const dep of d.deps ?? []) {
-        await initTree(dep);
-      }
+      const initialization = (async () => {
+        // Start the dependent drivers first.
+        const nextPath = new Set(path).add(d);
+        for (const dep of d.deps ?? []) {
+          await initTree(dep, nextPath);
+        }
 
-      await this.initDriver(d);
-      inited.add(d.name);
+        await this.initDriver(d);
+        inited.add(d);
+      })();
+
+      initializing.set(d, initialization);
+      await initialization;
     };
 
     const promises = configs.map((d) => initTree(d));
 
     await Promise.all(promises);
+    // TSAS: Plugin catalog values are all constructed Driver instances.
+    await Promise.all(
+      (Object.values(this.plugin) as Drivers.AnyDriver[]).map((plugin) =>
+        plugin.start(),
+      ),
+    );
   }
 
   async End() {
+    // TSAS: Plugin catalog values are all constructed Driver instances.
+    await Promise.all(
+      (Object.values(this.plugin) as Drivers.AnyDriver[]).map((plugin) =>
+        plugin.end(),
+      ),
+    );
     const promises = this.drivers.map(async (d) => {
       await d.end();
     });
@@ -255,7 +330,7 @@ export class Manager<
     await Promise.all(promises);
   }
 
-  private async initDriver(d: Driver) {
+  private async initDriver(d: Drivers.AnyDriver) {
     const name = d.name;
     if (!this.IsDriverName(name)) {
       throw new Error(`Manager.Start: ${name}`, {
@@ -273,7 +348,7 @@ export class Manager<
       }),
     );
 
-    d.socket?.on?.("debug", (event) => {
+    d.socket?.on("debug", (event) => {
       const data = {
         name,
         data: event.data,
@@ -285,11 +360,11 @@ export class Manager<
       }
     });
 
-    d.socket?.on?.("connected", () => {
+    d.socket?.on("connected", () => {
       this.bus.dispatch("natav:driver:connected", { name });
     });
 
-    d.socket?.on?.("disconnected", (event) => {
+    d.socket?.on("disconnected", (event) => {
       if (event.error) {
         d.tel.error("socket got disconnected error", event);
       }

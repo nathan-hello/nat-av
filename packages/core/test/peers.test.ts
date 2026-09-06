@@ -87,7 +87,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class ParentPeer extends Driver<"parent-peer", [ChildPeer]> {
+  class ParentPeer extends Driver<"parent-peer", { ready: boolean }, [ChildPeer]> {
     state = { ready: true };
     api = {};
     socket = undefined;

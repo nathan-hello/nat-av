@@ -1,5 +1,5 @@
 import type { Manager } from "@nat-av/core";
-import { Driver, Err, type Events, TypedEventTarget } from "@nat-av/core";
+import { Driver, Err, type Drivers, type Events, TypedEventTarget } from "@nat-av/core";
 import { Rpc } from "../types.js";
 import type { ServerRpcTransport } from "./transport.js";
 export type {
@@ -299,7 +299,7 @@ export class RpcServer extends Driver<"rpc-server"> {
   }
 
   private subscribeDriver(
-    driver: Driver,
+    driver: Drivers.AnyDriver,
     message: Rpc.Request,
     params: Rpc.Request.DriverParams,
     peer: Rpc.WebSocket.Peer,
@@ -370,7 +370,7 @@ export class RpcServer extends Driver<"rpc-server"> {
   }
 
   private async callDriverApi(
-    driver: Driver,
+    driver: Drivers.AnyDriver,
     message: Rpc.Request,
     params: Rpc.Request.DriverParams,
   ): Promise<Rpc.Response | Rpc.Error> {

@@ -29,7 +29,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level3Driver extends Driver<"level-3", [LeafDriver]> {
+  class Level3Driver extends Driver<"level-3", { ready: boolean }, [LeafDriver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-3-pong",
@@ -44,7 +44,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level2Driver extends Driver<"level-2", [Level3Driver]> {
+  class Level2Driver extends Driver<"level-2", { ready: boolean }, [Level3Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-2-pong",
@@ -59,7 +59,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class RootDriver extends Driver<"root", [Level2Driver]> {
+  class RootDriver extends Driver<"root", { ready: boolean }, [Level2Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "root-pong",
@@ -111,11 +111,22 @@ describe("rpc deps", () => {
     await ready;
 
     const clientRoot = client.driver("root");
+    if (false) {
+      // @ts-expect-error RPC driver properties must come from the driver catalog.
+      client.driver.missing;
+    }
     const clientLevel2 = clientRoot.dep("level-2");
     const clientLevel3 = clientLevel2.dep("level-3");
     const clientLeaf = clientLevel3.dep("leaf");
 
     assert.equal(await clientRoot.api.ping(), "root-pong");
+    type RootResult = Awaited<ReturnType<typeof clientRoot.api.ping>>;
+    type _rootResult = RootResult extends string ? true : false;
+    if (false) {
+      // @ts-expect-error RPC API results must preserve the driver's return type.
+      const wrongRootResult: Promise<number> = clientRoot.api.ping();
+      void wrongRootResult;
+    }
     assert.equal(await clientLevel2.api.ping(), "level-2-pong");
     assert.equal(await clientLevel3.api.ping(), "level-3-pong");
     assert.equal(await clientLeaf.api.ping(), "leaf-pong");

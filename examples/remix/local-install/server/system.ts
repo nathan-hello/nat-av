@@ -10,8 +10,6 @@ type SystemState = {
 
 export class System extends Driver<
   "system",
-  [],
-  { route: (page: SystemPage) => void },
   SystemState
 > {
   constructor(_manager: Drivers.ManagerView) {

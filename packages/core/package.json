@@ -11,55 +11,11 @@
     "./client": {
       "types": "./.dist/client.d.ts",
       "import": "./.dist/client.js"
-    },
-    "./rpc": {
-      "types": "./.dist/rpc/index.d.ts",
-      "import": "./.dist/rpc/index.js"
-    },
-    "./rpc/client": {
-      "types": "./.dist/rpc/client/index.d.ts",
-      "import": "./.dist/rpc/client/index.js"
-    },
-    "./rpc/server": {
-      "types": "./.dist/rpc/server/index.d.ts",
-      "import": "./.dist/rpc/server/index.js"
-    },
-    "./rpc/*": {
-      "types": "./.dist/rpc/*.d.ts",
-      "import": "./.dist/rpc/*.js"
-    },
-    "./drivers": {
-      "types": "./.dist/drivers/index.d.ts",
-      "import": "./.dist/drivers/index.js"
-    },
-    "./telemetry": {
-      "types": "./.dist/telemetry/index.d.ts",
-      "import": "./.dist/telemetry/index.js"
-    },
-    "./protocol": {
-      "types": "./.dist/protocol/index.d.ts",
-      "import": "./.dist/protocol/index.js"
-    },
-    "./types": {
-      "types": "./.dist/types/index.d.ts",
-      "import": "./.dist/types/index.js"
-    },
-    "./tools/repl": {
-      "types": "./.dist/tools/repl/index.d.ts",
-      "import": "./.dist/tools/repl/index.js"
-    },
-    "./test/*": {
-      "types": "./.dist/test/*.d.ts",
-      "import": "./.dist/test/*.js"
-    },
-    "./*": {
-      "types": "./.dist/*.d.ts",
-      "import": "./.dist/*.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test .dist/rpc/test/*.test.js .dist/tools/repl/*.test.js"
+    "test": "node --test .dist/test/*.test.js .dist/rpc/test/*.test.js .dist/tools/repl/*.test.js"
   }
 }

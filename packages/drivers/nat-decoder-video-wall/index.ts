@@ -59,7 +59,7 @@ type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 export default class DisplayManager<
   const N extends string = string,
   const D extends readonly Decoder[] = readonly Decoder[],
-> extends Driver<N, D> {
+> extends Driver<N, DisplayState, D> {
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];
   private canvasWidth: number = 0;

@@ -40,10 +40,12 @@ export class ClientRpcRequests {
     }
   }
 
-  async request<T = any>(message: Rpc.Request): Promise<T> {
+  async request<Request extends Rpc.Request>(
+    message: Request,
+  ): Promise<Rpc.Request.ResultOf<Request>> {
     await this.waitForOpen();
 
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<Rpc.Request.ResultOf<Request>>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.rejectPendingRequest(
           new Rpc.Error(

@@ -19,14 +19,6 @@ type State<N extends string> = {
 
 export class Paint<const Names extends string = string> extends Driver<
   "paint",
-  [],
-  {
-    saveFrame: (params: { name: Names; dataUrl: string }) => Promise<{
-      saveCount: number;
-      path: string;
-    }>;
-    clear: (params: { name: Names }) => Promise<void>;
-  },
   State<Names>
 > {
   private outputDir: string;

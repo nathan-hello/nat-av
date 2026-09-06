@@ -3,12 +3,12 @@ import { Convert } from "@nat-av/core/lib/convert";
 import { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
 import { Telemetry } from "@nat-av/core/telemetry";
 import type { Events, Sockets } from "@nat-av/core/types";
-import type { ClientRpcTransport } from "@nat-av/core/rpc/client/websocket";
 import type {
+  Rpc,
+  ClientRpcTransport,
   ServerRpcTransportEvents,
   ServerRpcTransport as ServerRpcTransportShape,
-} from "@nat-av/core/rpc/server";
-import type { Rpc } from "@nat-av/core/rpc/types";
+} from "@nat-av/core/client";
 
 export namespace Test {
   export type Equal<A, B> =

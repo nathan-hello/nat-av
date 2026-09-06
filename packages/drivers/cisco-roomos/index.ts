@@ -29,7 +29,12 @@ export class CiscoRoomOS<
   const Strict extends boolean = true,
   const Sub extends RoomOS.Sub<Product> = RoomOS.Sub<Product>,
   const N extends string = string,
-> extends Driver<N> {
+  State extends RoomOS.State<Product, Sub, Strict> & {
+    internal: { highestId: number; subscriptions: Sub };
+  } = RoomOS.State<Product, Sub, Strict> & {
+    internal: { highestId: number; subscriptions: Sub };
+  },
+> extends Driver<N, State> {
   private requests: RequestManager<
     RoomOS.WriteOperation & { id: number },
     Proto.JsonRpc.Response | Proto.JsonRpc.Notification
@@ -38,9 +43,7 @@ export class CiscoRoomOS<
   private subscriptions: RoomOS.HeldSubscription[] = [];
   events = new TypedEventTarget<RoomOS.SubscribedEventMap<Product, Sub>>();
 
-  state: RoomOS.State<Product, Sub, Strict> & {
-    internal: { highestId: number; subscriptions: Sub };
-  };
+  state: State;
 
   socket: Sockets.Client;
 
@@ -62,9 +65,7 @@ export class CiscoRoomOS<
     this.proxy = new RoomOSProxy(this.tel, this.request.bind(this), {}, strict);
 
     // TSAS: The proxy returns the runtime state surface, which is narrowed by the generic State type.
-    this.state = this.proxy.State() as RoomOS.State<Product, Sub, Strict> & {
-      internal: { highestId: number; subscriptions: Sub };
-    };
+    this.state = this.proxy.State() as State;
 
     this.requests = new RequestManager<
       RoomOS.WriteOperation & { id: number },
