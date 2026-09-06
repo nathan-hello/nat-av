@@ -1,9 +1,9 @@
 import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/wall/source";
-import type { LogicalWindow } from "@nat-av/driver-decoder/display";
+import type { LogicalWindow } from "@nat-av/driver-nat-decoder-video-wall";
 import type {
   GridTemplate,
   RectangularRegion,
-} from "@nat-av/driver-decoder/display/templates/builder";
+} from "@nat-av/driver-nat-decoder-video-wall/templates/builder";
 import { css, on, type Handle } from "remix/ui";
 
 type CanvasGlobal = {

@@ -1,11 +1,15 @@
 import { Driver } from "@nat-av/core";
 
-export class CustomDriver extends Driver<"custom"> {
-  state = { online: false };
+type FooState = { bool: boolean, num: number, str: string }
+
+export class Foo extends Driver<"custom"> {
+  state = { bool: false, num: 0, str: "" };
   api = {
-    setOnline: (online: boolean) => {
-      this.state.online = online;
-      this.dispatch("driver:state-updated", { data: this.state });
+    toggle: () => {
+      this.state.bool = !this.state.bool;
+      this.dispatch("driver:state-updated", {
+        data: { bool: this.state },
+      });
     },
   };
 }

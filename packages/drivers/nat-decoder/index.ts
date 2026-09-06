@@ -1,6 +1,6 @@
 import type { Sockets } from "@nat-av/core";
 import { Convert, Delimiters, Driver, RequestManager } from "@nat-av/core";
-import { DecoderSchema } from "./schema.js";
+import { DecoderSchema } from "./src/schema.js";
 import {
   type AudioRoute,
   type DecoderMap,
@@ -11,7 +11,7 @@ import {
   type FetchContextResponse,
   type MoveWindowArgs,
   type VideoRoute,
-} from "./types.js";
+} from "./src/types.js";
 
 type DecoderMessage = DecoderResponse | DecoderNotification;
 

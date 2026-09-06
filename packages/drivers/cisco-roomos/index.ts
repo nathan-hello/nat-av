@@ -7,11 +7,11 @@ import {
   TypedEventTarget,
   type Sockets,
 } from "@nat-av/core";
-import { RoomOSProxy } from "./proxy.js";
-import { reader } from "./reader.js";
-import type { JsonValue } from "./typegen/scripts/types.js";
-import { RoomOS } from "./types.js";
-import { RoomOSFormatter } from "./writer.js";
+import { RoomOSProxy } from "./src/proxy.js";
+import { reader } from "./src/reader.js";
+import type { JsonValue } from "./scripts/types.js";
+import { RoomOS } from "./src/types.js";
+import { RoomOSFormatter } from "./src/writer.js";
 
 type ResolvedProduct<Product extends RoomOS.ProductTarget> =
   [Product] extends [never] ? "any" : Product;

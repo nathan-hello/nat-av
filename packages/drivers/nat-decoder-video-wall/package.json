@@ -1,5 +1,5 @@
 {
-  "name": "@nat-av/driver-dante-router",
+  "name": "@nat-av/driver-nat-decoder-video-wall",
   "version": "0.1.0",
   "type": "module",
   "files": [
@@ -10,23 +10,23 @@
       "types": "./.dist/index.d.ts",
       "import": "./.dist/index.js"
     },
-    "./types": {
-      "types": "./.dist/types.d.ts",
-      "import": "./.dist/types.js"
-    },
-    "./repl": {
-      "types": "./.dist/repl/index.d.ts",
-      "import": "./.dist/repl/index.js"
+    "./templates/*": {
+      "types": "./.dist/src/templates/*.d.ts",
+      "import": "./.dist/src/templates/*.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@nat-av/driver-nat-decoder": "workspace:*"
+  },
   "peerDependencies": {
     "@nat-av/core": "^0.1.0"
   },
   "devDependencies": {
-    "@nat-av/core": "workspace:*"
+    "@nat-av/core": "workspace:*",
+    "@nat-av/driver-nat-decoder": "workspace:*"
   }
 }

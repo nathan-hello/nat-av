@@ -1,7 +1,10 @@
 import { getRpc } from "@/state";
 import { Decoder } from "@/ui/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/wall/source";
-import type { Encoder, LogicalWindow } from "@nat-av/driver-decoder/display";
+import type {
+  Encoder,
+  LogicalWindow,
+} from "@nat-av/driver-nat-decoder-video-wall";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {

@@ -12,12 +12,12 @@ type SocketMaybe = Partial<Sockets.Socket> | undefined;
 
 export abstract class Driver<
   Name extends string = string,
+  State extends Record<string, any> = Record<string, any>,
   Deps extends Drivers.Array = Drivers.Array,
   Api extends Drivers.ApiRecord = Drivers.ApiRecord,
-  State extends Record<string, any> = Record<string, any>,
   Events extends EventsMaybe = EventsMaybe,
   Socket extends SocketMaybe = SocketMaybe,
-> extends ProtectedTypedEventTarget<Events.Driver.Map> {
+> extends ProtectedTypedEventTarget<Events.Driver.Map<State>> {
   public abstract state: State;
   public abstract api: Api;
   // TSAS:
@@ -36,9 +36,9 @@ export abstract class Driver<
     this.tel = new Telemetry(`Driver::${this.name}`);
   }
 
-  protected dispatch<K extends keyof Events.Driver.Map>(
+  protected dispatch<K extends keyof Events.Driver.Map<State>>(
     type: K,
-    payload: Events.Driver.Map[K],
+    payload: Events.Driver.Map<State>[K],
   ): void {
     super.dispatch(type, payload);
 
@@ -266,7 +266,10 @@ export class Manager<
     d.on("driver:state-updated", (event) =>
       this.bus.dispatch("natav:state:update", {
         name,
-        data: event.data,
+        // TSAS: d came from this manager's merged driver set, so its state matches the bus event union.
+        data: event.data as Events.Natav.Map<
+          Drivers.Merged<D, S>
+        >["natav:state:update"]["data"],
       }),
     );
 
@@ -287,6 +290,9 @@ export class Manager<
     });
 
     d.socket?.on?.("disconnected", (event) => {
+      if (event.error) {
+        d.tel.error("socket got disconnected error", event);
+      }
       this.bus.dispatch("natav:driver:disconnected", { name });
     });
 

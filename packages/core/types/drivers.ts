@@ -8,7 +8,6 @@ import type { Rpc } from "@nat-av/core/rpc/types";
 // to get the Natav.Names<N> for example will cause a circular
 // dependency that Typescript cannot resolve.
 export namespace Drivers {
-
   export type Array = readonly Drivers.AnyDriver[];
 
   export type PartialArray<T extends readonly unknown[]> =
@@ -49,9 +48,9 @@ export namespace Drivers {
 
   export type AnyDriver = Driver<
     string,
+    Record<string, any>,
     Drivers.Array,
     ApiRecord,
-    Record<string, any>,
     TypedEventTarget<{ [x: string]: Rpc.Json.Value }> | undefined,
     Partial<Sockets.Socket> | undefined
   >;

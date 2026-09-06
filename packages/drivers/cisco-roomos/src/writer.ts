@@ -1,5 +1,5 @@
 import type { Proto } from "@nat-av/core";
-import { removeBrackets } from "./typegen/scripts/parse.js";
+import { removeBrackets } from "../scripts/parse.js";
 import type { RoomOS } from "./types.js";
 
 export function isNumericSegment(segment: string): boolean {

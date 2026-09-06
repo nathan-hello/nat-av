@@ -1,7 +1,8 @@
-export * from "./cisco-roomos.js";
-export * from "./dante-router.js";
-export * from "./decoder.js";
-export { default as RelayBoard } from "@nat-av/driver-bewinner-relay-board";
-export { Paint } from "@nat-av/driver-paint";
-export { default as ChazyControl } from "@nat-av/driver-turtle";
-export { default as Mediasite } from "@nat-av/driver-mediasite";
+export * as BewinnerRelayBoard from "@nat-av/driver-bewinner-relay-board";
+export * as CiscoRoomos from "@nat-av/driver-cisco-roomos";
+export * as DanteRouter from "@nat-av/driver-dante-router";
+export * as Mediasite from "@nat-av/driver-mediasite";
+export * as NatDecoder from "@nat-av/driver-nat-decoder";
+export * as NatDecoderVideoWall from "@nat-av/driver-nat-decoder-video-wall";
+export * as Paint from "@nat-av/driver-paint";
+export * as Turtle from "@nat-av/driver-turtle";

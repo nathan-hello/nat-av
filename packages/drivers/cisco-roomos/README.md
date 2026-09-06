@@ -9,7 +9,7 @@ Place it in `./typegen/schemas/`, for example `./typegen/schemas/11.33.1 October
 Then run
 
 ```sh
-npx tsx ./typegen/scripts/index.ts
+npx tsx ./scripts/index.ts
 ```
 
 And it will generate a `.ts` file with a typesafe API that will be given

@@ -11,10 +11,10 @@ import {
 import type { GeneratedModel, SchemaEntry, SchemaJson, Tree } from "./types.js";
 
 const FILE_INPUT = new URL(
-  "../schemas/11.33.1 October 2025.json",
+  "../typegen/schemas/11.33.1 October 2025.json",
   import.meta.url,
 );
-const FILE_OUTPUT = new URL("../schemas/11.33.1.ts", import.meta.url);
+const FILE_OUTPUT = new URL("../typegen/schemas/11.33.1.ts", import.meta.url);
 
 function generateSource(schema: SchemaJson): string {
   const entries = mergeEntries(schema.objects);

@@ -1,5 +1,5 @@
 import type { Drivers } from "@nat-av/core";
-import type { GeneratedRoomOS } from "./typegen/schemas/11.33.1.js";
+import type { GeneratedRoomOS } from "../typegen/schemas/11.33.1.js";
 
 type IsPlainObject<V> =
   [V] extends [readonly any[]] ? false
@@ -214,8 +214,7 @@ export namespace RoomOS {
   type TError = { code: number; message: string; data?: any };
 
   export type Result<T = any> =
-    | { ok: true; data: T }
-    | { ok: false; error: TError };
+    { ok: true; data: T } | { ok: false; error: TError };
 
   export type WriteOperation =
     | {

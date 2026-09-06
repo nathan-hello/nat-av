@@ -144,7 +144,7 @@ export function createDecoderRepl(options: {
 A user-owned script can then compose and run the package tool:
 
 ```ts
-import { createDecoderRepl } from "@nat-av/driver-decoder/repl";
+import { createDecoderRepl } from "@nat-av/driver-nat-decoder/repl";
 import { decoder, encoders } from "./config.js";
 
 const repl = createDecoderRepl({ decoder, encoders });

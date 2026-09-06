@@ -10,14 +10,20 @@ const packages = [
   "@nat-av/driver-bewinner-relay-board",
   "@nat-av/driver-cisco-roomos",
   "@nat-av/driver-dante-router",
-  "@nat-av/driver-decoder",
+  "@nat-av/driver-nat-decoder",
+  "@nat-av/driver-nat-decoder-video-wall",
   "@nat-av/driver-paint",
+  "@nat-av/plugins",
   "@nat-av/plugin-debugger",
   "@nat-av/plugin-schema",
 ];
 
 for (const packageName of packages) {
-  execFileSync("pnpm", ["--filter", packageName, "pack", "--pack-destination", destination], {
-    stdio: "inherit",
-  });
+  execFileSync(
+    "pnpm",
+    ["--filter", packageName, "pack", "--pack-destination", destination],
+    {
+      stdio: "inherit",
+    },
+  );
 }

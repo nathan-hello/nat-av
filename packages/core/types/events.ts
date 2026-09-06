@@ -27,7 +27,7 @@ export namespace Events {
   // to get the Drivers.Names<N> for example will cause a circular
   // dependency that Typescript cannot resolve.
   export namespace Driver {
-    export type Map<StateData = any> = {
+    export type Map<StateData> = {
       "driver:state-updated": {
         data: Partial<StateData>;
       };

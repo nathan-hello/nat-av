@@ -96,8 +96,7 @@ export type DecoderResponse =
   | RouteDestroyResponse;
 
 export type DecoderNotification =
-  | DecoderNotificationMonitorConnected
-  | DecoderNotificationMonitorDisconnected;
+  DecoderNotificationMonitorConnected | DecoderNotificationMonitorDisconnected;
 
 export type DecoderMap = {
   fetch_routes: { req: FetchRoutesRequest; res: FetchRoutesResponse };

@@ -1,7 +1,7 @@
 import { Driver } from "@nat-av/core";
 import * as dgram from "node:dgram";
-import { RESULT_CODE_SUCCESS, SERVICE_ARC } from "./constants.js";
-import { AvahiDiscovery } from "./discovery.js";
+import { RESULT_CODE_SUCCESS, SERVICE_ARC } from "./src/constants.js";
+import { AvahiDiscovery } from "./src/discovery.js";
 import {
   buildAddSubscriptions,
   buildChannelCountQuery,
@@ -9,7 +9,7 @@ import {
   buildRemoveSubscriptions,
   buildRxChannelsQuery,
   buildTxChannelsQuery,
-} from "./packets.js";
+} from "./src/packets.js";
 import {
   getChannelCount,
   getDeviceName,
@@ -17,13 +17,13 @@ import {
   parseRxChannels,
   parseTxChannelInfo,
   parseTxFriendlyNames,
-} from "./parser.js";
+} from "./src/parser.js";
 import type {
   DanteDeviceRecord,
   DanteRouterState,
   DiscoveredService,
   DiscoveryBackend,
-} from "./types.js";
+} from "./src/types.js";
 
 const ARC_TIMEOUT_MS = 3000;
 

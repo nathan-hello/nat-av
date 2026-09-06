@@ -1,15 +1,15 @@
 import { Manager, Tcp, Telemetry, type Sockets } from "@nat-av/core";
 import { CiscoRoomOS } from "@nat-av/driver-cisco-roomos";
 import DanteRouter from "@nat-av/driver-dante-router";
-import Decoder from "@nat-av/driver-decoder";
-import DisplayManager from "@nat-av/driver-decoder/display";
-import { Debugger } from "@nat-av/plugin-debugger";
+import Decoder from "@nat-av/driver-nat-decoder";
+import DisplayManager from "@nat-av/driver-nat-decoder-video-wall";
 import { Paint } from "@nat-av/driver-paint";
 import { RpcServer } from "@nat-av/core/rpc/server";
 import { RpcTransportWebsocket } from "../../rpc-websocket";
-import { SchemaGenerator } from "@nat-av/plugin-schema";
+import { Debugger, Schema } from "@nat-av/plugins";
 import RelayBoard from "@nat-av/driver-bewinner-relay-board";
 import { Server } from "node:http";
+import { System } from "./system";
 
 // TSAS:
 if ((globalThis as any).__manager__) {
@@ -66,9 +66,10 @@ const natav = new Manager({
     }),
   ],
   deferred: [
+    System,
     RpcServer,
-    Debugger,
-    (manager) => new SchemaGenerator(manager, {}),
+    Debugger.Debugger,
+    (manager) => new Schema.SchemaGenerator(manager, {}),
   ],
 });
 
