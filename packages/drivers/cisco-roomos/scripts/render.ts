@@ -333,10 +333,9 @@ function renderCommandApiSection(
   });
 
   output.push(
-    `export type CommandApiAny = Merge<${[
-      "CommandApiCommon",
-      ...setNames.map((name) => `${name}`),
-    ].join(" & ")}>;`,
+    `export type CommandApiAny = Merge<${["CommandApiCommon", ...setNames].join(
+      " & ",
+    )}>;`,
   );
 
   output.push(
@@ -555,10 +554,11 @@ function renderStateSection(
   });
 
   output.push(
-    `export type ${baseName}Any = ${baseName === "Configuration" ? "MergeUnion" : "Merge"}<${[
-      `${baseName}Common`,
-      ...setNames,
-    ].join(baseName === "Configuration" ? " | " : " & ")}>;`,
+    `export type ${baseName}Any = ${
+      baseName === "Configuration" ? "MergeUnion" : "Merge"
+    }<${[`${baseName}Common`, ...setNames].join(
+      baseName === "Configuration" ? " | " : " & ",
+    )}>;`,
   );
 
   output.push(
@@ -581,9 +581,13 @@ function renderStateSection(
   return output.join("\n");
 }
 
-function render(model: GeneratedModel): string {
+function render(
+  model: GeneratedModel,
+  version = "unknown",
+  namespace = "GeneratedRoomOS",
+): string {
   return [
-    "export namespace GeneratedRoomOS {",
+    `export namespace ${namespace} {`,
     "type Merge<T> = { [K in keyof T]: T[K] };",
     "type UnionKeys<T> = T extends unknown ? keyof T : never;",
     "type UnionValue<T, K extends PropertyKey> = T extends { [P in K]?: infer Value } ? Value : never;",
@@ -600,8 +604,25 @@ function render(model: GeneratedModel): string {
     renderEventSection("Event", model.event, model.products),
     renderEventMapSection(model.eventEntries),
     renderEventSubscriptionShapeSection(model.eventEntries),
+    renderSchemaSection(version),
     "}",
   ].join("\n\n");
+}
+
+function renderSchemaSection(version: string): string {
+  return `export type Version = ${JSON.stringify(version)};
+
+export type RoomOSSchema = {
+  Version: Version;
+  Product: Product;
+  ProductTarget: ProductTarget;
+  CommandApi: { any: CommandApiAny } & CommandApiByProduct;
+  Configuration: { any: ConfigurationAny } & ConfigurationByProduct;
+  Status: { any: StatusAny } & StatusByProduct;
+  Event: { any: EventAny } & EventByProduct;
+  EventByNormPath: EventByNormPath;
+  EventSubscriptionShape: EventSubscriptionShape;
+};`;
 }
 
 export { render };

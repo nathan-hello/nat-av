@@ -65,7 +65,7 @@ Rules:
 
 ## Generator Expectations
 
-When updating `typegen/scripts/`:
+When updating `scripts/` or the generated schemas:
 
 - prefer emitting explicit generated helper types over clever runtime-side
   inference

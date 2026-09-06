@@ -2,6 +2,8 @@ import { Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index.js";
+import type { GeneratedRoomOS } from "../generated.js";
+import { version } from "node:os";
 
 describe("typecheck", () => {
   const socket = new Test.Socket(
@@ -86,7 +88,7 @@ describe("typecheck", () => {
     },
   });
 
-  roomos.api.xConfiguration.Configuration.UserInterface.OSD
+  roomos.api.xConfiguration.Configuration.UserInterface.OSD;
 
   const strictRoomos = new CiscoRoomOS({
     name: "roomos-strict-typecheck",
@@ -109,6 +111,20 @@ describe("typecheck", () => {
     product: "any",
     strict: false,
   });
+
+  const versionedRoomos = new CiscoRoomOS({
+    name: "roomos-version-typecheck",
+    socket,
+    product: "helix_55",
+    version: "11.33.1 October 2025",
+    strict: false,
+  });
+
+  const customRoomos = new CiscoRoomOS<GeneratedRoomOS>({
+    name: "roomos-custom-schema-typecheck",
+    socket,
+    strict: true,
+  });
   it("does not throw when accessing nested state obj", async () => {
     assert.doesNotThrow(async () => {
       // Should be `"userRequested" | "autoStart" | "autoStartDesktop" | "autoStartBackground" | "conferenceChanged" | "restartPreviewAfterCallEnded" | "startReceiving" | "floorGranted" | "airplayRequested" | "airplaySettings" | "deviceUnlocked" | "immersiveShare" | "unspecified"`
@@ -130,6 +146,9 @@ describe("typecheck", () => {
       await anyProductRoomos.api.xConfiguration.Configuration.UserInterface.OSD.EncryptionIndicator.set(
         "AlwaysOn",
       );
+
+      await versionedRoomos.api.xCommand.Dial({ Number: "asdf" });
+      await customRoomos.api.xCommand.Dial({ Number: "asdf" });
 
       await anyProductRoomos.api.xConfiguration.Configuration.UserInterface.OSD.EncryptionIndicator.set(
         // @ts-expect-error EncryptionIndicator accepts only documented literals.

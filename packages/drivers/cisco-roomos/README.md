@@ -4,7 +4,8 @@ The idea is that we take a schema from the following repo:
 
 [https://github.com/cisco-ce/roomos.cisco.com/tree/master/schemas](https://github.com/cisco-ce/roomos.cisco.com/tree/master/schemas)
 
-Place it in `./typegen/schemas/`, for example `./typegen/schemas/11.33.1 October 2025.json`
+Place one or more schemas in `./assets/schemas/`, for example
+`./assets/schemas/11.33.1 October 2025.json`.
 
 Then run
 
@@ -12,7 +13,50 @@ Then run
 npx tsx ./scripts/index.ts
 ```
 
-And it will generate a `.ts` file with a typesafe API that will be given
-to a writer. That writer will take the JS function path + args and serialize
-it to a JSONRPC, XML, or Terminal string. Then, it's sent over the socket
-with the driver in `./index.ts`. After that the tests will pass.
+The generator writes one ignored `generated.ts` file. It contains an
+`GeneratedRoomOS` map with an `"any"` entry for the common API and
+version-specific entries for every input file. Consumers can generate their
+own schema map and pass it as the first `CiscoRoomOS` type parameter.
+
+When `version` or `product` is omitted, the generated `"any"` surface is used
+for that selector. Supplying either constructor value narrows the API types:
+
+```ts
+import { CiscoRoomOS } from "@nat-av/driver-cisco-roomos";
+
+const roomos = new CiscoRoomOS({
+  name: "roomos",
+  socket,
+  version: "26.8.1 August 2026",
+  product: "polaris",
+  strict: false,
+});
+```
+
+For a consumer-generated schema map:
+
+```ts
+import { CiscoRoomOS } from "@nat-av/driver-cisco-roomos";
+import type { GeneratedRoomOS } from "./generated/roomos/index.js";
+
+const roomos = new CiscoRoomOS<GeneratedRoomOS>({
+  name: "roomos",
+  socket,
+  strict: false,
+});
+```
+
+The script is also available from an installed package:
+
+```sh
+npx tsx ./node_modules/@nat-av/driver-cisco-roomos/.dist/scripts/index.js \
+  --input ./roomos-schemas \
+  --output ./generated/roomos
+```
+
+To refresh the bundled Cisco schemas, pass Cisco's `schemas.json` manifest to
+the downloader:
+
+```sh
+pnpm download-schemas -- /path/to/roomos.cisco.com/schemas/schemas.json
+```

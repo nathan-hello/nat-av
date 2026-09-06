@@ -1,4 +1,4 @@
-import { Err } from "../client.js";
+import { Err } from "../lib/errors.js";
 import { Convert } from "../lib/convert.js";
 import {
   ProtectedTypedEventTarget,

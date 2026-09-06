@@ -1,5 +1,21 @@
 import type { Drivers } from "@nat-av/core";
-import type { GeneratedRoomOS } from "../typegen/schemas/11.33.1.js";
+import type { GeneratedRoomOS } from "../generated.js";
+
+export type RoomOSSchema = {
+  Version: string;
+  Product: string;
+  ProductTarget: string;
+  CommandApi: { any: unknown };
+  Configuration: { any: unknown };
+  Status: { any: unknown };
+  Event: { any: unknown };
+  EventByNormPath: object;
+  EventSubscriptionShape: object;
+};
+
+export type RoomOSSchemaSet = {
+  any: RoomOSSchema;
+};
 
 type IsPlainObject<V> =
   [V] extends [readonly any[]] ? false
@@ -17,10 +33,10 @@ type SubscriptionTree<Value> =
     { [K in keyof Value]?: true | SubscriptionTree<Value[K]> }
   : true;
 
-type EventNamesWithPrefix<Prefix extends string> = Extract<
-  GeneratedRoomOS.EventName,
-  Prefix | `${Prefix} ${string}`
->;
+type EventNamesWithPrefix<
+  EventMap extends Record<string, unknown>,
+  Prefix extends string,
+> = Extract<keyof EventMap, Prefix | `${Prefix} ${string}`>;
 
 type SelectedSubscriptionPaths<Selected, Prefix extends string = ""> =
   IsPlainObject<Selected> extends true ?
@@ -31,19 +47,47 @@ type SelectedSubscriptionPaths<Selected, Prefix extends string = ""> =
     }[keyof Selected & string]
   : never;
 
-type EventNamesFromSubscriptions<Selected> =
+type EventNamesFromSubscriptions<
+  Selected,
+  EventMap extends Record<string, unknown>,
+> =
   [Selected] extends [never] ? never
   : Selected extends { xFeedback?: infer Feedback } ?
     SelectedSubscriptionPaths<Feedback> extends infer Path extends string ?
-      Path extends GeneratedRoomOS.EventName ?
-        Extract<GeneratedRoomOS.EventName, Path>
-      : EventNamesWithPrefix<Path>
+      Path extends keyof EventMap ?
+        Path
+      : EventNamesWithPrefix<EventMap, Path>
     : never
   : never;
 
 type PickMap<Map, Keys extends keyof Map> = {
   [K in Keys]: Map[K];
 };
+
+type SchemaAt<
+  SchemaSet extends RoomOSSchemaSet,
+  Version extends keyof SchemaSet,
+> = SchemaSet[Version];
+
+type ProductTargetOf<Schema extends RoomOSSchema> = Schema["ProductTarget"];
+
+type ProductMapValue<
+  Schema extends RoomOSSchema,
+  Key extends "CommandApi" | "Configuration" | "Status" | "Event",
+  Product extends string,
+> =
+  Product extends "any" ?
+    Schema[Key] extends { any: infer Any } ?
+      Any
+    : never
+  : Product extends keyof Schema[Key] ? Schema[Key][Product]
+  : never;
+
+type EventMapOf<Schema extends RoomOSSchema> = Schema["EventByNormPath"] &
+  Record<string, unknown>;
+
+type EventSubscriptionShapeOf<Schema extends RoomOSSchema> =
+  Schema["EventSubscriptionShape"] & object;
 
 type RemoteResult<Value> = Promise<RoomOS.Result<Value>>;
 
@@ -57,13 +101,19 @@ type FeedbackNode<Value, State> = {
   ) => RemoteResult<RoomOS.HeldSubscription>;
 };
 
-type RootState<Product extends GeneratedRoomOS.ProductTarget> = {
+type RootState<
+  Schema extends RoomOSSchema,
+  Product extends ProductTargetOf<Schema>,
+> = {
   xConfiguration: UnwrapStateRoot<
-    GeneratedRoomOS.Configuration<Product>,
+    ProductMapValue<Schema, "Configuration", Product>,
     "Configuration"
   >;
-  xStatus: UnwrapStateRoot<GeneratedRoomOS.Status<Product>, "Status">;
-  xFeedback: GeneratedRoomOS.Event<Product>;
+  xStatus: UnwrapStateRoot<
+    ProductMapValue<Schema, "Status", Product>,
+    "Status"
+  >;
+  xFeedback: ProductMapValue<Schema, "Event", Product>;
 };
 
 type PruneBySubscriptions<Value, Subscriptions> =
@@ -80,11 +130,14 @@ type PruneBySubscriptions<Value, Subscriptions> =
   : Value;
 
 type StateFromSubscriptions<
-  Product extends GeneratedRoomOS.ProductTarget,
+  Schema extends RoomOSSchema,
+  Product extends ProductTargetOf<Schema>,
   Subscriptions,
 > = {
-  [K in keyof Subscriptions & keyof RootState<Product>]: PruneBySubscriptions<
-    RootState<Product>[K],
+  [
+    K in keyof Subscriptions & keyof RootState<Schema, Product>
+  ]: PruneBySubscriptions<
+    RootState<Schema, Product>[K],
     NonNullable<Subscriptions[K]>
   >;
 };
@@ -130,85 +183,119 @@ export namespace RoomOS {
     | JsonValue[]
     | { [key: string]: JsonValue };
 
-  export type ProductTarget = GeneratedRoomOS.ProductTarget;
+  export type ProductTarget<Schema extends RoomOSSchema = RoomOSSchema> =
+    ProductTargetOf<Schema>;
+
+  export type VersionTarget<
+    SchemaSet extends RoomOSSchemaSet = RoomOSSchemaSet,
+  > = keyof SchemaSet & string;
+
   export type ConfigurationSubscriptionTree<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
   > = SubscriptionTree<
-    UnwrapStateRoot<ConfigurationState<Product>, "Configuration">
+    UnwrapStateRoot<
+      ProductMapValue<Schema, "Configuration", Product>,
+      "Configuration"
+    >
   >;
 
   export type StatusSubscriptionTree<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = SubscriptionTree<UnwrapStateRoot<StatusState<Product>, "Status">>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = SubscriptionTree<
+    UnwrapStateRoot<ProductMapValue<Schema, "Status", Product>, "Status">
+  >;
 
-  export type FeedbackSubscriptionTree =
-    SubscriptionTree<GeneratedRoomOS.EventSubscriptionShape>;
+  export type FeedbackSubscriptionTree<
+    Schema extends RoomOSSchema = RoomOSSchema,
+  > = SubscriptionTree<EventSubscriptionShapeOf<Schema>>;
 
-  export type Sub<Product extends GeneratedRoomOS.ProductTarget = "any"> = {
-    xConfiguration?: ConfigurationSubscriptionTree<Product>;
-    xStatus?: StatusSubscriptionTree<Product>;
-    xFeedback?: FeedbackSubscriptionTree;
+  export type Sub<
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = {
+    xConfiguration?: ConfigurationSubscriptionTree<Schema, Product>;
+    xStatus?: StatusSubscriptionTree<Schema, Product>;
+    xFeedback?: FeedbackSubscriptionTree<Schema>;
   };
 
   export type ConfigurationState<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.Configuration<Product>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = ProductMapValue<Schema, "Configuration", Product>;
 
   export type StatusState<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.Status<Product>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = ProductMapValue<Schema, "Status", Product>;
 
   export type EventState<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = GeneratedRoomOS.Event<Product>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = ProductMapValue<Schema, "Event", Product>;
 
-  export type EventMap = GeneratedRoomOS.EventByNormPath;
+  export type EventMap<Schema extends RoomOSSchema = RoomOSSchema> =
+    EventMapOf<Schema>;
 
-  export type EventName = keyof EventMap;
+  export type EventName<Schema extends RoomOSSchema = RoomOSSchema> =
+    keyof EventMap<Schema>;
 
   export type FeedbackSubscriptions<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = Sub<Product>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = Sub<Schema, Product>;
 
   export type SubscribedEventName<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-    Subscriptions extends FeedbackSubscriptions<Product> =
-      FeedbackSubscriptions<Product>,
-  > = EventNamesFromSubscriptions<Subscriptions>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+    Subscriptions extends FeedbackSubscriptions<Schema, Product> =
+      FeedbackSubscriptions<Schema, Product>,
+  > = EventNamesFromSubscriptions<Subscriptions, EventMap<Schema>>;
 
   export type SubscribedEventMap<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-    Subscriptions extends FeedbackSubscriptions<Product> =
-      FeedbackSubscriptions<Product>,
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+    Subscriptions extends FeedbackSubscriptions<Schema, Product> =
+      FeedbackSubscriptions<Schema, Product>,
   > = PickMap<
-    EventMap,
-    Extract<SubscribedEventName<Product, Subscriptions>, EventName>
+    EventMap<Schema>,
+    Extract<
+      SubscribedEventName<Schema, Product, Subscriptions>,
+      EventName<Schema>
+    >
   >;
 
   export type State<
-    Product extends GeneratedRoomOS.ProductTarget,
-    Subscriptions extends FeedbackSubscriptions<Product> =
-      FeedbackSubscriptions<Product>,
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+    Subscriptions extends FeedbackSubscriptions<Schema, Product> =
+      FeedbackSubscriptions<Schema, Product>,
     StrictState extends boolean = false,
   > =
-    StrictState extends true ? StateFromSubscriptions<Product, Subscriptions>
-    : RootState<Product>;
+    StrictState extends true ?
+      StateFromSubscriptions<Schema, Product, Subscriptions>
+    : RootState<Schema, Product>;
 
   export type ConfigurationApi<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-  > = ApiRecordify<Configify<ConfigurationState<Product>>>;
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = ApiRecordify<Configify<ConfigurationState<Schema, Product>>>;
 
-  export type StatusApi<Product extends GeneratedRoomOS.ProductTarget = "any"> =
-    ApiRecordify<Statusify<StatusState<Product>>>;
+  export type StatusApi<
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+  > = ApiRecordify<Statusify<StatusState<Schema, Product>>>;
 
   export type Api<
-    Product extends GeneratedRoomOS.ProductTarget = "any",
-    State = EventState<Product>,
+    Schema extends RoomOSSchema = RoomOSSchema,
+    Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
+    State = EventState<Schema, Product>,
   > = {
-    xCommand: CommandRecordify<GeneratedRoomOS.CommandApi<Product>>;
-    xConfiguration: ConfigurationApi<Product>;
-    xStatus: StatusApi<Product>;
-    xFeedback: ApiRecordify<Feedbackify<EventState<Product>, State>>;
+    xCommand: CommandRecordify<ProductMapValue<Schema, "CommandApi", Product>>;
+    xConfiguration: ConfigurationApi<Schema, Product>;
+    xStatus: StatusApi<Schema, Product>;
+    xFeedback: ApiRecordify<Feedbackify<EventState<Schema, Product>, State>>;
   };
 
   type TError = { code: number; message: string; data?: any };
@@ -285,3 +372,5 @@ export namespace RoomOS {
     };
   }
 }
+
+export type DefaultRoomOSSchemaSet = GeneratedRoomOS;

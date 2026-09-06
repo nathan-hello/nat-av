@@ -9,29 +9,56 @@ import {
 } from "@nat-av/core";
 import { RoomOSProxy } from "./src/proxy.js";
 import { reader } from "./src/reader.js";
-import type { JsonValue } from "./scripts/types.js";
+import type {
+  DefaultRoomOSSchemaSet,
+  RoomOSSchema,
+  RoomOSSchemaSet,
+} from "./src/types.js";
 import { RoomOS } from "./src/types.js";
 import { RoomOSFormatter } from "./src/writer.js";
 
-type ResolvedProduct<Product extends RoomOS.ProductTarget> =
-  [Product] extends [never] ? "any" : Product;
+export type { RoomOSSchema, RoomOSSchemaSet } from "./src/types.js";
+export type { GeneratedRoomOS } from "./generated.js";
+
+type SelectedSchema<
+  SchemaSet extends RoomOSSchemaSet,
+  Version extends keyof SchemaSet & string,
+> = SchemaSet[Version] & RoomOSSchema;
+
+type SelectorInput<Selected extends string, Options extends string> =
+  Selected extends "any" ? Selected | NoInfer<Exclude<Options, "any">>
+  : Selected;
 
 export type State<
-  Product extends RoomOS.ProductTarget = "any",
+  Schema extends RoomOSSchema = DefaultRoomOSSchemaSet["any"],
+  Product extends RoomOS.ProductTarget<Schema> = "any",
   StrictState extends boolean = boolean,
-  Subscriptions extends RoomOS.Sub<Product> = RoomOS.Sub<Product>,
-> = RoomOS.State<Product, Subscriptions, StrictState> & {
+  Subscriptions extends RoomOS.Sub<Schema, Product> = RoomOS.Sub<
+    Schema,
+    Product
+  >,
+> = RoomOS.State<Schema, Product, Subscriptions, StrictState> & {
   internal: { subscriptions: Subscriptions };
 };
 
 export class CiscoRoomOS<
-  Product extends RoomOS.ProductTarget = "any",
+  SchemaSet extends RoomOSSchemaSet = DefaultRoomOSSchemaSet,
+  const Version extends keyof SchemaSet & string = "any",
+  const Product extends RoomOS.ProductTarget<
+    SelectedSchema<SchemaSet, Version>
+  > = Extract<RoomOS.ProductTarget<SelectedSchema<SchemaSet, Version>>, "any">,
   const Strict extends boolean = true,
-  const Sub extends RoomOS.Sub<Product> = RoomOS.Sub<Product>,
+  const Sub extends RoomOS.Sub<SelectedSchema<SchemaSet, Version>, Product> =
+    RoomOS.Sub<SelectedSchema<SchemaSet, Version>, Product>,
   const N extends string = string,
-  State extends RoomOS.State<Product, Sub, Strict> & {
+  State extends RoomOS.State<
+    SelectedSchema<SchemaSet, Version>,
+    Product,
+    Sub,
+    Strict
+  > & {
     internal: { highestId: number; subscriptions: Sub };
-  } = RoomOS.State<Product, Sub, Strict> & {
+  } = RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict> & {
     internal: { highestId: number; subscriptions: Sub };
   },
 > extends Driver<N, State> {
@@ -41,26 +68,38 @@ export class CiscoRoomOS<
   >;
   private proxy!: RoomOSProxy;
   private subscriptions: RoomOS.HeldSubscription[] = [];
-  events = new TypedEventTarget<RoomOS.SubscribedEventMap<Product, Sub>>();
+  events = new TypedEventTarget<
+    RoomOS.SubscribedEventMap<SelectedSchema<SchemaSet, Version>, Product, Sub>
+  >();
 
   state: State;
 
   socket: Sockets.Client;
 
+  readonly version?: Version;
+
   constructor({
     name,
     socket,
     subscriptions,
+    version,
     strict,
   }: {
     name: N;
     socket: Sockets.Client;
-    product?: NoInfer<Product>;
-    subscriptions?: RoomOS.Sub<NoInfer<Product>> & Sub;
+    product?: SelectorInput<
+      Product,
+      RoomOS.ProductTarget<SelectedSchema<SchemaSet, Version>>
+    >;
+    version?: SelectorInput<Version, keyof SchemaSet & string>;
+    subscriptions?: RoomOS.Sub<SelectedSchema<SchemaSet, Version>, Product> &
+      Sub;
     strict: Strict;
   }) {
     super({ name });
     this.socket = socket;
+    // TSAS: SelectorInput widens the constructor for autocomplete while the class generic remains the selected version.
+    this.version = version as Version;
 
     this.proxy = new RoomOSProxy(this.tel, this.request.bind(this), {}, strict);
 
@@ -136,6 +175,7 @@ export class CiscoRoomOS<
           const eventName = operation.data.path.slice(1).join(" ");
           // TSAS: Event notifications are emitted from schema-backed Event paths.
           const typedEventName = eventName as keyof RoomOS.SubscribedEventMap<
+            SelectedSchema<SchemaSet, Version>,
             Product,
             Sub
           > &
@@ -143,6 +183,7 @@ export class CiscoRoomOS<
           // TSAS: The emitted payload is stored at the same schema-backed event path.
           const typedEventPayload = operation.data
             .value as RoomOS.SubscribedEventMap<
+            SelectedSchema<SchemaSet, Version>,
             Product,
             Sub
           >[typeof typedEventName];
@@ -179,7 +220,7 @@ export class CiscoRoomOS<
   }
 
   private RefeshSubscriptions(
-    subscriptions: Sub | NonNullable<JsonValue>,
+    subscriptions: Sub | RoomOS.JsonValue,
     path: string[] = [],
   ): Promise<RoomOS.Result<unknown>>[] {
     const requests: Promise<RoomOS.Result<unknown>>[] = [];
@@ -274,51 +315,36 @@ export class CiscoRoomOS<
 
   // TSAS:
   api!: RoomOS.Api<
-    ResolvedProduct<Product>,
-    RoomOS.State<
-      ResolvedProduct<Product>,
-      RoomOS.Sub<ResolvedProduct<Product>>,
-      Strict
-    >
+    SelectedSchema<SchemaSet, Version>,
+    Product,
+    RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict>
   >;
 
   private initApi() {
     this.api = {
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xCommand: this.proxy.Command() as unknown as RoomOS.Api<
-        ResolvedProduct<Product>,
-        RoomOS.State<
-          ResolvedProduct<Product>,
-          RoomOS.Sub<ResolvedProduct<Product>>,
-          Strict
-        >
+        SelectedSchema<SchemaSet, Version>,
+        Product,
+        RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict>
       >["xCommand"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xConfiguration: this.proxy.Configuration() as RoomOS.Api<
-        ResolvedProduct<Product>,
-        RoomOS.State<
-          ResolvedProduct<Product>,
-          RoomOS.Sub<ResolvedProduct<Product>>,
-          Strict
-        >
+        SelectedSchema<SchemaSet, Version>,
+        Product,
+        RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict>
       >["xConfiguration"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xStatus: this.proxy.Status() as RoomOS.Api<
-        ResolvedProduct<Product>,
-        RoomOS.State<
-          ResolvedProduct<Product>,
-          RoomOS.Sub<ResolvedProduct<Product>>,
-          Strict
-        >
+        SelectedSchema<SchemaSet, Version>,
+        Product,
+        RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict>
       >["xStatus"],
       // TSAS: These proxy builders are runtime-correct by construction and narrower than the structural proxy type.
       xFeedback: this.proxy.Feedback() as RoomOS.Api<
-        ResolvedProduct<Product>,
-        RoomOS.State<
-          ResolvedProduct<Product>,
-          RoomOS.Sub<ResolvedProduct<Product>>,
-          Strict
-        >
+        SelectedSchema<SchemaSet, Version>,
+        Product,
+        RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict>
       >["xFeedback"],
     };
   }

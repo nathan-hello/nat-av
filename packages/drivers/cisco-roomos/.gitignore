@@ -1,2 +1,4 @@
-./src/typegen/schemas/*
-./
+.dist/
+generated.ts
+assets/schemas/*.json
+!assets/schemas/schemas.json

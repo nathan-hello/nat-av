@@ -2,16 +2,28 @@
   "name": "@nat-av/driver-cisco-roomos",
   "version": "0.1.0",
   "type": "module",
-  "files": [".dist"],
+  "files": [
+    ".dist"
+  ],
   "exports": {
     ".": {
       "types": "./.dist/index.d.ts",
       "import": "./.dist/index.js"
+    },
+    "./scripts": {
+      "types": "./.dist/scripts/index.d.ts",
+      "import": "./.dist/scripts/index.js"
+    },
+    "./scripts/download-schemas": {
+      "types": "./.dist/scripts/download-schemas.d.ts",
+      "import": "./.dist/scripts/download-schemas.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "download-schemas": "tsx scripts/download-schemas.ts",
+    "generate": "tsx scripts/index.ts",
+    "build": "pnpm run generate && tsc -p tsconfig.json --outDir .dist --rootDir .",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
     "test": "node --test .dist/test/**/*.test.js"
   },
   "peerDependencies": {
