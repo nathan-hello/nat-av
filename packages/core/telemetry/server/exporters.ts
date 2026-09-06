@@ -1,9 +1,9 @@
-import type { LogRecordExporter } from "@nat-av/core/telemetry/exporters";
+import type { LogRecordExporter } from "../exporters.js";
 import {
   type ReadableLogRecord,
   ReadableLogRecordStringify,
   SeverityNumber,
-} from "@nat-av/core/telemetry/types";
+} from "../types.js";
 import fs from "node:fs";
 import node_util from "node:util";
 

@@ -1,5 +1,5 @@
-import { Manager } from "@nat-av/core/drivers";
-import { Test } from "@nat-av/core/test/data.test";
+import { Manager } from "@nat-av/core";
+import { Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { Debugger } from "./index.js";

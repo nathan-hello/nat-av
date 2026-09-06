@@ -1,6 +1,6 @@
-import type { Telemetry } from "@nat-av/core";
-import type { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-import type { Sockets, Events as TEvents } from "@nat-av/core/types";
+import type { Telemetry } from "../index.js";
+import type { TypedEventTarget } from "../lib/eventtarget.js";
+import type { Sockets, Events as TEvents } from "./index.js";
 
 // This namespace intentionally uses structural driver projections. Importing
 // the manager here would create a circular dependency during inference.

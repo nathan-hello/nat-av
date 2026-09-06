@@ -1,7 +1,7 @@
-import { Manager } from "@nat-av/core/drivers";
-import { Test } from "@nat-av/core/test/data.test";
-import { RpcClient } from "@nat-av/core/rpc/client";
-import { RpcServer } from "@nat-av/core/rpc/server";
+import { Manager } from "../../drivers/index.js";
+import { Test } from "../../test/data.test.js";
+import { RpcClient } from "../client/index.js";
+import { RpcServer } from "../server/index.js";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 

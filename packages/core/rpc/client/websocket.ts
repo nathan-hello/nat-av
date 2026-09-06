@@ -1,4 +1,4 @@
-import { Telemetry, TypedEventTarget } from "@nat-av/core/client";
+import { Telemetry, TypedEventTarget } from "../../client.js";
 import { Rpc } from "../types.js";
 
 export type ClientRpcTransport = Pick<

@@ -1,7 +1,7 @@
-import { RequestManager } from "@nat-av/core/lib/requests";
-import { Delimiters } from "@nat-av/core/sockets/delimiters";
-import { Telemetry } from "@nat-av/core/telemetry";
-import { Test } from "@nat-av/core/test/data.test";
+import { RequestManager } from "../lib/requests.js";
+import { Delimiters } from "../sockets/delimiters.js";
+import { Telemetry } from "../telemetry/index.js";
+import { Test } from "./data.test.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";

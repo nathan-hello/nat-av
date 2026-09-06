@@ -1,5 +1,5 @@
-import type { ReadableLogRecord } from "@nat-av/core/telemetry/types";
-import type { Drivers } from "@nat-av/core/types/drivers";
+import type { ReadableLogRecord } from "../telemetry/types.js";
+import type { Drivers } from "./drivers.js";
 
 export namespace Events {
   export namespace Socket {

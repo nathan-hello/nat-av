@@ -1,8 +1,8 @@
-import { Err } from "@nat-av/core/client";
-import { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-import type { DataDelimiter, DataFormatter } from "@nat-av/core/sockets/delimiters";
-import { Telemetry, type TaskResult } from "@nat-av/core/telemetry";
-import { type Events, type Sockets } from "@nat-av/core/types";
+import { Err } from "../client.js";
+import { TypedEventTarget } from "./eventtarget.js";
+import type { DataDelimiter, DataFormatter } from "../sockets/delimiters.js";
+import { Telemetry, type TaskResult } from "../telemetry/index.js";
+import { type Events, type Sockets } from "../types/index.js";
 
 export class RequestManager<Tx, Rx> extends TypedEventTarget<
   Events.Request.Map<Tx, Rx>

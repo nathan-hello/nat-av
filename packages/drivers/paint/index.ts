@@ -1,5 +1,4 @@
-import { Err } from "@nat-av/core/client";
-import { Driver } from "@nat-av/core/drivers";
+import { Err, Driver } from "@nat-av/core";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 

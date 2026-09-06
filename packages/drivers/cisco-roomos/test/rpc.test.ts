@@ -1,6 +1,4 @@
-import { Manager, Test } from "@nat-av/core";
-import { RpcClient } from "@nat-av/core/rpc/client";
-import { RpcServer } from "@nat-av/core/rpc/server";
+import { Manager, Test, RpcClient, RpcServer } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CiscoRoomOS } from "../index.js";

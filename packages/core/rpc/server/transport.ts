@@ -1,4 +1,4 @@
-import type { TypedEventTarget } from "@nat-av/core";
+import type { TypedEventTarget } from "../../index.js";
 import type { Rpc } from "../types.js";
 
 export type ServerRpcTransportEvents = {

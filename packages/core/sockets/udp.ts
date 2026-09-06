@@ -1,7 +1,7 @@
-import { Convert } from "@nat-av/core/lib/convert";
-import { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-import { Telemetry } from "@nat-av/core/telemetry";
-import type { Events, Sockets } from "@nat-av/core/types";
+import { Convert } from "../lib/convert.js";
+import { TypedEventTarget } from "../lib/eventtarget.js";
+import { Telemetry } from "../telemetry/index.js";
+import type { Events, Sockets } from "../types/index.js";
 import * as dgram from "node:dgram";
 
 const RETRY_DELAY = 5000;

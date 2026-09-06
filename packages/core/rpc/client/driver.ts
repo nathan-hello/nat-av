@@ -1,5 +1,5 @@
-import type { Drivers, Manager } from "@nat-av/core/client";
-import { TypedEventTarget } from "@nat-av/core/client";
+import type { Drivers, Manager } from "../../client.js";
+import { TypedEventTarget } from "../../client.js";
 import { Rpc } from "../types.js";
 import type { RpcClient } from "./index.js";
 

@@ -1,4 +1,4 @@
-import { Rpc } from "@nat-av/core/rpc/types";
+import { Rpc } from "../types.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

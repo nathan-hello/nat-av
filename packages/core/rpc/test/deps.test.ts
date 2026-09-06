@@ -1,8 +1,8 @@
-import { Driver, Manager } from "@nat-av/core/drivers";
-import { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-import { Test } from "@nat-av/core/test/data.test";
-import { RpcClient } from "@nat-av/core/rpc/client";
-import { RpcServer } from "@nat-av/core/rpc/server";
+import { Driver, Manager } from "../../drivers/index.js";
+import { TypedEventTarget } from "../../lib/eventtarget.js";
+import { Test } from "../../test/data.test.js";
+import { RpcClient } from "../client/index.js";
+import { RpcServer } from "../server/index.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

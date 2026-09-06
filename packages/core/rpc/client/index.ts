@@ -4,7 +4,7 @@ import {
   Err,
   Telemetry,
   TypedEventTarget,
-} from "@nat-av/core/client";
+} from "../../client.js";
 import { Rpc } from "../types.js";
 import { ClientRpcDriver } from "./driver.js";
 import { ClientRpcRequests } from "./requests.js";

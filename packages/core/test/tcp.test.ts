@@ -1,5 +1,5 @@
-import { Tcp } from "@nat-av/core/sockets/tcp";
-import type { Events } from "@nat-av/core/types";
+import { Tcp } from "../sockets/tcp.js";
+import type { Events } from "../types/index.js";
 import assert from "node:assert/strict";
 import * as net from "node:net";
 import { describe, it } from "node:test";

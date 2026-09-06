@@ -1,4 +1,4 @@
-import type { Events } from "@nat-av/core/types/events";
+import type { Events } from "./events.js";
 
 export namespace Sockets {
   export type Data = string | Uint8Array | Buffer;

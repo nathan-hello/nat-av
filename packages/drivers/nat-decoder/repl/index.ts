@@ -1,7 +1,4 @@
-import {
-  createRepl as createCoreRepl,
-  type Repl,
-} from "@nat-av/core/tools/repl";
+import { Repl } from "@nat-av/core";
 import Decoder from "../index.js";
 
 export interface DecoderReplEncoder {
@@ -197,8 +194,8 @@ export const createRepl = ({
   decoder,
   encoders,
   prompt = "decoder> ",
-}: DecoderReplOptions): Repl => {
-  return createCoreRepl({
+}: DecoderReplOptions): Repl.Repl => {
+  return Repl.createRepl({
     prompt,
     commands: {
       list: () => formatEncoders(encoders),

@@ -1,14 +1,14 @@
-import { Driver as NDriver } from "@nat-av/core/drivers";
-import { Convert } from "@nat-av/core/lib/convert";
-import { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-import { Telemetry } from "@nat-av/core/telemetry";
-import type { Events, Sockets } from "@nat-av/core/types";
+import { Driver as NDriver } from "../drivers/index.js";
+import { Convert } from "../lib/convert.js";
+import { TypedEventTarget } from "../lib/eventtarget.js";
+import { Telemetry } from "../telemetry/index.js";
+import type { Events, Sockets } from "../types/index.js";
 import type {
   Rpc,
   ClientRpcTransport,
   ServerRpcTransportEvents,
   ServerRpcTransport as ServerRpcTransportShape,
-} from "@nat-av/core/client";
+} from "../client.js";
 
 export namespace Test {
   export type Equal<A, B> =

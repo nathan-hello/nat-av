@@ -1,5 +1,5 @@
-import type { Manager } from "@nat-av/core";
-import { Driver, Err, type Drivers, type Events, TypedEventTarget } from "@nat-av/core";
+import type { Manager } from "../../index.js";
+import { Driver, Err, type Drivers, type Events, TypedEventTarget } from "../../index.js";
 import { Rpc } from "../types.js";
 import type { ServerRpcTransport } from "./transport.js";
 export type {

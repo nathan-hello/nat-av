@@ -1,6 +1,5 @@
-import { Err } from "@nat-av/core/client";
-import { Driver } from "@nat-av/core/drivers";
-import { type Drivers, type Events } from "@nat-av/core/types";
+import { Err, Driver } from "@nat-av/core";
+import type { Drivers, Events } from "@nat-av/core";
 
 type SerializableMessage = Omit<Events.Natav.SocketMessage, "data"> & {
   data: number[];

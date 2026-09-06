@@ -1,4 +1,4 @@
-import { Err, Telemetry } from "@nat-av/core/client";
+import { Err, Telemetry } from "../../client.js";
 import { Rpc } from "../types.js";
 import type { ClientRpcTransport } from "./websocket.js";
 

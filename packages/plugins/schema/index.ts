@@ -1,5 +1,4 @@
-import { Err } from "@nat-av/core/client";
-import { Driver } from "@nat-av/core/drivers";
+import { Err, Driver } from "@nat-av/core";
 import { type Drivers } from "@nat-av/core";
 
 export type SchemaState = Record<string, readonly unknown[]>;

@@ -1,4 +1,4 @@
-import { Telemetry } from "@nat-av/core/telemetry";
+import { Telemetry } from "../telemetry/index.js";
 
 export class TypedEventTarget<
   Events extends Record<string, any> = Record<string, any>,

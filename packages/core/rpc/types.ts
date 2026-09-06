@@ -1,5 +1,5 @@
-import type { Manager, Events as NEvents } from "@nat-av/core/index";
-import type { Drivers } from "@nat-av/core/types/drivers";
+import type { Manager, Events as NEvents } from "../index.js";
+import type { Drivers } from "../types/drivers.js";
 import type { RpcClient } from "./client/index.js";
 import type { ClientRpcDriver } from "./client/driver.js";
 

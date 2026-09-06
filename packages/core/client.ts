@@ -1,22 +1,22 @@
 import {
   Telemetry as BaseTelemetry,
   type TelemetryLogSchema as BaseTelemetryLogSchema,
-} from "@nat-av/core/telemetry";
+} from "./telemetry/index.js";
 
-import * as TelemetryExportersMod from "@nat-av/core/telemetry/exporters";
-import * as TelemetrySdkMod from "@nat-av/core/telemetry/sdk";
-import * as TelemetryTypesMod from "@nat-av/core/telemetry/types";
+import * as TelemetryExportersMod from "./telemetry/exporters.js";
+import * as TelemetrySdkMod from "./telemetry/sdk.js";
+import * as TelemetryTypesMod from "./telemetry/types.js";
 
-export type { Tcp } from "@nat-av/core/sockets/tcp";
-export type { Udp } from "@nat-av/core/sockets/udp";
+export type { Tcp } from "./sockets/tcp.js";
+export type { Udp } from "./sockets/udp.js";
 
-export type { Driver, Manager } from "@nat-av/core/drivers";
-export { Err } from "@nat-av/core/lib/errors";
-export { TypedEventTarget } from "@nat-av/core/lib/eventtarget";
-export type { RequestManager } from "@nat-av/core/lib/requests";
-export type { Delimiters } from "@nat-av/core/sockets/delimiters";
-export type { Test } from "@nat-av/core/test/data.test";
-export type { Drivers, Events, Sockets } from "@nat-av/core/types";
+export type { Driver, Manager } from "./drivers/index.js";
+export { Err } from "./lib/errors.js";
+export { TypedEventTarget } from "./lib/eventtarget.js";
+export type { RequestManager } from "./lib/requests.js";
+export type { Delimiters } from "./sockets/delimiters.js";
+export type { Test } from "./test/data.test.js";
+export type { Drivers, Events, Sockets } from "./types/index.js";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,

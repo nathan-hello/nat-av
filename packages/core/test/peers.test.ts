@@ -1,6 +1,6 @@
-import { Driver, Manager } from "@nat-av/core/drivers";
-import { Test } from "@nat-av/core/test/data.test";
-import type { Drivers } from "@nat-av/core/types";
+import { Driver, Manager } from "../drivers/index.js";
+import { Test } from "./data.test.js";
+import type { Drivers } from "../types/index.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 

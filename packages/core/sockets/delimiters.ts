@@ -1,4 +1,4 @@
-import type { Telemetry } from "@nat-av/core/telemetry";
+import type { Telemetry } from "../telemetry/index.js";
 
 export type DataDelimiter<T = any> = ((buffer: Buffer) => T[] | null) & {
   reset?: () => void;

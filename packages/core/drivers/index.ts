@@ -1,11 +1,11 @@
-import { Err } from "@nat-av/core/client";
-import { Convert } from "@nat-av/core/lib/convert";
+import { Err } from "../client.js";
+import { Convert } from "../lib/convert.js";
 import {
   ProtectedTypedEventTarget,
   TypedEventTarget,
-} from "@nat-av/core/lib/eventtarget";
-import { Telemetry } from "@nat-av/core/telemetry";
-import { type Drivers, type Events, type Sockets } from "@nat-av/core/types";
+} from "../lib/eventtarget.js";
+import { Telemetry } from "../telemetry/index.js";
+import { type Drivers, type Events, type Sockets } from "../types/index.js";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
 type SocketMaybe = Sockets.Socket | undefined;
