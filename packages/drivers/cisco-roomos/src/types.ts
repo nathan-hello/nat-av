@@ -1,4 +1,4 @@
-import type { Drivers } from "@nat-av/core";
+import type { Natav } from "@nat-av/core";
 import type { GeneratedRoomOS } from "../generated.js";
 
 export type RoomOSSchema = {
@@ -157,7 +157,7 @@ type CommandRecordify<Value> =
   Value extends (...args: infer Args) => infer Return ?
     (...args: Args) => RemoteResult<Return>
   : IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: CommandRecordify<Value[K]> } & Drivers.ApiRecord
+    { [K in keyof Value]: CommandRecordify<Value[K]> } & Natav.ApiRecord
   : () => RemoteResult<Value>;
 
 type Feedbackify<Value, State> =
@@ -171,7 +171,7 @@ type Feedbackify<Value, State> =
 type ApiRecordify<Value> =
   Value extends (...args: any[]) => any ? Value
   : IsPlainObject<Value> extends true ?
-    { [K in keyof Value]: ApiRecordify<Value[K]> } & Drivers.ApiRecord
+    { [K in keyof Value]: ApiRecordify<Value[K]> } & Natav.ApiRecord
   : never;
 
 export namespace RoomOS {

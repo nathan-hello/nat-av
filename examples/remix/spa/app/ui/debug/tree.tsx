@@ -1,8 +1,8 @@
-import type { Drivers } from "@nat-av/core";
+import type { Natav } from "@nat-av/core";
 import { css, on, type Handle } from "remix/ui";
 
 type DebugDriverTreeProps = {
-  tree: Drivers.DriverView[];
+  tree: Natav.DriverView[];
   selectedDriverName: string | null;
   onSelect(name: string): void;
 };
@@ -18,7 +18,7 @@ export function DebugDriverTree(handle: Handle<DebugDriverTreeProps>) {
 }
 
 function renderTreeNode(
-  node: Drivers.DriverView,
+  node: Natav.DriverView,
   handle: Handle<DebugDriverTreeProps>,
   depth = 0,
 ) {

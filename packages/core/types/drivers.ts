@@ -4,19 +4,14 @@ import type { Sockets, Events as TEvents } from "./index.js";
 
 // This namespace intentionally uses structural driver projections. Importing
 // the manager here would create a circular dependency during inference.
-export namespace Drivers {
+export namespace Natav {
   /** The shared structural contract for every managed runtime entry. */
-  export interface ManagedContract {
+  export interface Shape {
     readonly name: string;
-    readonly deps: readonly ManagedContract[];
+    readonly deps: readonly Shape[];
     readonly state: Record<string, unknown>;
     readonly api: ApiRecord;
     readonly events?: TypedEventTarget<Record<string, unknown>>;
-  }
-
-  /** Runtime requirements specific to ordinary driver instances. */
-  export interface DriverShape extends ManagedContract {
-    readonly deps: readonly DriverShape[];
     readonly socket?: Sockets.Socket;
     readonly tel: Telemetry;
     start(): void | Promise<void>;
@@ -31,7 +26,7 @@ export namespace Drivers {
     ): unknown;
   }
 
-  export type Array = readonly DriverShape[];
+  export type Array = readonly Shape[];
 
   export type PartialArray<T extends readonly unknown[]> =
     | T
@@ -50,75 +45,71 @@ export namespace Drivers {
     };
   };
 
-  export type AnyDriver = DriverShape;
-
-  export type AnyManaged = ManagedContract;
-
   export type ManagedClosure<Entry, Seen = never> =
-    Entry extends ManagedContract ?
+    Entry extends Shape ?
       Entry extends Seen ? never
       : Entry | ManagedClosure<Entry["deps"][number], Seen | Entry>
     : never;
 
   export type ManagedResolved<
-    Entries extends readonly ManagedContract[] = readonly ManagedContract[],
+    Entries extends readonly Shape[] = readonly Shape[],
   > = ManagedClosure<Entries[number]>;
 
   export type ManagedCatalog<
-    Entries extends readonly ManagedContract[] = readonly ManagedContract[],
+    Entries extends readonly Shape[] = readonly Shape[],
   > = {
     [Entry in ManagedResolved<Entries> as Entry["name"]]: Entry;
   };
 
   export type CatalogEntries<
-    Catalog extends Record<string, ManagedContract>,
+    Catalog extends Record<string, Shape>,
   > = Catalog[keyof Catalog];
 
   export interface ManagerView<
-    N extends Drivers.Array = Drivers.Array,
-    C extends Drivers.Array = N,
+    N extends Natav.Array = Natav.Array,
+    C extends Natav.Array = N,
   > {
     readonly drivers: N;
-    readonly drivers_flat: AnyDriver[];
+    readonly drivers_flat: Shape[];
     readonly driver: Catalog<C>;
     bus: TypedEventTarget<TEvents.Natav.Map<C>>;
-    GetDriver<Name extends Drivers.Names<C>>(
+    GetDriver<Name extends Natav.Names<C>>(
       name: Name,
-    ): Drivers.FromName<C, Name>;
-    FindDriver(name: string): AnyDriver | undefined;
-    FindPlugin(name: string): AnyDriver | undefined;
-    GetAllDriverNames(): Drivers.Names<N>[];
+    ): Natav.FromName<C, Name>;
+    FindDriver(name: string): Shape | undefined;
+    FindPlugin(name: string): Shape | undefined;
+    GetAllDriverNames(): Natav.Names<N>[];
     Start(): Promise<void>;
     GetTree(): DriverView[];
     End(): Promise<void>;
   }
 
-  export interface Manager<
-    D extends Drivers.Array = Drivers.Array,
-    P extends readonly Drivers.AnyPlugin[] = readonly Drivers.AnyPlugin[],
+  export interface Instance<
+    D extends Natav.Array = Natav.Array,
+    P extends readonly Natav.AnyPlugin[] = readonly Natav.AnyPlugin[],
   > extends ManagerView<D, DriverEntries<D, P>> {
     readonly plugins: PluginInstances<P>;
     readonly plugin: RootCatalog<PluginInstances<P>>;
-    GetAllPluginNames(): Drivers.Names<PluginInstances<P>>[];
-    Get<Name extends Drivers.Names<ManagedEntries<D, P>>>(
+    GetAllPluginNames(): Natav.Names<PluginInstances<P>>[];
+    Get<Name extends Natav.Names<ManagedEntries<D, P>>>(
       name: Name,
-    ): Drivers.FromName<ManagedEntries<D, P>, Name>;
-    Get(name: string): AnyDriver;
+    ): Natav.FromName<ManagedEntries<D, P>, Name>;
+    Get(name: string): Shape;
   }
 
-  type PluginFunction<T extends DriverShape = DriverShape> = ((
+  type PluginFunction<T extends Shape = Shape> = ((
     manager: any,
   ) => T) & {
     prototype?: undefined;
   };
 
-  type PluginConstructor<T extends DriverShape = DriverShape> = (new (
+  type PluginConstructor<T extends Shape = Shape> = (new (
     manager: any,
   ) => T) & {
     prototype: object;
   };
 
-  export type AnyPlugin<T extends DriverShape = DriverShape> =
+  export type AnyPlugin<T extends Shape = Shape> =
     | PluginFunction<T>
     | PluginConstructor<T>;
 
@@ -137,12 +128,12 @@ export namespace Drivers {
   >;
 
   export type DriverEntries<
-    D extends Drivers.Array,
+    D extends Natav.Array,
     P extends readonly AnyPlugin[],
   > = readonly [...D, ...PluginDependencies<P>[]];
 
   export type ManagedEntries<
-    D extends Drivers.Array,
+    D extends Natav.Array,
     P extends readonly AnyPlugin[],
   > = readonly [...DriverEntries<D, P>, ...PluginInstances<P>];
 
@@ -155,17 +146,17 @@ export namespace Drivers {
   };
 
   export type Api<
-    N extends readonly ManagedContract[],
+    N extends readonly Shape[],
     Name extends string,
   > = FromName<N, Name>["api"];
 
   export type State<
-    N extends readonly ManagedContract[] = Drivers.Array,
+    N extends readonly Shape[] = Natav.Array,
     Name extends string = ManagedNames<ManagedResolved<N>>,
   > = FromName<N, Name>["state"];
 
   export type Events<
-    N extends readonly ManagedContract[],
+    N extends readonly Shape[],
     Name extends string,
   > =
     FromName<N, Name>["events"] extends TypedEventTarget<infer EventMap> ?
@@ -173,14 +164,14 @@ export namespace Drivers {
     : never;
 
   export type DriverClosure<D, Seen = never> =
-    D extends DriverShape ?
+    D extends Shape ?
       D extends Seen ?
         never
       : D | DriverClosure<D["deps"][number], Seen | D>
     : never;
 
   export type Resolved<
-    N extends readonly ManagedContract[] = Drivers.Array,
+    N extends readonly Shape[] = Natav.Array,
   > = ManagedResolved<N>;
 
   export type ManagedName<Entry> =
@@ -193,7 +184,7 @@ export namespace Drivers {
    * as Decoder<string> for runtime-created driver arrays.
    */
   export type ManagedByName<Entry, Name extends string> =
-    Entry extends ManagedContract ?
+    Entry extends Shape ?
       string extends Entry["name"] ? Entry
       : string extends Name ? Entry
       : Name extends Entry["name"] ? Entry
@@ -201,55 +192,55 @@ export namespace Drivers {
     : never;
 
   export type ManagedDepNames<
-    Entries extends readonly ManagedContract[],
+    Entries extends readonly Shape[],
     Name extends string,
   > = ManagedByName<ManagedResolved<Entries>, Name> extends infer Entry ?
-    Entry extends ManagedContract ? Entry["deps"][number]["name"]
+    Entry extends Shape ? Entry["deps"][number]["name"]
     : never
   : never;
 
   export type Names<
-    N extends readonly ManagedContract[] = Drivers.Array,
+    N extends readonly Shape[] = Natav.Array,
   > =
     Resolved<N>["name"];
 
   export type FromName<
-    N extends readonly ManagedContract[],
+    N extends readonly Shape[],
     Name extends string = Names<N>,
   > = ManagedByName<Resolved<N>, Name>;
 
   export type Catalog<
-    N extends readonly ManagedContract[] = readonly ManagedContract[],
+    N extends readonly Shape[] = readonly Shape[],
   > = ManagedCatalog<N>;
 
   export type RootCatalog<
-    N extends readonly ManagedContract[] = readonly ManagedContract[],
+    N extends readonly Shape[] = readonly Shape[],
   > = {
     [Entry in N[number] as Entry["name"]]: Entry;
   };
 
   export type DepNames<
-    N extends Drivers.Manager,
-    Name extends Drivers.Names<N["drivers"]>,
+    N extends Instance,
+    Name extends Natav.Names<N["drivers"]>,
   > = FromName<N["drivers"], Name>["deps"][number]["name"];
 
-  export type TreeNode<D extends DriverShape> = {
+  export type TreeNode<D extends Shape> = {
     name: D["name"];
     driver: D;
     deps: {
-      readonly [K in keyof D["deps"]]: D["deps"][K] extends DriverShape ?
+      readonly [K in keyof D["deps"]]: D["deps"][K] extends Shape ?
         TreeNode<D["deps"][K]>
       : never;
     };
   };
 
-  export type Tree<N extends Drivers.Array> = {
-    readonly [K in keyof N]: N[K] extends DriverShape ? TreeNode<N[K]> : never;
+  export type Tree<N extends Natav.Array> = {
+    readonly [K in keyof N]: N[K] extends Shape ? TreeNode<N[K]> : never;
   };
 
-  export type ManagedHandle<D extends ManagedContract> = {
+  export type ManagedHandle<D extends Shape> = {
     deps: {
-      readonly [K in keyof D["deps"]]: D["deps"][K] extends ManagedContract ?
+      readonly [K in keyof D["deps"]]: D["deps"][K] extends Shape ?
         ManagedHandle<D["deps"][K]>
       : never;
     };
@@ -259,7 +250,7 @@ export namespace Drivers {
     events: D["events"];
   };
 
-  export type Handle<D extends DriverShape> = ManagedHandle<D> & {
+  export type Handle<D extends Shape> = ManagedHandle<D> & {
     on: D["on"];
   };
 }

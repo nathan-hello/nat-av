@@ -1,4 +1,4 @@
-import { Driver } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 
 export type RelayBoardState = {
   /** True means the relay is currently closed. */
@@ -10,7 +10,7 @@ export type RelayBoardApi = {
   close: (relay: number) => Promise<void>;
 };
 
-export default class RelayBoard<const N extends string = string> extends Driver<
+export default class RelayBoard<const N extends string = string> extends Natav.Driver<
   N,
   RelayBoardState
 > {

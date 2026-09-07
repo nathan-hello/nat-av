@@ -1,5 +1,4 @@
-import type { Manager, Events as NEvents } from "../index.js";
-import type { Drivers } from "../types/drivers.js";
+import type { Natav, Events as NEvents } from "../index.js";
 import type { RpcClient } from "./client/index.js";
 import type { ClientRpcDriver } from "./client/driver.js";
 
@@ -124,16 +123,16 @@ export namespace Rpc {
     };
     export namespace Events {
       export type Callback<
-        N extends Drivers.Array,
-        Name extends Drivers.Names<N>,
-        K extends keyof Drivers.Events<N, Name> & string,
-      > = (payload: Drivers.Events<N, Name>[K]) => void;
+        N extends Natav.Array,
+        Name extends Natav.Names<N>,
+        K extends keyof Natav.Events<N, Name> & string,
+      > = (payload: Natav.Events<N, Name>[K]) => void;
 
       export type Handle<
-        N extends Drivers.Array,
-        Name extends Drivers.Names<N>,
+        N extends Natav.Array,
+        Name extends Natav.Names<N>,
       > = {
-        on<K extends keyof Drivers.Events<N, Name> & string>(
+        on<K extends keyof Natav.Events<N, Name> & string>(
           event: K,
           callback: Callback<N, Name, K>,
         ): Promise<() => Promise<void>>;
@@ -146,80 +145,80 @@ export namespace Rpc {
       };
     }
     export type State<
-      N extends Drivers.Array,
-      Name extends Drivers.Names<N>,
-    > = Drivers.State<N, Name>;
+      N extends Natav.Array,
+      Name extends Natav.Names<N>,
+    > = Natav.State<N, Name>;
 
     export type Api<
-      N extends Drivers.Array = Drivers.Array,
-      Name extends string = Drivers.Names<N>,
-    > = Drivers.PromisifyApi<Drivers.Api<N, Name>>;
+      N extends Natav.Array = Natav.Array,
+      Name extends string = Natav.Names<N>,
+    > = Natav.PromisifyApi<Natav.Api<N, Name>>;
 
-    export type Handle<N extends Manager> = Pick<RpcClient<N>, "isOnline"> & {
-      driver<Name extends Drivers.Names<N["drivers"]>>(
+    export type Handle<N extends Natav> = Pick<RpcClient<N>, "isOnline"> & {
+      driver<Name extends Natav.Names<N["drivers"]>>(
         name: Name,
       ): ManagedHandle<N, Name>;
-      plugin<Name extends Drivers.Names<N["plugins"]>>(
+      plugin<Name extends Natav.Names<N["plugins"]>>(
         name: Name,
       ): PluginHandle<N, Name>;
     };
 
     export type ManagedHandle<
-      N extends Manager = Manager,
-      Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
+      N extends Natav = Natav,
+      Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
     > = Pick<
-      Drivers.ManagedHandle<Drivers.FromName<N["drivers"], Name>>,
+      Natav.ManagedHandle<Natav.FromName<N["drivers"], Name>>,
       "name" | "api" | "state"
     > & Pick<
       ClientRpcDriver<N, N["drivers"], Name>,
       "on" | "event" | "once" | "pendingCount"
     > & {
-      dep: <DepName extends Drivers.DepNames<N, Name>>(
+      dep: <DepName extends Natav.DepNames<N, Name>>(
         depName: DepName,
       ) => ManagedHandle<N, DepName>;
     };
 
     /** Compatibility alias; managed drivers and plugins share this shape. */
     export type DriverHandle<
-      N extends Manager = Manager,
-      Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
+      N extends Natav = Natav,
+      Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
     > = ManagedHandle<N, Name>;
 
-    export type DriverAccessor<N extends Manager> = {
-      <Name extends Drivers.Names<N["drivers"]>>(
+    export type DriverAccessor<N extends Natav> = {
+      <Name extends Natav.Names<N["drivers"]>>(
         name: Name,
       ): ManagedHandle<N, Name>;
     } & {
-      [Name in Drivers.Names<N["drivers"]>]: ManagedHandle<N, Name>;
+      [Name in Natav.Names<N["drivers"]>]: ManagedHandle<N, Name>;
     };
 
     export type PluginHandle<
-      N extends Manager,
-      Name extends Drivers.Names<N["plugins"]>,
+      N extends Natav,
+      Name extends Natav.Names<N["plugins"]>,
     > = ManagedHandleFor<N, N["plugins"], Name>;
 
     export type ManagedHandleFor<
-      N extends Manager,
-      Entries extends Drivers.Array,
-      Name extends Drivers.Names<Entries>,
+      N extends Natav,
+      Entries extends Natav.Array,
+      Name extends Natav.Names<Entries>,
     > = Pick<
-      Drivers.ManagedHandle<Drivers.FromName<Entries, Name>>,
+      Natav.ManagedHandle<Natav.FromName<Entries, Name>>,
       "name" | "api" | "state"
     > & Pick<
       ClientRpcDriver<N, Entries, Name>,
       "on" | "event" | "once" | "pendingCount"
     > & {
-      dep: <DepName extends Drivers.ManagedDepNames<Entries, Name>>(
+      dep: <DepName extends Natav.ManagedDepNames<Entries, Name>>(
         depName: DepName,
-      ) => ManagedHandleFor<N, N["drivers"], DepName & Drivers.Names<N["drivers"]>>;
+      ) => ManagedHandleFor<N, N["drivers"], DepName & Natav.Names<N["drivers"]>>;
     };
 
-    export type PluginAccessor<N extends Manager> = {
-      <Name extends Drivers.Names<N["plugins"]>>(
+    export type PluginAccessor<N extends Natav> = {
+      <Name extends Natav.Names<N["plugins"]>>(
         name: Name,
       ): PluginHandle<N, Name>;
     } & {
-      [Name in Drivers.Names<N["plugins"]>]: PluginHandle<N, Name>;
+      [Name in Natav.Names<N["plugins"]>]: PluginHandle<N, Name>;
     };
   }
 
@@ -709,28 +708,28 @@ export namespace Rpc {
     }[keyof T & string];
 
     export type DriverMap<
-      N extends readonly Drivers.ManagedContract[] = Drivers.Array,
-      Name extends Drivers.Names<N> = Drivers.Names<N>,
+      N extends readonly Natav.Shape[] = Natav.Array,
+      Name extends Natav.Names<N> = Natav.Names<N>,
     > = {
       change: {
         name: Name;
-        state: Drivers.State<N, Name> | undefined;
+        state: Natav.State<N, Name> | undefined;
       };
       "before:request": DriverEventBase &
-        BeforePayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+        BeforePayload<RequestMethodInfo<Natav.Api<N, Name>>>;
 
       "after:response": DriverEventBase &
         (
-          | OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>
+          | OkPayload<RequestMethodInfo<Natav.Api<N, Name>>>
           | {
-              method: MethodNames<Drivers.Api<N, Name>>;
+              method: MethodNames<Natav.Api<N, Name>>;
               error: Rpc.Error;
             }
         );
       "after:response:ok": DriverEventBase &
-        OkPayload<RequestMethodInfo<Drivers.Api<N, Name>>>;
+        OkPayload<RequestMethodInfo<Natav.Api<N, Name>>>;
       "after:response:error": DriverEventBase & {
-        method: MethodNames<Drivers.Api<N, Name>>;
+        method: MethodNames<Natav.Api<N, Name>>;
         error: Rpc.Error;
       };
     };

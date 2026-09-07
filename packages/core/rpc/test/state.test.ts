@@ -1,4 +1,4 @@
-import { Manager } from "../../drivers/index.js";
+import { Natav } from "../../drivers/index.js";
 import { Test } from "../../test/data.test.js";
 import { RpcClient } from "../client/index.js";
 import { RpcServer } from "../server/index.js";
@@ -14,7 +14,7 @@ it("gets state automatically on connect", async () => {
 
   const transport = new Test.RpcTransport();
 
-  const natav = new Manager({
+  const natav = new Natav({
     drivers: [driver],
     plugin: [(n) => new RpcServer(n, transport.server)],
   });

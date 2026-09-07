@@ -1,13 +1,12 @@
 import {
   RpcClient,
   Telemetry,
-  type Drivers,
-  type Manager,
+  type Natav,
   type Rpc,
 } from "@nat-av/core/client";
 import type { Handle } from "remix/ui";
 
-export async function createRpcBinding<N extends Manager = Manager>() {
+export async function createRpcBinding<N extends Natav = Natav>() {
   Telemetry.Sdk.AddExporters([
     new Telemetry.Exporters.SimpleConsoleExporter("DEBUG"),
   ]);
@@ -18,18 +17,18 @@ export async function createRpcBinding<N extends Manager = Manager>() {
   const subscriptions = new WeakMap<Handle, () => void>();
 
   function getRpc(handle: Handle<any, any>): Rpc.Client.Handle<N>;
-  function getRpc<Name extends Drivers.Names<N["drivers"]>>(
+  function getRpc<Name extends Natav.Names<N["drivers"]>>(
     handle: Handle<any, any>,
     name: Name,
   ): Rpc.Client.DriverHandle<N, Name>;
-  function getRpc<Name extends Drivers.Names<N["plugins"]>>(
+  function getRpc<Name extends Natav.Names<N["plugins"]>>(
     handle: Handle<any, any>,
     name: Name,
   ): Rpc.Client.PluginHandle<N, Name>;
   function getRpc<Name extends string>(
     handle: Handle<any, any>,
     name?: Name,
-  ): Rpc.Client.Handle<N> | Rpc.Client.DriverHandle<N, Name> | Rpc.Client.PluginHandle<N, Name & Drivers.Names<N["plugins"]>> {
+  ): Rpc.Client.Handle<N> | Rpc.Client.DriverHandle<N, Name> | Rpc.Client.PluginHandle<N, Name & Natav.Names<N["plugins"]>> {
     if (subscriptions.has(handle)) {
       return name ? rpcClient.driver(name) : rpcClient;
     }

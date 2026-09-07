@@ -1,4 +1,4 @@
-import { Manager, Tcp, Telemetry, type Sockets, RpcServer } from "@nat-av/core";
+import { Natav, Tcp, Telemetry, type Sockets, RpcServer } from "@nat-av/core";
 import {
   CiscoRoomOS,
   DanteRouter,
@@ -32,7 +32,7 @@ Telemetry.Sdk.AddExporters([
 //   }),
 // });
 
-const natav = new Manager({
+const natav = new Natav({
   drivers: [
     new NatDecoderWall.default(
       "video-wall",

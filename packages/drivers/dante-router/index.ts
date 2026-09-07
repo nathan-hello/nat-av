@@ -1,4 +1,4 @@
-import { Driver } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 import * as dgram from "node:dgram";
 import { RESULT_CODE_SUCCESS, SERVICE_ARC } from "./src/constants.js";
 import { AvahiDiscovery } from "./src/discovery.js";
@@ -131,7 +131,7 @@ function makeDeviceRecord(
   };
 }
 
-export default class DanteRouter<const N extends string> extends Driver<N> {
+export default class DanteRouter<const N extends string> extends Natav.Driver<N> {
   socket = undefined;
 
   state: DanteRouterState = {

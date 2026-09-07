@@ -1,4 +1,4 @@
-import { Driver, Manager } from "../../drivers/index.js";
+import { Natav } from "../../drivers/index.js";
 import { TypedEventTarget } from "../../lib/eventtarget.js";
 import { Test } from "../../test/data.test.js";
 import { RpcClient } from "../client/index.js";
@@ -15,7 +15,7 @@ describe("rpc deps", () => {
     ping: () => Promise<string>;
   };
 
-  class LeafDriver extends Driver<"leaf"> {
+  class LeafDriver extends Natav.Driver<"leaf"> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "leaf-pong",
@@ -29,7 +29,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level3Driver extends Driver<"level-3", { ready: boolean }, [LeafDriver]> {
+  class Level3Driver extends Natav.Driver<"level-3", { ready: boolean }, [LeafDriver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-3-pong",
@@ -44,7 +44,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level2Driver extends Driver<"level-2", { ready: boolean }, [Level3Driver]> {
+  class Level2Driver extends Natav.Driver<"level-2", { ready: boolean }, [Level3Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-2-pong",
@@ -59,7 +59,7 @@ describe("rpc deps", () => {
     }
   }
 
-  class RootDriver extends Driver<"root", { ready: boolean }, [Level2Driver]> {
+  class RootDriver extends Natav.Driver<"root", { ready: boolean }, [Level2Driver]> {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "root-pong",
@@ -82,7 +82,7 @@ describe("rpc deps", () => {
 
     const transport = new Test.RpcTransport();
 
-    const natav = new Manager({
+    const natav = new Natav({
       drivers: [root],
       plugin: [(n) => new RpcServer(n, transport.server)],
     });

@@ -1,5 +1,5 @@
 import { getRpc } from "@/state";
-import type { Drivers, Rpc } from "@nat-av/core";
+import type { Natav, Rpc } from "@nat-av/core";
 import type { natav } from "@/server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
@@ -19,7 +19,7 @@ export function DebugPage(handle: Handle) {
     const fallbackSelection = findFirstSocketDriver(view);
     if (selectedDriverName) {
       selectedNode = rpc.driver(
-        selectedDriverName as Drivers.Names<natav["drivers"]>,
+        selectedDriverName as Natav.Names<natav["drivers"]>,
       );
     }
 
@@ -43,7 +43,7 @@ export function DebugPage(handle: Handle) {
         <section mix={layoutStyle}>
           <aside mix={sidebarStyle}>
             <div mix={panelHeaderStyle}>
-              <h2>Drivers</h2>
+              <h2>Natav</h2>
             </div>
             <DebugDriverTree
               tree={view}
@@ -71,8 +71,8 @@ export function DebugPage(handle: Handle) {
 }
 
 function findFirstSocketDriver(
-  view: Drivers.DriverView[],
-): Drivers.DriverView | undefined {
+  view: Natav.DriverView[],
+): Natav.DriverView | undefined {
   for (const node of view) {
     if (node.socket?.canWrite && node.socket.canReceive) {
       return node;

@@ -1,6 +1,5 @@
 import {
-  type Drivers,
-  type Manager,
+  type Natav,
   Err,
   Telemetry,
   TypedEventTarget,
@@ -12,7 +11,7 @@ import type { ClientRpcTransport } from "./websocket.js";
 import { ClientWebsocket } from "./websocket.js";
 
 export class RpcClient<
-  N extends Manager = Manager,
+  N extends Natav = Natav,
 > extends TypedEventTarget<Rpc.Events.Map> {
   readonly driver: Rpc.Client.DriverAccessor<N>;
   readonly plugin: Rpc.Client.PluginAccessor<N>;
@@ -28,7 +27,7 @@ export class RpcClient<
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
     // TSAS: The callable accessor is augmented with virtual name properties by the Proxy below.
-    const accessor = ((name: Drivers.Names<N["drivers"]>) =>
+    const accessor = ((name: Natav.Names<N["drivers"]>) =>
       this.getDriver(name)) as unknown as Rpc.Client.DriverAccessor<N>;
     // TSAS: Proxy properties are created from the same literal driver names as the callable accessor.
     this.driver = new Proxy(accessor, {
@@ -38,13 +37,13 @@ export class RpcClient<
         }
         if (typeof property === "string") {
           // TSAS: Proxy property access is checked against the registered catalog by the server.
-          return this.getDriver(property as Drivers.Names<N["drivers"]>);
+          return this.getDriver(property as Natav.Names<N["drivers"]>);
         }
         return Reflect.get(target, property, receiver);
       },
     });
     // TSAS: The callable proxy is augmented with virtual plugin-name properties below.
-    const pluginAccessor = ((name: Drivers.Names<N["plugins"]>) =>
+    const pluginAccessor = ((name: Natav.Names<N["plugins"]>) =>
       this.getPlugin(name)) as unknown as Rpc.Client.PluginAccessor<N>;
     this.plugin = new Proxy(pluginAccessor, {
       get: (target, property, receiver) => {
@@ -53,7 +52,7 @@ export class RpcClient<
         }
         if (typeof property === "string") {
           // TSAS: Proxy property names are checked against the server's plugin catalog.
-          return this.getPlugin(property as Drivers.Names<N["plugins"]>);
+          return this.getPlugin(property as Natav.Names<N["plugins"]>);
         }
         return Reflect.get(target, property, receiver);
       },
@@ -109,7 +108,7 @@ export class RpcClient<
     return this.transport.readyState === WebSocket.OPEN;
   }
 
-  private getDriver<Name extends Drivers.Names<N["drivers"]>>(
+  private getDriver<Name extends Natav.Names<N["drivers"]>>(
     name: Name,
   ): ClientRpcDriver<N, N["drivers"], Name> {
     const cached = this.driverHandles.get(name);
@@ -122,7 +121,7 @@ export class RpcClient<
     return driver;
   }
 
-  private getPlugin<Name extends Drivers.Names<N["plugins"]>>(
+  private getPlugin<Name extends Natav.Names<N["plugins"]>>(
     name: Name,
   ): ClientRpcDriver<N, N["plugins"], Name> {
     const cached = this.pluginHandles.get(name);
@@ -168,10 +167,10 @@ export class RpcClient<
 
     for (const [name, state] of Object.entries(result.states)) {
       // TSAS: driver names from server response are guaranteed to match registered drivers
-      const driver = this.getDriver(name as Drivers.Names<N["drivers"]>);
+      const driver = this.getDriver(name as Natav.Names<N["drivers"]>);
       driver.handleStateUpdate(
         // TSAS: The init response state belongs to this catalog entry.
-        state as Drivers.State<N["drivers"], Drivers.Names<N["drivers"]>>,
+        state as Natav.State<N["drivers"], Natav.Names<N["drivers"]>>,
       );
     }
 
@@ -200,13 +199,13 @@ export class RpcClient<
       let driver: ClientRpcDriver<
         N,
         N["drivers"],
-        Drivers.Names<N["drivers"]>
+        Natav.Names<N["drivers"]>
       >;
 
       switch (notification.type) {
         case "natav:driver:event":
           // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
-          driver = this.getDriver(notification.params.name as Drivers.Names<N["drivers"]>);
+          driver = this.getDriver(notification.params.name as Natav.Names<N["drivers"]>);
           driver.handleEvent(
             notification.params.event,
             notification.params.data,
@@ -214,7 +213,7 @@ export class RpcClient<
           break;
         case "natav:state:update":
           // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
-          driver = this.getDriver(notification.params.name as Drivers.Names<N["drivers"]>);
+          driver = this.getDriver(notification.params.name as Natav.Names<N["drivers"]>);
           driver.handleStateUpdate(notification.params.data);
           break;
         default:

@@ -1,5 +1,4 @@
-import type { Manager } from "../../index.js";
-import { Driver, Err, type Drivers, type Events, TypedEventTarget } from "../../index.js";
+import { Natav, Err, type Events, TypedEventTarget } from "../../index.js";
 import { Rpc } from "../types.js";
 import type { ServerRpcTransport } from "./transport.js";
 export type {
@@ -18,7 +17,7 @@ function hasJsonEventTarget(
   );
 }
 
-export class RpcServer extends Driver<"rpc-server"> {
+export class RpcServer extends Natav.Plugin<"rpc-server"> {
   private clients = new Set<Rpc.WebSocket.Peer>();
   private subscriptions = new Map<
     Rpc.WebSocket.Peer,
@@ -38,7 +37,7 @@ export class RpcServer extends Driver<"rpc-server"> {
   private transport: ServerRpcTransport | undefined;
 
   constructor(
-    private natav: Manager,
+    private natav: Natav,
     transport?: ServerRpcTransport,
   ) {
     super({ name: "rpc-server" });
@@ -256,14 +255,14 @@ export class RpcServer extends Driver<"rpc-server"> {
           "driver.method": params.method,
         });
 
-        let driver: Drivers.AnyDriver;
+        let driver: Natav.Shape;
         try {
           driver = this.natav.Get(params.driver);
         } catch {
           return new Rpc.Error(
             {
               code: Err.Codes.DriverNotFound,
-              message: `Driver \"${params.driver}\" not found`,
+              message: `Natav.Driver \"${params.driver}\" not found`,
               data: {
                 availableDriver: [
                   ...this.natav.GetAllDriverNames(),
@@ -278,7 +277,7 @@ export class RpcServer extends Driver<"rpc-server"> {
           return new Rpc.Error(
             {
               code: Err.Codes.DriverNotFound,
-              message: `Driver \"${params.driver}\" not found`,
+              message: `Natav.Driver \"${params.driver}\" not found`,
               data: { availableDriver: this.natav.GetAllDriverNames() },
             },
             message.id,
@@ -316,7 +315,7 @@ export class RpcServer extends Driver<"rpc-server"> {
   }
 
   private subscribeDriver(
-    driver: Drivers.AnyDriver,
+    driver: Natav.Shape,
     message: Rpc.Request,
     params: Rpc.Request.DriverParams,
     peer: Rpc.WebSocket.Peer,
@@ -387,7 +386,7 @@ export class RpcServer extends Driver<"rpc-server"> {
   }
 
   private async callDriverApi(
-    driver: Drivers.AnyDriver,
+    driver: Natav.Shape,
     message: Rpc.Request,
     params: Rpc.Request.DriverParams,
   ): Promise<Rpc.Response | Rpc.Error> {

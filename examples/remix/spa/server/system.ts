@@ -1,4 +1,4 @@
-import { Driver, type Drivers } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 
 type SystemPage = "wall" | "dante" | "debug" | "paint" | "relays" | "off";
 
@@ -8,11 +8,11 @@ type SystemState = {
   };
 };
 
-export class System extends Driver<
+export class System extends Natav.Driver<
   "system",
   SystemState
 > {
-  constructor(_manager: Drivers.ManagerView) {
+  constructor(_manager: Natav.ManagerView) {
     super({ name: "system" });
   }
 

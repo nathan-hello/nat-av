@@ -1,4 +1,4 @@
-import { Driver as NDriver } from "../drivers/index.js";
+import { Natav } from "../drivers/index.js";
 import { Convert } from "../lib/convert.js";
 import { TypedEventTarget } from "../lib/eventtarget.js";
 import { Telemetry } from "../telemetry/index.js";
@@ -108,7 +108,7 @@ export namespace Test {
     }
   }
 
-  export class Driver<const N extends string = string> extends NDriver<N> {
+  export class Driver<const N extends string = string> extends Natav.Driver<N> {
     state = {
       connected: false,
       lastFrame: "init",
@@ -158,7 +158,7 @@ export namespace Test {
     }
   }
 
-  export class EventDriver<const N extends string = string> extends NDriver<N> {
+  export class EventDriver<const N extends string = string> extends Natav.Driver<N> {
     state = { ready: true };
     api = {};
     socket = undefined;

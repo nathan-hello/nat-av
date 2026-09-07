@@ -1,8 +1,8 @@
-import { Delimiters, Driver, RequestManager, type Sockets } from "@nat-av/core";
+import { Delimiters, Natav, RequestManager, type Sockets } from "@nat-av/core";
 
 export default class ChazyControl<
   const N extends string = string,
-> extends Driver<N> {
+> extends Natav.Driver<N> {
   mock = undefined;
   socket: Sockets.Client;
   requests: RequestManager<string, string>;

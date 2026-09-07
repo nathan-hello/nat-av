@@ -1,4 +1,4 @@
-import type { Drivers } from "@nat-av/core";
+import type { Natav } from "@nat-av/core";
 
 type PrimitiveName<T> =
   [T] extends [string] ? "string"
@@ -160,7 +160,7 @@ type ObjectProperties<T, Seen> = {
   readonly [K in keyof T & string]: SchemaOfObjectProperty<T, K, Seen>;
 };
 
-type Leaf<Name extends string, Fn extends Drivers.ApiMethod> = {
+type Leaf<Name extends string, Fn extends Natav.ApiMethod> = {
   readonly name: Name;
 
   readonly returns: SchemaOf<Schema.ReturnWire<ReturnType<Fn>>>;
@@ -169,14 +169,14 @@ type Leaf<Name extends string, Fn extends Drivers.ApiMethod> = {
   readonly ui?: Schema.Ui.Args<Parameters<Fn>>;
 };
 
-type Branch<Name extends string, T extends Drivers.ApiRecord> = {
+type Branch<Name extends string, T extends Natav.ApiRecord> = {
   readonly name: Name;
   readonly children: Schema.Schema<T>;
 };
 
 type ApiSchemaNode<Name extends string, T> =
-  T extends Drivers.ApiMethod ? Leaf<Name, T>
-  : T extends Drivers.ApiRecord ? Branch<Name, T>
+  T extends Natav.ApiMethod ? Leaf<Name, T>
+  : T extends Natav.ApiRecord ? Branch<Name, T>
   : never;
 
 export namespace Schema {
@@ -261,13 +261,13 @@ export namespace Schema {
     [Awaited<T>] extends [undefined | void] ? null : Awaited<T>;
 
   export type Schema<T> =
-    T extends Drivers.ApiRecord ?
+    T extends Natav.ApiRecord ?
       ReadonlyArray<
         {
           readonly [K in keyof T & string]: ApiSchemaNode<K, T[K]>;
         }[keyof T & string]
       >
-    : T extends { api: Drivers.ApiRecord } ?
+    : T extends { api: Natav.ApiRecord } ?
       ReadonlyArray<
         {
           readonly [K in keyof T["api"] & string]: ApiSchemaNode<

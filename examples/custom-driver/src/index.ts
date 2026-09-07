@@ -1,8 +1,8 @@
-import { Driver } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 
 type FooState = { bool: boolean; num: number; str: string };
 
-export class Foo<const N extends string> extends Driver<N, FooState> {
+export class Foo<const N extends string> extends Natav.Driver<N, FooState> {
   constructor(name: N) {
     super({ name: name });
   }

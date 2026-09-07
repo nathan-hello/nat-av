@@ -1,4 +1,4 @@
-import { Err, Driver } from "@nat-av/core";
+import { Err, Natav } from "@nat-av/core";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -16,7 +16,7 @@ type State<N extends string> = {
   paints: Record<N, PaintState>;
 };
 
-export default class Paint<const Names extends string = string> extends Driver<
+export default class Paint<const Names extends string = string> extends Natav.Driver<
   "paint",
   State<Names>
 > {

@@ -1,5 +1,5 @@
 import type { Sockets } from "@nat-av/core";
-import { Convert, Delimiters, Driver, RequestManager } from "@nat-av/core";
+import { Convert, Delimiters, Natav, RequestManager } from "@nat-av/core";
 import { DecoderSchema } from "./src/schema.js";
 import {
   type AudioRoute,
@@ -17,7 +17,7 @@ type DecoderMessage = DecoderResponse | DecoderNotification;
 
 export default class Decoder<
   const N extends string = string,
-> extends Driver<N> {
+> extends Natav.Driver<N> {
   private highestId = 0;
   private routes: DecoderRoutes = {
     audio: [],

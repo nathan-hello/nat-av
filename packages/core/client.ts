@@ -10,13 +10,13 @@ import * as TelemetryTypesMod from "./telemetry/types.js";
 export type { Tcp } from "./sockets/tcp.js";
 export type { Udp } from "./sockets/udp.js";
 
-export type { Driver, Manager } from "./drivers/index.js";
+export type { Natav } from "./drivers/index.js";
 export { Err } from "./lib/errors.js";
 export { TypedEventTarget } from "./lib/eventtarget.js";
 export type { RequestManager } from "./lib/requests.js";
 export type { Delimiters } from "./sockets/delimiters.js";
 export type { Test } from "./test/data.test.js";
-export type { Drivers, Events, Sockets } from "./types/index.js";
+export type { Events, Sockets } from "./types/index.js";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,

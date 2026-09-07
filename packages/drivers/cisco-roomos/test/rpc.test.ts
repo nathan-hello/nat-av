@@ -1,4 +1,4 @@
-import { Manager, Test, RpcClient, RpcServer } from "@nat-av/core";
+import { Natav, Test, RpcClient, RpcServer } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import CiscoRoomOS from "../index.js";
@@ -108,7 +108,7 @@ describe("rpc roomos driver", () => {
     });
 
     const transport = new Test.RpcTransport();
-    const natav = new Manager({
+    const natav = new Natav({
       drivers: [roomos],
       plugin: [(n) => new RpcServer(n, transport.server)],
     });

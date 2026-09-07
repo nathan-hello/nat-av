@@ -1,4 +1,4 @@
-import { Manager } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 import { Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { it } from "node:test";
@@ -6,7 +6,7 @@ import Debugger from "./index.js";
 
 it("preloads the debugger tree and appends messages to each node", async () => {
   const eventDriver = new Test.EventDriver("event-1");
-  const natav = new Manager({
+  const natav = new Natav({
     drivers: [eventDriver] as const,
     plugin: [Debugger],
   });

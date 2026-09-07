@@ -1,4 +1,4 @@
-import { Driver, TypedEventTarget, type Sockets } from "@nat-av/core";
+import { Natav, TypedEventTarget, type Sockets } from "@nat-av/core";
 
 type MediasiteStatus = "IDLE" | "RECBUSY" | "RECORD" | "PAUSED" | "PUBLISH";
 
@@ -49,7 +49,7 @@ class McipPending extends TypedEventTarget<Record<string, McipReply>> {
 
 export default class Mediasite<
   const N extends string = string,
-> extends Driver<N> {
+> extends Natav.Driver<N> {
   private TIMEOUT_MS = 5000;
   private rxBuf = "";
   private pending = new McipPending();

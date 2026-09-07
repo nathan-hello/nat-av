@@ -1,19 +1,19 @@
-import { Err, Driver } from "@nat-av/core";
-import type { Drivers, Events } from "@nat-av/core";
+import { Err, Natav } from "@nat-av/core";
+import type { Events } from "@nat-av/core";
 
 type SerializableMessage = Omit<Events.Natav.SocketMessage, "data"> & {
   data: number[];
 };
 
 type State = {
-  view: Drivers.DriverView[];
-  messages: Record<Drivers.Names, SerializableMessage[]>;
+  view: Natav.DriverView[];
+  messages: Record<Natav.Names, SerializableMessage[]>;
 };
 
-function buildState(nodes: Drivers.DriverView[]): State {
+function buildState(nodes: Natav.DriverView[]): State {
   const messages: State["messages"] = {};
 
-  const visit = (node: Drivers.DriverView) => {
+  const visit = (node: Natav.DriverView) => {
     messages[node.name] ??= [];
     for (const child of node.deps) {
       visit(child);
@@ -27,20 +27,20 @@ function buildState(nodes: Drivers.DriverView[]): State {
   return { view: nodes, messages };
 }
 
-export default class Debugger extends Driver<"debugger"> {
-  natav: Drivers.ManagerView;
+export default class Debugger extends Natav.Plugin<"debugger"> {
+  natav: Natav.ManagerView;
   state: State = {
     view: [],
     messages: {},
   };
 
   api = {
-    clear: (name: Drivers.Names) => {
+    clear: (name: Natav.Names) => {
       if (this.state.messages[name]) {
         this.state.messages[name] = [];
       }
     },
-    getNode: (name: Drivers.Names): Drivers.DriverView => {
+    getNode: (name: Natav.Names): Natav.DriverView => {
       const found = this.findNode(this.state.view, name);
       if (!found) {
         throw new Error("node not found", {
@@ -49,7 +49,7 @@ export default class Debugger extends Driver<"debugger"> {
       }
       return found;
     },
-    tree: (): Drivers.DriverView[] => {
+    tree: (): Natav.DriverView[] => {
       return this.natav.GetTree();
     },
     socket: {
@@ -57,7 +57,7 @@ export default class Debugger extends Driver<"debugger"> {
     },
   };
 
-  constructor(natav: Drivers.ManagerView) {
+  constructor(natav: Natav.ManagerView) {
     super({ name: "debugger" });
     this.natav = natav;
   }
@@ -69,9 +69,9 @@ export default class Debugger extends Driver<"debugger"> {
   }
 
   private findNode(
-    nodes: Drivers.DriverView[],
+    nodes: Natav.DriverView[],
     name: string,
-  ): Drivers.DriverView | undefined {
+  ): Natav.DriverView | undefined {
     for (const node of nodes) {
       if (node.name === name) return node;
       const found = this.findNode(node.deps, name);
@@ -97,7 +97,7 @@ export default class Debugger extends Driver<"debugger"> {
   }
 
   private async writeSocket(params: {
-    name: Drivers.Names;
+    name: Natav.Names;
     text: string | Uint8Array;
     encoding?: BufferEncoding;
   }): Promise<{ bytesWritten: number }> {
@@ -120,7 +120,7 @@ export default class Debugger extends Driver<"debugger"> {
       const driver = this.natav.FindDriver(params.name);
       if (!driver) {
         throw new Error(
-          `Driver "${params.name}" not found in ${this.natav.GetAllDriverNames()}`,
+          `Natav.Driver "${params.name}" not found in ${this.natav.GetAllDriverNames()}`,
           {
             cause: Err.Codes.DriverNotFound,
           },
@@ -134,7 +134,7 @@ export default class Debugger extends Driver<"debugger"> {
         typeof socket.write !== "function"
       ) {
         throw new Error(
-          `Drivers "${params.name}" does not expose a writable socket`,
+          `Natav "${params.name}" does not expose a writable socket`,
           {
             cause: Err.Codes.RpcMethodNotFound,
           },

@@ -1,12 +1,12 @@
-import type { Drivers, Manager } from "../../client.js";
+import type { Natav } from "../../client.js";
 import { TypedEventTarget } from "../../client.js";
 import { Rpc } from "../types.js";
 import type { RpcClient } from "./index.js";
 
 export class ClientRpcDriver<
-  N extends Manager = Manager,
-  Entries extends Drivers.Array = N["drivers"],
-  Name extends Drivers.Names<Entries> = Drivers.Names<Entries>,
+  N extends Natav = Natav,
+  Entries extends Natav.Array = N["drivers"],
+  Name extends Natav.Names<Entries> = Natav.Names<Entries>,
 > extends TypedEventTarget<Rpc.Events.DriverMap<Entries, Name>> {
   private apiProxy: Rpc.Client.Api<Entries, Name>;
   private pendingCounts = new Map<string, number>();
@@ -35,12 +35,12 @@ export class ClientRpcDriver<
     return this.apiProxy;
   }
 
-  public state: Drivers.State<Entries, Name> =
+  public state: Natav.State<Entries, Name> =
     // TSAS: this assertion depends on client getting
     // accurate state before this class is used for rendering.
-    {} as unknown as Drivers.State<Entries, Name>;
+    {} as unknown as Natav.State<Entries, Name>;
 
-  dep<DepName extends Drivers.ManagedDepNames<Entries, Name>>(depName: DepName) {
+  dep<DepName extends Natav.ManagedDepNames<Entries, Name>>(depName: DepName) {
     return this.client.driver(depName);
   }
 
@@ -128,7 +128,7 @@ export class ClientRpcDriver<
   }
 
   private async subscribeToEvent<
-    K extends keyof Drivers.Events<N["drivers"], Name> & string,
+    K extends keyof Natav.Events<N["drivers"], Name> & string,
   >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
     const state = this.eventState.get(event) ?? {
       callbacks: new Set<(payload: any) => void>(),
@@ -159,7 +159,7 @@ export class ClientRpcDriver<
   }
 
   private async unsubscribeFromEvent<
-    K extends keyof Drivers.Events<N["drivers"], Name> & string,
+    K extends keyof Natav.Events<N["drivers"], Name> & string,
   >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
     const state = this.eventState.get(event);
     if (!state) {

@@ -1,5 +1,4 @@
-import { Driver, Manager } from "../drivers/index.js";
-import type { Drivers } from "../types/index.js";
+import { Natav } from "../drivers/index.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -8,7 +7,7 @@ type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends
     <T>() => T extends B ? 1 : 2 ? true : false;
 
-class Child<const N extends string = string> extends Driver<N> {
+class Child<const N extends string = string> extends Natav.Driver<N> {
   state = { ready: true };
   api = {
     setReady: (b: boolean) => {
@@ -25,10 +24,10 @@ class Child<const N extends string = string> extends Driver<N> {
 class Parent<
   const N extends string,
   const D extends readonly Child[],
-> extends Driver<N, { ready: boolean }, D> {
+> extends Natav.Driver<N, { ready: boolean }, D> {
   state = { ready: true };
   api = {
-    setLeafReady: <N extends Drivers.Names<D>>(name: N, b: boolean) => {
+    setLeafReady: <N extends Natav.Names<D>>(name: N, b: boolean) => {
       const child = this.dep(name);
       child.api.setReady(b);
       const ready = this.deps.every((d) => d.state.ready === true);
@@ -45,7 +44,7 @@ class Parent<
   }
 }
 
-class Decoder extends Driver<"decoder"> {
+class Decoder extends Natav.Driver<"decoder"> {
   state = {};
   api = { decode: (value: string) => value };
 
@@ -54,7 +53,7 @@ class Decoder extends Driver<"decoder"> {
   }
 }
 
-class Encoder extends Driver<"encoder"> {
+class Encoder extends Natav.Driver<"encoder"> {
   state = {};
   api = { encode: (value: string) => value };
 
@@ -63,7 +62,7 @@ class Encoder extends Driver<"encoder"> {
   }
 }
 
-class ManagedPlugin extends Driver<"managed-plugin", {}, [Child<"child-1">]> {
+class ManagedPlugin extends Natav.Driver<"managed-plugin", {}, [Child<"child-1">]> {
   state = {};
   api = { inspect: () => "plugin" };
 
@@ -72,7 +71,7 @@ class ManagedPlugin extends Driver<"managed-plugin", {}, [Child<"child-1">]> {
   }
 }
 
-class Codec extends Driver<
+class Codec extends Natav.Driver<
   "codec",
   {},
   readonly (Decoder | Encoder)[]
@@ -92,7 +91,7 @@ type _mixedDecoder = Assert<Equal<typeof mixedDecoder, Decoder>>;
 type _mixedEncoder = Assert<Equal<typeof mixedEncoder, Encoder>>;
 type _remoteDecoderApi = Assert<
   Equal<
-    ReturnType<Drivers.PromisifyApi<Decoder["api"]>["decode"]>,
+    ReturnType<Natav.PromisifyApi<Decoder["api"]>["decode"]>,
     Promise<string>
   >
 >;
@@ -100,22 +99,22 @@ type _remoteDecoderApi = Assert<
 const child1 = new Child("child-1");
 const child2 = new Child("child-2");
 const managedPlugin = new ManagedPlugin(child1);
-type ManagedEntries = Drivers.ManagedResolved<[typeof managedPlugin]>;
+type ManagedEntries = Natav.ManagedResolved<[typeof managedPlugin]>;
 type _managedNames = Assert<
-  Equal<Drivers.ManagedNames<ManagedEntries>, "managed-plugin" | "child-1">
+  Equal<Natav.ManagedNames<ManagedEntries>, "managed-plugin" | "child-1">
 >;
 type _managedPlugin = Assert<
-  Equal<Drivers.ManagedCatalog<[typeof managedPlugin]>["managed-plugin"], ManagedPlugin>
+  Equal<Natav.ManagedCatalog<[typeof managedPlugin]>["managed-plugin"], ManagedPlugin>
 >;
 
 const parent = new Parent("parent-1", [child1, child2]);
-const natav = new Manager({
+const natav = new Natav({
   drivers: [parent] as const,
   plugin: [] as const,
 });
 type natav = typeof natav;
 
-type DriverNames = Drivers.Names<natav["drivers"]>;
+type DriverNames = Natav.Names<natav["drivers"]>;
 type _driverNames = Assert<
   Equal<DriverNames, "parent-1" | "child-1" | "child-2">
 >;
@@ -123,14 +122,14 @@ type _childLookup = Assert<Equal<natav["driver"]["child-1"], Child<"child-1">>>;
 
 const runtimeName: string = "runtime-child";
 const runtimeChildren = [new Child(runtimeName)];
-const runtimeManager = new Manager({
+const runtimeManager = new Natav({
   drivers: runtimeChildren,
   plugin: [] as const,
 });
 type RuntimeManager = typeof runtimeManager;
-type RuntimeNames = Drivers.Names<RuntimeManager["drivers"]>;
+type RuntimeNames = Natav.Names<RuntimeManager["drivers"]>;
 type _runtimeNames = Assert<Equal<RuntimeNames, string>>;
-type RuntimeLookup = Drivers.FromName<RuntimeManager["drivers"], "any-runtime-name">;
+type RuntimeLookup = Natav.FromName<RuntimeManager["drivers"], "any-runtime-name">;
 type _runtimeLookup = Assert<RuntimeLookup extends Child<string> ? true : false>;
 
 const runtimeLookup = runtimeManager.GetDriver(runtimeName);
@@ -138,7 +137,7 @@ type _runtimeManagerLookup = Assert<
   typeof runtimeLookup extends Child<string> ? true : false
 >;
 
-const pluginManager = new Manager({
+const pluginManager = new Natav({
   drivers: [] as const,
   plugin: [() => managedPlugin] as const,
 });
@@ -173,7 +172,7 @@ describe("driver deps", () => {
   it("initializes a shared dependency once when it appears below multiple roots", async () => {
     let starts = 0;
 
-    class Shared extends Driver<"shared"> {
+    class Shared extends Natav.Driver<"shared"> {
       state = {};
       api = {};
 
@@ -185,7 +184,7 @@ describe("driver deps", () => {
       }
     }
 
-    class Branch<const N extends "left" | "right"> extends Driver<
+    class Branch<const N extends "left" | "right"> extends Natav.Driver<
       N,
       {},
       readonly [Shared]
@@ -199,7 +198,7 @@ describe("driver deps", () => {
     }
 
     const shared = new Shared();
-    const manager = new Manager({
+    const manager = new Natav({
       drivers: [new Branch("left", shared), new Branch("right", shared)] as const,
       plugin: [] as const,
     });

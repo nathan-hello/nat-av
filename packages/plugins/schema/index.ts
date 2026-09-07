@@ -1,10 +1,9 @@
-import { Err, Driver } from "@nat-av/core";
-import { type Drivers } from "@nat-av/core";
+import { Err, Natav } from "@nat-av/core";
 
 export type SchemaState = Record<string, readonly unknown[]>;
 
-export default class SchemaGenerator extends Driver<"schema"> {
-  natav: Drivers.ManagerView;
+export default class SchemaGenerator extends Natav.Plugin<"schema"> {
+  natav: Natav.ManagerView;
   state: SchemaState;
 
   api = {
@@ -30,7 +29,7 @@ export default class SchemaGenerator extends Driver<"schema"> {
     },
   };
 
-  constructor(natav: Drivers.ManagerView, state: SchemaState) {
+  constructor(natav: Natav.ManagerView, state: SchemaState) {
     super({ name: "schema" });
     this.natav = natav;
     this.state = state;

@@ -446,10 +446,10 @@ async function emitValidationFiles(entry: DriverEntry): Promise<void> {
     const name = path[path.length - 1]!;
     const body = formatNode(node, 0);
     const contents =
-      `import type { Drivers } from "@nat-av/core";\n` +
+      `import type { Natav } from "@nat-av/core";\n` +
       `import type { Schema } from "@nat-av/plugin-schema/types";\n` +
       `import type { natav } from "${natavImportPath}";\n\n` +
-      `type Api = Drivers.FromName<natav["drivers"], ${JSON.stringify(entry.name)}>["api"];\n\n` +
+      `type Api = Natav.FromName<natav["drivers"], ${JSON.stringify(entry.name)}>["api"];\n\n` +
       `const schema: Schema.ApiNode<${JSON.stringify(name)}, Api${apiPath(path)}> = ${body} as const;\n\n` +
       `export default schema;\n`;
     await fs.writeFile(

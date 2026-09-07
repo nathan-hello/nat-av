@@ -1,12 +1,12 @@
 import { getRpc } from "@/state";
-import type { Drivers } from "@nat-av/core";
+import type { Natav } from "@nat-av/core";
 import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
 
 function findNode(
-  nodes: Drivers.DriverView[],
+  nodes: Natav.DriverView[],
   name: string,
-): Drivers.DriverView | undefined {
+): Natav.DriverView | undefined {
   for (const node of nodes) {
     if (node.name === name) return node;
     const found = findNode(node.deps, name);

@@ -1,4 +1,4 @@
-import { Driver, type Drivers } from "@nat-av/core";
+import { Natav } from "@nat-av/core";
 import type Decoder from "@nat-av/driver-nat-decoder";
 import type { VideoRoute } from "@nat-av/driver-nat-decoder/types";
 import { BUILTIN_TEMPLATES } from "./src/templates/1x1/templates.js";
@@ -61,7 +61,7 @@ type LogicalOutput = { decoderIndex: number; output: OutputPlacement };
 export default class DisplayManager<
   const N extends string = string,
   const D extends readonly Decoder[] = readonly Decoder[],
-> extends Driver<N, DisplayState, D> {
+> extends Natav.Driver<N, DisplayState, D> {
   private loutputs: LogicalOutput[] = [];
   private lwindows: LogicalWindow[] = [];
   private canvasWidth: number = 0;
@@ -71,7 +71,7 @@ export default class DisplayManager<
   constructor(
     name: N,
     deps: D,
-    public placement: { [K in Drivers.Names<D>]: OutputPlacement[] },
+    public placement: { [K in Natav.Names<D>]: OutputPlacement[] },
   ) {
     super({ name, deps: deps });
     this.loutputs = this.deps.flatMap((config, decoderIndex) =>

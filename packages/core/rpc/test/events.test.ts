@@ -1,4 +1,4 @@
-import { Manager, Test } from "../../index.js";
+import { Natav, Test } from "../../index.js";
 import { RpcClient } from "../client/index.js";
 import { RpcServer } from "../server/index.js";
 import { Rpc } from "../types.js";
@@ -36,7 +36,7 @@ describe("rpc driver events", () => {
     const eventDriver = new Test.EventDriver("event-1");
     const transport = new Test.RpcTransport();
 
-    const natav = new Manager({
+    const natav = new Natav({
       drivers: [eventDriver],
       plugin: [
         () => new Test.EventDriver("defer"),

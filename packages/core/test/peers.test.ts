@@ -1,11 +1,10 @@
-import { Driver, Manager } from "../drivers/index.js";
+import { Natav } from "../drivers/index.js";
 import { Test } from "./data.test.js";
-import type { Drivers } from "../types/index.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 describe("typechecking that drivers can get Managers that have other drivers in them", async () => {
-  class LeftPeer extends Driver<"left-peer"> {
+  class LeftPeer extends Natav.Driver<"left-peer"> {
     state = { count: 0 };
     api = {
       bump: () => {
@@ -19,7 +18,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class RightPeer extends Driver<"right-peer"> {
+  class RightPeer extends Natav.Driver<"right-peer"> {
     state = { count: 0 };
     api = {
       bump: () => {
@@ -33,17 +32,17 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class LeftPlugin extends Driver<"left-plugin"> {
+  class LeftPlugin extends Natav.Driver<"left-plugin"> {
     state = { synced: false };
     api = {};
     socket = undefined;
-    natav: Drivers.ManagerView<readonly [RightPeer]> & {
-      readonly plugin: Drivers.Catalog<readonly [RightPlugin]>;
+    natav: Natav.ManagerView<readonly [RightPeer]> & {
+      readonly plugin: Natav.Catalog<readonly [RightPlugin]>;
     };
 
     constructor(
-      natav: Drivers.ManagerView<readonly [RightPeer]> & {
-        readonly plugin: Drivers.Catalog<readonly [RightPlugin]>;
+      natav: Natav.ManagerView<readonly [RightPeer]> & {
+        readonly plugin: Natav.Catalog<readonly [RightPlugin]>;
       },
     ) {
       super({ name: "left-plugin" });
@@ -60,24 +59,24 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class RightPlugin extends Driver<"right-plugin"> {
+  class RightPlugin extends Natav.Driver<"right-plugin"> {
     state = { synced: false };
     api = {};
     socket = undefined;
 
-    constructor(natav: Drivers.ManagerView<readonly [LeftPeer]>) {
+    constructor(natav: Natav.ManagerView<readonly [LeftPeer]>) {
       super({ name: "right-plugin" });
       this.natav = natav;
     }
 
-    natav: Drivers.ManagerView<readonly [LeftPeer]>;
+    natav: Natav.ManagerView<readonly [LeftPeer]>;
 
     syncLeftPeer() {
       this.natav.GetDriver("left-peer").state.count;
     }
   }
 
-  class ChildPeer extends Driver<"child-peer"> {
+  class ChildPeer extends Natav.Driver<"child-peer"> {
     state = { count: 0 };
     api = {
       bump: () => {
@@ -91,7 +90,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class ParentPeer extends Driver<"parent-peer", { ready: boolean }, [ChildPeer]> {
+  class ParentPeer extends Natav.Driver<"parent-peer", { ready: boolean }, [ChildPeer]> {
     state = { ready: true };
     api = {};
     socket = undefined;
@@ -109,38 +108,38 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     LeftPlugin,
     RightPlugin,
   ];
-  const leftManager = new Manager({
+  const leftManager = new Natav({
     drivers: leftDrivers,
     plugin: leftPlugins,
   });
 
   const rightDrivers: readonly [LeftPeer] = [leftPeer];
   const rightPlugins: readonly [typeof RightPlugin] = [RightPlugin];
-  const rightManager = new Manager({
+  const rightManager = new Natav({
     drivers: rightDrivers,
     plugin: rightPlugins,
   });
 
   const pairedDrivers: readonly [LeftPeer, RightPeer] = [leftPeer, rightPeer];
   const noPlugins: readonly [] = [];
-  const pairedManager = new Manager({
+  const pairedManager = new Natav({
     drivers: pairedDrivers,
     plugin: noPlugins,
   });
 
   const childPeer = new ChildPeer();
   const parentPeer = new ParentPeer(childPeer);
-  const depManager = new Manager({
+  const depManager = new Natav({
     drivers: [parentPeer] as const,
     plugin: [] as const,
   });
 
-  type names = Drivers.Names<(typeof depManager)["drivers"]>;
+  type names = Natav.Names<(typeof depManager)["drivers"]>;
 
   type _ = Test.Assert<Test.Equal<names, "parent-peer" | "child-peer">>;
   type __ = Test.Assert<Test.NotEqual<names, string>>;
 
-  function expectManager(manager: Manager, names: string[], tree: unknown) {
+  function expectManager(manager: Natav, names: string[], tree: unknown) {
     assert.deepEqual(manager.GetAllDriverNames(), names);
     names.forEach((n) => {
       assert.equal(manager.FindDriver(n), manager.GetDriver(n));

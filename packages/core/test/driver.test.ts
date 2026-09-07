@@ -1,4 +1,4 @@
-import { Manager } from "../drivers/index.js";
+import { Natav } from "../drivers/index.js";
 import { Test } from "./data.test.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -9,7 +9,7 @@ describe("test driver", () => {
     socket: new Test.Socket(),
   });
 
-  const natav = new Manager({ drivers: [driver], plugin: [] });
+  const natav = new Natav({ drivers: [driver], plugin: [] });
 
   it("registers the shim driver", () => {
     assert.deepEqual(natav.GetAllDriverNames(), ["shim-1"]);

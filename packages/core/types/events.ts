@@ -1,5 +1,5 @@
 import type { ReadableLogRecord } from "../telemetry/types.js";
-import type { Drivers } from "./drivers.js";
+import type { Natav as NatavTypes } from "./drivers.js";
 
 export namespace Events {
   export namespace Socket {
@@ -23,8 +23,8 @@ export namespace Events {
   }
 
   // This namespace is not allowed to import Natav namespace.
-  // The Natav namespace uses Driver for inference, so trying
-  // to get the Drivers.Names<N> for example will cause a circular
+  // The Natav namespace uses its driver shape for inference, so trying
+  // to get the Natav.Names<N> for example will cause a circular
   // dependency that Typescript cannot resolve.
   export namespace Driver {
     export type Map<StateData> = {
@@ -36,19 +36,19 @@ export namespace Events {
   }
 
   export namespace Natav {
-    type EventsFor<N extends Drivers.Array> = {
-      [Name in Drivers.Names<N>]: {
+    type EventsFor<N extends NatavTypes.Array> = {
+      [Name in NatavTypes.Names<N>]: {
         name: Name;
         event: string;
         data: any;
       };
-    }[Drivers.Names<N>];
-    type StateEventFor<N extends Drivers.Array> = {
-      [Name in Drivers.Names<N>]: {
+    }[NatavTypes.Names<N>];
+    type StateEventFor<N extends NatavTypes.Array> = {
+      [Name in NatavTypes.Names<N>]: {
         name: Name;
-        data: Partial<Drivers.State<N, Name>>;
+        data: Partial<NatavTypes.State<N, Name>>;
       };
-    }[Drivers.Names<N>];
+    }[NatavTypes.Names<N>];
 
     export type SocketMessage = {
       traceName: string;
@@ -58,19 +58,19 @@ export namespace Events {
       encoding: BufferEncoding | "unknown";
     };
 
-    export type Map<N extends Drivers.Array = Drivers.Array> = {
+    export type Map<N extends NatavTypes.Array = NatavTypes.Array> = {
       "natav:driver:event": EventsFor<N>;
       "natav:state:update": StateEventFor<N>;
       "natav:state:override": StateEventFor<N>;
-      "natav:driver:connected": { name: Drivers.Names<N> };
-      "natav:driver:disconnected": { name: Drivers.Names<N> };
+      "natav:driver:connected": { name: NatavTypes.Names<N> };
+      "natav:driver:disconnected": { name: NatavTypes.Names<N> };
       "natav:driver:error": {
         caughtBy: string;
-        name: Drivers.Names<N>;
+        name: NatavTypes.Names<N>;
         error?: Error;
       };
       "natav:debug:socket": {
-        name: Drivers.Names<N>;
+        name: NatavTypes.Names<N>;
         data: SocketMessage;
       };
       "natav:opentelemetry:entry": {
@@ -78,11 +78,11 @@ export namespace Events {
         asString: string;
       };
     };
-    export type MapWithTypes<N extends Drivers.Array = Drivers.Array> = {
+    export type MapWithTypes<N extends NatavTypes.Array = NatavTypes.Array> = {
       [K in keyof Map<N>]: Map<N>[K] & { type: K };
     };
 
-    export type EventUnion<N extends Drivers.Array = Drivers.Array> =
+    export type EventUnion<N extends NatavTypes.Array = NatavTypes.Array> =
       MapWithTypes<N>[keyof MapWithTypes<N>];
   }
 

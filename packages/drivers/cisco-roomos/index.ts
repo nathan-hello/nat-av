@@ -1,7 +1,7 @@
 import {
   Convert,
   Delimiters,
-  Driver,
+  Natav,
   Proto,
   RequestManager,
   TypedEventTarget,
@@ -61,7 +61,7 @@ export default class CiscoRoomOS<
   } = RoomOS.State<SelectedSchema<SchemaSet, Version>, Product, Sub, Strict> & {
     internal: { highestId: number; subscriptions: Sub };
   },
-> extends Driver<N, State> {
+> extends Natav.Driver<N, State> {
   private requests: RequestManager<
     RoomOS.WriteOperation & { id: number },
     Proto.JsonRpc.Response | Proto.JsonRpc.Notification

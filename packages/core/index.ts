@@ -12,13 +12,13 @@ export * as Proto from "./protocol/index.js";
 export { Tcp } from "./sockets/tcp.js";
 export { Udp } from "./sockets/udp.js";
 
-export { Driver, Manager } from "./drivers/index.js";
+export { Natav } from "./drivers/index.js";
 export { Err } from "./lib/errors.js";
 export { TypedEventTarget } from "./lib/eventtarget.js";
 export { RequestManager } from "./lib/requests.js";
 export { Delimiters } from "./sockets/delimiters.js";
 export { Test } from "./test/data.test.js";
-export type { Drivers, Events, Sockets } from "./types/index.js";
+export type { Events, Sockets } from "./types/index.js";
 
 export type {ClientRpcTransport, Rpc} from "./rpc/index.js";
 export { RpcClient, RpcServer } from "./rpc/index.js";
