@@ -1,0 +1,25 @@
+{
+  "name": "@nat-av/frontend-remix",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "files": [".dist"],
+  "exports": {
+    ".": {
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@nat-av/core": "^0.1.0",
+    "remix": "3.0.0-beta.5"
+  },
+  "devDependencies": {
+    "@nat-av/core": "workspace:*",
+    "remix": "3.0.0-beta.5"
+  }
+}

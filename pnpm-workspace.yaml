@@ -4,6 +4,8 @@ packages:
   - "packages/drivers/*"
   - "packages/plugins"
   - "packages/plugins/*"
+  - "packages/rpc-ws"
+  - "packages/frontend-remix"
   - "examples/*"
   - "examples/remix/*"
 

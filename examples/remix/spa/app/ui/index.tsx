@@ -4,7 +4,7 @@ import { DebugPage } from "@/ui/debug";
 import { PaintPage } from "@/ui/paint";
 import { RelayBoardPage } from "@/ui/relay-board";
 import { Wall } from "@/ui/wall";
-import { config } from "@server/data/encoders";
+import { config } from "@/server/data/encoders";
 import { css, on, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {

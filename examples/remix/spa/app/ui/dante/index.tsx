@@ -1,9 +1,5 @@
 import { getRpc } from "@/state";
-import type {
-  DanteChannel,
-  DanteDeviceRecord,
-  DanteRouterMatrix,
-} from "@nat-av/driver-dante-router/types";
+import { type DanteRouter } from "@nat-av/drivers";
 import { Fragment, css, on, type Handle } from "remix/ui";
 
 type RouteFormState = {
@@ -38,7 +34,10 @@ export function DantePage(handle: Handle) {
 
   return () => {
     const state = dante.state;
-    const devices = (state.devices ?? {}) as Record<string, DanteDeviceRecord>;
+    const devices = (state.devices ?? {}) as Record<
+      string,
+      DanteRouter.DanteDeviceRecord
+    >;
     const matrix = state.matrix ?? {};
     const deviceList = Object.values(devices);
     const matrixEntries = Object.entries(matrix);
@@ -426,7 +425,7 @@ export function DantePage(handle: Handle) {
   };
 }
 
-function formatChannels(channels: Map<number, DanteChannel>): string {
+function formatChannels(channels: Map<number, DanteRouter.DanteChannel>): string {
   const entries = [...channels.values()];
   if (entries.length === 0) return "(none)";
   return entries
@@ -559,20 +558,20 @@ type MatrixOrientation = "tx-rows" | "rx-rows";
 type AxisEntry = {
   serverName: string;
   deviceName: string;
-  channel: DanteChannel;
+  channel: DanteRouter.DanteChannel;
   kind: "tx" | "rx";
 };
 
 type AxisGroup = {
   serverName: string;
   deviceName: string;
-  channels: DanteChannel[];
+  channels: DanteRouter.DanteChannel[];
   kind: "tx" | "rx";
 };
 
 interface DanteMatrixProps {
-  devices: Record<string, DanteDeviceRecord>;
-  matrix: DanteRouterMatrix;
+  devices: Record<string, DanteRouter.DanteDeviceRecord>;
+  matrix: DanteRouter.DanteRouterMatrix;
   routePending: boolean;
   unroutePending: boolean;
   onRoute: (

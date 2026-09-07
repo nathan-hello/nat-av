@@ -1,9 +1,9 @@
 import { Convert, TypedEventTarget } from "@nat-av/core";
-import type { Rpc } from "@nat-av/core/rpc";
 import type {
+  Rpc,
   ServerRpcTransport,
   ServerRpcTransportEvents,
-} from "@nat-av/core/rpc/server";
+} from "@nat-av/core";
 import * as http from "node:http";
 import { WebSocketServer } from "ws";
 

@@ -1,11 +1,10 @@
 import { getRpc } from "@/state";
-import type { Drivers } from "@nat-av/core/client";
-import type { Rpc } from "@nat-av/core/rpc/types";
-import type { natav } from "@server/index";
+import type { Drivers, Rpc } from "@nat-av/core";
+import type { natav } from "@/server/index";
 import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
-import { DebugSocketPanel } from "./socket";
-import { DebugDriverTree } from "./tree.js";
+import { DebugSocketPanel } from "@/ui/debug/socket";
+import { DebugDriverTree } from "@/ui/debug/tree";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);

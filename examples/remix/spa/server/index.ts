@@ -8,9 +8,9 @@ import {
   BewinnerRelayBoard,
 } from "@nat-av/drivers";
 import { Debugger, Schema } from "@nat-av/plugins";
-import { RpcTransportWebsocket } from "./ws";
+import { RpcTransportWebsocket } from "@nat-av/rpc-ws";
 import { Server } from "node:http";
-import { System } from "./system";
+import { System } from "@/server/system";
 
 // TSAS:
 if ((globalThis as any).__manager__) {

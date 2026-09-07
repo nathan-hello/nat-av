@@ -45,22 +45,22 @@ importers:
       '@nat-av/drivers':
         specifier: workspace:*
         version: link:../../../packages/drivers
+      '@nat-av/frontend-remix':
+        specifier: workspace:*
+        version: link:../../../packages/frontend-remix
       '@nat-av/plugins':
         specifier: workspace:*
         version: link:../../../packages/plugins
+      '@nat-av/rpc-ws':
+        specifier: workspace:*
+        version: link:../../../packages/rpc-ws
       remix:
         specifier: 3.0.0-beta.5
         version: 3.0.0-beta.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
       tsx:
         specifier: latest
         version: 4.23.13
-      ws:
-        specifier: ^8.21.0
-        version: 8.21.3
     devDependencies:
-      '@types/ws':
-        specifier: ^8.18.1
-        version: 8.18.1
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -167,6 +167,15 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
+  packages/frontend-remix:
+    devDependencies:
+      '@nat-av/core':
+        specifier: workspace:*
+        version: link:../core
+      remix:
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+
   packages/plugins:
     dependencies:
       '@nat-av/plugin-debugger':
@@ -196,6 +205,19 @@ importers:
       typescript-api:
         specifier: npm:typescript@6.0.3
         version: typescript@6.0.3
+
+  packages/rpc-ws:
+    dependencies:
+      ws:
+        specifier: ^8.21.0
+        version: 8.21.3
+    devDependencies:
+      '@nat-av/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
 
 packages:
 

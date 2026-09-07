@@ -13,8 +13,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "remix/ui",
     "paths": {
-      "@/*": ["./app/*"],
-      "@server/*": ["./server/*"]
+      "@/*": ["./app/*", "./*"]
     }
   },
   "include": ["app/**/*.ts", "app/**/*.tsx", "server/**/*.ts", "server.ts", "rpc-websocket.ts"]

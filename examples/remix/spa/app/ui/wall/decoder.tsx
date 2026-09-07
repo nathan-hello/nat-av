@@ -1,9 +1,5 @@
 import { SOURCE_ID_MIME, SOURCE_NAME_MIME } from "@/ui/wall/source";
-import type { LogicalWindow } from "@nat-av/driver-nat-decoder-video-wall";
-import type {
-  GridTemplate,
-  RectangularRegion,
-} from "@nat-av/driver-nat-decoder-video-wall/templates/builder";
+import { type NatDecoderWall } from "@nat-av/drivers";
 import { css, on, type Handle } from "remix/ui";
 
 type CanvasGlobal = {
@@ -27,24 +23,36 @@ type DragState = {
 
 interface DecoderProps {
   canvas: { width: number; height: number };
-  windows: LogicalWindow[];
-  template: GridTemplate;
+  windows: NatDecoderWall.LogicalWindow[];
+  template: NatDecoderWall.GridTemplate;
   encoders?: { name: string; uri: string }[];
   scale?: number;
   mode: InteractionMode;
   movePending?: boolean;
   routePending?: boolean;
   selectedWindowId?: number | null;
-  onRegionSelect?: (region: RectangularRegion, global: CanvasGlobal) => void;
-  onWindowSelect?: (window: LogicalWindow) => void;
-  onWindowMove?: (window: LogicalWindow, global: CanvasGlobal) => void;
-  onWindowMoveEnd?: (window: LogicalWindow, global: CanvasGlobal) => void;
+  onRegionSelect?: (
+    region: NatDecoderWall.RectangularRegion,
+    global: CanvasGlobal,
+  ) => void;
+  onWindowSelect?: (window: NatDecoderWall.LogicalWindow) => void;
+  onWindowMove?: (
+    window: NatDecoderWall.LogicalWindow,
+    global: CanvasGlobal,
+  ) => void;
+  onWindowMoveEnd?: (
+    window: NatDecoderWall.LogicalWindow,
+    global: CanvasGlobal,
+  ) => void;
   onSourceDropToRegion?: (
-    region: RectangularRegion,
+    region: NatDecoderWall.RectangularRegion,
     global: CanvasGlobal,
     source: DroppedSource,
   ) => void;
-  onSourceDropToWindow?: (window: LogicalWindow, source: DroppedSource) => void;
+  onSourceDropToWindow?: (
+    window: NatDecoderWall.LogicalWindow,
+    source: DroppedSource,
+  ) => void;
 }
 
 export function Decoder(handle: Handle<DecoderProps>) {
@@ -65,7 +73,7 @@ export function Decoder(handle: Handle<DecoderProps>) {
 
   function beginWindowDrag(
     event: PointerEvent,
-    twindow: LogicalWindow,
+    twindow: NatDecoderWall.LogicalWindow,
     scale: number,
   ) {
     if (handle.props.mode !== "free" || event.button !== 0) {
@@ -341,7 +349,7 @@ export function Decoder(handle: Handle<DecoderProps>) {
 }
 
 function getRegionGlobal(
-  region: RectangularRegion,
+  region: NatDecoderWall.RectangularRegion,
   canvas: { width: number; height: number },
   gridUnitWidth: number,
   gridUnitHeight: number,
@@ -357,11 +365,11 @@ function getRegionGlobal(
   };
 }
 
-function getTemplateGridCols(template: GridTemplate) {
+function getTemplateGridCols(template: NatDecoderWall.GridTemplate) {
   return template.dimensions.cols;
 }
 
-function getTemplateGridRows(template: GridTemplate) {
+function getTemplateGridRows(template: NatDecoderWall.GridTemplate) {
   return template.dimensions.rows;
 }
 

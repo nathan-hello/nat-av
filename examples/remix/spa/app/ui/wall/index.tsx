@@ -1,15 +1,12 @@
 import { getRpc } from "@/state";
 import { Decoder } from "@/ui/wall/decoder";
 import { Source, type SourceSelectDetail } from "@/ui/wall/source";
-import type {
-  Encoder,
-  LogicalWindow,
-} from "@nat-av/driver-nat-decoder-video-wall";
+import { type NatDecoderWall } from "@nat-av/drivers";
 import { css, on, type Handle } from "remix/ui";
 
 interface WallProps {
   driverName: "video-wall";
-  encoders: Encoder[];
+  encoders: NatDecoderWall.Encoder[];
 }
 
 type RouteFormState = {
@@ -59,7 +56,7 @@ export function Wall(handle: Handle<WallProps>) {
     }
 
     function loadWindow(
-      dwindow: LogicalWindow,
+      dwindow: NatDecoderWall.LogicalWindow,
       source?: SourceSelectDetail | null,
     ) {
       selectedWindowId = dwindow.id;

@@ -28,6 +28,7 @@ export namespace Telemetry {
   export import Sdk = TelemetrySdkMod;
 }
 
-export type { ClientRpcTransport, Rpc } from "./rpc/index.js";
-export { RpcClient } from "./rpc/index.js";
+export type { ClientRpcTransport } from "./rpc/client/websocket.js";
+export type { Rpc } from "./rpc/types.js";
+export { RpcClient } from "./rpc/client/index.js";
 export type { ServerRpcTransport, ServerRpcTransportEvents, } from "./rpc/server/transport.js";

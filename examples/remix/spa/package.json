@@ -10,14 +10,14 @@
   "dependencies": {
     "@nat-av/core": "workspace:*",
     "@nat-av/drivers": "workspace:*",
+    "@nat-av/frontend-remix": "workspace:*",
     "@nat-av/plugins": "workspace:*",
+    "@nat-av/rpc-ws": "workspace:*",
     "remix": "3.0.0-beta.5",
-    "tsx": "latest",
-    "ws": "^8.21.0"
+    "tsx": "latest"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
-    "vite": "latest",
-    "@types/ws": "^8.18.1"
+    "vite": "latest"
   }
 }

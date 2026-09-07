@@ -1,0 +1,27 @@
+{
+  "name": "@nat-av/rpc-ws",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "files": [".dist"],
+  "exports": {
+    ".": {
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
+  },
+  "peerDependencies": {
+    "@nat-av/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@nat-av/core": "workspace:*",
+    "@types/ws": "^8.18.1"
+  }
+}

@@ -1,4 +1,4 @@
-import type { Drivers } from "@nat-av/core/client";
+import type { Drivers } from "@nat-av/core";
 import { css, on, type Handle } from "remix/ui";
 
 type DebugDriverTreeProps = {

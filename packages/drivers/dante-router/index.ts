@@ -25,6 +25,12 @@ import type {
   DiscoveryBackend,
 } from "./src/types.js";
 
+export type {
+  DanteChannel,
+  DanteDeviceRecord,
+  DanteRouterMatrix,
+} from "./src/types.js";
+
 const ARC_TIMEOUT_MS = 3000;
 
 interface PendingRequest {

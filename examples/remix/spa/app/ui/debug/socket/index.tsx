@@ -1,5 +1,5 @@
 import { getRpc } from "@/state";
-import type { Drivers } from "@nat-av/core/client";
+import type { Drivers } from "@nat-av/core";
 import type { Handle } from "remix/ui";
 import { css, on } from "remix/ui";
 

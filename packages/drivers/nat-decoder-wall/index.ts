@@ -4,6 +4,8 @@ import type { VideoRoute } from "@nat-av/driver-nat-decoder/types";
 import { BUILTIN_TEMPLATES } from "./src/templates/1x1/templates.js";
 import type { GridTemplate } from "./src/templates/builder.js";
 
+export type { GridTemplate, RectangularRegion } from "./src/templates/builder.js";
+
 /**
  * LogicalWindow is a type to describe a window as
  * it lives on the entire canvas. It may span multiple

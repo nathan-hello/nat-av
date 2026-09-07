@@ -1,6 +1,6 @@
 import { router } from "@/router";
 import { Telemetry } from "@nat-av/core";
-import { start } from "@server/index";
+import { start } from "@/server/index";
 import * as http from "node:http";
 import { createRequestListener } from "remix/node-fetch-server";
 
