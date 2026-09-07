@@ -21,7 +21,7 @@
     "@nat-av/driver-cisco-roomos": "workspace:*",
     "@nat-av/driver-dante-router": "workspace:*",
     "@nat-av/driver-nat-decoder": "workspace:*",
-    "@nat-av/driver-nat-decoder-video-wall": "workspace:*",
+    "@nat-av/driver-nat-decoder-wall": "workspace:*",
     "@nat-av/driver-linux-pipewire": "workspace:*",
     "@nat-av/driver-linux-network-manager": "workspace:*",
     "@nat-av/driver-mediasite": "workspace:*",

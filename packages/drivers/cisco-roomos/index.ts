@@ -41,7 +41,7 @@ export type State<
   internal: { subscriptions: Subscriptions };
 };
 
-export class CiscoRoomOS<
+export default class CiscoRoomOS<
   SchemaSet extends RoomOSSchemaSet = DefaultRoomOSSchemaSet,
   const Version extends keyof SchemaSet & string = "any",
   const Product extends RoomOS.ProductTarget<

@@ -10,7 +10,7 @@ export type RelayBoardApi = {
   close: (relay: number) => Promise<void>;
 };
 
-export class RelayBoard<const N extends string = string> extends Driver<
+export default class RelayBoard<const N extends string = string> extends Driver<
   N,
   RelayBoardState
 > {
@@ -69,5 +69,3 @@ export class RelayBoard<const N extends string = string> extends Driver<
     return relay - 1;
   }
 }
-
-export default RelayBoard;

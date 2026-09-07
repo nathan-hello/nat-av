@@ -1,7 +1,7 @@
 import { Test, type Sockets } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { CiscoRoomOS } from "../index.js";
+import CiscoRoomOS from "../index.js";
 
 it("api writes to socket, state gets updated on notification", async () => {
   const socket = new Test.Socket(

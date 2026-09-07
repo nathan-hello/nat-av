@@ -1,7 +1,7 @@
 import { Manager, Test, RpcClient, RpcServer } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CiscoRoomOS } from "../index.js";
+import CiscoRoomOS from "../index.js";
 
 describe("rpc roomos driver", () => {
   it("calls roomos methods and receives roomos events through rpc", async () => {

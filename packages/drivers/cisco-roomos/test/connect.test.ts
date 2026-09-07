@@ -1,5 +1,5 @@
 import { Test } from "@nat-av/core";
-import { CiscoRoomOS } from "@nat-av/driver-cisco-roomos";
+import CiscoRoomOS from "@nat-av/driver-cisco-roomos";
 import assert from "node:assert/strict";
 import { it } from "node:test";
 

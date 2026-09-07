@@ -1,13 +1,14 @@
-import { Manager, Tcp, Telemetry, type Sockets } from "@nat-av/core";
-import { CiscoRoomOS } from "@nat-av/driver-cisco-roomos";
-import DanteRouter from "@nat-av/driver-dante-router";
-import Decoder from "@nat-av/driver-nat-decoder";
-import DisplayManager from "@nat-av/driver-nat-decoder-video-wall";
-import { Paint } from "@nat-av/driver-paint";
-import { RpcServer } from "@nat-av/core/rpc/server";
-import { RpcTransportWebsocket } from "./ws";
+import { Manager, Tcp, Telemetry, type Sockets, RpcServer } from "@nat-av/core";
+import {
+  CiscoRoomOS,
+  DanteRouter,
+  NatDecoderWall,
+  NatDecoder,
+  Paint,
+  BewinnerRelayBoard,
+} from "@nat-av/drivers";
 import { Debugger, Schema } from "@nat-av/plugins";
-import RelayBoard from "@nat-av/driver-bewinner-relay-board";
+import { RpcTransportWebsocket } from "./ws";
 import { Server } from "node:http";
 import { System } from "./system";
 
@@ -33,10 +34,10 @@ Telemetry.Sdk.AddExporters([
 
 const natav = new Manager({
   drivers: [
-    new DisplayManager(
+    new NatDecoderWall.default(
       "video-wall",
       [
-        new Decoder({
+        new NatDecoder.default({
           name: "decoder-1",
           socket: new Tcp({
             addr: "decoder-0c7a1566cf92.local",
@@ -51,14 +52,21 @@ const natav = new Manager({
         ],
       },
     ),
-    new CiscoRoomOS({
+    new CiscoRoomOS.default({
       name: "roomos",
       socket: [] as unknown as Sockets.Client,
       strict: false,
     }),
-    new DanteRouter({ name: "dante", interfaceIp: "10.1.0.6", liveMdns: true }),
-    new RelayBoard({ name: "relay-board", address: "192.168.1.4" }),
-    new Paint({
+    new DanteRouter.default({
+      name: "dante",
+      interfaceIp: "10.1.0.6",
+      liveMdns: true,
+    }),
+    new BewinnerRelayBoard.default({
+      name: "relay-board",
+      address: "192.168.1.4",
+    }),
+    new Paint.default({
       outputDir: "./tmp/paint",
       paints: {
         main: { width: 1920, height: 1080 },
@@ -68,8 +76,8 @@ const natav = new Manager({
   deferred: [
     System,
     RpcServer,
-    Debugger.Debugger,
-    (manager) => new Schema.SchemaGenerator(manager, {}),
+    Debugger.default,
+    (manager) => new Schema.default(manager, {}),
   ],
 });
 

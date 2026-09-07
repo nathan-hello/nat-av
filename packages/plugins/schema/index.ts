@@ -3,7 +3,7 @@ import { type Drivers } from "@nat-av/core";
 
 export type SchemaState = Record<string, readonly unknown[]>;
 
-export class SchemaGenerator extends Driver<"schema"> {
+export default class SchemaGenerator extends Driver<"schema"> {
   natav: Drivers.ManagerView;
   state: SchemaState;
 

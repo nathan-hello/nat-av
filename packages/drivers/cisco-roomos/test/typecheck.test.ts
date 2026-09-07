@@ -1,7 +1,7 @@
 import { Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CiscoRoomOS } from "../index.js";
+import CiscoRoomOS from "../index.js";
 import type { GeneratedRoomOS } from "../generated.js";
 
 describe("typecheck", () => {

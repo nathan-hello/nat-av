@@ -9,15 +9,8 @@
   },
   "dependencies": {
     "@nat-av/core": "workspace:*",
-    "@nat-av/driver-bewinner-relay-board": "workspace:*",
-    "@nat-av/driver-cisco-roomos": "workspace:*",
-    "@nat-av/driver-dante-router": "workspace:*",
-    "@nat-av/driver-nat-decoder": "workspace:*",
-    "@nat-av/driver-nat-decoder-video-wall": "workspace:*",
-    "@nat-av/driver-paint": "workspace:*",
+    "@nat-av/drivers": "workspace:*",
     "@nat-av/plugins": "workspace:*",
-    "@nat-av/plugin-debugger": "workspace:*",
-    "@nat-av/plugin-schema": "workspace:*",
     "remix": "3.0.0-beta.5",
     "tsx": "latest",
     "ws": "^8.21.0"

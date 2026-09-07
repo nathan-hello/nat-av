@@ -1,5 +1,5 @@
 {
-  "name": "@nat-av/driver-nat-decoder-video-wall",
+  "name": "@nat-av/driver-nat-decoder-wall",
   "version": "0.1.0",
   "type": "module",
   "files": [

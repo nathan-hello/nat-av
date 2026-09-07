@@ -5,6 +5,8 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "pnpm -r --if-present run build",
+    "cloc": "for package in packages/* packages/*/*; do if [ -f \"$package/package.json\" ]; then printf '\\n%s\\n' \"$package\"; git ls-files -co --exclude-standard -- \"$package\" | cloc --list-file=-; fi; done",
+    "cloc-all": "git ls-files -co --exclude-standard -- packages | cloc --list-file=-",
     "dev": "pnpm --dir examples/remix/complete dev",
     "test": "pnpm run build && pnpm -r --if-present run test",
     "typecheck": "pnpm run build && pnpm -r --if-present run typecheck",

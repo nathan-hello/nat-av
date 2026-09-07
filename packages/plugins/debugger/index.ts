@@ -27,7 +27,7 @@ function buildState(nodes: Drivers.DriverView[]): State {
   return { view: nodes, messages };
 }
 
-export class Debugger extends Driver<"debugger"> {
+export default class Debugger extends Driver<"debugger"> {
   natav: Drivers.ManagerView;
   state: State = {
     view: [],

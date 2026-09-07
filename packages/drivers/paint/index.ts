@@ -16,7 +16,7 @@ type State<N extends string> = {
   paints: Record<N, PaintState>;
 };
 
-export class Paint<const Names extends string = string> extends Driver<
+export default class Paint<const Names extends string = string> extends Driver<
   "paint",
   State<Names>
 > {

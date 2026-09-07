@@ -37,35 +37,14 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
-  examples/remix/complete:
+  examples/remix/spa:
     dependencies:
       '@nat-av/core':
         specifier: workspace:*
         version: link:../../../packages/core
-      '@nat-av/driver-bewinner-relay-board':
+      '@nat-av/drivers':
         specifier: workspace:*
-        version: link:../../../packages/drivers/bewinner-relay-board
-      '@nat-av/driver-cisco-roomos':
-        specifier: workspace:*
-        version: link:../../../packages/drivers/cisco-roomos
-      '@nat-av/driver-dante-router':
-        specifier: workspace:*
-        version: link:../../../packages/drivers/dante-router
-      '@nat-av/driver-nat-decoder':
-        specifier: workspace:*
-        version: link:../../../packages/drivers/nat-decoder
-      '@nat-av/driver-nat-decoder-video-wall':
-        specifier: workspace:*
-        version: link:../../../packages/drivers/nat-decoder-video-wall
-      '@nat-av/driver-paint':
-        specifier: workspace:*
-        version: link:../../../packages/drivers/paint
-      '@nat-av/plugin-debugger':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/debugger
-      '@nat-av/plugin-schema':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/schema
+        version: link:../../../packages/drivers
       '@nat-av/plugins':
         specifier: workspace:*
         version: link:../../../packages/plugins
@@ -114,9 +93,9 @@ importers:
       '@nat-av/driver-nat-decoder':
         specifier: workspace:*
         version: link:nat-decoder
-      '@nat-av/driver-nat-decoder-video-wall':
+      '@nat-av/driver-nat-decoder-wall':
         specifier: workspace:*
-        version: link:nat-decoder-video-wall
+        version: link:nat-decoder-wall
       '@nat-av/driver-paint':
         specifier: workspace:*
         version: link:paint
@@ -166,7 +145,7 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
-  packages/drivers/nat-decoder-video-wall:
+  packages/drivers/nat-decoder-wall:
     dependencies:
       '@nat-av/driver-nat-decoder':
         specifier: workspace:*

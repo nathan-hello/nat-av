@@ -2,7 +2,7 @@ import { Manager } from "@nat-av/core";
 import { Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { Debugger } from "./index.js";
+import Debugger from "./index.js";
 
 it("preloads the debugger tree and appends messages to each node", async () => {
   const eventDriver = new Test.EventDriver("event-1");
