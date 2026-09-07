@@ -30,11 +30,12 @@ required.
 `examples/remix/git-submodule/` with TypeScript and Vite aliases pointing to
 `vendor/nat-av/packages/*/src`.
 
-9. Add `examples/remix/local-install/` to install packed package artifacts
-through local `file:` dependencies and verify its TypeScript build.
+9. Add `examples/remix/complete/` as the complete control-processor example;
+   it consumes the workspace packages directly and verifies its TypeScript
+   build.
 
 10. Add workspace scripts for typechecking, building, testing, schema
-generation, package packing, and example verification.
+ generation, and example verification.
 
 11. Add package-boundary guidance to `AGENTS.md`, including the
 single-runtime-copy requirement for `@nat-av/core` and the prohibition on

@@ -5,12 +5,11 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "pnpm -r --if-present run build",
-    "dev": "pnpm --dir examples/remix/local-install dev",
+    "dev": "pnpm --dir examples/remix/complete dev",
     "test": "pnpm run build && pnpm -r --if-present run test",
     "typecheck": "pnpm run build && pnpm -r --if-present run typecheck",
     "generate-schemas": "pnpm --filter @nat-av/plugin-schema generate",
-    "validate-schemas": "pnpm --filter @nat-av/plugin-schema validate",
-    "pack:local-install": "pnpm run build && tsx tools/pack-local-install.ts && npm install --prefix examples/remix/local-install --package-lock=false && npm run --prefix examples/remix/local-install typecheck"
+    "validate-schemas": "pnpm --filter @nat-av/plugin-schema validate"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

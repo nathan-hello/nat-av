@@ -117,6 +117,9 @@ describe("typecheck", () => {
     product: "helix_55",
     version: "11.33.1 October 2025",
     strict: false,
+    subscriptions: {
+      xConfiguration: true,
+    },
   });
 
   const customRoomos = new CiscoRoomOS<GeneratedRoomOS>({

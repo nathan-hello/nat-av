@@ -5,4 +5,3 @@ logs/*
 tmp
 dist
 .dist
-examples/remix/local-install/vendor/*.tgz

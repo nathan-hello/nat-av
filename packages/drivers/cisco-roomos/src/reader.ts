@@ -24,7 +24,7 @@ function FromJsonRpcResponse(
 ): RoomOS.ReadOperation {
   switch (request.kind) {
     case "sub":
-      const psub = parse.SubOrUnsubFeedback(data);
+      const psub = parse.MessageWithId(data);
       if (!psub) {
         return {
           kind: "error",
@@ -74,7 +74,7 @@ function FromJsonRpcResponse(
         data: { path: normalizeStatePath(request.path), value: request.value },
       };
     case "unsub":
-      const punsub = parse.SubOrUnsubFeedback(data);
+      const punsub = parse.MessageWithId(data);
       if (!punsub) {
         return {
           kind: "error",
@@ -105,7 +105,7 @@ function FromJsonRpcNotification(
   notification: Proto.JsonRpc.Notification,
 ): RoomOS.ReadOperation | null {
   if (notification.method === "xFeedback/Event") {
-    const params = parse.xFeedbackEvent(notification.params);
+    const params = parse.MessageWithId(notification.params);
     if (!params) {
       return {
         kind: "error",
@@ -130,42 +130,21 @@ function FromJsonRpcNotification(
 }
 
 const parse = {
-  Is: {
-    SubOrUnsubFeedback: (
-      value: unknown,
-    ): value is RoomOS.Rx.RegisterFeedback => {
-      return (
-        value !== null &&
-        typeof value === "object" &&
-        "Id" in value &&
-        typeof value.Id === "number"
-      );
-    },
-    xFeedbackEvent: (
-      value: unknown,
-    ): value is { Id: number } & Record<string, RoomOS.JsonValue> => {
-      return (
-        value !== null &&
-        typeof value === "object" &&
-        "Id" in value &&
-        typeof value.Id === "number"
-      );
-    },
-  },
-
-  SubOrUnsubFeedback: (value: unknown): RoomOS.Rx.RegisterFeedback | null => {
-    if (parse.Is.SubOrUnsubFeedback(value)) {
-      return value;
-    }
-    return null;
-  },
-  xFeedbackEvent: (
+  MessageWithId: (
     value: unknown,
   ): ({ Id: number } & Record<string, RoomOS.JsonValue>) | null => {
-    if (parse.Is.xFeedbackEvent(value)) {
-      return value;
+    if (
+      !Proto.JsonRpc.isJson(value) ||
+      value === null ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      !("Id" in value) ||
+      typeof value.Id !== "number"
+    ) {
+      return null;
     }
-    return null;
+
+    return { ...value, Id: value.Id };
   },
 };
 

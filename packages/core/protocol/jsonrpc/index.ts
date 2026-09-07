@@ -1,10 +1,5 @@
-export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+export { isJson } from "./json.js";
+export type { JsonValue } from "./json.js";
 
 export type Id = string | number;
 

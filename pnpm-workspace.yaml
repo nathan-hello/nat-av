@@ -5,6 +5,7 @@ packages:
   - "packages/plugins"
   - "packages/plugins/*"
   - "examples/*"
+  - "examples/remix/*"
 
 onlyBuiltDependencies:
   - esbuild

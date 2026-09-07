@@ -5,7 +5,7 @@ import Decoder from "@nat-av/driver-nat-decoder";
 import DisplayManager from "@nat-av/driver-nat-decoder-video-wall";
 import { Paint } from "@nat-av/driver-paint";
 import { RpcServer } from "@nat-av/core/rpc/server";
-import { RpcTransportWebsocket } from "../../rpc-websocket";
+import { RpcTransportWebsocket } from "./ws";
 import { Debugger, Schema } from "@nat-av/plugins";
 import RelayBoard from "@nat-av/driver-bewinner-relay-board";
 import { Server } from "node:http";

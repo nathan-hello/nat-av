@@ -215,9 +215,9 @@ export namespace RoomOS {
     Schema extends RoomOSSchema = RoomOSSchema,
     Product extends ProductTargetOf<Schema> = ProductTargetOf<Schema>,
   > = {
-    xConfiguration?: ConfigurationSubscriptionTree<Schema, Product>;
-    xStatus?: StatusSubscriptionTree<Schema, Product>;
-    xFeedback?: FeedbackSubscriptionTree<Schema>;
+    xConfiguration?: ConfigurationSubscriptionTree<Schema, Product> | true;
+    xStatus?: StatusSubscriptionTree<Schema, Product> | true;
+    xFeedback?: FeedbackSubscriptionTree<Schema> | true;
   };
 
   export type ConfigurationState<

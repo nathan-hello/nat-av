@@ -1,28 +1,8 @@
-import type { Id, JsonValue } from "./index.js";
+import type { Id } from "./index.js";
+import { isJson, type JsonValue } from "./json.js";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isJson(value: unknown): value is JsonValue {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return true;
-  }
-
-  if (Array.isArray(value)) {
-    return value.every(isJson);
-  }
-
-  if (isObject(value)) {
-    return Object.values(value).every(isJson);
-  }
-
-  return false;
 }
 
 export class Response<T extends JsonValue = JsonValue> {
