@@ -14,7 +14,7 @@
 
 4. Move the current core, driver, plugin, and test code into the corresponding
    package boundaries without creating a separate `lib` package or renaming
-   `Manager.deferred` yet.
+   `Manager.plugin` yet.
 
 5. Keep the shared RPC types and implementation under `packages/core/rpc` so
    core event types do not depend on an RPC plugin.

@@ -33,16 +33,20 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class LeftDeferred extends Driver<"left-deferred"> {
+  class LeftPlugin extends Driver<"left-plugin"> {
     state = { synced: false };
     api = {};
     socket = undefined;
-    natav: Drivers.ManagerView<readonly [RightPeer, RightDeferred]>;
+    natav: Drivers.ManagerView<readonly [RightPeer]> & {
+      readonly plugin: Drivers.Catalog<readonly [RightPlugin]>;
+    };
 
     constructor(
-      natav: Drivers.ManagerView<readonly [RightPeer, RightDeferred]>,
+      natav: Drivers.ManagerView<readonly [RightPeer]> & {
+        readonly plugin: Drivers.Catalog<readonly [RightPlugin]>;
+      },
     ) {
-      super({ name: "left-deferred" });
+      super({ name: "left-plugin" });
       this.natav = natav;
     }
 
@@ -51,18 +55,18 @@ describe("typechecking that drivers can get Managers that have other drivers in 
       this.natav.GetDriver("right-peer").state.count;
     }
 
-    GetRightDeferredSyncedState() {
-      return this.natav.GetDriver("right-deferred").state.synced;
+    GetRightPluginSyncedState() {
+      return this.natav.plugin["right-plugin"].state.synced;
     }
   }
 
-  class RightDeferred extends Driver<"right-deferred"> {
+  class RightPlugin extends Driver<"right-plugin"> {
     state = { synced: false };
     api = {};
     socket = undefined;
 
     constructor(natav: Drivers.ManagerView<readonly [LeftPeer]>) {
-      super({ name: "right-deferred" });
+      super({ name: "right-plugin" });
       this.natav = natav;
     }
 
@@ -101,34 +105,34 @@ describe("typechecking that drivers can get Managers that have other drivers in 
   const rightPeer = new RightPeer();
 
   const leftDrivers: readonly [RightPeer] = [rightPeer];
-  const leftDeferred: readonly [typeof LeftDeferred, typeof RightDeferred] = [
-    LeftDeferred,
-    RightDeferred,
+  const leftPlugins: readonly [typeof LeftPlugin, typeof RightPlugin] = [
+    LeftPlugin,
+    RightPlugin,
   ];
   const leftManager = new Manager({
     drivers: leftDrivers,
-    deferred: leftDeferred,
+    plugin: leftPlugins,
   });
 
   const rightDrivers: readonly [LeftPeer] = [leftPeer];
-  const rightDeferred: readonly [typeof RightDeferred] = [RightDeferred];
+  const rightPlugins: readonly [typeof RightPlugin] = [RightPlugin];
   const rightManager = new Manager({
     drivers: rightDrivers,
-    deferred: rightDeferred,
+    plugin: rightPlugins,
   });
 
   const pairedDrivers: readonly [LeftPeer, RightPeer] = [leftPeer, rightPeer];
-  const noDeferred: readonly [] = [];
+  const noPlugins: readonly [] = [];
   const pairedManager = new Manager({
     drivers: pairedDrivers,
-    deferred: noDeferred,
+    plugin: noPlugins,
   });
 
   const childPeer = new ChildPeer();
   const parentPeer = new ParentPeer(childPeer);
   const depManager = new Manager({
     drivers: [parentPeer] as const,
-    deferred: [] as const,
+    plugin: [] as const,
   });
 
   type names = Drivers.Names<(typeof depManager)["drivers"]>;
@@ -146,53 +150,41 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
   describe("manager lookup and trees", () => {
     it("works for the left manager", () => {
-      leftManager.GetDriver("left-deferred").state.synced;
-      leftManager.GetDriver("left-deferred").syncRightPeer();
+      leftManager.plugin["left-plugin"].state.synced;
+      leftManager.plugin["left-plugin"].syncRightPeer();
       leftManager.GetDriver("right-peer").api.bump();
-      leftManager.GetDriver("left-deferred").GetRightDeferredSyncedState();
+      leftManager.plugin["left-plugin"].GetRightPluginSyncedState();
 
       expectManager(
         leftManager,
-        ["right-peer", "left-deferred", "right-deferred"],
+         ["right-peer"],
         [
           {
             name: "right-peer",
-            deps: [],
-          },
-          {
-            name: "left-deferred",
-            deps: [],
-          },
-          {
-            name: "right-deferred",
             deps: [],
           },
         ],
       );
 
       assert.equal(
-        leftManager.GetDriver("left-deferred").name,
-        "left-deferred",
+        leftManager.plugin["left-plugin"].name,
+        "left-plugin",
       );
-      assert.equal(leftManager.GetDriver("left-deferred").state.synced, false);
+      assert.equal(leftManager.plugin["left-plugin"].state.synced, false);
       assert.equal(leftManager.FindDriver("missing"), undefined);
     });
 
     it("works for the right manager", () => {
-      rightManager.GetDriver("right-deferred").state.synced;
-      rightManager.GetDriver("right-deferred").syncLeftPeer();
+      rightManager.plugin["right-plugin"].state.synced;
+      rightManager.plugin["right-plugin"].syncLeftPeer();
       rightManager.GetDriver("left-peer").api.bump();
 
       expectManager(
         rightManager,
-        ["left-peer", "right-deferred"],
+         ["left-peer"],
         [
           {
             name: "left-peer",
-            deps: [],
-          },
-          {
-            name: "right-deferred",
             deps: [],
           },
         ],

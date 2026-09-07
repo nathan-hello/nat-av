@@ -152,33 +152,74 @@ export namespace Rpc {
 
     export type Api<
       N extends Drivers.Array = Drivers.Array,
-      Name extends Drivers.Names<N> = Drivers.Names<N>,
-    > = Drivers.Api<N, Name>;
+      Name extends string = Drivers.Names<N>,
+    > = Drivers.PromisifyApi<Drivers.Api<N, Name>>;
 
     export type Handle<N extends Manager> = Pick<RpcClient<N>, "isOnline"> & {
       driver<Name extends Drivers.Names<N["drivers"]>>(
         name: Name,
-      ): DriverHandle<N, Name>;
+      ): ManagedHandle<N, Name>;
+      plugin<Name extends Drivers.Names<N["plugins"]>>(
+        name: Name,
+      ): PluginHandle<N, Name>;
     };
 
-    export type DriverHandle<
+    export type ManagedHandle<
       N extends Manager = Manager,
       Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
     > = Pick<
-      ClientRpcDriver<N, Name>,
-      "name" | "api" | "state" | "on" | "event" | "once" | "pendingCount"
+      Drivers.ManagedHandle<Drivers.FromName<N["drivers"], Name>>,
+      "name" | "api" | "state"
+    > & Pick<
+      ClientRpcDriver<N, N["drivers"], Name>,
+      "on" | "event" | "once" | "pendingCount"
     > & {
       dep: <DepName extends Drivers.DepNames<N, Name>>(
         depName: DepName,
-      ) => DriverHandle<N, DepName>;
+      ) => ManagedHandle<N, DepName>;
     };
+
+    /** Compatibility alias; managed drivers and plugins share this shape. */
+    export type DriverHandle<
+      N extends Manager = Manager,
+      Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
+    > = ManagedHandle<N, Name>;
 
     export type DriverAccessor<N extends Manager> = {
       <Name extends Drivers.Names<N["drivers"]>>(
         name: Name,
-      ): DriverHandle<N, Name>;
+      ): ManagedHandle<N, Name>;
     } & {
-      [Name in Drivers.Names<N["drivers"]>]: DriverHandle<N, Name>;
+      [Name in Drivers.Names<N["drivers"]>]: ManagedHandle<N, Name>;
+    };
+
+    export type PluginHandle<
+      N extends Manager,
+      Name extends Drivers.Names<N["plugins"]>,
+    > = ManagedHandleFor<N, N["plugins"], Name>;
+
+    export type ManagedHandleFor<
+      N extends Manager,
+      Entries extends Drivers.Array,
+      Name extends Drivers.Names<Entries>,
+    > = Pick<
+      Drivers.ManagedHandle<Drivers.FromName<Entries, Name>>,
+      "name" | "api" | "state"
+    > & Pick<
+      ClientRpcDriver<N, Entries, Name>,
+      "on" | "event" | "once" | "pendingCount"
+    > & {
+      dep: <DepName extends Drivers.ManagedDepNames<Entries, Name>>(
+        depName: DepName,
+      ) => ManagedHandleFor<N, N["drivers"], DepName & Drivers.Names<N["drivers"]>>;
+    };
+
+    export type PluginAccessor<N extends Manager> = {
+      <Name extends Drivers.Names<N["plugins"]>>(
+        name: Name,
+      ): PluginHandle<N, Name>;
+    } & {
+      [Name in Drivers.Names<N["plugins"]>]: PluginHandle<N, Name>;
     };
   }
 
@@ -321,7 +362,11 @@ export namespace Rpc {
 
   export namespace Request {
     export const Methods = REQUEST_METHOD;
-    export type DriverParams = { driver: string; method: string; args: any[] };
+    export type DriverParams = {
+      driver: string;
+      method: string;
+      args: any[];
+    };
     export type DriverCall = {
       method: typeof REQUEST_METHOD.DriverCall;
       params: Rpc.Request.DriverParams;
@@ -664,7 +709,7 @@ export namespace Rpc {
     }[keyof T & string];
 
     export type DriverMap<
-      N extends Drivers.Array = Drivers.Array,
+      N extends readonly Drivers.ManagedContract[] = Drivers.Array,
       Name extends Drivers.Names<N> = Drivers.Names<N>,
     > = {
       change: {

@@ -84,7 +84,7 @@ describe("rpc deps", () => {
 
     const natav = new Manager({
       drivers: [root],
-      deferred: [(n) => new RpcServer(n, transport.server)],
+      plugin: [(n) => new RpcServer(n, transport.server)],
     });
 
     type natav = typeof natav;
@@ -93,8 +93,8 @@ describe("rpc deps", () => {
       "level-2",
       "level-3",
       "leaf",
-      "rpc-server",
     ]);
+    assert.deepEqual(natav.GetAllPluginNames(), ["rpc-server"]);
     assert.equal(natav.GetDriver("leaf"), leaf);
     assert.equal(natav.FindDriver("level-3"), level3);
 

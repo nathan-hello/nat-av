@@ -5,14 +5,15 @@ import type { RpcClient } from "./index.js";
 
 export class ClientRpcDriver<
   N extends Manager = Manager,
-  Name extends Drivers.Names<N["drivers"]> = Drivers.Names<N["drivers"]>,
-> extends TypedEventTarget<Rpc.Events.DriverMap<N["drivers"], Name>> {
-  private apiProxy: Rpc.Client.Api<N["drivers"], Name>;
+  Entries extends Drivers.Array = N["drivers"],
+  Name extends Drivers.Names<Entries> = Drivers.Names<Entries>,
+> extends TypedEventTarget<Rpc.Events.DriverMap<Entries, Name>> {
+  private apiProxy: Rpc.Client.Api<Entries, Name>;
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
   private proxyCallId = 0;
 
-  readonly event: Rpc.Client.Events.Handle<N["drivers"], Name> = {
+  readonly event: Rpc.Client.Events.Handle<Entries, Name> = {
     on: async (event, callback) => {
       await this.subscribeToEvent(event, callback);
       return async () => {
@@ -34,18 +35,18 @@ export class ClientRpcDriver<
     return this.apiProxy;
   }
 
-  public state: Drivers.State<N["drivers"], Name> =
+  public state: Drivers.State<Entries, Name> =
     // TSAS: this assertion depends on client getting
     // accurate state before this class is used for rendering.
-    {} as unknown as Drivers.State<N["drivers"], Name>;
+    {} as unknown as Drivers.State<Entries, Name>;
 
-  dep<DepName extends Drivers.DepNames<N, Name>>(depName: DepName) {
+  dep<DepName extends Drivers.ManagedDepNames<Entries, Name>>(depName: DepName) {
     return this.client.driver(depName);
   }
 
   private createApiProxy(
     path: string[] = [],
-  ): Rpc.Client.Api<N["drivers"], Name> {
+  ): Rpc.Client.Api<Entries, Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
         if (typeof methodName !== "string" || methodName === "then") {
@@ -79,7 +80,7 @@ export class ClientRpcDriver<
         return promise;
       },
       // TSAS: Proxy
-    }) as unknown as Rpc.Client.Api<N["drivers"], Name>;
+    }) as unknown as Rpc.Client.Api<Entries, Name>;
   }
 
   async call(method: string, args: any[] = []) {
@@ -99,7 +100,7 @@ export class ClientRpcDriver<
     return this.pendingCounts.get(method) ?? 0;
   }
 
-  handleStateUpdate(patch: Partial<Rpc.Client.State<N["drivers"], Name>>) {
+  handleStateUpdate(patch: Partial<Rpc.Client.State<Entries, Name>>) {
     const currentState = this.state;
     // TSAS: Partial patches are reconciled into the driver's cached state.
     this.state =

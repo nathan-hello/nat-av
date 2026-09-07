@@ -27,7 +27,7 @@ export function DebugSocketPanel(handle: Handle<DebugSocketPanelProps>) {
   let sendError = "";
 
   let rpc = getRpc(handle);
-  let debug = rpc.driver("debugger");
+  let debug = rpc.plugin("debugger");
 
   async function sendSelectedSocket() {
     if (!handle.props.selectedDriverName || draft.length === 0 || sending) {

@@ -187,7 +187,7 @@ const natav = new Manager({
       paints: { main: { width: 1920, height: 1080 } },
     }),
   ],
-  plugins: [
+  plugin: [
     (manager) => new SchemaPlugin(manager),
   ],
 });
@@ -469,7 +469,7 @@ identity. The same rule applies to plugins through `rpc.plugin` and
 Manager construction should be explicit about the two channels:
 
 1. Construct ordinary drivers without manager access.
-2. Construct deferred drivers as required by the driver configuration.
+    2. Construct plugin entries with the manager runtime view.
 3. Build the initial driver catalog.
 4. Create the manager runtime view.
 5. Construct plugins with that manager view.

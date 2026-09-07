@@ -9,7 +9,7 @@ describe("test driver", () => {
     socket: new Test.Socket(),
   });
 
-  const natav = new Manager({ drivers: [driver], deferred: [] });
+  const natav = new Manager({ drivers: [driver], plugin: [] });
 
   it("registers the shim driver", () => {
     assert.deepEqual(natav.GetAllDriverNames(), ["shim-1"]);

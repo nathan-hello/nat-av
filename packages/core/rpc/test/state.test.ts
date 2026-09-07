@@ -16,7 +16,7 @@ it("gets state automatically on connect", async () => {
 
   const natav = new Manager({
     drivers: [driver],
-    deferred: [(n) => new RpcServer(n, transport.server)],
+    plugin: [(n) => new RpcServer(n, transport.server)],
   });
   type natav = typeof natav;
 

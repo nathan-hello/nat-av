@@ -256,7 +256,24 @@ export class RpcServer extends Driver<"rpc-server"> {
           "driver.method": params.method,
         });
 
-        const driver = this.natav.FindDriver(params.driver);
+        let driver: Drivers.AnyDriver;
+        try {
+          driver = this.natav.Get(params.driver);
+        } catch {
+          return new Rpc.Error(
+            {
+              code: Err.Codes.DriverNotFound,
+              message: `Driver \"${params.driver}\" not found`,
+              data: {
+                availableDriver: [
+                  ...this.natav.GetAllDriverNames(),
+                  ...this.natav.GetAllPluginNames(),
+                ],
+              },
+            },
+            message.id,
+          );
+        }
         if (!driver) {
           return new Rpc.Error(
             {

@@ -22,10 +22,14 @@ export async function createRpcBinding<N extends Manager = Manager>() {
     handle: Handle<any, any>,
     name: Name,
   ): Rpc.Client.DriverHandle<N, Name>;
-  function getRpc<Name extends Drivers.Names<N["drivers"]>>(
+  function getRpc<Name extends Drivers.Names<N["plugins"]>>(
+    handle: Handle<any, any>,
+    name: Name,
+  ): Rpc.Client.PluginHandle<N, Name>;
+  function getRpc<Name extends string>(
     handle: Handle<any, any>,
     name?: Name,
-  ): Rpc.Client.Handle<N> | Rpc.Client.DriverHandle<N, Name> {
+  ): Rpc.Client.Handle<N> | Rpc.Client.DriverHandle<N, Name> | Rpc.Client.PluginHandle<N, Name & Drivers.Names<N["plugins"]>> {
     if (subscriptions.has(handle)) {
       return name ? rpcClient.driver(name) : rpcClient;
     }

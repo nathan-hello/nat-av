@@ -38,7 +38,7 @@ describe("rpc driver events", () => {
 
     const natav = new Manager({
       drivers: [eventDriver],
-      deferred: [
+      plugin: [
         () => new Test.EventDriver("defer"),
         (n) => new RpcServer(n, transport.server),
       ],

@@ -110,7 +110,7 @@ describe("rpc roomos driver", () => {
     const transport = new Test.RpcTransport();
     const natav = new Manager({
       drivers: [roomos],
-      deferred: [(n) => new RpcServer(n, transport.server)],
+      plugin: [(n) => new RpcServer(n, transport.server)],
     });
     type natav = typeof natav;
 
@@ -326,7 +326,7 @@ describe("rpc roomos driver", () => {
           id: 0,
           jsonrpc: "2.0",
           result: {
-            names: ["roomos-rpc", "rpc-server"],
+            names: ["roomos-rpc"],
             states: {
               "roomos-rpc": {
                 internal: {
@@ -347,7 +347,6 @@ describe("rpc roomos driver", () => {
                   },
                 },
               },
-              "rpc-server": {},
             },
             tree: [
               {
@@ -358,10 +357,6 @@ describe("rpc roomos driver", () => {
                   canWrite: true,
                   traceName: "test-socket",
                 },
-              },
-              {
-                deps: [],
-                name: "rpc-server",
               },
             ],
           },

@@ -63,6 +63,15 @@ class Encoder extends Driver<"encoder"> {
   }
 }
 
+class ManagedPlugin extends Driver<"managed-plugin", {}, [Child<"child-1">]> {
+  state = {};
+  api = { inspect: () => "plugin" };
+
+  constructor(child: Child<"child-1">) {
+    super({ name: "managed-plugin", deps: [child] });
+  }
+}
+
 class Codec extends Driver<
   "codec",
   {},
@@ -81,13 +90,28 @@ const mixedDecoder = codec.dep("decoder");
 const mixedEncoder = codec.dep("encoder");
 type _mixedDecoder = Assert<Equal<typeof mixedDecoder, Decoder>>;
 type _mixedEncoder = Assert<Equal<typeof mixedEncoder, Encoder>>;
+type _remoteDecoderApi = Assert<
+  Equal<
+    ReturnType<Drivers.PromisifyApi<Decoder["api"]>["decode"]>,
+    Promise<string>
+  >
+>;
 
 const child1 = new Child("child-1");
 const child2 = new Child("child-2");
+const managedPlugin = new ManagedPlugin(child1);
+type ManagedEntries = Drivers.ManagedResolved<[typeof managedPlugin]>;
+type _managedNames = Assert<
+  Equal<Drivers.ManagedNames<ManagedEntries>, "managed-plugin" | "child-1">
+>;
+type _managedPlugin = Assert<
+  Equal<Drivers.ManagedCatalog<[typeof managedPlugin]>["managed-plugin"], ManagedPlugin>
+>;
+
 const parent = new Parent("parent-1", [child1, child2]);
 const natav = new Manager({
   drivers: [parent] as const,
-  deferred: [] as const,
+  plugin: [] as const,
 });
 type natav = typeof natav;
 
@@ -96,6 +120,32 @@ type _driverNames = Assert<
   Equal<DriverNames, "parent-1" | "child-1" | "child-2">
 >;
 type _childLookup = Assert<Equal<natav["driver"]["child-1"], Child<"child-1">>>;
+
+const runtimeName: string = "runtime-child";
+const runtimeChildren = [new Child(runtimeName)];
+const runtimeManager = new Manager({
+  drivers: runtimeChildren,
+  plugin: [] as const,
+});
+type RuntimeManager = typeof runtimeManager;
+type RuntimeNames = Drivers.Names<RuntimeManager["drivers"]>;
+type _runtimeNames = Assert<Equal<RuntimeNames, string>>;
+type RuntimeLookup = Drivers.FromName<RuntimeManager["drivers"], "any-runtime-name">;
+type _runtimeLookup = Assert<RuntimeLookup extends Child<string> ? true : false>;
+
+const runtimeLookup = runtimeManager.GetDriver(runtimeName);
+type _runtimeManagerLookup = Assert<
+  typeof runtimeLookup extends Child<string> ? true : false
+>;
+
+const pluginManager = new Manager({
+  drivers: [] as const,
+  plugin: [() => managedPlugin] as const,
+});
+type PluginManager = typeof pluginManager;
+type _pluginDependency = Assert<
+  Equal<PluginManager["driver"]["child-1"], Child<"child-1">>
+>;
 
 // @ts-expect-error Unknown names must not be accepted by the manager catalog.
 if (false) natav.GetDriver("missing");
@@ -151,10 +201,25 @@ describe("driver deps", () => {
     const shared = new Shared();
     const manager = new Manager({
       drivers: [new Branch("left", shared), new Branch("right", shared)] as const,
-      deferred: [] as const,
+      plugin: [] as const,
     });
 
     await manager.Start();
     assert.equal(starts, 1);
+  });
+
+  it("keeps the managed driver contract when names come from runtime configuration", () => {
+    assert.equal(runtimeManager.GetDriver(runtimeName).name, runtimeName);
+    assert.deepEqual(runtimeManager.GetAllDriverNames(), [runtimeName]);
+  });
+
+  it("keeps plugin dependencies in the driver catalog", async () => {
+    assert.equal(pluginManager.plugin["managed-plugin"], managedPlugin);
+    assert.equal(pluginManager.driver["child-1"], child1);
+    assert.equal(pluginManager.plugins[0], managedPlugin);
+    assert.equal(pluginManager.Get("managed-plugin"), managedPlugin);
+    assert.equal(pluginManager.Get("child-1"), child1);
+
+    await pluginManager.Start();
   });
 });

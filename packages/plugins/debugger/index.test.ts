@@ -8,16 +8,14 @@ it("preloads the debugger tree and appends messages to each node", async () => {
   const eventDriver = new Test.EventDriver("event-1");
   const natav = new Manager({
     drivers: [eventDriver] as const,
-    deferred: [] as const,
-    plugins: [Debugger],
+    plugin: [Debugger],
   });
 
   await natav.Start();
 
   const debug = natav.plugin.debugger;
 
-  // @ts-expect-error Plugins are not ordinary driver catalog entries.
-  if (false) natav.GetDriver("debugger");
+   assert.equal(natav.plugin.debugger, debug);
 
   console.log(JSON.stringify(debug.state.view));
   assert.ok(debug);

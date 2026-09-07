@@ -218,7 +218,7 @@ references.
 A plugin is a `Driver` that receives a manager in its constructor and therefore
 has manager-wide authority to inspect or affect the rest of the system.
 
-The deferred value in manager configuration is only the construction mechanism;
+The `plugin` value in manager configuration is the manager-aware construction mechanism;
 it is not the plugin abstraction.
 
 ```ts
@@ -278,7 +278,7 @@ Configured plugins remain constructor-oriented. A package may expose a bound
 constructor helper for ergonomics:
 
 ```ts
-plugins: [
+plugin: [
   SchemaPlugin,
   RpcPlugin.configure({ transport, path: "/ws" }),
 ]
@@ -298,7 +298,7 @@ const root = new RootDriver(level2);
 
 const manager = new Manager({
   drivers: [root] as const,
-  plugins: [
+  plugin: [
     SchemaPlugin,
     RpcPlugin.configure({ transport }),
   ] as const,
@@ -455,7 +455,7 @@ class SchemaPlugin extends Driver<"schema", SchemaState> {
 ```ts
 const manager = new Manager({
   drivers: [root] as const,
-  plugins: [SchemaPlugin, RpcPlugin.configure({ transport })] as const,
+  plugin: [SchemaPlugin, RpcPlugin.configure({ transport })] as const,
 });
 ```
 

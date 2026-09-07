@@ -8,7 +8,7 @@ import { DebugDriverTree } from "@/ui/debug/tree";
 
 export function DebugPage(handle: Handle) {
   const rpc = getRpc(handle);
-  const debug = rpc.driver("debugger");
+  const debug = rpc.plugin("debugger");
 
   let selectedDriverName: string | null = null;
   let selectedNode: Rpc.Client.DriverHandle | null = null;

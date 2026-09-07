@@ -73,7 +73,7 @@ const natav = new Manager({
       } as const,
     }),
   ],
-  deferred: [
+  plugin: [
     System,
     RpcServer,
     Debugger.default,
@@ -91,7 +91,7 @@ export type natav = typeof natav;
 
 export async function start(server: Server) {
   const websocket = new RpcTransportWebsocket(server);
-  natav.GetDriver("rpc-server").attachTransport(websocket);
+  natav.plugin["rpc-server"].attachTransport(websocket);
 
   await natav.Start();
 

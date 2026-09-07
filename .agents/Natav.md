@@ -37,7 +37,7 @@ A `Driver` can either be precreated and given to the constructor of `Manager`,
 or `Manager` can be given a `(natav: Manager) => Driver` function that will
 be called during the construction phase of `Manager`.
 
-There may be multiple Drivers that take this "deferred" path. For this reason
+There may be multiple Plugins that take this manager-aware construction path. For this reason
 it is important to *never use the Manager object during the constructor of the
 Driver*. This is because the Manager might not have called the Driver you are
 looking for, or otherwise set up the context for the system, during that
@@ -80,7 +80,7 @@ const child = new Leaf("child-1");
 const parent = new Parent("parent-1", { [child.name]: child });
 const natav = new Manager({
   drivers: [parent] as const,
-  deferred: [] as const,
+  plugin: [] as const,
 });
 ```
 

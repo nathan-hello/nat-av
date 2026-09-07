@@ -9,7 +9,7 @@ import { css, on, type Handle } from "remix/ui";
 
 export function HomePage(handle: Handle) {
   let rpc = getRpc(handle);
-  let sys = rpc.driver("system");
+  let sys = rpc.plugin("system");
 
   return () => {
     return (
@@ -78,7 +78,7 @@ export function HomePage(handle: Handle) {
 }
 
 function SystemRoute(handle: Handle) {
-  let rpc = getRpc(handle, "system");
+  let rpc = getRpc(handle).plugin("system");
 
   return () => {
     switch (rpc.state.ui.page) {
