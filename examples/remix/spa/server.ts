@@ -3,6 +3,7 @@ import { Telemetry } from "@nat-av/core";
 import { start } from "@/server/index";
 import * as http from "node:http";
 import { createRequestListener } from "remix/node-fetch-server";
+import type { ProcessEventMap } from "node:process";
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100;
 
@@ -21,24 +22,42 @@ const server = http.createServer(
 
 const end = await start(server);
 
-await new Promise<void>((resolve) => {
-  server.listen(port, resolve);
+tel.info("starting node:http server...");
+
+await new Promise<void>((resolve, reject) => {
+  server.once("error", reject);
+  server.listen(port, "localhost", resolve);
 });
 
-tel.info(`http://localhost:${port}`);
+tel.info(`node:http server listening on localhost:${port}`);
 
 let shuttingDown = false;
 
-async function shutdown() {
+async function shutdown(event: keyof ProcessEventMap) {
   if (shuttingDown) {
+    tel.warn(
+      `shutdown: got event ${event}. ignored because process is already shutting down.`,
+    );
     return;
   }
-
   shuttingDown = true;
-  server.close();
-  await end();
+
+  tel.info(`shutdown: got event ${event}. shutting down.`);
+
+  const success = await tel.task(
+    `shutdown: got event ${event}. shutting down.`,
+    async () => {
+      server.close();
+      await end();
+    },
+  );
+
+  if (!success.ok) {
+    tel.error("shutdown: got error. exiting.", { error: success.error });
+  }
   process.exit(0);
 }
 
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on
+process.on("SIGINT", (e) => shutdown(e));
+process.on("SIGTERM", (e) => shutdown(e));
