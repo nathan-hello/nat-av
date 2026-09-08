@@ -1,5 +1,9 @@
 import { SimpleConsoleExporter, type LogRecordExporter } from "./exporters.js";
-import { SeverityNumber, type Logger, type ReadableLogRecord } from "./types.js";
+import {
+  SeverityNumber,
+  type Logger,
+  type ReadableLogRecord,
+} from "./types.js";
 
 class LoggerProvider {
   public exporters: LogRecordExporter[] = [];

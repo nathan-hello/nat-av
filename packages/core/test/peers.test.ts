@@ -90,7 +90,11 @@ describe("typechecking that drivers can get Managers that have other drivers in 
     }
   }
 
-  class ParentPeer extends Natav.Driver<"parent-peer", { ready: boolean }, [ChildPeer]> {
+  class ParentPeer extends Natav.Driver<
+    "parent-peer",
+    { ready: boolean },
+    [ChildPeer]
+  > {
     state = { ready: true };
     api = {};
     socket = undefined;
@@ -156,7 +160,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
       expectManager(
         leftManager,
-         ["right-peer"],
+        ["right-peer"],
         [
           {
             name: "right-peer",
@@ -165,10 +169,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
         ],
       );
 
-      assert.equal(
-        leftManager.plugin["left-plugin"].name,
-        "left-plugin",
-      );
+      assert.equal(leftManager.plugin["left-plugin"].name, "left-plugin");
       assert.equal(leftManager.plugin["left-plugin"].state.synced, false);
       assert.equal(leftManager.FindDriver("missing"), undefined);
     });
@@ -180,7 +181,7 @@ describe("typechecking that drivers can get Managers that have other drivers in 
 
       expectManager(
         rightManager,
-         ["left-peer"],
+        ["left-peer"],
         [
           {
             name: "left-peer",

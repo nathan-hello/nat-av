@@ -16,10 +16,9 @@ type State<N extends string> = {
   paints: Record<N, PaintState>;
 };
 
-export default class Paint<const Names extends string = string> extends Natav.Driver<
-  "paint",
-  State<Names>
-> {
+export default class Paint<
+  const Names extends string = string,
+> extends Natav.Driver<"paint", State<Names>> {
   private outputDir: string;
   state: State<Names>;
 

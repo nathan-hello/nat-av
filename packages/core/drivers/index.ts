@@ -5,7 +5,11 @@ import {
   TypedEventTarget,
 } from "../lib/eventtarget.js";
 import { Telemetry } from "../telemetry/index.js";
-import { type Natav as NatavTypes, type Events, type Sockets } from "../types/index.js";
+import {
+  type Natav as NatavTypes,
+  type Events,
+  type Sockets,
+} from "../types/index.js";
 
 type EventsMaybe = TypedEventTarget<any> | undefined;
 type SocketMaybe = Sockets.Socket | undefined;
@@ -67,7 +71,8 @@ abstract class DriverBase<
 
 export class Natav<
   const D extends NatavTypes.Array = NatavTypes.Array,
-  const P extends readonly NatavTypes.AnyPlugin[] = readonly NatavTypes.AnyPlugin[],
+  const P extends readonly NatavTypes.AnyPlugin[] =
+    readonly NatavTypes.AnyPlugin[],
 > implements NatavTypes.Instance<D, P> {
   readonly drivers: D;
   readonly plugins: NatavTypes.PluginInstances<P>;
@@ -191,14 +196,11 @@ export class Natav<
     return this.plugins.find((plugin) => plugin.name === name);
   }
 
-  private FindDriverTyped<
-    N extends Natav.Names<Natav.DriverEntries<D, P>>,
-  >(
+  private FindDriverTyped<N extends Natav.Names<Natav.DriverEntries<D, P>>>(
     name: N,
   ): Natav.FromName<Natav.DriverEntries<D, P>, N> | undefined {
     return this.drivers_flat.find(
-      (d): d is Natav.FromName<Natav.DriverEntries<D, P>, N> =>
-        d.name === name,
+      (d): d is Natav.FromName<Natav.DriverEntries<D, P>, N> => d.name === name,
     );
   }
 
@@ -209,7 +211,10 @@ export class Natav<
   }
 
   private IsManagedName(name: string): boolean {
-    return this.IsDriverName(name) || this.plugins.some((plugin) => plugin.name === name);
+    return (
+      this.IsDriverName(name) ||
+      this.plugins.some((plugin) => plugin.name === name)
+    );
   }
 
   GetAllDriverNames(): Natav.Names<Natav.DriverEntries<D, P>>[] {
@@ -288,11 +293,7 @@ export class Natav<
       .filter((n): n is Natav.DriverView => n !== null);
   }
 
-  async Start(
-    filter?: (
-      drivers: D,
-    ) => Natav.PartialArray<D>,
-  ) {
+  async Start(filter?: (drivers: D) => Natav.PartialArray<D>) {
     let configs: Natav.PartialArray<D> = this.drivers;
     if (filter) {
       configs = filter(this.drivers);
@@ -344,7 +345,10 @@ export class Natav<
     const entries = new Set([
       ...this.drivers_flat,
       ...this.plugins.flatMap((plugin) => {
-        const collect = (driver: NatavTypes.Shape, seen = new Set<NatavTypes.Shape>()): NatavTypes.Shape[] => {
+        const collect = (
+          driver: NatavTypes.Shape,
+          seen = new Set<NatavTypes.Shape>(),
+        ): NatavTypes.Shape[] => {
           if (seen.has(driver)) return [];
           seen.add(driver);
           return [driver, ...driver.deps.flatMap((dep) => collect(dep, seen))];
@@ -428,37 +432,89 @@ export namespace Natav {
     Name extends string = string,
     State extends Record<string, unknown> = Record<string, unknown>,
     Deps extends readonly NatavTypes.Shape[] = readonly [],
-  > extends DriverBase<Name, State, Deps> implements Natav.Shape {}
+  >
+    extends DriverBase<Name, State, Deps>
+    implements Natav.Shape {}
   export abstract class Plugin<
     Name extends string = string,
     State extends Record<string, unknown> = Record<string, unknown>,
     Deps extends readonly NatavTypes.Shape[] = readonly [],
-  > extends Driver<Name, State, Deps> implements Natav.Shape {}
+  >
+    extends Driver<Name, State, Deps>
+    implements Natav.Shape {}
   export type Shape = NatavTypes.Shape;
   export type ApiMethod = NatavTypes.ApiMethod;
   export type ApiRecord = NatavTypes.ApiRecord;
   export type Array = NatavTypes.Array;
-  export type PartialArray<T extends readonly unknown[]> = NatavTypes.PartialArray<T>;
-  export type AnyPlugin<T extends NatavTypes.Shape = NatavTypes.Shape> = NatavTypes.AnyPlugin<T>;
-  export type PluginInstances<P extends readonly NatavTypes.AnyPlugin[]> = NatavTypes.PluginInstances<P>;
-  export type DriverEntries<D extends NatavTypes.Array, P extends readonly NatavTypes.AnyPlugin[]> = NatavTypes.DriverEntries<D, P>;
-  export type ManagedEntries<D extends NatavTypes.Array, P extends readonly NatavTypes.AnyPlugin[]> = NatavTypes.ManagedEntries<D, P>;
+  export type PartialArray<T extends readonly unknown[]> =
+    NatavTypes.PartialArray<T>;
+  export type AnyPlugin<T extends NatavTypes.Shape = NatavTypes.Shape> =
+    NatavTypes.AnyPlugin<T>;
+  export type PluginInstances<P extends readonly NatavTypes.AnyPlugin[]> =
+    NatavTypes.PluginInstances<P>;
+  export type DriverEntries<
+    D extends NatavTypes.Array,
+    P extends readonly NatavTypes.AnyPlugin[],
+  > = NatavTypes.DriverEntries<D, P>;
+  export type ManagedEntries<
+    D extends NatavTypes.Array,
+    P extends readonly NatavTypes.AnyPlugin[],
+  > = NatavTypes.ManagedEntries<D, P>;
   export type PromisifyApi<Obj> = NatavTypes.PromisifyApi<Obj>;
-  export type Api<N extends readonly NatavTypes.Shape[], Name extends string> = NatavTypes.Api<N, Name>;
-  export type State<N extends readonly NatavTypes.Shape[] = NatavTypes.Array, Name extends string = NatavTypes.ManagedNames<NatavTypes.ManagedResolved<N>>> = NatavTypes.State<N, Name>;
-  export type Events<N extends readonly NatavTypes.Shape[], Name extends string> = NatavTypes.Events<N, Name>;
-  export type Names<N extends readonly NatavTypes.Shape[] = NatavTypes.Array> = NatavTypes.Names<N>;
-  export type FromName<N extends readonly NatavTypes.Shape[], Name extends string = Names<N>> = NatavTypes.FromName<N, Name>;
-  export type Catalog<N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[]> = NatavTypes.Catalog<N>;
-  export type RootCatalog<N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[]> = NatavTypes.RootCatalog<N>;
-  export type DepNames<N extends NatavTypes.Instance, Name extends Names<N["drivers"]>> = NatavTypes.DepNames<N, Name>;
-  export type ManagedDepNames<N extends readonly NatavTypes.Shape[], Name extends string> = NatavTypes.ManagedDepNames<N, Name>;
-  export type ManagedResolved<N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[]> = NatavTypes.ManagedResolved<N>;
-  export type ManagedClosure<Entry, Seen = never> = NatavTypes.ManagedClosure<Entry, Seen>;
+  export type Api<
+    N extends readonly NatavTypes.Shape[],
+    Name extends string,
+  > = NatavTypes.Api<N, Name>;
+  export type State<
+    N extends readonly NatavTypes.Shape[] = NatavTypes.Array,
+    Name extends string = NatavTypes.ManagedNames<
+      NatavTypes.ManagedResolved<N>
+    >,
+  > = NatavTypes.State<N, Name>;
+  export type Events<
+    N extends readonly NatavTypes.Shape[],
+    Name extends string,
+  > = NatavTypes.Events<N, Name>;
+  export type Names<N extends readonly NatavTypes.Shape[] = NatavTypes.Array> =
+    NatavTypes.Names<N>;
+  export type FromName<
+    N extends readonly NatavTypes.Shape[],
+    Name extends string = Names<N>,
+  > = NatavTypes.FromName<N, Name>;
+  export type Catalog<
+    N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[],
+  > = NatavTypes.Catalog<N>;
+  export type RootCatalog<
+    N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[],
+  > = NatavTypes.RootCatalog<N>;
+  export type DepNames<
+    N extends NatavTypes.Instance,
+    Name extends Names<N["drivers"]>,
+  > = NatavTypes.DepNames<N, Name>;
+  export type ManagedDepNames<
+    N extends readonly NatavTypes.Shape[],
+    Name extends string,
+  > = NatavTypes.ManagedDepNames<N, Name>;
+  export type ManagedResolved<
+    N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[],
+  > = NatavTypes.ManagedResolved<N>;
+  export type ManagedClosure<Entry, Seen = never> = NatavTypes.ManagedClosure<
+    Entry,
+    Seen
+  >;
   export type ManagedNames<Catalog> = NatavTypes.ManagedNames<Catalog>;
-  export type ManagedCatalog<N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[]> = NatavTypes.ManagedCatalog<N>;
-  export type ManagedHandle<D extends NatavTypes.Shape> = NatavTypes.ManagedHandle<D>;
+  export type ManagedCatalog<
+    N extends readonly NatavTypes.Shape[] = readonly NatavTypes.Shape[],
+  > = NatavTypes.ManagedCatalog<N>;
+  export type ManagedHandle<D extends NatavTypes.Shape> =
+    NatavTypes.ManagedHandle<D>;
   export type DriverView = NatavTypes.DriverView;
-  export type ManagerView<N extends NatavTypes.Array = NatavTypes.Array, C extends NatavTypes.Array = N> = NatavTypes.ManagerView<N, C>;
-  export type Instance<D extends NatavTypes.Array = NatavTypes.Array, P extends readonly NatavTypes.AnyPlugin[] = readonly NatavTypes.AnyPlugin[]> = NatavTypes.Instance<D, P>;
+  export type ManagerView<
+    N extends NatavTypes.Array = NatavTypes.Array,
+    C extends NatavTypes.Array = N,
+  > = NatavTypes.ManagerView<N, C>;
+  export type Instance<
+    D extends NatavTypes.Array = NatavTypes.Array,
+    P extends readonly NatavTypes.AnyPlugin[] = readonly NatavTypes.AnyPlugin[],
+  > = NatavTypes.Instance<D, P>;
 }

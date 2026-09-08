@@ -2,10 +2,18 @@
   "name": "@nat-av/plugin-schema",
   "version": "0.1.0",
   "type": "module",
-  "files": [".dist"],
+  "files": [
+    ".dist"
+  ],
   "exports": {
-    ".": { "types": "./.dist/index.d.ts", "import": "./.dist/index.js" },
-    "./types": { "types": "./.dist/types.d.ts", "import": "./.dist/types.js" }
+    ".": {
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
+    },
+    "./types": {
+      "types": "./.dist/types.d.ts",
+      "import": "./.dist/types.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
@@ -13,7 +21,9 @@
     "validate": "tsx scripts/validate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "peerDependencies": { "@nat-av/core": "^0.1.0" },
+  "peerDependencies": {
+    "@nat-av/core": "^0.1.0"
+  },
   "devDependencies": {
     "@nat-av/core": "workspace:*",
     "tsx": "latest",

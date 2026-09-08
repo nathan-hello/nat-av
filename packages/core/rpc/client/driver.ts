@@ -44,9 +44,7 @@ export class ClientRpcDriver<
     return this.client.driver(depName);
   }
 
-  private createApiProxy(
-    path: string[] = [],
-  ): Rpc.Client.Api<Entries, Name> {
+  private createApiProxy(path: string[] = []): Rpc.Client.Api<Entries, Name> {
     return new Proxy(() => undefined, {
       get: (_, methodName: string | symbol) => {
         if (typeof methodName !== "string" || methodName === "then") {

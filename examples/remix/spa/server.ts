@@ -58,6 +58,6 @@ async function shutdown(event: keyof ProcessEventMap) {
   process.exit(0);
 }
 
-process.on
+process.on;
 process.on("SIGINT", (e) => shutdown(e));
 process.on("SIGTERM", (e) => shutdown(e));

@@ -15,7 +15,7 @@ it("preloads the debugger tree and appends messages to each node", async () => {
 
   const debug = natav.plugin.debugger;
 
-   assert.equal(natav.plugin.debugger, debug);
+  assert.equal(natav.plugin.debugger, debug);
 
   console.log(JSON.stringify(debug.state.view));
   assert.ok(debug);

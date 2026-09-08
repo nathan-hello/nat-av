@@ -1,9 +1,4 @@
-import {
-  type Natav,
-  Err,
-  Telemetry,
-  TypedEventTarget,
-} from "../../client.js";
+import { type Natav, Err, Telemetry, TypedEventTarget } from "../../client.js";
 import { Rpc } from "../types.js";
 import { ClientRpcDriver } from "./driver.js";
 import { ClientRpcRequests } from "./requests.js";
@@ -134,11 +129,7 @@ export class RpcClient<
     return plugin;
   }
 
-  async call(
-    driver: string,
-    method: string,
-    args: any[] = [],
-  ) {
+  async call(driver: string, method: string, args: any[] = []) {
     return this.requests.request(
       Rpc.Request.driverCall(this.requests.nextRequestId(), {
         driver: driver,
@@ -196,16 +187,14 @@ export class RpcClient<
 
       this.tel.info("got-notification", notification);
 
-      let driver: ClientRpcDriver<
-        N,
-        N["drivers"],
-        Natav.Names<N["drivers"]>
-      >;
+      let driver: ClientRpcDriver<N, N["drivers"], Natav.Names<N["drivers"]>>;
 
       switch (notification.type) {
         case "natav:driver:event":
           // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
-          driver = this.getDriver(notification.params.name as Natav.Names<N["drivers"]>);
+          driver = this.getDriver(
+            notification.params.name as Natav.Names<N["drivers"]>,
+          );
           driver.handleEvent(
             notification.params.event,
             notification.params.data,
@@ -213,7 +202,9 @@ export class RpcClient<
           break;
         case "natav:state:update":
           // TSAS: Server notifications are restricted to the registered driver catalog at runtime.
-          driver = this.getDriver(notification.params.name as Natav.Names<N["drivers"]>);
+          driver = this.getDriver(
+            notification.params.name as Natav.Names<N["drivers"]>,
+          );
           driver.handleStateUpdate(notification.params.data);
           break;
         default:

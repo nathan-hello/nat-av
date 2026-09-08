@@ -4,8 +4,8 @@ import { describe, it } from "node:test";
 
 type Assert<T extends true> = T;
 type Equal<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends
-    <T>() => T extends B ? 1 : 2 ? true : false;
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true
+  : false;
 
 class Child<const N extends string = string> extends Natav.Driver<N> {
   state = { ready: true };
@@ -62,7 +62,11 @@ class Encoder extends Natav.Driver<"encoder"> {
   }
 }
 
-class ManagedPlugin extends Natav.Driver<"managed-plugin", {}, [Child<"child-1">]> {
+class ManagedPlugin extends Natav.Driver<
+  "managed-plugin",
+  {},
+  [Child<"child-1">]
+> {
   state = {};
   api = { inspect: () => "plugin" };
 
@@ -71,11 +75,7 @@ class ManagedPlugin extends Natav.Driver<"managed-plugin", {}, [Child<"child-1">
   }
 }
 
-class Codec extends Natav.Driver<
-  "codec",
-  {},
-  readonly (Decoder | Encoder)[]
-> {
+class Codec extends Natav.Driver<"codec", {}, readonly (Decoder | Encoder)[]> {
   state = {};
   api = {};
 
@@ -104,7 +104,10 @@ type _managedNames = Assert<
   Equal<Natav.ManagedNames<ManagedEntries>, "managed-plugin" | "child-1">
 >;
 type _managedPlugin = Assert<
-  Equal<Natav.ManagedCatalog<[typeof managedPlugin]>["managed-plugin"], ManagedPlugin>
+  Equal<
+    Natav.ManagedCatalog<[typeof managedPlugin]>["managed-plugin"],
+    ManagedPlugin
+  >
 >;
 
 const parent = new Parent("parent-1", [child1, child2]);
@@ -129,8 +132,13 @@ const runtimeManager = new Natav({
 type RuntimeManager = typeof runtimeManager;
 type RuntimeNames = Natav.Names<RuntimeManager["drivers"]>;
 type _runtimeNames = Assert<Equal<RuntimeNames, string>>;
-type RuntimeLookup = Natav.FromName<RuntimeManager["drivers"], "any-runtime-name">;
-type _runtimeLookup = Assert<RuntimeLookup extends Child<string> ? true : false>;
+type RuntimeLookup = Natav.FromName<
+  RuntimeManager["drivers"],
+  "any-runtime-name"
+>;
+type _runtimeLookup = Assert<
+  RuntimeLookup extends Child<string> ? true : false
+>;
 
 const runtimeLookup = runtimeManager.GetDriver(runtimeName);
 type _runtimeManagerLookup = Assert<
@@ -199,7 +207,10 @@ describe("driver deps", () => {
 
     const shared = new Shared();
     const manager = new Natav({
-      drivers: [new Branch("left", shared), new Branch("right", shared)] as const,
+      drivers: [
+        new Branch("left", shared),
+        new Branch("right", shared),
+      ] as const,
       plugin: [] as const,
     });
 

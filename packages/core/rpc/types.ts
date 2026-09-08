@@ -41,12 +41,7 @@ export namespace Rpc {
     }
 
     export function stringify(
-      value:
-        | Value
-        | Rpc.Request
-        | Rpc.Response
-        | Rpc.Error
-        | Rpc.Notification,
+      value: Value | Rpc.Request | Rpc.Response | Rpc.Error | Rpc.Notification,
     ): string {
       return globalThis.JSON.stringify(value, replacer);
     }
@@ -128,10 +123,7 @@ export namespace Rpc {
         K extends keyof Natav.Events<N, Name> & string,
       > = (payload: Natav.Events<N, Name>[K]) => void;
 
-      export type Handle<
-        N extends Natav.Array,
-        Name extends Natav.Names<N>,
-      > = {
+      export type Handle<N extends Natav.Array, Name extends Natav.Names<N>> = {
         on<K extends keyof Natav.Events<N, Name> & string>(
           event: K,
           callback: Callback<N, Name, K>,
@@ -169,14 +161,15 @@ export namespace Rpc {
     > = Pick<
       Natav.ManagedHandle<Natav.FromName<N["drivers"], Name>>,
       "name" | "api" | "state"
-    > & Pick<
-      ClientRpcDriver<N, N["drivers"], Name>,
-      "on" | "event" | "once" | "pendingCount"
-    > & {
-      dep: <DepName extends Natav.DepNames<N, Name>>(
-        depName: DepName,
-      ) => ManagedHandle<N, DepName>;
-    };
+    > &
+      Pick<
+        ClientRpcDriver<N, N["drivers"], Name>,
+        "on" | "event" | "once" | "pendingCount"
+      > & {
+        dep: <DepName extends Natav.DepNames<N, Name>>(
+          depName: DepName,
+        ) => ManagedHandle<N, DepName>;
+      };
 
     /** Compatibility alias; managed drivers and plugins share this shape. */
     export type DriverHandle<
@@ -204,14 +197,19 @@ export namespace Rpc {
     > = Pick<
       Natav.ManagedHandle<Natav.FromName<Entries, Name>>,
       "name" | "api" | "state"
-    > & Pick<
-      ClientRpcDriver<N, Entries, Name>,
-      "on" | "event" | "once" | "pendingCount"
-    > & {
-      dep: <DepName extends Natav.ManagedDepNames<Entries, Name>>(
-        depName: DepName,
-      ) => ManagedHandleFor<N, N["drivers"], DepName & Natav.Names<N["drivers"]>>;
-    };
+    > &
+      Pick<
+        ClientRpcDriver<N, Entries, Name>,
+        "on" | "event" | "once" | "pendingCount"
+      > & {
+        dep: <DepName extends Natav.ManagedDepNames<Entries, Name>>(
+          depName: DepName,
+        ) => ManagedHandleFor<
+          N,
+          N["drivers"],
+          DepName & Natav.Names<N["drivers"]>
+        >;
+      };
 
     export type PluginAccessor<N extends Natav> = {
       <Name extends Natav.Names<N["plugins"]>>(
@@ -327,27 +325,27 @@ export namespace Rpc {
     }
 
     static driverCall(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request<typeof REQUEST_METHOD.DriverCall, Rpc.Request.DriverParams, Rpc.Json.Value>(
-        id,
-        REQUEST_METHOD.DriverCall,
-        normalizeDriverParams(params),
-      );
+      return new Rpc.Request<
+        typeof REQUEST_METHOD.DriverCall,
+        Rpc.Request.DriverParams,
+        Rpc.Json.Value
+      >(id, REQUEST_METHOD.DriverCall, normalizeDriverParams(params));
     }
 
     static driverSubscribe(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request<typeof REQUEST_METHOD.DriverSubscribe, Rpc.Request.DriverParams, null>(
-        id,
-        REQUEST_METHOD.DriverSubscribe,
-        normalizeDriverParams(params),
-      );
+      return new Rpc.Request<
+        typeof REQUEST_METHOD.DriverSubscribe,
+        Rpc.Request.DriverParams,
+        null
+      >(id, REQUEST_METHOD.DriverSubscribe, normalizeDriverParams(params));
     }
 
     static driverUnsubscribe(id: Id, params: DriverParamsInput) {
-      return new Rpc.Request<typeof REQUEST_METHOD.DriverUnsubscribe, Rpc.Request.DriverParams, null>(
-        id,
-        REQUEST_METHOD.DriverUnsubscribe,
-        normalizeDriverParams(params),
-      );
+      return new Rpc.Request<
+        typeof REQUEST_METHOD.DriverUnsubscribe,
+        Rpc.Request.DriverParams,
+        null
+      >(id, REQUEST_METHOD.DriverUnsubscribe, normalizeDriverParams(params));
     }
 
     static driverInit(id: Id) {

@@ -29,7 +29,11 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level3Driver extends Natav.Driver<"level-3", { ready: boolean }, [LeafDriver]> {
+  class Level3Driver extends Natav.Driver<
+    "level-3",
+    { ready: boolean },
+    [LeafDriver]
+  > {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-3-pong",
@@ -44,7 +48,11 @@ describe("rpc deps", () => {
     }
   }
 
-  class Level2Driver extends Natav.Driver<"level-2", { ready: boolean }, [Level3Driver]> {
+  class Level2Driver extends Natav.Driver<
+    "level-2",
+    { ready: boolean },
+    [Level3Driver]
+  > {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "level-2-pong",
@@ -59,7 +67,11 @@ describe("rpc deps", () => {
     }
   }
 
-  class RootDriver extends Natav.Driver<"root", { ready: boolean }, [Level2Driver]> {
+  class RootDriver extends Natav.Driver<
+    "root",
+    { ready: boolean },
+    [Level2Driver]
+  > {
     state: { ready: boolean } = { ready: true };
     api: PingApi = {
       ping: async () => "root-pong",
@@ -148,7 +160,7 @@ describe("rpc deps", () => {
       id: 0,
       jsonrpc: "2.0",
       method: "driver.init",
-      params: null
+      params: null,
     });
 
     assert.deepEqual(
@@ -158,7 +170,7 @@ describe("rpc deps", () => {
           id: 0,
           jsonrpc: "2.0",
           method: "driver.init",
-          params: null
+          params: null,
         },
         {
           jsonrpc: "2.0",

@@ -8,10 +8,7 @@ type SystemState = {
   };
 };
 
-export class System extends Natav.Driver<
-  "system",
-  SystemState
-> {
+export class System extends Natav.Driver<"system", SystemState> {
   constructor(_manager: Natav.ManagerView) {
     super({ name: "system" });
   }

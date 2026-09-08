@@ -116,7 +116,7 @@ const relayHeaderStyle = css({
   justifyContent: "space-between",
   alignItems: "center",
   gap: "8px",
-  color: "white"
+  color: "white",
 });
 const statusStyle = (closed: boolean) =>
   css({

@@ -186,25 +186,20 @@ export namespace Schema {
     | PrimitiveSchema<any>
     | LiteralSchema<any>
     | UnionSchema<any>
-     | ArraySchema<any>
-     | TupleSchema<readonly any[]>
-     | ObjectSchema<any>
-     | MapSchema<any, any>
-     | SetSchema<any>
-     | BytesSchema
-     | DateSchema;
+    | ArraySchema<any>
+    | TupleSchema<readonly any[]>
+    | ObjectSchema<any>
+    | MapSchema<any, any>
+    | SetSchema<any>
+    | BytesSchema
+    | DateSchema;
 
   export namespace Ui {
     type Primitive<T> = {
       readonly label?: string;
       readonly placeholder?: string;
       readonly widget?:
-        | "textarea"
-        | "password"
-        | "text"
-        | "slider"
-        | "radio"
-        | "dropdown";
+        "textarea" | "password" | "text" | "slider" | "radio" | "dropdown";
       readonly options?: readonly T[];
       readonly defaultValue?: T;
     };
@@ -247,10 +242,12 @@ export namespace Schema {
     readonly array: [T] extends [readonly any[]] ? ArraySchema<T[number], Seen>
     : never;
     readonly tuple: [T] extends [readonly any[]] ? TupleSchema<T, Seen> : never;
-    readonly map: T extends Map<infer K, infer V> ? MapSchema<K, V, Seen> :
-      T extends ReadonlyMap<infer K, infer V> ? MapSchema<K, V, Seen> : never;
-    readonly set: T extends Set<infer V> ? SetSchema<V, Seen> :
-      T extends ReadonlySet<infer V> ? SetSchema<V, Seen> : never;
+    readonly map: T extends Map<infer K, infer V> ? MapSchema<K, V, Seen>
+    : T extends ReadonlyMap<infer K, infer V> ? MapSchema<K, V, Seen>
+    : never;
+    readonly set: T extends Set<infer V> ? SetSchema<V, Seen>
+    : T extends ReadonlySet<infer V> ? SetSchema<V, Seen>
+    : never;
     readonly bytes: [T] extends [Uint8Array] ? BytesSchema : never;
     readonly date: [T] extends [Date] ? DateSchema : never;
     readonly object: ObjectSchema<T, Seen>;

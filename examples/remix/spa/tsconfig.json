@@ -16,5 +16,11 @@
       "@/*": ["./app/*", "./*"]
     }
   },
-  "include": ["app/**/*.ts", "app/**/*.tsx", "server/**/*.ts", "server.ts", "rpc-websocket.ts"]
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "server/**/*.ts",
+    "server.ts",
+    "rpc-websocket.ts"
+  ]
 }

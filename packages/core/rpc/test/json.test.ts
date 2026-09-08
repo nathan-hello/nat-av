@@ -32,9 +32,7 @@ describe("rpc json codecs", () => {
   });
 
   it("round-trips nested Maps (map of maps)", () => {
-    const value = new Map([
-      ["outer", new Map([["inner", 1]])],
-    ]);
+    const value = new Map([["outer", new Map([["inner", 1]])]]);
 
     const back = Rpc.Json.parse(Rpc.Json.stringify(value)) as Map<
       string,

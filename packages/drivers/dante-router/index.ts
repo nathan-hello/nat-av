@@ -131,7 +131,9 @@ function makeDeviceRecord(
   };
 }
 
-export default class DanteRouter<const N extends string> extends Natav.Driver<N> {
+export default class DanteRouter<
+  const N extends string,
+> extends Natav.Driver<N> {
   socket = undefined;
 
   state: DanteRouterState = {

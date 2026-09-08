@@ -29,8 +29,7 @@ export namespace Natav {
   export type Array = readonly Shape[];
 
   export type PartialArray<T extends readonly unknown[]> =
-    | T
-    | readonly T[number][];
+    T | readonly T[number][];
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -47,7 +46,8 @@ export namespace Natav {
 
   export type ManagedClosure<Entry, Seen = never> =
     Entry extends Shape ?
-      Entry extends Seen ? never
+      Entry extends Seen ?
+        never
       : Entry | ManagedClosure<Entry["deps"][number], Seen | Entry>
     : never;
 
@@ -61,9 +61,8 @@ export namespace Natav {
     [Entry in ManagedResolved<Entries> as Entry["name"]]: Entry;
   };
 
-  export type CatalogEntries<
-    Catalog extends Record<string, Shape>,
-  > = Catalog[keyof Catalog];
+  export type CatalogEntries<Catalog extends Record<string, Shape>> =
+    Catalog[keyof Catalog];
 
   export interface ManagerView<
     N extends Natav.Array = Natav.Array,
@@ -73,9 +72,7 @@ export namespace Natav {
     readonly drivers_flat: Shape[];
     readonly driver: Catalog<C>;
     bus: TypedEventTarget<TEvents.Natav.Map<C>>;
-    GetDriver<Name extends Natav.Names<C>>(
-      name: Name,
-    ): Natav.FromName<C, Name>;
+    GetDriver<Name extends Natav.Names<C>>(name: Name): Natav.FromName<C, Name>;
     FindDriver(name: string): Shape | undefined;
     FindPlugin(name: string): Shape | undefined;
     GetAllDriverNames(): Natav.Names<N>[];
@@ -97,9 +94,7 @@ export namespace Natav {
     Get(name: string): Shape;
   }
 
-  type PluginFunction<T extends Shape = Shape> = ((
-    manager: any,
-  ) => T) & {
+  type PluginFunction<T extends Shape = Shape> = ((manager: any) => T) & {
     prototype?: undefined;
   };
 
@@ -110,8 +105,7 @@ export namespace Natav {
   };
 
   export type AnyPlugin<T extends Shape = Shape> =
-    | PluginFunction<T>
-    | PluginConstructor<T>;
+    PluginFunction<T> | PluginConstructor<T>;
 
   type PluginReturn<T> =
     T extends new (...args: any[]) => infer R ? R
@@ -145,20 +139,17 @@ export namespace Natav {
     : Obj[M];
   };
 
-  export type Api<
-    N extends readonly Shape[],
-    Name extends string,
-  > = FromName<N, Name>["api"];
+  export type Api<N extends readonly Shape[], Name extends string> = FromName<
+    N,
+    Name
+  >["api"];
 
   export type State<
     N extends readonly Shape[] = Natav.Array,
     Name extends string = ManagedNames<ManagedResolved<N>>,
   > = FromName<N, Name>["state"];
 
-  export type Events<
-    N extends readonly Shape[],
-    Name extends string,
-  > =
+  export type Events<N extends readonly Shape[], Name extends string> =
     FromName<N, Name>["events"] extends TypedEventTarget<infer EventMap> ?
       EventMap
     : never;
@@ -170,9 +161,8 @@ export namespace Natav {
       : D | DriverClosure<D["deps"][number], Seen | D>
     : never;
 
-  export type Resolved<
-    N extends readonly Shape[] = Natav.Array,
-  > = ManagedResolved<N>;
+  export type Resolved<N extends readonly Shape[] = Natav.Array> =
+    ManagedResolved<N>;
 
   export type ManagedName<Entry> =
     Entry extends { readonly name: infer Name extends string } ? Name : never;
@@ -194,14 +184,14 @@ export namespace Natav {
   export type ManagedDepNames<
     Entries extends readonly Shape[],
     Name extends string,
-  > = ManagedByName<ManagedResolved<Entries>, Name> extends infer Entry ?
-    Entry extends Shape ? Entry["deps"][number]["name"]
-    : never
-  : never;
-
-  export type Names<
-    N extends readonly Shape[] = Natav.Array,
   > =
+    ManagedByName<ManagedResolved<Entries>, Name> extends infer Entry ?
+      Entry extends Shape ?
+        Entry["deps"][number]["name"]
+      : never
+    : never;
+
+  export type Names<N extends readonly Shape[] = Natav.Array> =
     Resolved<N>["name"];
 
   export type FromName<
@@ -209,13 +199,10 @@ export namespace Natav {
     Name extends string = Names<N>,
   > = ManagedByName<Resolved<N>, Name>;
 
-  export type Catalog<
-    N extends readonly Shape[] = readonly Shape[],
-  > = ManagedCatalog<N>;
+  export type Catalog<N extends readonly Shape[] = readonly Shape[]> =
+    ManagedCatalog<N>;
 
-  export type RootCatalog<
-    N extends readonly Shape[] = readonly Shape[],
-  > = {
+  export type RootCatalog<N extends readonly Shape[] = readonly Shape[]> = {
     [Entry in N[number] as Entry["name"]]: Entry;
   };
 

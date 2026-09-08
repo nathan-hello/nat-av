@@ -10,10 +10,9 @@ export type RelayBoardApi = {
   close: (relay: number) => Promise<void>;
 };
 
-export default class RelayBoard<const N extends string = string> extends Natav.Driver<
-  N,
-  RelayBoardState
-> {
+export default class RelayBoard<
+  const N extends string = string,
+> extends Natav.Driver<N, RelayBoardState> {
   private readonly baseUrl: string;
   private readonly pending = Array.from({ length: 16 }, () =>
     Promise.resolve(),
@@ -21,7 +20,13 @@ export default class RelayBoard<const N extends string = string> extends Natav.D
 
   state: RelayBoardState = { closed: Array.from({ length: 16 }, () => false) };
 
-  constructor({ name, address = "192.168.1.4" }: { name: N; address?: string }) {
+  constructor({
+    name,
+    address = "192.168.1.4",
+  }: {
+    name: N;
+    address?: string;
+  }) {
     super({ name });
     this.baseUrl = `http://${address}`;
   }
@@ -33,29 +38,31 @@ export default class RelayBoard<const N extends string = string> extends Natav.D
 
   private async setRelay(relay: number, closed: boolean): Promise<void> {
     const index = this.relayIndex(relay);
-    const operation = this.pending[index].catch(() => {}).then(async () => {
-      const command = (index * 2 + (closed ? 1 : 0))
-        .toString(10)
-        .padStart(2, "0");
-      const result = await this.tel.task(
-        `relay-board:${closed ? "close" : "open"}:${relay}`,
-        async () => {
-          const response = await fetch(`${this.baseUrl}/30000/${command}`);
-          if (!response.ok) {
-            throw new Error(`relay board returned HTTP ${response.status}`);
-          }
-        },
-      );
+    const operation = this.pending[index]
+      .catch(() => {})
+      .then(async () => {
+        const command = (index * 2 + (closed ? 1 : 0))
+          .toString(10)
+          .padStart(2, "0");
+        const result = await this.tel.task(
+          `relay-board:${closed ? "close" : "open"}:${relay}`,
+          async () => {
+            const response = await fetch(`${this.baseUrl}/30000/${command}`);
+            if (!response.ok) {
+              throw new Error(`relay board returned HTTP ${response.status}`);
+            }
+          },
+        );
 
-      if (!result.ok) {
-        throw result.error;
-      }
+        if (!result.ok) {
+          throw result.error;
+        }
 
-      this.state.closed[index] = closed;
-      this.dispatch("driver:state-updated", {
-        data: { closed: this.state.closed },
+        this.state.closed[index] = closed;
+        this.dispatch("driver:state-updated", {
+          data: { closed: this.state.closed },
+        });
       });
-    });
 
     this.pending[index] = operation;
     return operation;

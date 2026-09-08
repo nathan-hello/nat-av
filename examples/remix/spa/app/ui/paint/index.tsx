@@ -8,7 +8,14 @@ import {
 } from "remix/ui";
 
 const RECORD_INTERVAL_MS = 100;
-const COLORS = ["#000000", "#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7"];
+const COLORS = [
+  "#000000",
+  "#ef4444",
+  "#f59e0b",
+  "#22c55e",
+  "#3b82f6",
+  "#a855f7",
+];
 const SIZES = [2, 4, 8, 16, 32];
 
 interface PaintPageProps extends SerializableProps {}
@@ -180,7 +187,10 @@ export const PaintPage = clientEntry(
                     recording = !recording;
                     if (recording) {
                       commitFrame();
-                      recordTimer = setInterval(commitFrame, RECORD_INTERVAL_MS);
+                      recordTimer = setInterval(
+                        commitFrame,
+                        RECORD_INTERVAL_MS,
+                      );
                     } else if (recordTimer) {
                       clearInterval(recordTimer);
                       recordTimer = null;

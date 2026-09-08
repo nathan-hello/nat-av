@@ -101,10 +101,7 @@ describe("tcp socket", () => {
     });
 
     await tcp.write("hello");
-    const data = await Promise.race([
-      received,
-      delay(2000).then(() => null),
-    ]);
+    const data = await Promise.race([received, delay(2000).then(() => null)]);
 
     assert.notEqual(data, null);
     assert.equal(data!.toString("utf8"), "hello");
@@ -177,7 +174,9 @@ describe("tcp recovery", () => {
       for (const c of this.connections) c.destroy();
       this.connections.clear();
       if (this.server) {
-        await new Promise<void>((resolve) => this.server!.close(() => resolve()));
+        await new Promise<void>((resolve) =>
+          this.server!.close(() => resolve()),
+        );
         this.server = undefined;
       }
     }

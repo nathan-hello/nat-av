@@ -30,7 +30,11 @@ export class Tcp
   }
 
   private async scheduleRetry(): Promise<void> {
-    if (this.retrying || this.stopped || this.config.keepAliveMs === undefined) {
+    if (
+      this.retrying ||
+      this.stopped ||
+      this.config.keepAliveMs === undefined
+    ) {
       return;
     }
     this.retrying = true;

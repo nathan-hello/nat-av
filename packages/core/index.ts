@@ -20,9 +20,12 @@ export { Delimiters } from "./sockets/delimiters.js";
 export { Test } from "./test/data.test.js";
 export type { Events, Sockets } from "./types/index.js";
 
-export type {ClientRpcTransport, Rpc} from "./rpc/index.js";
+export type { ClientRpcTransport, Rpc } from "./rpc/index.js";
 export { RpcClient, RpcServer } from "./rpc/index.js";
-export type { ServerRpcTransport, ServerRpcTransportEvents, } from "./rpc/server/transport.js";
+export type {
+  ServerRpcTransport,
+  ServerRpcTransportEvents,
+} from "./rpc/server/transport.js";
 
 export class Telemetry<
   T extends BaseTelemetryLogSchema = BaseTelemetryLogSchema,

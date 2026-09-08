@@ -55,17 +55,13 @@ export function DantePage(handle: Handle) {
     }
 
     const rxDevice =
-      form.rxDevice && devices[form.rxDevice]
-        ? form.rxDevice
-        : deviceList.length > 0
-          ? deviceList[0].serverName
-          : "";
+      form.rxDevice && devices[form.rxDevice] ? form.rxDevice
+      : deviceList.length > 0 ? deviceList[0].serverName
+      : "";
     const txDevice =
-      form.txDevice && devices[form.txDevice]
-        ? form.txDevice
-        : deviceList.length > 0
-          ? deviceList[0].serverName
-          : "";
+      form.txDevice && devices[form.txDevice] ? form.txDevice
+      : deviceList.length > 0 ? deviceList[0].serverName
+      : "";
 
     const rxDev = rxDevice ? devices[rxDevice] : undefined;
     const txDev = txDevice ? devices[txDevice] : undefined;
@@ -73,25 +69,28 @@ export function DantePage(handle: Handle) {
     const txChannels = txDev ? [...txDev.txChannels.values()] : [];
 
     const rxChannel =
-      rxChannels.length > 0 &&
-      rxChannels.some((c) => c.number === form.rxChannel)
-        ? form.rxChannel
-        : rxChannels.length > 0
-          ? rxChannels[0].number
-          : 0;
+      (
+        rxChannels.length > 0 &&
+        rxChannels.some((c) => c.number === form.rxChannel)
+      ) ?
+        form.rxChannel
+      : rxChannels.length > 0 ? rxChannels[0].number
+      : 0;
     const txChannelName =
-      txChannels.length > 0 &&
-      txChannels.some((c) => c.name === form.txChannelName)
-        ? form.txChannelName
-        : txChannels.length > 0
-          ? txChannels[0].name
-          : "";
+      (
+        txChannels.length > 0 &&
+        txChannels.some((c) => c.name === form.txChannelName)
+      ) ?
+        form.txChannelName
+      : txChannels.length > 0 ? txChannels[0].name
+      : "";
 
     const refreshPending = dante.pendingCount("refresh") > 0;
     const routePending = dante.pendingCount("route") > 0;
     const unroutePending = dante.pendingCount("unroute") > 0;
     const clearPending = dante.pendingCount("clearRoutes") > 0;
-    const busy = refreshPending || routePending || unroutePending || clearPending;
+    const busy =
+      refreshPending || routePending || unroutePending || clearPending;
 
     function deviceName(serverName: string): string {
       return devices[serverName]?.name ?? serverName;
@@ -124,12 +123,12 @@ export function DantePage(handle: Handle) {
               <h2 mix={titleStyle}>Dante Router</h2>
               <p mix={mutedStyle}>
                 Scan: {state.scanStatus}
-                {state.lastScanAt
-                  ? ` · last ${new Date(state.lastScanAt).toLocaleTimeString()}`
-                  : ""}
-                {deviceList.length > 0
-                  ? ` · ${deviceList.length} device(s)`
-                  : ""}
+                {state.lastScanAt ?
+                  ` · last ${new Date(state.lastScanAt).toLocaleTimeString()}`
+                : ""}
+                {deviceList.length > 0 ?
+                  ` · ${deviceList.length} device(s)`
+                : ""}
               </p>
             </div>
             <div mix={statusRowStyle}>
@@ -175,15 +174,15 @@ export function DantePage(handle: Handle) {
             <div mix={toolbarStyle}>
               <h2 mix={titleStyle}>Devices ({deviceList.length})</h2>
             </div>
-            {deviceList.length === 0 ? (
+            {deviceList.length === 0 ?
               <p mix={mutedStyle}>
                 No devices discovered. Click Refresh to scan the network.
               </p>
-            ) : (
-              <ul mix={deviceListStyle}>
+            : <ul mix={deviceListStyle}>
                 {deviceList.map((d) => {
-                  const rate = d.sampleRate
-                    ? ` · ${(d.sampleRate / 1000).toFixed(0)}kHz`
+                  const rate =
+                    d.sampleRate ?
+                      ` · ${(d.sampleRate / 1000).toFixed(0)}kHz`
                     : "";
                   return (
                     <li key={d.serverName} mix={deviceItemStyle}>
@@ -223,17 +222,16 @@ export function DantePage(handle: Handle) {
                   );
                 })}
               </ul>
-            )}
+            }
           </section>
 
           <section mix={panelStyle}>
             <div mix={toolbarStyle}>
               <h2 mix={titleStyle}>Matrix</h2>
             </div>
-            {matrixEntries.length === 0 ? (
+            {matrixEntries.length === 0 ?
               <p mix={mutedStyle}>(no routes)</p>
-            ) : (
-              <ul mix={matrixListStyle}>
+            : <ul mix={matrixListStyle}>
                 {matrixEntries.map(([rxServer, routes]) => {
                   const rxLabel = deviceName(rxServer);
                   return Object.entries(routes).map(([ch, route]) => {
@@ -266,7 +264,7 @@ export function DantePage(handle: Handle) {
                   });
                 })}
               </ul>
-            )}
+            }
           </section>
         </div>
 
@@ -274,8 +272,8 @@ export function DantePage(handle: Handle) {
           <div mix={toolbarStyle}>
             <h2 mix={titleStyle}>Route</h2>
             <p mix={mutedStyle}>
-              Route a TX channel to an RX channel. Picks are populated from
-              each device's discovered channels.
+              Route a TX channel to an RX channel. Picks are populated from each
+              device's discovered channels.
             </p>
           </div>
           <div mix={fieldGridStyle}>
@@ -291,15 +289,14 @@ export function DantePage(handle: Handle) {
                   }),
                 ]}
               >
-                {deviceList.length === 0 ? (
+                {deviceList.length === 0 ?
                   <option value="">No devices</option>
-                ) : (
-                  deviceList.map((d) => (
+                : deviceList.map((d) => (
                     <option key={d.serverName} value={d.serverName}>
                       {d.name} ({d.serverName})
                     </option>
                   ))
-                )}
+                }
               </select>
             </label>
             <label mix={fieldStyle}>
@@ -310,10 +307,7 @@ export function DantePage(handle: Handle) {
                 mix={[
                   inputStyle,
                   on("change", (event) => {
-                    const n = Number.parseInt(
-                      event.currentTarget.value,
-                      10,
-                    );
+                    const n = Number.parseInt(event.currentTarget.value, 10);
                     form = {
                       ...form,
                       rxChannel: Number.isFinite(n) ? n : 0,
@@ -322,15 +316,14 @@ export function DantePage(handle: Handle) {
                   }),
                 ]}
               >
-                {rxChannels.length === 0 ? (
+                {rxChannels.length === 0 ?
                   <option value="">No RX channels</option>
-                ) : (
-                  rxChannels.map((c) => (
+                : rxChannels.map((c) => (
                     <option key={c.number} value={String(c.number)}>
                       {c.number}: {c.name}
                     </option>
                   ))
-                )}
+                }
               </select>
             </label>
             <label mix={fieldStyle}>
@@ -345,15 +338,14 @@ export function DantePage(handle: Handle) {
                   }),
                 ]}
               >
-                {deviceList.length === 0 ? (
+                {deviceList.length === 0 ?
                   <option value="">No devices</option>
-                ) : (
-                  deviceList.map((d) => (
+                : deviceList.map((d) => (
                     <option key={d.serverName} value={d.serverName}>
                       {d.name} ({d.serverName})
                     </option>
                   ))
-                )}
+                }
               </select>
             </label>
             <label mix={fieldStyle}>
@@ -372,15 +364,16 @@ export function DantePage(handle: Handle) {
                   }),
                 ]}
               >
-                {txChannels.length === 0 ? (
+                {txChannels.length === 0 ?
                   <option value="">No TX channels</option>
-                ) : (
-                  txChannels.map((c) => (
+                : txChannels.map((c) => (
                     <option key={c.name} value={c.name}>
-                      {c.friendlyName ? `${c.friendlyName} (${c.name})` : c.name}
+                      {c.friendlyName ?
+                        `${c.friendlyName} (${c.name})`
+                      : c.name}
                     </option>
                   ))
-                )}
+                }
               </select>
             </label>
           </div>
@@ -425,12 +418,12 @@ export function DantePage(handle: Handle) {
   };
 }
 
-function formatChannels(channels: Map<number, DanteRouter.DanteChannel>): string {
+function formatChannels(
+  channels: Map<number, DanteRouter.DanteChannel>,
+): string {
   const entries = [...channels.values()];
   if (entries.length === 0) return "(none)";
-  return entries
-    .map((c) => c.friendlyName ?? c.name)
-    .join(", ");
+  return entries.map((c) => c.friendlyName ?? c.name).join(", ");
 }
 
 const layoutStyle = css({
@@ -651,8 +644,8 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
       rowEntry: AxisEntry,
       colEntry: AxisEntry,
     ): { tx: AxisEntry; rx: AxisEntry } {
-      return rowEntry.kind === "tx"
-        ? { tx: rowEntry, rx: colEntry }
+      return rowEntry.kind === "tx" ?
+          { tx: rowEntry, rx: colEntry }
         : { tx: colEntry, rx: rowEntry };
     }
 
@@ -675,9 +668,9 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
           <div>
             <h2 mix={titleStyle}>Routing Matrix</h2>
             <p mix={mutedStyle}>
-              {orientation === "tx-rows"
-                ? "Rows: transmitters · Columns: receivers"
-                : "Rows: receivers · Columns: transmitters"}
+              {orientation === "tx-rows" ?
+                "Rows: transmitters · Columns: receivers"
+              : "Rows: receivers · Columns: transmitters"}
               . Click a cell to toggle the route.
             </p>
           </div>
@@ -707,13 +700,12 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
           </div>
         </div>
 
-        {!hasContent ? (
+        {!hasContent ?
           <p mix={mutedStyle}>
             No routable channels yet. Refresh and ensure devices report TX and
             RX channels.
           </p>
-        ) : (
-          <div mix={matrixScrollStyle}>
+        : <div mix={matrixScrollStyle}>
             <div
               mix={matrixGridStyle}
               style={{
@@ -756,9 +748,7 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
                           mix={matrixRowLabelStyle}
                           title={`${g.deviceName} (${g.serverName}) ${c.name}`}
                         >
-                          <span mix={rowLabelDeviceStyle}>
-                            {g.deviceName}
-                          </span>
+                          <span mix={rowLabelDeviceStyle}>{g.deviceName}</span>
                           <span>{c.name}</span>
                         </div>
                         {colFlat.map((colEntry, ci) => {
@@ -770,17 +760,12 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
                               disabled={cellDisabled}
                               mix={[
                                 matrixCellStyle,
-                                state === "active"
-                                  ? cellActiveStyle
-                                  : state === "conflict"
-                                    ? cellConflictStyle
-                                    : cellEmptyStyle,
+                                state === "active" ? cellActiveStyle
+                                : state === "conflict" ? cellConflictStyle
+                                : cellEmptyStyle,
                                 on("click", () => {
                                   if (state === "active") {
-                                    onUnroute(
-                                      rx.serverName,
-                                      rx.channel.number,
-                                    );
+                                    onUnroute(rx.serverName, rx.channel.number);
                                   } else {
                                     onRoute(
                                       tx.serverName,
@@ -795,11 +780,11 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
                               aria-label={`${state === "active" ? "Unroute" : "Route"} ${tx.deviceName} ${tx.channel.name} → ${rx.deviceName} ${rx.channel.number}`}
                               title={`${tx.deviceName} ${tx.channel.name} → ${rx.deviceName} ${rx.channel.name}`}
                             >
-                              {state === "active"
-                                ? "●"
-                                : state === "conflict"
-                                  ? "◦"
-                                  : ""}
+                              {state === "active" ?
+                                "●"
+                              : state === "conflict" ?
+                                "◦"
+                              : ""}
                             </button>
                           );
                         })}
@@ -810,7 +795,7 @@ export function DanteMatrix(handle: Handle<DanteMatrixProps>) {
               ))}
             </div>
           </div>
-        )}
+        }
       </section>
     );
   };

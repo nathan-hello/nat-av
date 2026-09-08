@@ -31,4 +31,7 @@ export namespace Telemetry {
 export type { ClientRpcTransport } from "./rpc/client/websocket.js";
 export type { Rpc } from "./rpc/types.js";
 export { RpcClient } from "./rpc/client/index.js";
-export type { ServerRpcTransport, ServerRpcTransportEvents, } from "./rpc/server/transport.js";
+export type {
+  ServerRpcTransport,
+  ServerRpcTransportEvents,
+} from "./rpc/server/transport.js";

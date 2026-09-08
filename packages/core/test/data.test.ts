@@ -158,7 +158,9 @@ export namespace Test {
     }
   }
 
-  export class EventDriver<const N extends string = string> extends Natav.Driver<N> {
+  export class EventDriver<
+    const N extends string = string,
+  > extends Natav.Driver<N> {
     state = { ready: true };
     api = {};
     socket = undefined;

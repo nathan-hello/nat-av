@@ -28,7 +28,10 @@ export async function createRpcBinding<N extends Natav = Natav>() {
   function getRpc<Name extends string>(
     handle: Handle<any, any>,
     name?: Name,
-  ): Rpc.Client.Handle<N> | Rpc.Client.DriverHandle<N, Name> | Rpc.Client.PluginHandle<N, Name & Natav.Names<N["plugins"]>> {
+  ):
+    | Rpc.Client.Handle<N>
+    | Rpc.Client.DriverHandle<N, Name>
+    | Rpc.Client.PluginHandle<N, Name & Natav.Names<N["plugins"]>> {
     if (subscriptions.has(handle)) {
       return name ? rpcClient.driver(name) : rpcClient;
     }
