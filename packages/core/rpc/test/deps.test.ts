@@ -237,4 +237,85 @@ describe("rpc deps", () => {
 
     client.close();
   });
+
+  it("publishes nested runtime groups through the rpc catalog", async () => {
+    const roomA = new LeafDriver();
+    const roomB = new Level3Driver(roomA);
+    const transport = new Test.RpcTransport();
+    const natav = new Natav({
+      drivers: [
+        {
+          rooms: {
+            a: [roomA],
+            b: [roomB],
+          },
+        },
+      ],
+      plugin: [
+        (n) => {
+          return new RpcServer(n, transport.server);
+        },
+      ],
+    });
+    const staticPath: "/rooms" | "/rooms/a" | "/rooms/b" =
+      natav.GetAllGroupPaths()[0]!;
+    void staticPath;
+    const client = new RpcClient<typeof natav>({ transport });
+    if (false) {
+      // @ts-expect-error Static group paths reject unknown literals.
+      client.driver("/rooms/unknown");
+      // @ts-expect-error Group paths must use the absolute slash namespace.
+      client.driver("rooms/a");
+    }
+    const ready = new Promise<void>((resolve) => {
+      const off = client.on("ready", () => {
+        off();
+        resolve();
+      });
+    });
+
+    transport.connect();
+    await ready;
+
+    assert.deepEqual(natav.GetAllGroupPaths(), [
+      "/rooms/a",
+      "/rooms/b",
+      "/rooms",
+    ]);
+    assert.equal(client.find.plugin("rpc-server").name, "rpc-server");
+
+    const roomGroup = client.driver("/rooms/a");
+    const roomDriver = client.driver("leaf");
+    const roomArray = roomGroup.array();
+    const asdf = roomArray[0];
+    void roomDriver.api.ping();
+    assert.equal(client.driver("/rooms").a.name, "leaf");
+    assert.equal(client.driver("/rooms").b.name, "level-3");
+
+    assert.deepEqual(
+      client.driver("/rooms/a").array().map((driver) => driver.name),
+      ["leaf"],
+    );
+    assert.deepEqual(
+      client.driver("/rooms").array().map((driver) => driver.name),
+      ["leaf", "level-3"],
+    );
+    assert.equal(client.find.driver("leaf").name, "leaf");
+    assert.equal(client.find.driver("missing").name, "missing");
+    await assert.rejects(client.call("missing", "ping"));
+    class RuntimeDriver extends Natav.Driver<"runtime"> {
+      state = { ready: true };
+      api = { ping: async () => "runtime-pong" };
+      constructor() {
+        super({ name: "runtime" });
+      }
+    }
+    const runtime = new RuntimeDriver();
+    await natav.AddDriver(runtime, ["rooms", "a"]);
+    assert.equal(client.find.driver("runtime").name, "runtime");
+    await natav.RemoveDriver("runtime");
+    assert.equal(client.find.driver("runtime").name, "runtime");
+    await assert.rejects(client.call("runtime", "ping"));
+    client.close();
+  });
 });

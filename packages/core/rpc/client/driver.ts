@@ -4,7 +4,7 @@ import { Rpc } from "../types.js";
 import type { RpcClient } from "./index.js";
 
 export class ClientRpcDriver<
-  N extends Natav = Natav,
+  N extends Natav.Runtime = Natav,
   Entries extends Natav.Array = N["drivers"],
   Name extends Natav.Names<Entries> = Natav.Names<Entries>,
 > extends TypedEventTarget<Rpc.Events.DriverMap<Entries, Name>> {
@@ -126,8 +126,8 @@ export class ClientRpcDriver<
   }
 
   private async subscribeToEvent<
-    K extends keyof Natav.Events<N["drivers"], Name> & string,
-  >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
+    K extends keyof Natav.Events<Entries, Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<Entries, Name, K>) {
     const state = this.eventState.get(event) ?? {
       callbacks: new Set<(payload: any) => void>(),
       subscribed: false,
@@ -157,8 +157,8 @@ export class ClientRpcDriver<
   }
 
   private async unsubscribeFromEvent<
-    K extends keyof Natav.Events<N["drivers"], Name> & string,
-  >(event: K, callback: Rpc.Client.Events.Callback<N["drivers"], Name, K>) {
+    K extends keyof Natav.Events<Entries, Name> & string,
+  >(event: K, callback: Rpc.Client.Events.Callback<Entries, Name, K>) {
     const state = this.eventState.get(event);
     if (!state) {
       return;

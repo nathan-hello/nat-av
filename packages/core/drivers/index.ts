@@ -70,36 +70,41 @@ abstract class DriverBase<
 }
 
 export class Natav<
-  const D extends NatavTypes.Array = NatavTypes.Array,
+  const D extends NatavTypes.RootInput = NatavTypes.Array,
   const P extends readonly NatavTypes.AnyPlugin[] =
     readonly NatavTypes.AnyPlugin[],
-> implements NatavTypes.Instance<D, P> {
-  readonly drivers: D;
+> {
+  readonly input: D;
+  readonly drivers: NatavTypes.RootDrivers<D>;
   readonly plugins: NatavTypes.PluginInstances<P>;
   readonly drivers_flat: NatavTypes.Shape[] = [];
   readonly driver: NatavTypes.Catalog<NatavTypes.DriverEntries<D, P>>;
   readonly plugin: NatavTypes.RootCatalog<NatavTypes.PluginInstances<P>>;
+  private readonly groupMembers = new Map<string, NatavTypes.Shape[]>();
+  private readonly runtimeRoots: NatavTypes.Shape[] = [];
+  private readonly startedEntries = new Set<NatavTypes.Shape>();
+  private started = false;
   public readonly bus = new TypedEventTarget<
     Events.Natav.Map<NatavTypes.DriverEntries<D, P>>
   >();
 
-  constructor(args: { drivers?: D; plugin?: P }) {
+  get groups(): ReadonlyMap<string, readonly NatavTypes.Shape[]> {
+    return this.groupMembers;
+  }
+
+  constructor(args: {
+    drivers?: D | NatavTypes.RootInput;
+    plugin?: P | NatavTypes.PluginInput;
+  }) {
     // TSAS: The empty default is replaced by the inferred driver tuple when no drivers are supplied.
-    const configs = args.drivers ?? ([] as unknown as D);
+    const configs = args.drivers ?? [];
 
     const plugins: NatavTypes.Shape[] = [];
-    for (const plugin of args.plugin ?? []) {
-      const instance =
-        "prototype" in plugin && typeof plugin.prototype === "object" ?
-          new plugin(this)
-        : plugin(this);
-      plugins.push(instance);
-    }
-
-    // TSAS: The public driver tuple is the constructor input used for type inference.
-    this.drivers = configs;
-    // TSAS: Each plugin constructor returns the corresponding tuple entry.
-    this.plugins = plugins as unknown as Natav.PluginInstances<P>;
+    this.readPluginInput(args.plugin ?? [], plugins, (plugin) =>
+      "prototype" in plugin && typeof plugin.prototype === "object" ?
+        new plugin(this)
+      : plugin(this),
+    );
 
     const collect = (
       driver: NatavTypes.Shape,
@@ -114,7 +119,15 @@ export class Natav<
       return out;
     };
 
-    const flat = this.drivers.flatMap((driver) => collect(driver));
+    const driverRoots: NatavTypes.Shape[] = [];
+    this.readDriverInput(configs, driverRoots, collect);
+    // TSAS: The runtime normalizer extracts direct driver roots from recursive input.
+    this.input = configs as D;
+    this.drivers = driverRoots as NatavTypes.RootDrivers<D>;
+    // TSAS: Each plugin constructor returns the corresponding tuple entry.
+    this.plugins = plugins as unknown as Natav.PluginInstances<P>;
+    const flat = driverRoots.flatMap((driver) => collect(driver));
+    this.runtimeRoots.push(...driverRoots);
     for (const plugin of plugins) {
       for (const dep of plugin.deps) {
         flat.push(...collect(dep));
@@ -122,6 +135,11 @@ export class Natav<
     }
     const byName = new Map<string, NatavTypes.Shape>();
     for (const driver of flat) {
+      if (driver.name.startsWith("/")) {
+        throw new Error(
+          `Natav managed names cannot start with '/': ${driver.name}`,
+        );
+      }
       const existing = byName.get(driver.name);
       if (existing && existing !== driver) {
         throw new Error(
@@ -143,6 +161,18 @@ export class Natav<
 
     const pluginByName = new Map<string, NatavTypes.Shape>();
     for (const plugin of plugins) {
+      if (plugin.name.startsWith("/")) {
+        throw new Error(
+          `Natav managed names cannot start with '/': ${plugin.name}`,
+        );
+      }
+      const driver = byName.get(plugin.name);
+      if (driver && driver !== plugin) {
+        throw new Error(
+          `Natav found multiple managed entries of the same name: ${plugin.name}`,
+          { cause: Err.Codes.ManagerFoundMultipleNames },
+        );
+      }
       if (
         pluginByName.has(plugin.name) &&
         pluginByName.get(plugin.name) !== plugin
@@ -157,6 +187,115 @@ export class Natav<
     this.plugin = Object.fromEntries(pluginByName) as Natav.RootCatalog<
       Natav.PluginInstances<P>
     >;
+  }
+
+  private readDriverInput(
+    input: NatavTypes.RootInput,
+    roots: NatavTypes.Shape[],
+    collect: (
+      driver: NatavTypes.Shape,
+      seen?: Set<NatavTypes.Shape>,
+    ) => NatavTypes.Shape[],
+    prefix = "",
+  ) {
+    for (const entry of input) {
+      if (this.isShape(entry)) {
+        roots.push(entry);
+      } else {
+        this.readGroup(entry, prefix, roots, collect);
+      }
+    }
+  }
+
+  private readGroup(
+    input: NatavTypes.GroupInput,
+    prefix: string,
+    roots: NatavTypes.Shape[],
+    collect: (
+      driver: NatavTypes.Shape,
+      seen?: Set<NatavTypes.Shape>,
+    ) => NatavTypes.Shape[],
+  ) {
+    if (Array.isArray(input)) {
+      if (!prefix) throw new Error("Natav groups must have a name");
+      const members = input.map((driver) => {
+        roots.push(driver);
+        collect(driver);
+        return driver;
+      });
+      this.groupMembers.set(prefix, members);
+      this.rebuildParentGroups(prefix);
+      return;
+    }
+    for (const [name, child] of Object.entries(input)) {
+      if (name.includes("/")) {
+        throw new Error(`Natav group names cannot contain '/': ${name}`);
+      }
+      this.readGroup(
+        child,
+        prefix ? `${prefix}/${name}` : `/${name}`,
+        roots,
+        collect,
+      );
+    }
+  }
+
+  private readPluginInput(
+    input: NatavTypes.PluginInput,
+    plugins: NatavTypes.Shape[],
+    construct: (plugin: NatavTypes.AnyPlugin) => NatavTypes.Shape,
+    prefix = "",
+  ) {
+    for (const entry of input) {
+      if (typeof entry === "function") {
+        const plugin = construct(entry);
+        plugins.push(plugin);
+        if (prefix) {
+          const members = this.groupMembers.get(prefix) ?? [];
+          members.push(plugin);
+          this.groupMembers.set(prefix, members);
+          this.rebuildParentGroups(prefix);
+        }
+      } else if (Array.isArray(entry)) {
+        this.readPluginInput(entry, plugins, construct, prefix);
+      } else {
+        for (const [name, child] of Object.entries(entry)) {
+          if (name.includes("/")) {
+            throw new Error(`Natav group names cannot contain '/': ${name}`);
+          }
+          this.readPluginInput(
+            child,
+            plugins,
+            construct,
+            prefix ? `${prefix}/${name}` : `/${name}`,
+          );
+        }
+      }
+    }
+  }
+
+  private rebuildParentGroups(path: string) {
+    const parts = path.split("/");
+    for (let length = parts.length - 1; length > 1; length--) {
+      const parent = parts.slice(0, length).join("/");
+      const members = [...this.groupMembers.entries()]
+        .filter(([child]) => child.startsWith(`${parent}/`))
+        .flatMap(([, values]) => values);
+      this.groupMembers.set(parent, [
+        ...new Map(members.map((driver) => [driver.name, driver])).values(),
+      ]);
+    }
+  }
+
+  private isShape(value: unknown): value is NatavTypes.Shape {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "name" in value &&
+      "deps" in value &&
+      "start" in value &&
+      "end" in value
+    );
   }
 
   GetDriver<N extends Natav.Names<Natav.DriverEntries<D, P>>>(
@@ -194,6 +333,106 @@ export class Natav<
 
   FindPlugin(name: string): NatavTypes.Shape | undefined {
     return this.plugins.find((plugin) => plugin.name === name);
+  }
+
+  FindGroup(path: string): readonly NatavTypes.Shape[] | undefined {
+    return this.groupMembers.get(path);
+  }
+
+  GetAllGroupPaths(): Natav.GroupPaths<D>[] {
+    return [...this.groupMembers.keys()].sort((left, right) => {
+      const depth = (path: string) => path.split("/").length;
+      return depth(right) - depth(left) || left.localeCompare(right);
+      // TSAS: Runtime group keys are narrowed to the recursive constructor input for static callers.
+    }) as Natav.GroupPaths<D>[];
+  }
+
+  async AddDriver(
+    driver: NatavTypes.Shape,
+    groups: readonly string[] = [],
+  ): Promise<void> {
+    if (driver.name.startsWith("/")) {
+      throw new Error(`Natav managed names cannot start with '/': ${driver.name}`);
+    }
+    if (this.IsManagedName(driver.name)) {
+      throw new Error(`Natav found multiple managed entries: ${driver.name}`, {
+        cause: Err.Codes.ManagerFoundMultipleNames,
+      });
+    }
+    const entries = this.collectRuntime(driver);
+    const pending = new Map<string, NatavTypes.Shape>();
+    for (const entry of entries) {
+      const previous = pending.get(entry.name);
+      if (
+        entry.name.startsWith("/") ||
+        this.IsManagedName(entry.name) ||
+        (previous && previous !== entry)
+      ) {
+        throw new Error(`Natav found multiple managed entries: ${entry.name}`, {
+          cause: Err.Codes.ManagerFoundMultipleNames,
+        });
+      }
+      pending.set(entry.name, entry);
+    }
+    const groupPath = groups.length > 0 ? `/${groups.join("/")}` : "";
+    if (groups.some((segment) => !segment || segment.includes("/"))) {
+      throw new Error("Natav runtime group segments must be non-empty and cannot contain '/'");
+    }
+    this.runtimeRoots.push(driver);
+    for (const entry of entries) {
+      this.drivers_flat.push(entry);
+      // TSAS: The runtime catalog intentionally accepts names unknown to the static Natav generic.
+      (this.driver as Record<string, NatavTypes.Shape>)[entry.name] = entry;
+    }
+    if (groupPath) {
+      const members = this.groupMembers.get(groupPath) ?? [];
+      members.push(driver);
+      this.groupMembers.set(groupPath, members);
+      this.rebuildParentGroups(groupPath);
+    }
+    if (this.started) {
+      await this.startEntryTree(driver);
+    }
+  }
+
+  async RemoveDriver(name: string): Promise<void> {
+    const driver = this.FindDriver(name);
+    if (!driver) return;
+    const index = this.runtimeRoots.indexOf(driver);
+    if (index < 0) {
+      throw new Error(`Natav cannot remove dependency-only driver: ${name}`);
+    }
+    this.runtimeRoots.splice(index, 1);
+    for (const [path, members] of this.groupMembers) {
+      const next = members.filter((member) => member !== driver);
+      this.groupMembers.set(path, next);
+    }
+    const retained = new Set(
+      this.runtimeRoots.flatMap((root) => this.collectRuntime(root)),
+    );
+    for (const entry of [...this.drivers_flat]) {
+      if (!retained.has(entry)) {
+        if (this.startedEntries.has(entry)) {
+          await entry.end();
+          this.startedEntries.delete(entry);
+        }
+        this.drivers_flat.splice(this.drivers_flat.indexOf(entry), 1);
+        // TSAS: This deletion mirrors the runtime catalog mutation above.
+        delete (this.driver as Record<string, NatavTypes.Shape>)[entry.name];
+      }
+    }
+  }
+
+  private collectRuntime(
+    driver: NatavTypes.Shape,
+    seen = new Set<NatavTypes.Shape>(),
+  ): NatavTypes.Shape[] {
+    if (seen.has(driver)) return [];
+    seen.add(driver);
+    return [
+      driver,
+      ...driver.deps.flatMap((dep) => this.collectRuntime(dep, seen)),
+    ];
   }
 
   private FindDriverTyped<N extends Natav.Names<Natav.DriverEntries<D, P>>>(
@@ -256,7 +495,7 @@ export class Natav<
       };
     };
 
-    const raw = this.drivers.map((driver) => toNode(driver));
+    const raw = this.runtimeRoots.map((driver) => toNode(driver));
 
     // Dedupe: keep each driver only at its deepest occurrence.
     const maxDepth = new Map<string, number>();
@@ -293,20 +532,26 @@ export class Natav<
       .filter((n): n is Natav.DriverView => n !== null);
   }
 
-  async Start(filter?: (drivers: D) => Natav.PartialArray<D>) {
-    let configs: Natav.PartialArray<D> = this.drivers;
+  async Start(
+    filter?: (
+      drivers: NatavTypes.RootDrivers<D>,
+    ) => Natav.PartialArray<NatavTypes.RootDrivers<D>>,
+  ) {
+    this.started = true;
+    // TSAS: Runtime roots are structurally compatible with the caller-managed driver input.
+    let configs: Natav.PartialArray<NatavTypes.RootDrivers<D>> = this
+      .runtimeRoots as Natav.PartialArray<NatavTypes.RootDrivers<D>>;
     if (filter) {
       configs = filter(this.drivers);
     }
 
-    const inited = new Set<NatavTypes.Shape>();
     const initializing = new Map<NatavTypes.Shape, Promise<void>>();
 
     const initTree = async (
       d: NatavTypes.Shape,
       path = new Set<NatavTypes.Shape>(),
     ) => {
-      if (inited.has(d)) {
+      if (this.startedEntries.has(d)) {
         return;
       }
       if (path.has(d)) {
@@ -326,7 +571,7 @@ export class Natav<
         }
 
         await this.initDriver(d);
-        inited.add(d);
+        this.startedEntries.add(d);
       })();
 
       initializing.set(d, initialization);
@@ -361,6 +606,31 @@ export class Natav<
     });
 
     await Promise.all(promises);
+    this.startedEntries.clear();
+    this.started = false;
+  }
+
+  private async startEntryTree(driver: NatavTypes.Shape) {
+    const initializing = new Map<NatavTypes.Shape, Promise<void>>();
+    const initTree = async (
+      entry: NatavTypes.Shape,
+      path = new Set<NatavTypes.Shape>(),
+    ): Promise<void> => {
+      if (this.startedEntries.has(entry)) return;
+      if (path.has(entry))
+        throw new Error(`Natav found a dependency cycle at: ${entry.name}`);
+      const existing = initializing.get(entry);
+      if (existing) return existing;
+      const promise = (async () => {
+        const nextPath = new Set(path).add(entry);
+        for (const dep of entry.deps) await initTree(dep, nextPath);
+        await this.initDriver(entry);
+        this.startedEntries.add(entry);
+      })();
+      initializing.set(entry, promise);
+      await promise;
+    };
+    await initTree(driver);
   }
 
   private async initDriver(d: NatavTypes.Shape) {
@@ -446,6 +716,23 @@ export namespace Natav {
   export type ApiMethod = NatavTypes.ApiMethod;
   export type ApiRecord = NatavTypes.ApiRecord;
   export type Array = NatavTypes.Array;
+  export type GroupInput<T extends NatavTypes.Shape = NatavTypes.Shape> =
+    NatavTypes.GroupInput<T>;
+  export type GroupPaths<Input> = NatavTypes.GroupPaths<Input>;
+  export type Runtime = {
+    readonly input: NatavTypes.RootInput;
+    readonly drivers: NatavTypes.Array;
+    readonly plugins: NatavTypes.Array;
+  };
+  export type RootInput<T extends NatavTypes.Shape = NatavTypes.Shape> =
+    NatavTypes.RootInput<T>;
+  export type RootDrivers<Input extends NatavTypes.RootInput> =
+    NatavTypes.RootDrivers<Input>;
+  export type InputDrivers<Input> = NatavTypes.InputDrivers<Input>;
+  export type PluginInput<
+    T extends NatavTypes.AnyPlugin = NatavTypes.AnyPlugin,
+  > = NatavTypes.PluginInput<T>;
+  export type PluginGroupPaths<Input> = NatavTypes.PluginGroupPaths<Input>;
   export type PartialArray<T extends readonly unknown[]> =
     NatavTypes.PartialArray<T>;
   export type AnyPlugin<T extends NatavTypes.Shape = NatavTypes.Shape> =
@@ -453,11 +740,11 @@ export namespace Natav {
   export type PluginInstances<P extends readonly NatavTypes.AnyPlugin[]> =
     NatavTypes.PluginInstances<P>;
   export type DriverEntries<
-    D extends NatavTypes.Array,
+    D extends NatavTypes.RootInput,
     P extends readonly NatavTypes.AnyPlugin[],
   > = NatavTypes.DriverEntries<D, P>;
   export type ManagedEntries<
-    D extends NatavTypes.Array,
+    D extends NatavTypes.RootInput,
     P extends readonly NatavTypes.AnyPlugin[],
   > = NatavTypes.ManagedEntries<D, P>;
   export type PromisifyApi<Obj> = NatavTypes.PromisifyApi<Obj>;

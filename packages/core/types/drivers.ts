@@ -28,6 +28,65 @@ export namespace Natav {
 
   export type Array = readonly Shape[];
 
+  export type GroupInput<T extends Shape = Shape> =
+    readonly T[] | { readonly [name: string]: GroupInput<T> };
+
+  export type RootInput<T extends Shape = Shape> = readonly (
+    T | GroupInput<T>
+  )[];
+
+  export type PluginGroupInput<T extends AnyPlugin = AnyPlugin> =
+    readonly T[] | { readonly [name: string]: PluginGroupInput<T> };
+
+  export type PluginInput<T extends AnyPlugin = AnyPlugin> = readonly (
+    T | PluginGroupInput<T>
+  )[];
+
+  export type PluginGroupPaths<Input> =
+    Input extends AnyPlugin ? never
+    : Input extends readonly unknown[] ? PluginGroupPaths<Input[number]>
+    : Input extends Record<string, unknown> ?
+      string extends keyof Input ?
+        `/${string}`
+      : {
+          [Name in keyof Input & string]: Input[Name] extends (
+            readonly AnyPlugin[]
+           ) ?
+             `/${Name}`
+           : Input[Name] extends Record<string, unknown> ?
+             `/${Name}` | `/${Name}${PluginGroupPaths<Input[Name]>}`
+          : never;
+        }[keyof Input & string]
+    : never;
+
+  export type GroupPaths<Input, Depth extends readonly unknown[] = []> =
+    Depth["length"] extends 16 ? `/${string}`
+    : Input extends readonly unknown[] ?
+      GroupPaths<Input[number], [...Depth, 0]>
+    : Input extends Shape ? never
+    : Input extends Record<string, unknown> ?
+      string extends keyof Input ?
+        `/${string}`
+      : {
+           [Name in keyof Input & string]: Input[Name] extends readonly Shape[] ?
+             `/${Name}`
+           : Input[Name] extends Record<string, unknown> ?
+             `/${Name}` | `/${Name}${GroupPaths<Input[Name], [...Depth, 0]>}`
+          : never;
+        }[keyof Input & string]
+    : never;
+
+  export type RootDrivers<Input extends RootInput> = InputDrivers<Input>[];
+
+  export type InputDrivers<Input, Depth extends readonly unknown[] = []> =
+    Depth["length"] extends 16 ? Shape
+    : Input extends Shape ? Input
+    : Input extends readonly unknown[] ?
+      InputDrivers<Input[number], [...Depth, 0]>
+    : Input extends Record<string, unknown> ?
+      InputDrivers<Input[keyof Input], [...Depth, 0]>
+    : never;
+
   export type PartialArray<T extends readonly unknown[]> =
     T | readonly T[number][];
 
@@ -71,10 +130,15 @@ export namespace Natav {
     readonly drivers: N;
     readonly drivers_flat: Shape[];
     readonly driver: Catalog<C>;
+    readonly groups: ReadonlyMap<string, readonly Shape[]>;
     bus: TypedEventTarget<TEvents.Natav.Map<C>>;
     GetDriver<Name extends Natav.Names<C>>(name: Name): Natav.FromName<C, Name>;
     FindDriver(name: string): Shape | undefined;
     FindPlugin(name: string): Shape | undefined;
+    FindGroup(path: string): readonly Shape[] | undefined;
+    GetAllGroupPaths(): string[];
+    AddDriver(driver: Shape, groupPath?: readonly string[]): void | Promise<void>;
+    RemoveDriver(name: string): void | Promise<void>;
     GetAllDriverNames(): Natav.Names<N>[];
     Start(): Promise<void>;
     GetTree(): DriverView[];
@@ -82,9 +146,9 @@ export namespace Natav {
   }
 
   export interface Instance<
-    D extends Natav.Array = Natav.Array,
+    D extends Natav.RootInput = Natav.Array,
     P extends readonly Natav.AnyPlugin[] = readonly Natav.AnyPlugin[],
-  > extends ManagerView<D, DriverEntries<D, P>> {
+  > extends ManagerView<RootDrivers<D>, DriverEntries<D, P>> {
     readonly plugins: PluginInstances<P>;
     readonly plugin: RootCatalog<PluginInstances<P>>;
     GetAllPluginNames(): Natav.Names<PluginInstances<P>>[];
@@ -122,14 +186,14 @@ export namespace Natav {
   >;
 
   export type DriverEntries<
-    D extends Natav.Array,
+    D extends Natav.RootInput,
     P extends readonly AnyPlugin[],
-  > = readonly [...D, ...PluginDependencies<P>[]];
+  > = readonly (InputDrivers<D> | PluginDependencies<P>)[];
 
   export type ManagedEntries<
-    D extends Natav.Array,
+    D extends Natav.RootInput,
     P extends readonly AnyPlugin[],
-  > = readonly [...DriverEntries<D, P>, ...PluginInstances<P>];
+  > = readonly (DriverEntries<D, P>[number] | PluginInstances<P>[number])[];
 
   export type PromisifyApi<Obj> = {
     [M in keyof Obj]: Obj[M] extends (...args: infer Args) => infer R ?

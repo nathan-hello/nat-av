@@ -146,17 +146,98 @@ export namespace Rpc {
       Name extends string = Natav.Names<N>,
     > = Natav.PromisifyApi<Natav.Api<N, Name>>;
 
-    export type Handle<N extends Natav> = Pick<RpcClient<N>, "isOnline"> & {
-      driver<Name extends Natav.Names<N["drivers"]>>(
-        name: Name,
-      ): ManagedHandle<N, Name>;
+    export type Handle<N extends Natav.Runtime> = Pick<
+      RpcClient<N>,
+      "isOnline"
+    > & {
+      driver<Path extends DriverPath<N>>(path: Path): DriverResult<N, Path>;
       plugin<Name extends Natav.Names<N["plugins"]>>(
         name: Name,
       ): PluginHandle<N, Name>;
+      find: FindAccessor<N>;
+      drivers(): GroupHandle<N, "">;
+      plugins(): GroupHandle<N, "">;
+    };
+
+    export type DriverPath<N extends Natav.Runtime> =
+      | Natav.Names<N["drivers"]>
+      | Natav.GroupPaths<N["input"]>;
+
+    export type DriverResult<
+      N extends Natav.Runtime,
+      Path extends DriverPath<N>,
+    > =
+       string extends Path ? DriverProxy<N, N["drivers"][number]>
+      : Path extends Natav.GroupPaths<N["input"]> ?
+        GroupHandle<N, GroupInputAtPath<N["input"], Path>>
+       : Path extends Natav.Names<N["drivers"]> ?
+         DriverProxy<N, Natav.FromName<N["drivers"], Path>>
+      : never;
+
+    export type FindAccessor<N extends Natav.Runtime> = {
+      driver<Cast = never, Path extends string = string>(
+        path: Path,
+      ): [Cast] extends [never] ?
+        Path extends `/${string}` ?
+          DynamicGroupHandle<N>
+        : Natav.Shape
+      : Cast;
+      plugin<Cast = Natav.Shape>(path: string): Cast;
+    };
+
+    export type GroupInputAtPath<Input, Path extends string> =
+      Input extends readonly unknown[] ? GroupInputAtPath<Input[number], Path>
+      : Path extends `/${infer Head}/${infer Tail}` ?
+        Input extends Record<Head, infer Child> ?
+          GroupInputAtPath<Child, `/${Tail}`>
+        : never
+      : Path extends `/${infer Head}` ?
+        Input extends Record<Head, infer Child> ?
+          Child
+        : never
+      : never;
+
+    export interface DriverProxy<
+      N extends Natav.Runtime,
+      Driver extends Natav.Shape,
+    > extends ManagedHandle<
+        N,
+        Driver["name"] & Natav.Names<N["drivers"]>
+      > {}
+
+    export type GroupLeaf<
+      N extends Natav.Runtime,
+      Input extends readonly Natav.Shape[],
+    > =
+      Input extends readonly [infer Only extends Natav.Shape] ?
+        DriverProxy<N, Only>
+      : DriverProxy<N, Input[number]>[];
+
+    export type GroupHandle<
+      N extends Natav.Runtime,
+      Input = Natav.GroupInput,
+    > = {
+      array(): Input extends "" ?
+        DriverProxy<N, N["drivers"][number]>[]
+      : DriverProxy<N, Natav.InputDrivers<Input>>[];
+    } & (Input extends Record<string, unknown> ?
+      {
+        [Name in keyof Input & string]: Input[Name] extends (
+          readonly Natav.Shape[]
+        ) ?
+          GroupLeaf<N, Input[Name]>
+        : Input[Name] extends Record<string, unknown> ?
+          GroupHandle<N, Input[Name]>
+        : never;
+      }
+    : {});
+
+    export type DynamicGroupHandle<N extends Natav.Runtime> = {
+      array(): Promise<DriverProxy<N, N["drivers"][number]>[]>;
     };
 
     export type ManagedHandle<
-      N extends Natav = Natav,
+      N extends Natav.Runtime = Natav,
       Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
     > = Pick<
       Natav.ManagedHandle<Natav.FromName<N["drivers"], Name>>,
@@ -166,32 +247,30 @@ export namespace Rpc {
         ClientRpcDriver<N, N["drivers"], Name>,
         "on" | "event" | "once" | "pendingCount"
       > & {
-        dep: <DepName extends Natav.DepNames<N, Name>>(
+        dep: <DepName extends Natav.ManagedDepNames<N["drivers"], Name>>(
           depName: DepName,
         ) => ManagedHandle<N, DepName>;
       };
 
     /** Compatibility alias; managed drivers and plugins share this shape. */
     export type DriverHandle<
-      N extends Natav = Natav,
+      N extends Natav.Runtime = Natav,
       Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
     > = ManagedHandle<N, Name>;
 
-    export type DriverAccessor<N extends Natav> = {
-      <Name extends Natav.Names<N["drivers"]>>(
-        name: Name,
-      ): ManagedHandle<N, Name>;
+    export type DriverAccessor<N extends Natav.Runtime> = {
+      <Path extends DriverPath<N>>(path: Path): DriverResult<N, Path>;
     } & {
       [Name in Natav.Names<N["drivers"]>]: ManagedHandle<N, Name>;
     };
 
     export type PluginHandle<
-      N extends Natav,
+      N extends Natav.Runtime,
       Name extends Natav.Names<N["plugins"]>,
     > = ManagedHandleFor<N, N["plugins"], Name>;
 
     export type ManagedHandleFor<
-      N extends Natav,
+      N extends Natav.Runtime,
       Entries extends Natav.Array,
       Name extends Natav.Names<Entries>,
     > = Pick<
@@ -211,7 +290,7 @@ export namespace Rpc {
         >;
       };
 
-    export type PluginAccessor<N extends Natav> = {
+    export type PluginAccessor<N extends Natav.Runtime> = {
       <Name extends Natav.Names<N["plugins"]>>(
         name: Name,
       ): PluginHandle<N, Name>;
@@ -227,6 +306,7 @@ export namespace Rpc {
     DriverSubscribe: "driver.events.subscribe",
     DriverUnsubscribe: "driver.events.unsubscribe",
     DriverInit: "driver.init",
+    CatalogList: "catalog.list",
   } as const;
 
   type DriverParamsInput = {
@@ -355,6 +435,14 @@ export namespace Rpc {
         Rpc.Request.DriverInitResult
       >(id, REQUEST_METHOD.DriverInit);
     }
+
+    static catalogList(id: Id, path: string) {
+      return new Rpc.Request<
+        typeof REQUEST_METHOD.CatalogList,
+        { path: string },
+        Rpc.Request.CatalogListResult
+      >(id, REQUEST_METHOD.CatalogList, { path });
+    }
   }
 
   export namespace Request {
@@ -385,9 +473,16 @@ export namespace Rpc {
       result: DriverInitResult;
     };
     export type DriverInitResult = {
-      context: Rpc.Server.Context;
-      states: Record<string, Rpc.Json.Value>;
+      states: {
+        drivers: Record<string, Rpc.Json.Value>;
+        plugins: Record<string, Rpc.Json.Value>;
+      };
+      names: readonly string[];
+      groups: Record<string, readonly string[]>;
+      plugins: readonly string[];
     };
+    export type CatalogListEntry = { name: string };
+    export type CatalogListResult = readonly CatalogListEntry[];
     export type ResultOf<TRequest extends Rpc.Request> =
       TRequest extends Rpc.Request<string, Rpc.Json.Value, infer ResultType> ?
         ResultType
@@ -625,13 +720,6 @@ export namespace Rpc {
     }
   }
 
-  export namespace Server {
-    export type Context<ClientId extends string = string> = {
-      addr: string;
-      name: ClientId;
-    };
-  }
-
   export namespace WebSocket {
     export type App = {
       ws(
@@ -665,7 +753,6 @@ export namespace Rpc {
   export namespace Events {
     export type Map = {
       ready: boolean;
-      peer: Rpc.Server.Context;
       close: CloseEvent;
       error:
         | { reason: "transport"; event: Event }

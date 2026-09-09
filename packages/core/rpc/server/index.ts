@@ -113,6 +113,9 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
       if (message.method === Rpc.Request.Methods.DriverInit) {
         return this.handleInit(message);
       }
+      if (message.method === Rpc.Request.Methods.CatalogList) {
+        return this.handleCatalogList(message);
+      }
       return this.handleDriverRequest(message, peer);
     });
 
@@ -169,17 +172,33 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
   }
 
   private handleInit(message: Rpc.Request): Rpc.Response | Rpc.Error {
-    const states: Record<string, unknown> = {};
+    const driverStates: Record<string, unknown> = {};
     for (const name of this.natav.GetAllDriverNames()) {
-      states[name] = this.natav.GetDriver(name).state;
+      driverStates[name] = this.natav.GetDriver(name).state;
+    }
+    const pluginStates: Record<string, unknown> = {};
+    for (const name of this.natav.GetAllPluginNames()) {
+      pluginStates[name] = this.natav.Get(name).state;
     }
 
-    const tree = this.natav.GetTree();
+    const states = { drivers: driverStates, plugins: pluginStates };
     const names = this.natav.GetAllDriverNames();
-
+    const groups = Object.fromEntries(
+      this.natav.GetAllGroupPaths().map((path) => [
+        path,
+        (this.natav.FindGroup(path) ?? [])
+          .filter((entry) => this.natav.FindDriver(entry.name))
+          .map((entry) => entry.name),
+      ]),
+    );
     const stateIsGood = Rpc.Json.is(states);
     if (stateIsGood) {
-      return message.response({ states, tree, names });
+      return message.response({
+        states,
+        names,
+        groups,
+        plugins: this.natav.GetAllPluginNames(),
+      });
     } else {
       return message.error({
         code: Err.Codes.JsonStringifyFailed,
@@ -188,6 +207,29 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
       });
     }
   }
+
+  private handleCatalogList(message: Rpc.Request): Rpc.Response | Rpc.Error {
+    const params = message.params;
+    if (
+      !params ||
+      typeof params !== "object" ||
+      Array.isArray(params) ||
+      !("path" in params) ||
+      typeof params.path !== "string"
+    ) {
+      return message.error({
+        code: Err.Codes.RpcInvalidParams,
+        message: "Invalid group path",
+      });
+    }
+
+    return message.response(
+      (this.natav.FindGroup(params.path) ?? [])
+        .filter((entry) => this.natav.FindDriver(entry.name))
+        .map((entry) => ({ name: entry.name })),
+    );
+  }
+
 
   private async handleSocketMessage(peer: Rpc.WebSocket.Peer, raw: string) {
     const message = this.tel.task("WS_MSG_JSON_PARSE", () =>

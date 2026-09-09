@@ -6,7 +6,7 @@ import type { ClientRpcTransport } from "./websocket.js";
 import { ClientWebsocket } from "./websocket.js";
 
 export class RpcClient<
-  N extends Natav = Natav,
+  N extends Natav.Runtime = Natav,
 > extends TypedEventTarget<Rpc.Events.Map> {
   readonly driver: Rpc.Client.DriverAccessor<N>;
   readonly plugin: Rpc.Client.PluginAccessor<N>;
@@ -15,6 +15,9 @@ export class RpcClient<
   private requests: ClientRpcRequests;
   private driverHandles = new Map<string, ClientRpcDriver<N, any>>();
   private pluginHandles = new Map<string, ClientRpcDriver<N, any, any>>();
+  private groupCatalog = new Map<string, readonly string[]>();
+  private driverNames: readonly string[] = [];
+  private pluginNames: readonly string[] = [];
   private initPromise: Promise<void> | undefined;
   private initResolve: (() => void) | undefined;
   private initReject: ((err: unknown) => void) | undefined;
@@ -22,8 +25,9 @@ export class RpcClient<
   constructor(args: { transport?: ClientRpcTransport } = {}) {
     super();
     // TSAS: The callable accessor is augmented with virtual name properties by the Proxy below.
-    const accessor = ((name: Natav.Names<N["drivers"]>) =>
-      this.getDriver(name)) as unknown as Rpc.Client.DriverAccessor<N>;
+    // TSAS: The callable accessor is narrowed by DriverAccessor's static path union.
+    const accessor = ((path: Rpc.Client.DriverPath<N>) =>
+      this.getDriverPath(path)) as unknown as Rpc.Client.DriverAccessor<N>;
     // TSAS: Proxy properties are created from the same literal driver names as the callable accessor.
     this.driver = new Proxy(accessor, {
       get: (target, property, receiver) => {
@@ -129,6 +133,109 @@ export class RpcClient<
     return plugin;
   }
 
+  private getGroup<Path extends Natav.GroupPaths<N["input"]>>(
+    path: Path,
+  ): Rpc.Client.GroupHandle<N, Path> {
+    const group = {
+      array: () =>
+        (this.groupCatalog.get(path) ?? []).map((name) =>
+          this.getDriver(name as Natav.Names<N["drivers"]>),
+        ) as unknown as Rpc.Client.DriverProxy<N, N["drivers"][number]>[],
+    };
+    // TSAS: The proxy exposes the recursively typed group properties at runtime.
+    return new Proxy(group, {
+      get: (target, property, receiver) => {
+        if (property === "array") {
+          return Reflect.get(target, property, receiver);
+        }
+        if (typeof property === "string" && property !== "then") {
+          const childPath = `${path}/${property}`;
+          if (this.groupCatalog.has(childPath)) {
+            const members = this.groupCatalog.get(childPath) ?? [];
+            const hasChildren = [...this.groupCatalog.keys()].some(
+              (candidate) =>
+                candidate !== childPath &&
+                candidate.startsWith(`${childPath}/`),
+            );
+            if (!hasChildren && members.length === 1) {
+              return this.getDriver(
+                members[0] as Natav.Names<N["drivers"]>,
+              );
+            }
+            if (!hasChildren && members.length > 1) {
+              return members.map((name) =>
+                this.getDriver(name as Natav.Names<N["drivers"]>),
+              );
+            }
+            return this.getGroup(childPath as Natav.GroupPaths<N["input"]>);
+          }
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    }) as Rpc.Client.GroupHandle<N, Path>;
+  }
+
+  private getDynamicGroup(
+    path: string,
+  ): Rpc.Client.DynamicGroupHandle<N> {
+    return {
+      array: async () => {
+        const entries = await this.request(
+          Rpc.Request.catalogList(this.nextRequestId(), path),
+        );
+        return entries.map((entry) =>
+          // TSAS: Names come from the server's current group membership.
+          this.getDriver(entry.name as Natav.Names<N["drivers"]>),
+        ) as unknown as Rpc.Client.DriverProxy<N, N["drivers"][number]>[];
+      },
+    };
+  }
+
+  private getDriverPath<Path extends Rpc.Client.DriverPath<N>>(
+    path: Path,
+  ): Rpc.Client.DriverResult<N, Path> {
+    if (path.startsWith("/")) {
+      // TSAS: The slash prefix identifies a group path at runtime.
+      return this.getGroup(path as Natav.GroupPaths<N["input"]>) as
+        Rpc.Client.DriverResult<N, Path>;
+    }
+    // TSAS: Non-group static paths are driver names from the runtime type.
+    return this.getDriver(path as Natav.Names<N["drivers"]>) as unknown as
+      Rpc.Client.DriverResult<N, Path>;
+  }
+
+  readonly find: Rpc.Client.FindAccessor<N> = {
+    driver: <Cast = never, Path extends string = string>(path: Path) => {
+      const result = path.startsWith("/") ?
+        this.getDynamicGroup(path)
+      : this.getDriver(path as Natav.Names<N["drivers"]>);
+      // TSAS: The slash prefix selects groups; explicit Cast overrides the fallback proxy type.
+      return result as unknown as Cast;
+    },
+    plugin: <Cast = Natav.Shape>(path: string): Cast => {
+      // TSAS: The caller supplies the structural type implemented by this runtime proxy.
+      return this.getPlugin(path) as unknown as Cast;
+    },
+  };
+
+  drivers(): Rpc.Client.GroupHandle<N, ""> {
+    return {
+      array: () =>
+        this.driverNames.map((name) =>
+          this.getDriver(name as Natav.Names<N["drivers"]>),
+        ) as unknown as Rpc.Client.DriverProxy<N, N["drivers"][number]>[],
+    };
+  }
+
+  plugins(): Rpc.Client.GroupHandle<N, ""> {
+    return {
+      array: () =>
+        this.pluginNames.map((name) =>
+          this.getPlugin(name as Natav.Names<N["plugins"]>),
+        ) as unknown as Rpc.Client.DriverProxy<N, N["drivers"][number]>[],
+    };
+  }
+
   async call(driver: string, method: string, args: any[] = []) {
     return this.requests.request(
       Rpc.Request.driverCall(this.requests.nextRequestId(), {
@@ -154,9 +261,7 @@ export class RpcClient<
       Rpc.Request.driverInit(this.requests.nextRequestId()),
     );
 
-    this.dispatch("peer", result.context);
-
-    for (const [name, state] of Object.entries(result.states)) {
+    for (const [name, state] of Object.entries(result.states.drivers)) {
       // TSAS: driver names from server response are guaranteed to match registered drivers
       const driver = this.getDriver(name as Natav.Names<N["drivers"]>);
       driver.handleStateUpdate(
@@ -164,6 +269,18 @@ export class RpcClient<
         state as Natav.State<N["drivers"], Natav.Names<N["drivers"]>>,
       );
     }
+
+    for (const [name, state] of Object.entries(result.states.plugins)) {
+      const plugin = this.getPlugin(name as Natav.Names<N["plugins"]>);
+      plugin.handleStateUpdate(
+        // TSAS: plugin names and states come from the server's plugin catalog.
+        state as Natav.State<N["plugins"], Natav.Names<N["plugins"]>>,
+      );
+    }
+
+    this.driverNames = result.names;
+    this.groupCatalog = new Map(Object.entries(result.groups));
+    this.pluginNames = result.plugins;
 
     this.dispatch("ready", true);
     this.initResolve?.();

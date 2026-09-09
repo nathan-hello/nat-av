@@ -327,38 +327,34 @@ describe("rpc roomos driver", () => {
           jsonrpc: "2.0",
           result: {
             names: ["roomos-rpc"],
+            groups: {},
+            plugins: ["rpc-server"],
             states: {
-              "roomos-rpc": {
-                internal: {
-                  highestId: 0,
-                  subscriptions: {
-                    xFeedback: {
-                      Bluetooth: {
-                        Streaming: {
-                          PlaybackPosition: true,
+              drivers: {
+                "roomos-rpc": {
+                  internal: {
+                    highestId: 0,
+                    subscriptions: {
+                      xFeedback: {
+                        Bluetooth: {
+                          Streaming: {
+                            PlaybackPosition: true,
+                          },
                         },
                       },
-                    },
-                    xStatus: {
-                      Cameras: {
-                        Camera: true,
+                      xStatus: {
+                        Cameras: {
+                          Camera: true,
+                        },
                       },
                     },
                   },
                 },
               },
-            },
-            tree: [
-              {
-                deps: [],
-                name: "roomos-rpc",
-                socket: {
-                  canReceive: true,
-                  canWrite: true,
-                  traceName: "test-socket",
-                },
+              plugins: {
+                "rpc-server": {},
               },
-            ],
+            },
           },
         },
         {

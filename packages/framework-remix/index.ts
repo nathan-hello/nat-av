@@ -33,7 +33,10 @@ export async function createRpcBinding<N extends Natav = Natav>() {
     | Rpc.Client.DriverHandle<N, Name>
     | Rpc.Client.PluginHandle<N, Name & Natav.Names<N["plugins"]>> {
     if (subscriptions.has(handle)) {
-      return name ? rpcClient.driver(name) : rpcClient;
+      if (!name) return rpcClient;
+      // TSAS: This overload accepts managed driver names, not slash-prefixed group paths.
+      return rpcClient.driver(name as Natav.Names<N["drivers"]>) as
+        Rpc.Client.DriverHandle<N, Name>;
     }
 
     const offReady = rpcClient.on("ready", async () => {
@@ -60,7 +63,10 @@ export async function createRpcBinding<N extends Natav = Natav>() {
     subscriptions.set(handle, cleanup);
     handle.signal.addEventListener("abort", cleanup, { once: true });
 
-    return name ? rpcClient.driver(name) : rpcClient;
+    if (!name) return rpcClient;
+    // TSAS: This overload accepts managed driver names, not slash-prefixed group paths.
+    return rpcClient.driver(name as Natav.Names<N["drivers"]>) as
+      Rpc.Client.DriverHandle<N, Name>;
   }
 
   return { client: rpcClient, getRpc };
