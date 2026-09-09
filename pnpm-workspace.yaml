@@ -5,7 +5,7 @@ packages:
   - "packages/plugins"
   - "packages/plugins/*"
   - "packages/rpc-ws"
-  - "packages/frontend-remix"
+  - "packages/framework-remix"
   - "examples/*"
   - "examples/remix/*"
 

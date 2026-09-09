@@ -1,7 +1,7 @@
 # Remix SSR RPC
 
 This plan adds request-scoped server rendering, snapshot hydration, and live
-browser synchronization to `@nat-av/frontend-remix`. It does not depend on
+browser synchronization to `@nat-av/framework-remix`. It does not depend on
 driver groups. The SSR binding should work first with named drivers and later
 consume group catalog metadata without changing its lifecycle model.
 
@@ -22,7 +22,7 @@ consume group catalog metadata without changing its lifecycle model.
 Application code should expose one stable accessor:
 
 ```tsx
-import { createRpcBinding } from "@nat-av/frontend-remix";
+import { createRpcBinding } from "@nat-av/framework-remix";
 
 const rpcBinding = createRpcBinding<natav>();
 export const { getRpc } = rpcBinding;
@@ -195,7 +195,7 @@ The universal facade cannot preserve native synchronous return types because
 the browser transport is asynchronous. Expose a separate server-only accessor:
 
 ```ts
-import { serverRpc } from "@nat-av/frontend-remix/server";
+import { serverRpc } from "@nat-av/framework-remix/server";
 
 router.get("/room", async ({ request }) => {
   const rpc = serverRpc<natav>();
@@ -267,9 +267,9 @@ Use frames only for independent HTTP render, fallback, or reload boundaries.
 - `@nat-av/core` owns transport-neutral RPC contracts, clients, immutable
   snapshots, revisions, response watermarks, and reconciliation.
 - `@nat-av/rpc-ws` owns the Node/WebSocket server transport.
-- `@nat-av/frontend-remix` owns request context, `getRpc`, hydration bootstrap,
+- `@nat-av/framework-remix` owns request context, `getRpc`, hydration bootstrap,
   and component lifecycle integration.
-- `@nat-av/frontend-remix/server` owns `serverRpc()` and abort-aware server
+- `@nat-av/framework-remix/server` owns `serverRpc()` and abort-aware server
   event helpers.
 
 ## Implementation Order

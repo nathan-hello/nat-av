@@ -45,9 +45,9 @@ importers:
       '@nat-av/drivers':
         specifier: workspace:*
         version: link:../../../packages/drivers
-      '@nat-av/frontend-remix':
+      '@nat-av/framework-remix':
         specifier: workspace:*
-        version: link:../../../packages/frontend-remix
+        version: link:../../../packages/framework-remix
       '@nat-av/plugins':
         specifier: workspace:*
         version: link:../../../packages/plugins
@@ -167,7 +167,7 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
-  packages/frontend-remix:
+  packages/framework-remix:
     devDependencies:
       '@nat-av/core':
         specifier: workspace:*
