@@ -53,6 +53,7 @@ export class ClientRpcRequests {
               code: Err.Codes.RpcTimeout,
               message: `RPC call timed out after ${this.timeout}ms id ${message.id}`,
             },
+            { scope: "client" },
             message.id,
           ),
         );
@@ -69,7 +70,9 @@ export class ClientRpcRequests {
         Rpc.Json.stringify(message),
       );
       if (!str.ok) {
-        this.rejectPendingRequest(new Rpc.Error(str.error, message.id));
+        this.rejectPendingRequest(
+          new Rpc.Error(str.error, { scope: "client" }, message.id),
+        );
         return;
       }
 
@@ -77,7 +80,9 @@ export class ClientRpcRequests {
         this.transport.send(str.data),
       );
       if (!send.ok) {
-        this.rejectPendingRequest(new Rpc.Error(send.error, message.id));
+        this.rejectPendingRequest(
+          new Rpc.Error(send.error, { scope: "client" }, message.id),
+        );
       }
     });
   }

@@ -41,7 +41,12 @@ export namespace Rpc {
     }
 
     export function stringify(
-      value: Value | Rpc.Request | Rpc.Response | Rpc.Error | Rpc.Notification,
+      value:
+        | Value
+        | Rpc.Request
+        | Rpc.Response
+        | Rpc.Error.Response
+        | Rpc.Notification,
     ): string {
       return globalThis.JSON.stringify(value, replacer);
     }
@@ -137,8 +142,9 @@ export namespace Rpc {
 
   type ApiRecord<T> = {
     [K in keyof T]: T[K] extends (...args: infer Args) => infer Result ?
-      (...args: { [I in keyof Args]: Value<Args[I]> }) =>
-        Promise<Box<ReturnValue<Result>>>
+      (
+        ...args: { [I in keyof Args]: Value<Args[I]> }
+      ) => Promise<Box<ReturnValue<Result>>>
     : T[K] extends Record<string, unknown> ? ApiRecord<T[K]>
     : Never;
   };
@@ -164,8 +170,12 @@ export namespace Rpc {
     readonly api: Api<S>;
     readonly state: State<S>;
     readonly events: S["events"];
-    readonly on: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["on"];
-    readonly once: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["once"];
+    readonly on: TypedEventTarget<
+      Events.DriverMap<readonly [S], S["name"]>
+    >["on"];
+    readonly once: TypedEventTarget<
+      Events.DriverMap<readonly [S], S["name"]>
+    >["once"];
     readonly event: Client.Events.Handle<readonly [S], S["name"]>;
     readonly isPending: (method: string) => boolean;
     readonly pendingCount: (method: string) => number;
@@ -224,19 +234,15 @@ export namespace Rpc {
     };
 
     export type Path<N extends Natav.Runtime> =
-      | Natav.Names<N["drivers"]>
-      | Natav.GroupPaths<N["input"]>;
+      Natav.Names<N["drivers"]> | Natav.GroupPaths<N["input"]>;
 
-    export type Result<
-      N extends Natav.Runtime,
-      Route extends Path<N>,
-    > =
-       string extends Route ? Rpc.Proxy<N["drivers"][number]>
+    export type Result<N extends Natav.Runtime, Route extends Path<N>> =
+      string extends Route ? Rpc.Proxy<N["drivers"][number]>
       : Route extends Natav.GroupPaths<N["input"]> ?
-         Group<N, GroupInputAtPath<N["input"], Route>>
-        : Route extends Natav.Names<N["drivers"]> ?
-          Rpc.Proxy<Natav.FromName<N["drivers"], Route>>
-       : never;
+        Group<N, GroupInputAtPath<N["input"], Route>>
+      : Route extends Natav.Names<N["drivers"]> ?
+        Rpc.Proxy<Natav.FromName<N["drivers"], Route>>
+      : never;
 
     export type Find<N extends Natav.Runtime> = {
       driver<Cast = never, Path extends string = string>(
@@ -265,16 +271,11 @@ export namespace Rpc {
       N extends Natav.Runtime,
       Input extends readonly Natav.Shape[],
     > =
-      Input extends readonly [infer Only extends Natav.Shape] ?
-        Rpc.Proxy<Only>
+      Input extends readonly [infer Only extends Natav.Shape] ? Rpc.Proxy<Only>
       : Rpc.Proxy<Input[number]>[];
 
-    export type Group<
-      N extends Natav.Runtime,
-      Input = Natav.GroupInput,
-    > = {
-      array(): Input extends "" ?
-        Rpc.Proxy<N["drivers"][number]>[]
+    export type Group<N extends Natav.Runtime, Input = Natav.GroupInput> = {
+      array(): Input extends "" ? Rpc.Proxy<N["drivers"][number]>[]
       : Rpc.Proxy<Natav.InputDrivers<Input>>[];
     } & (Input extends Record<string, unknown> ?
       {
@@ -282,8 +283,7 @@ export namespace Rpc {
           readonly Natav.Shape[]
         ) ?
           GroupLeaf<N, Input[Name]>
-        : Input[Name] extends Record<string, unknown> ?
-          Group<N, Input[Name]>
+        : Input[Name] extends Record<string, unknown> ? Group<N, Input[Name]>
         : never;
       }
     : {});
@@ -380,8 +380,8 @@ export namespace Rpc {
       return new Rpc.Response(this.id, result);
     }
 
-    error(error: Rpc.Error.Shape): Error {
-      return new Rpc.Error(error, this.id);
+    error(error: Rpc.Error.Payload): Rpc.Error {
+      return new Rpc.Error(error, { scope: "server" }, this.id);
     }
 
     DriverParams(): Request.DriverParams | null {
@@ -534,37 +534,23 @@ export namespace Rpc {
     }
   }
 
-  export class Error {
-    readonly jsonrpc: "2.0" = "2.0";
-    public error: Rpc.Error.Shape;
-    public id: Id | null;
+  export class Error extends globalThis.Error {
+    readonly cause: unknown;
+    readonly origin: Rpc.Error.Origin;
+    readonly id: Id | null;
 
-    constructor(error: Rpc.Error.Shape | globalThis.Error, id?: Id | null) {
-      if (error instanceof globalThis.Error) {
-        this.error = {
-          message: error.message,
-          code: typeof error.cause === "number" ? error.cause : -99999,
-        };
-      } else {
-        this.error = error;
+    constructor(cause: unknown, origin: Rpc.Error.Origin, id: Id | null) {
+      super(cause instanceof globalThis.Error ? cause.message : "RPC error", {
+        cause,
+      });
+      this.cause = cause;
+      this.origin = origin;
+      this.id = id;
+
+      if (cause instanceof globalThis.Error) {
+        this.name = cause.name;
+        this.stack = cause.stack;
       }
-      this.id = typeof id !== "undefined" ? id : null;
-    }
-
-    get code(): number {
-      return this.error.code;
-    }
-
-    get message(): string {
-      return this.error.message;
-    }
-
-    get data(): unknown {
-      return this.error.data;
-    }
-
-    toString(): string {
-      return `Rpc.Error(${this.error.code}): ${this.error.message}`;
     }
 
     static is(message: Rpc.Json.Value): Rpc.Error | null {
@@ -589,9 +575,19 @@ export namespace Rpc {
         code?: unknown;
         message?: unknown;
         data?: unknown;
+        name?: unknown;
+        scope?: unknown;
       };
 
-      if (typeof error.code !== "number" || typeof error.message !== "string") {
+      if (
+        typeof error.code !== "number" ||
+        typeof error.message !== "string" ||
+        (error.scope !== "driver" &&
+          error.scope !== "plugin" &&
+          error.scope !== "natav" &&
+          error.scope !== "server" &&
+          error.scope !== "client")
+      ) {
         return null;
       }
 
@@ -599,7 +595,11 @@ export namespace Rpc {
         {
           code: error.code,
           message: error.message,
-          data: error.data,
+          ...("data" in error ? { data: error.data } : {}),
+        },
+        {
+          scope: error.scope,
+          ...(typeof error.name === "string" ? { name: error.name } : {}),
         },
         message.id,
       );
@@ -607,10 +607,29 @@ export namespace Rpc {
   }
 
   export namespace Error {
-    export type Shape = {
+    export type Scope = "driver" | "plugin" | "natav" | "server" | "client";
+
+    export type Origin = {
+      scope: Scope;
+      name?: string;
+    };
+
+    export type Payload = {
       code: number;
       message: string;
       data?: unknown;
+    };
+
+    export type Response = {
+      readonly jsonrpc: "2.0";
+      readonly id: Id | null;
+      readonly error: {
+        readonly code: number;
+        readonly message: string;
+        readonly data?: Rpc.Json.Value;
+        readonly scope: Scope;
+        readonly name?: string;
+      };
     };
   }
 

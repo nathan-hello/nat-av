@@ -72,10 +72,14 @@ export class RpcClient<
 
     this.transport.on("close", (event) => {
       this.requests.rejectAll(
-        new Rpc.Error({
-          code: Err.Codes.RpcDisconnected,
-          message: `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
-        }),
+        new Rpc.Error(
+          {
+            code: Err.Codes.RpcDisconnected,
+            message: `RPC transport closed${event.reason ? `: ${event.reason}` : ""}`,
+          },
+          { scope: "client" },
+          null,
+        ),
       );
       this.dispatch("close", event);
     });
@@ -158,9 +162,7 @@ export class RpcClient<
                 candidate.startsWith(`${childPath}/`),
             );
             if (!hasChildren && members.length === 1) {
-              return this.getDriver(
-                members[0] as Natav.Names<N["drivers"]>,
-              );
+              return this.getDriver(members[0] as Natav.Names<N["drivers"]>);
             }
             if (!hasChildren && members.length > 1) {
               return members.map((name) =>
@@ -175,9 +177,7 @@ export class RpcClient<
     }) as Rpc.Client.Group<N, Path>;
   }
 
-  private getDynamicGroup(
-    path: string,
-  ): Rpc.Client.DynamicGroup<N> {
+  private getDynamicGroup(path: string): Rpc.Client.DynamicGroup<N> {
     return {
       array: async () => {
         const entries = await this.request(
@@ -196,19 +196,22 @@ export class RpcClient<
   ): Rpc.Client.Result<N, Path> {
     if (path.startsWith("/")) {
       // TSAS: The slash prefix identifies a group path at runtime.
-      return this.getGroup(path as Natav.GroupPaths<N["input"]>) as
-        Rpc.Client.Result<N, Path>;
+      return this.getGroup(
+        path as Natav.GroupPaths<N["input"]>,
+      ) as Rpc.Client.Result<N, Path>;
     }
     // TSAS: Non-group static paths are driver names from the runtime type.
-    return this.getDriver(path as Natav.Names<N["drivers"]>) as unknown as
-      Rpc.Client.Result<N, Path>;
+    return this.getDriver(
+      path as Natav.Names<N["drivers"]>,
+    ) as unknown as Rpc.Client.Result<N, Path>;
   }
 
   readonly find: Rpc.Client.Find<N> = {
     driver: <Cast = never, Path extends string = string>(path: Path) => {
-      const result = path.startsWith("/") ?
-        this.getDynamicGroup(path)
-      : this.getDriver(path as Natav.Names<N["drivers"]>);
+      const result =
+        path.startsWith("/") ?
+          this.getDynamicGroup(path)
+        : this.getDriver(path as Natav.Names<N["drivers"]>);
       // TSAS: The slash prefix selects groups; explicit Cast overrides the fallback proxy type.
       return result as unknown as Cast;
     },

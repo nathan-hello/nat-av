@@ -105,4 +105,41 @@ describe("rpc json codecs", () => {
     assert.equal(back.channels instanceof Map, true);
     assert.equal(back.channels.get(0)?.name, "rx00");
   });
+
+  it("round-trips scoped RPC error responses", () => {
+    const response: Rpc.Error.Response = {
+      jsonrpc: "2.0",
+      id: 4,
+      error: {
+        scope: "plugin",
+        name: "schema",
+        code: -32001,
+        message: "plugin failed",
+        data: { reason: "test" },
+      },
+    };
+
+    const parsed = Rpc.Json.parse(Rpc.Json.stringify(response));
+    const back = Rpc.Error.is(parsed);
+
+    assert.equal(back?.origin.scope, "plugin");
+    assert.equal(back?.origin.name, "schema");
+    assert.equal(back?.id, 4);
+    assert.deepEqual(back?.cause, {
+      code: -32001,
+      message: "plugin failed",
+      data: { reason: "test" },
+    });
+  });
+
+  it("preserves arbitrary thrown values as the cause", () => {
+    const cause = { reason: "test", retryable: true };
+    const error = new Rpc.Error(cause, { scope: "driver", name: "camera" }, 4);
+
+    assert.equal(error.message, "RPC error");
+    assert.equal(error.origin.scope, "driver");
+    assert.equal(error.origin.name, "camera");
+    assert.equal(error.id, 4);
+    assert.equal(error.cause, cause);
+  });
 });

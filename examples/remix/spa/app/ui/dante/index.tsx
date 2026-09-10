@@ -22,7 +22,7 @@ export function DantePage(handle: Handle) {
   let lastError: string | null = null;
 
   dante.on("after:response:error", (event) => {
-    lastError = event.error.error.message;
+    lastError = event.error.message;
     handle.update();
   });
   dante.on("after:response:ok", () => {

@@ -704,14 +704,20 @@ export namespace Natav {
     Deps extends readonly NatavTypes.Shape[] = readonly [],
   >
     extends DriverBase<Name, State, Deps>
-    implements Natav.Shape {}
+    implements Natav.Shape
+  {
+    readonly scope: "driver" | "plugin" = "driver";
+  }
   export abstract class Plugin<
     Name extends string = string,
     State extends Record<string, unknown> = Record<string, unknown>,
     Deps extends readonly NatavTypes.Shape[] = readonly [],
   >
     extends Driver<Name, State, Deps>
-    implements Natav.Shape {}
+    implements Natav.Shape
+  {
+    override readonly scope = "plugin";
+  }
   export type Shape = NatavTypes.Shape;
   export type ApiMethod = NatavTypes.ApiMethod;
   export type ApiRecord = NatavTypes.ApiRecord;

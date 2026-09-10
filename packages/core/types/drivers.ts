@@ -5,8 +5,8 @@ import type { Sockets, Events as TEvents } from "./index.js";
 // This namespace intentionally uses structural driver projections. Importing
 // the manager here would create a circular dependency during inference.
 export namespace Natav {
-  /** The shared structural contract for every managed runtime entry. */
   export interface Shape {
+    readonly scope: "driver" | "plugin";
     readonly name: string;
     readonly deps: readonly Shape[];
     readonly state: Record<string, unknown>;
@@ -29,17 +29,21 @@ export namespace Natav {
   export type Array = readonly Shape[];
 
   export type GroupInput<T extends Shape = Shape> =
-    readonly T[] | { readonly [name: string]: GroupInput<T> };
+    | readonly T[]
+    | { readonly [name: string]: GroupInput<T> };
 
   export type RootInput<T extends Shape = Shape> = readonly (
-    T | GroupInput<T>
+    | T
+    | GroupInput<T>
   )[];
 
   export type PluginGroupInput<T extends AnyPlugin = AnyPlugin> =
-    readonly T[] | { readonly [name: string]: PluginGroupInput<T> };
+    | readonly T[]
+    | { readonly [name: string]: PluginGroupInput<T> };
 
   export type PluginInput<T extends AnyPlugin = AnyPlugin> = readonly (
-    T | PluginGroupInput<T>
+    | T
+    | PluginGroupInput<T>
   )[];
 
   export type PluginGroupPaths<Input> =
@@ -51,10 +55,10 @@ export namespace Natav {
       : {
           [Name in keyof Input & string]: Input[Name] extends (
             readonly AnyPlugin[]
-           ) ?
-             `/${Name}`
-           : Input[Name] extends Record<string, unknown> ?
-             `/${Name}` | `/${Name}${PluginGroupPaths<Input[Name]>}`
+          ) ?
+            `/${Name}`
+          : Input[Name] extends Record<string, unknown> ?
+            `/${Name}` | `/${Name}${PluginGroupPaths<Input[Name]>}`
           : never;
         }[keyof Input & string]
     : never;
@@ -68,10 +72,10 @@ export namespace Natav {
       string extends keyof Input ?
         `/${string}`
       : {
-           [Name in keyof Input & string]: Input[Name] extends readonly Shape[] ?
-             `/${Name}`
-           : Input[Name] extends Record<string, unknown> ?
-             `/${Name}` | `/${Name}${GroupPaths<Input[Name], [...Depth, 0]>}`
+          [Name in keyof Input & string]: Input[Name] extends readonly Shape[] ?
+            `/${Name}`
+          : Input[Name] extends Record<string, unknown> ?
+            `/${Name}` | `/${Name}${GroupPaths<Input[Name], [...Depth, 0]>}`
           : never;
         }[keyof Input & string]
     : never;
@@ -88,7 +92,8 @@ export namespace Natav {
     : never;
 
   export type PartialArray<T extends readonly unknown[]> =
-    T | readonly T[number][];
+    | T
+    | readonly T[number][];
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -137,7 +142,10 @@ export namespace Natav {
     FindPlugin(name: string): Shape | undefined;
     FindGroup(path: string): readonly Shape[] | undefined;
     GetAllGroupPaths(): string[];
-    AddDriver(driver: Shape, groupPath?: readonly string[]): void | Promise<void>;
+    AddDriver(
+      driver: Shape,
+      groupPath?: readonly string[],
+    ): void | Promise<void>;
     RemoveDriver(name: string): void | Promise<void>;
     GetAllDriverNames(): Natav.Names<N>[];
     Start(): Promise<void>;
@@ -169,7 +177,8 @@ export namespace Natav {
   };
 
   export type AnyPlugin<T extends Shape = Shape> =
-    PluginFunction<T> | PluginConstructor<T>;
+    | PluginFunction<T>
+    | PluginConstructor<T>;
 
   type PluginReturn<T> =
     T extends new (...args: any[]) => infer R ? R

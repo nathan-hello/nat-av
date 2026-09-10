@@ -17,6 +17,34 @@ function hasJsonEventTarget(
   );
 }
 
+function errorResponse(error: Rpc.Error): Rpc.Error.Response {
+  const cause = error.cause;
+  const payload = isObject(cause) ? cause : undefined;
+  const code = typeof payload?.code === "number" ? payload.code : -99999;
+  const message =
+    typeof payload?.message === "string" ? payload.message : error.message;
+  const data =
+    payload && "data" in payload ? payload.data
+    : isObject(cause) ? cause
+    : undefined;
+
+  return {
+    jsonrpc: "2.0",
+    id: error.id,
+    error: {
+      code,
+      message,
+      ...(Rpc.Json.is(data) ? { data } : {}),
+      scope: error.origin.scope,
+      ...(error.origin.name ? { name: error.origin.name } : {}),
+    },
+  };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export class RpcServer extends Natav.Plugin<"rpc-server"> {
   private clients = new Set<Rpc.WebSocket.Peer>();
   private subscriptions = new Map<
@@ -128,7 +156,11 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
       id: message.id,
     });
 
-    return new Rpc.Error(result.error, message?.id);
+    return new Rpc.Error(
+      result.error,
+      { scope: "server" },
+      message?.id ?? null,
+    );
   }
 
   private closePeer(peer: Rpc.WebSocket.Peer) {
@@ -184,12 +216,14 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
     const states = { drivers: driverStates, plugins: pluginStates };
     const names = this.natav.GetAllDriverNames();
     const groups = Object.fromEntries(
-      this.natav.GetAllGroupPaths().map((path) => [
-        path,
-        (this.natav.FindGroup(path) ?? [])
-          .filter((entry) => this.natav.FindDriver(entry.name))
-          .map((entry) => entry.name),
-      ]),
+      this.natav
+        .GetAllGroupPaths()
+        .map((path) => [
+          path,
+          (this.natav.FindGroup(path) ?? [])
+            .filter((entry) => this.natav.FindDriver(entry.name))
+            .map((entry) => entry.name),
+        ]),
     );
     const stateIsGood = Rpc.Json.is(states);
     if (stateIsGood) {
@@ -230,14 +264,19 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
     );
   }
 
-
   private async handleSocketMessage(peer: Rpc.WebSocket.Peer, raw: string) {
     const message = this.tel.task("WS_MSG_JSON_PARSE", () =>
       Rpc.Json.parse(raw),
     );
 
     if (!message.ok) {
-      peer.send(Rpc.Json.stringify(new Rpc.Error(message.error)));
+      peer.send(
+        Rpc.Json.stringify(
+          errorResponse(
+            new Rpc.Error(message.error, { scope: "server" }, null),
+          ),
+        ),
+      );
       return;
     }
 
@@ -257,12 +296,15 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
 
       peer.send(
         Rpc.Json.stringify(
-          new Rpc.Error(
-            {
-              code: Err.Codes.RpcInvalidRequestObject,
-              message: "got_unknown_message",
-            },
-            requestId,
+          errorResponse(
+            new Rpc.Error(
+              {
+                code: Err.Codes.RpcInvalidRequestObject,
+                message: "got_unknown_message",
+              },
+              { scope: "server" },
+              requestId,
+            ),
           ),
         ),
       );
@@ -270,7 +312,11 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
     }
 
     const response = await this.handleRequest(req, peer);
-    peer.send(Rpc.Json.stringify(response));
+    peer.send(
+      Rpc.Json.stringify(
+        response instanceof Rpc.Error ? errorResponse(response) : response,
+      ),
+    );
   }
 
   private async handleDriverRequest(
@@ -285,10 +331,12 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
           code: Err.Codes.RpcInvalidParams,
           message: "Invalid driver call params",
         },
+        { scope: "server" },
         message.id,
       );
     }
 
+    let origin: Rpc.Error.Origin = { scope: "server" };
     const result = await this.tel.task(
       `driver:${params.driver}.${params.method}`,
       async (span) => {
@@ -312,6 +360,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
                 ],
               },
             },
+            { scope: "natav" },
             message.id,
           );
         }
@@ -322,9 +371,11 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
               message: `Natav.Driver \"${params.driver}\" not found`,
               data: { availableDriver: this.natav.GetAllDriverNames() },
             },
+            { scope: "natav" },
             message.id,
           );
         }
+        origin = { scope: driver.scope, name: driver.name };
         switch (message.method) {
           case Rpc.Request.Methods.DriverCall:
             return await this.callDriverApi(driver, message, params);
@@ -338,6 +389,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
                 code: Err.Codes.RpcInvalidParams,
                 message: "Invalid driver call params",
               },
+              { scope: "server" },
               message.id,
             );
         }
@@ -352,7 +404,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
         name: params.driver,
         error: result.error,
       });
-      return new Rpc.Error(result.error, message.id);
+      return new Rpc.Error(result.error, origin, message.id);
     }
   }
 
@@ -372,6 +424,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
           code: Err.Codes.RpcInvalidParams,
           message: "driver did not implement events",
         },
+        { scope: "server" },
         message.id,
       );
     }
@@ -441,6 +494,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
           message: `Method \"${params.method}\" not found on driver \"${params.driver}\"`,
           data: { availableMethods: Object.keys(driver.api ?? {}) },
         },
+        { scope: "server" },
         message.id,
       );
     }
@@ -451,21 +505,32 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
 
     if (result.ok) {
       if (result.data instanceof Error) {
-        return new Rpc.Error(result.data, message.id);
+        return new Rpc.Error(
+          result.data,
+          { scope: driver.scope, name: driver.name },
+          message.id,
+        );
       }
       if (result.data instanceof Rpc.Error) {
-        result.data.id = message.id;
-        return result.data;
+        return new Rpc.Error(result.data.cause, result.data.origin, message.id);
       }
       if (Rpc.Json.is(result.data)) {
         return message.response(result.data);
       }
-      return new Rpc.Error({
-        code: Err.Codes.JsonStringifyFailed,
-        message: "non-stringifyable response from api",
-      });
+      return new Rpc.Error(
+        {
+          code: Err.Codes.JsonStringifyFailed,
+          message: "non-stringifyable response from api",
+        },
+        { scope: driver.scope, name: driver.name },
+        message.id,
+      );
     } else {
-      return new Rpc.Error(result.error, message.id);
+      return new Rpc.Error(
+        result.error,
+        { scope: driver.scope, name: driver.name },
+        message.id,
+      );
     }
   }
 

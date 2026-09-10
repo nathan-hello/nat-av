@@ -12,20 +12,19 @@ export class ClientRpcDriver<
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
   private proxyCallId = 0;
-  private tel : Telemetry;
+  private tel: Telemetry;
 
   readonly event: Rpc.Client.Events.Handle<Entries, Name> = {
     on: async (event, callback) => {
-      const subscribed = await this.tel.task(
-        "event_subscribe",
-        async () => this.subscribeToEvent(event, callback),
+      const subscribed = await this.tel.task("event_subscribe", async () =>
+        this.subscribeToEvent(event, callback),
       );
       if (!subscribed.ok) {
         return {
           data: {
             off: async () => ({ data: undefined, error: undefined }),
           },
-          error: new Rpc.Error(subscribed.error),
+          error: new Rpc.Error(subscribed.error, { scope: "client" }, null),
         };
       }
 
@@ -38,7 +37,14 @@ export class ClientRpcDriver<
             );
             return unsubscribed.ok ?
                 { data: undefined, error: undefined }
-              : { data: undefined, error: new Rpc.Error(unsubscribed.error) };
+              : {
+                  data: undefined,
+                  error: new Rpc.Error(
+                    unsubscribed.error,
+                    { scope: "client" },
+                    null,
+                  ),
+                };
           },
         },
         error: undefined,
@@ -89,8 +95,11 @@ export class ClientRpcDriver<
           .task("api_call", async () => this.call(method, args))
           .then((result) =>
             result.ok ?
-                { data: result.data, error: undefined }
-              : { data: undefined, error: new Rpc.Error(result.error) },
+              { data: result.data, error: undefined }
+            : {
+                data: undefined,
+                error: new Rpc.Error(result.error, { scope: "client" }, null),
+              },
           );
 
         promise.then(
