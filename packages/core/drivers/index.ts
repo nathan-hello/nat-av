@@ -352,7 +352,9 @@ export class Natav<
     groups: readonly string[] = [],
   ): Promise<void> {
     if (driver.name.startsWith("/")) {
-      throw new Error(`Natav managed names cannot start with '/': ${driver.name}`);
+      throw new Error(
+        `Natav managed names cannot start with '/': ${driver.name}`,
+      );
     }
     if (this.IsManagedName(driver.name)) {
       throw new Error(`Natav found multiple managed entries: ${driver.name}`, {
@@ -376,7 +378,9 @@ export class Natav<
     }
     const groupPath = groups.length > 0 ? `/${groups.join("/")}` : "";
     if (groups.some((segment) => !segment || segment.includes("/"))) {
-      throw new Error("Natav runtime group segments must be non-empty and cannot contain '/'");
+      throw new Error(
+        "Natav runtime group segments must be non-empty and cannot contain '/'",
+      );
     }
     this.runtimeRoots.push(driver);
     for (const entry of entries) {

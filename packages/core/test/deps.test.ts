@@ -350,7 +350,6 @@ describe("driver deps", () => {
   });
 });
 
-
 describe("typechecking that drivers can get Managers that have other drivers in them", async () => {
   class LeftPeer extends Natav.Driver<"left-peer"> {
     state = { count: 0 };

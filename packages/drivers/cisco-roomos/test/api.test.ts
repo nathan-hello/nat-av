@@ -352,22 +352,22 @@ it("hydrates camera arrays and runs newer async commands", async () => {
   const cameras = await roomos.api.xStatus.get();
   assert.deepEqual(cameras, {
     Camera: [
-        {
-          DetectedConnector: 1,
-          Flip: "Off",
-          HardwareID: "cam-1",
-          MacAddress: "aa:bb:cc:dd:ee:01",
-          Position: { Focus: 10, Lens: "Wide" },
-          SerialNumber: "S1",
-        },
-        {
-          DetectedConnector: 2,
-          Flip: "On",
-          HardwareID: "cam-2",
-          MacAddress: "aa:bb:cc:dd:ee:02",
-          Position: { Focus: 20, Lens: "Tele" },
-          SerialNumber: "S2",
-        },
+      {
+        DetectedConnector: 1,
+        Flip: "Off",
+        HardwareID: "cam-1",
+        MacAddress: "aa:bb:cc:dd:ee:01",
+        Position: { Focus: 10, Lens: "Wide" },
+        SerialNumber: "S1",
+      },
+      {
+        DetectedConnector: 2,
+        Flip: "On",
+        HardwareID: "cam-2",
+        MacAddress: "aa:bb:cc:dd:ee:02",
+        Position: { Focus: 20, Lens: "Tele" },
+        SerialNumber: "S2",
+      },
     ],
   });
 

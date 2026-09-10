@@ -134,7 +134,7 @@ describe("rpc deps", () => {
 
     assert.equal((await clientRoot.api.ping()).data, "root-pong");
     type RootResult = Awaited<ReturnType<typeof clientRoot.api.ping>>;
-     type _rootResult = RootResult extends Rpc.Box<string> ? true : false;
+    type _rootResult = RootResult extends Rpc.Box<string> ? true : false;
     if (false) {
       // @ts-expect-error RPC API results must preserve the driver's return type.
       const wrongRootResult: Promise<Rpc.Box<number>> = clientRoot.api.ping();
@@ -294,11 +294,17 @@ describe("rpc deps", () => {
     assert.equal(client.driver("/rooms").b.name, "level-3");
 
     assert.deepEqual(
-      client.driver("/rooms/a").array().map((driver) => driver.name),
+      client
+        .driver("/rooms/a")
+        .array()
+        .map((driver) => driver.name),
       ["leaf"],
     );
     assert.deepEqual(
-      client.driver("/rooms").array().map((driver) => driver.name),
+      client
+        .driver("/rooms")
+        .array()
+        .map((driver) => driver.name),
       ["leaf", "level-3"],
     );
     assert.equal(client.find.driver("leaf").name, "leaf");

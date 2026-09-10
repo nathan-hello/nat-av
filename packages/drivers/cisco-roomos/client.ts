@@ -11,10 +11,8 @@ export function CheckError(error: unknown): RoomOS.Error {
   const code =
     typeof shape?.code === "number" ? shape.code : Err.Codes.DriverCallFailed;
   const message =
-    typeof shape?.message === "string" ?
-      shape.message
-    : error instanceof globalThis.Error ?
-      error.message
+    typeof shape?.message === "string" ? shape.message
+    : error instanceof globalThis.Error ? error.message
     : String(error);
 
   return {

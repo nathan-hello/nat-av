@@ -30,13 +30,16 @@ export async function createRpcBinding<N extends Natav = Natav>() {
     name?: Name,
   ):
     | Rpc.Client.Handle<N>
-     | Rpc.Proxy<Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>>
-     | Rpc.Proxy<Natav.FromName<N["plugins"], Name & Natav.Names<N["plugins"]>>> {
+    | Rpc.Proxy<Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>>
+    | Rpc.Proxy<
+        Natav.FromName<N["plugins"], Name & Natav.Names<N["plugins"]>>
+      > {
     if (subscriptions.has(handle)) {
       if (!name) return rpcClient;
       // TSAS: This overload accepts managed driver names, not slash-prefixed group paths.
-      return rpcClient.driver(name as Natav.Names<N["drivers"]>) as
-        Rpc.Proxy<Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>>;
+      return rpcClient.driver(name as Natav.Names<N["drivers"]>) as Rpc.Proxy<
+        Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>
+      >;
     }
 
     const offReady = rpcClient.on("ready", async () => {
@@ -65,8 +68,9 @@ export async function createRpcBinding<N extends Natav = Natav>() {
 
     if (!name) return rpcClient;
     // TSAS: This overload accepts managed driver names, not slash-prefixed group paths.
-    return rpcClient.driver(name as Natav.Names<N["drivers"]>) as
-      Rpc.Proxy<Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>>;
+    return rpcClient.driver(name as Natav.Names<N["drivers"]>) as Rpc.Proxy<
+      Natav.FromName<N["drivers"], Name & Natav.Names<N["drivers"]>>
+    >;
   }
 
   return { client: rpcClient, getRpc };

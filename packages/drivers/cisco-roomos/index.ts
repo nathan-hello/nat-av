@@ -257,9 +257,7 @@ export default class CiscoRoomOS<
     return requests;
   }
 
-  private async request(
-    operation: RoomOS.WriteOperation,
-  ): Promise<unknown> {
+  private async request(operation: RoomOS.WriteOperation): Promise<unknown> {
     this.tel.info("REQUEST", {
       op: operation,
       id: this.state.internal.highestId + 1,

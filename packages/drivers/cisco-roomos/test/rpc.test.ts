@@ -141,24 +141,24 @@ describe("rpc roomos driver", () => {
     const status = await driver.api.xStatus.get();
     assert.deepEqual(status.data, {
       Cameras: {
-          Camera: [
-            {
-              DetectedConnector: 1,
-              Flip: "Off",
-              HardwareID: "cam-1",
-              MacAddress: "aa:bb:cc:dd:ee:01",
-              Position: { Focus: 10, Lens: "Wide" },
-              SerialNumber: "S1",
-            },
-            {
-              DetectedConnector: 2,
-              Flip: "On",
-              HardwareID: "cam-2",
-              MacAddress: "aa:bb:cc:dd:ee:02",
-              Position: { Focus: 20, Lens: "Tele" },
-              SerialNumber: "S2",
-            },
-          ],
+        Camera: [
+          {
+            DetectedConnector: 1,
+            Flip: "Off",
+            HardwareID: "cam-1",
+            MacAddress: "aa:bb:cc:dd:ee:01",
+            Position: { Focus: 10, Lens: "Wide" },
+            SerialNumber: "S1",
+          },
+          {
+            DetectedConnector: 2,
+            Flip: "On",
+            HardwareID: "cam-2",
+            MacAddress: "aa:bb:cc:dd:ee:02",
+            Position: { Focus: 20, Lens: "Tele" },
+            SerialNumber: "S2",
+          },
+        ],
       },
     });
 
@@ -207,7 +207,10 @@ describe("rpc roomos driver", () => {
     const booking = await driver.api.xCommand.Bookings.Get({
       Id: "booking-123",
     });
-    assert.deepEqual(booking.data, { Id: "booking-123", Title: "Design Review" });
+    assert.deepEqual(booking.data, {
+      Id: "booking-123",
+      Title: "Design Review",
+    });
 
     const roomType = await driver.api.xCommand.Provisioning.RoomType.Activate({
       Name: "Standard",
@@ -404,24 +407,24 @@ describe("rpc roomos driver", () => {
           jsonrpc: "2.0",
           result: {
             Cameras: {
-                Camera: [
-                  {
-                    DetectedConnector: 1,
-                    Flip: "Off",
-                    HardwareID: "cam-1",
-                    MacAddress: "aa:bb:cc:dd:ee:01",
-                    Position: { Focus: 10, Lens: "Wide" },
-                    SerialNumber: "S1",
-                  },
-                  {
-                    DetectedConnector: 2,
-                    Flip: "On",
-                    HardwareID: "cam-2",
-                    MacAddress: "aa:bb:cc:dd:ee:02",
-                    Position: { Focus: 20, Lens: "Tele" },
-                    SerialNumber: "S2",
-                  },
-                ],
+              Camera: [
+                {
+                  DetectedConnector: 1,
+                  Flip: "Off",
+                  HardwareID: "cam-1",
+                  MacAddress: "aa:bb:cc:dd:ee:01",
+                  Position: { Focus: 10, Lens: "Wide" },
+                  SerialNumber: "S1",
+                },
+                {
+                  DetectedConnector: 2,
+                  Flip: "On",
+                  HardwareID: "cam-2",
+                  MacAddress: "aa:bb:cc:dd:ee:02",
+                  Position: { Focus: 20, Lens: "Tele" },
+                  SerialNumber: "S2",
+                },
+              ],
             },
           },
           id: 2,
