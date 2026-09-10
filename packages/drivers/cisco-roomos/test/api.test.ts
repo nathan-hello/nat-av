@@ -120,13 +120,10 @@ it("api writes to socket, state gets updated on notification", async () => {
     assert.equal(Reflect.get(roomos.api.xConfiguration, "then"), undefined);
   });
 
-  it("api.Configuration.Bluetooth.Allowed.get() === RoomOS.Result<'True'>", async () => {
+  it("api.Configuration.Bluetooth.Allowed.get() === 'True'", async () => {
     assert.deepEqual(
       await roomos.api.xConfiguration.Configuration.Bluetooth.Allowed.get(),
-      {
-        ok: true,
-        data: "True",
-      },
+      "True",
     );
   });
 
@@ -140,10 +137,7 @@ it("api writes to socket, state gets updated on notification", async () => {
         Allowed: "True",
         Enabled: "False",
       }),
-      {
-        ok: true,
-        data: { Allowed: "True", Enabled: "False" },
-      },
+      { Allowed: "True", Enabled: "False" },
     );
   });
 
@@ -153,8 +147,7 @@ it("api writes to socket, state gets updated on notification", async () => {
 
   it("Dial", async () => {
     assert.deepEqual(await roomos.api.xCommand.Dial({ Number: "12345" }), {
-      ok: true,
-      data: { Number: "12345" },
+      Number: "12345",
     });
   });
 
@@ -162,11 +155,8 @@ it("api writes to socket, state gets updated on notification", async () => {
     assert.deepEqual(
       await roomos.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe(),
       {
-        ok: true,
-        data: {
-          id: 1,
-          path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-        },
+        id: 1,
+        path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
       },
     );
   });
@@ -361,9 +351,7 @@ it("hydrates camera arrays and runs newer async commands", async () => {
 
   const cameras = await roomos.api.xStatus.get();
   assert.deepEqual(cameras, {
-    ok: true,
-    data: {
-      Camera: [
+    Camera: [
         {
           DetectedConnector: 1,
           Flip: "Off",
@@ -380,31 +368,24 @@ it("hydrates camera arrays and runs newer async commands", async () => {
           Position: { Focus: 20, Lens: "Tele" },
           SerialNumber: "S2",
         },
-      ],
-    },
+    ],
   });
 
   assert.notEqual(roomos.state.xStatus.Cameras.Camera, undefined);
 
   const booking = await roomos.api.xCommand.Bookings.Get({ Id: "booking-123" });
   assert.deepEqual(booking, {
-    ok: true,
-    data: {
-      Id: "booking-123",
-      Title: "Design Review",
-    },
+    Id: "booking-123",
+    Title: "Design Review",
   });
 
   const roomType = await roomos.api.xCommand.Provisioning.RoomType.Activate({
     Name: "Standard",
   });
-  assert.deepEqual(roomType, {
-    ok: true,
-    data: { Activated: true },
-  });
+  assert.deepEqual(roomType, { Activated: true });
 });
 
-it("returns an RPCError when a status fetch fails", async () => {
+it("throws a RoomOS error when a status fetch fails", async () => {
   const socket = new Test.Socket(
     [
       {
@@ -440,10 +421,8 @@ it("returns an RPCError when a status fetch fails", async () => {
     },
   });
 
-  const result = await roomos.api.xStatus.get();
-  assert.deepEqual(result, {
-    ok: false,
-    error: {
+  await assert.rejects(roomos.api.xStatus.get(), (error: unknown) => {
+    assert.deepEqual(error, {
       code: 1234,
       message: "camera fetch failed",
       data: {
@@ -451,6 +430,7 @@ it("returns an RPCError when a status fetch fails", async () => {
         root: "xStatus",
         path: ["xStatus"],
       },
-    },
+    });
+    return true;
   });
 });

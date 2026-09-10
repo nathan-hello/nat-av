@@ -89,7 +89,7 @@ type EventMapOf<Schema extends RoomOSSchema> = Schema["EventByNormPath"] &
 type EventSubscriptionShapeOf<Schema extends RoomOSSchema> =
   Schema["EventSubscriptionShape"] & object;
 
-type RemoteResult<Value> = Promise<RoomOS.Result<Value>>;
+export type RemoteResult<Value> = Promise<Value>;
 
 type Gettable<Value> = { get: () => RemoteResult<Value> };
 type Settable<Value> = { set: (value: Value) => RemoteResult<Value> };
@@ -298,10 +298,7 @@ export namespace RoomOS {
     xFeedback: ApiRecordify<Feedbackify<EventState<Schema, Product>, State>>;
   };
 
-  type TError = { code: number; message: string; data?: any };
-
-  export type Result<T = any> =
-    { ok: true; data: T } | { ok: false; error: TError };
+  export type Error = { code: number; message: string; data?: unknown };
 
   export type WriteOperation =
     | {
@@ -339,7 +336,7 @@ export namespace RoomOS {
     | { kind: "subscribed"; data: HeldSubscription }
     | { kind: "unsubscribed"; data: HeldSubscription[] }
     | { kind: "command_response"; data: unknown }
-    | { kind: "error"; data: TError };
+    | { kind: "error"; data: Error };
 
   export type HeldSubscription = {
     path: string[];

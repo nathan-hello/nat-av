@@ -140,9 +140,7 @@ describe("rpc roomos driver", () => {
 
     const status = await driver.api.xStatus.get();
     assert.deepEqual(status.data, {
-      ok: true,
-      data: {
-        Cameras: {
+      Cameras: {
           Camera: [
             {
               DetectedConnector: 1,
@@ -161,7 +159,6 @@ describe("rpc roomos driver", () => {
               SerialNumber: "S2",
             },
           ],
-        },
       },
     });
 
@@ -205,32 +202,23 @@ describe("rpc roomos driver", () => {
       });
     });
 
-    assert.equal(status.data.data.Cameras.Camera.length, 2);
+    assert.equal(status.data.Cameras.Camera.length, 2);
 
     const booking = await driver.api.xCommand.Bookings.Get({
       Id: "booking-123",
     });
-    assert.deepEqual(booking.data, {
-      ok: true,
-      data: { Id: "booking-123", Title: "Design Review" },
-    });
+    assert.deepEqual(booking.data, { Id: "booking-123", Title: "Design Review" });
 
     const roomType = await driver.api.xCommand.Provisioning.RoomType.Activate({
       Name: "Standard",
     });
-    assert.deepEqual(roomType.data, {
-      ok: true,
-      data: { Activated: true },
-    });
+    assert.deepEqual(roomType.data, { Activated: true });
 
     const subscription =
       await driver.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe();
     assert.deepEqual(subscription.data, {
-      ok: true,
-      data: {
-        id: 1,
-        path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-      },
+      id: 1,
+      path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
     });
 
     socket.receive({
@@ -415,9 +403,7 @@ describe("rpc roomos driver", () => {
         {
           jsonrpc: "2.0",
           result: {
-            ok: true,
-            data: {
-              Cameras: {
+            Cameras: {
                 Camera: [
                   {
                     DetectedConnector: 1,
@@ -436,32 +422,25 @@ describe("rpc roomos driver", () => {
                     SerialNumber: "S2",
                   },
                 ],
-              },
             },
           },
           id: 2,
         },
         {
           jsonrpc: "2.0",
-          result: {
-            ok: true,
-            data: { Id: "booking-123", Title: "Design Review" },
-          },
+          result: { Id: "booking-123", Title: "Design Review" },
           id: 3,
         },
         {
           jsonrpc: "2.0",
-          result: { ok: true, data: { Activated: true } },
+          result: { Activated: true },
           id: 4,
         },
         {
           jsonrpc: "2.0",
           result: {
-            ok: true,
-            data: {
-              id: 1,
-              path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
-            },
+            id: 1,
+            path: ["Event", "Bluetooth", "Streaming", "PlaybackPosition"],
           },
           id: 5,
         },

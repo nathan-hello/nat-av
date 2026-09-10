@@ -17,6 +17,8 @@ import type {
 import { RoomOS } from "./src/types.js";
 import { RoomOSFormatter } from "./src/writer.js";
 
+export { CheckError } from "./client.js";
+
 export type { RoomOSSchema, RoomOSSchemaSet } from "./src/types.js";
 export type { GeneratedRoomOS } from "./generated.js";
 
@@ -161,7 +163,7 @@ export default class CiscoRoomOS<
     this.initApi();
   }
 
-  private read(operation: RoomOS.ReadOperation): RoomOS.Result<unknown> {
+  private read(operation: RoomOS.ReadOperation): unknown {
     this.tel.info("READ_OPERATION", operation);
     switch (operation.kind) {
       case "update":
@@ -191,39 +193,36 @@ export default class CiscoRoomOS<
           this.events.dispatch(typedEventName, typedEventPayload);
         }
 
-        return { ok: true, data: operation.data.value };
+        return operation.data.value;
       case "unsubscribed":
         this.subscriptions = this.subscriptions.filter(
           (s) => !operation.data.find((d) => d.id === s.id),
         );
-        return { ok: true, data: operation.data };
+        return operation.data;
       case "subscribed":
         if (Array.isArray(operation.data)) {
           operation.data.forEach((op) => this.subscriptions.push(op));
           break;
         }
         this.subscriptions.push(operation.data);
-        return { ok: true, data: operation.data };
+        return operation.data;
       case "error":
-        return { ok: false, error: operation.data };
+        throw operation.data;
       case "command_response":
-        return { ok: true, data: operation.data };
+        return operation.data;
     }
-    return {
-      ok: false,
-      error: {
-        code: RoomOS.ErrorCodes.INVALID_READ_OPERATION,
-        data: operation,
-        message: "INVALID_READ_OPERATION",
-      },
-    };
+    throw {
+      code: RoomOS.ErrorCodes.INVALID_READ_OPERATION,
+      data: operation,
+      message: "INVALID_READ_OPERATION",
+    } satisfies RoomOS.Error;
   }
 
   private RefeshSubscriptions(
     subscriptions: Sub | RoomOS.JsonValue,
     path: string[] = [],
-  ): Promise<RoomOS.Result<unknown>>[] {
-    const requests: Promise<RoomOS.Result<unknown>>[] = [];
+  ): Promise<unknown>[] {
+    const requests: Promise<unknown>[] = [];
 
     if (!subscriptions || typeof subscriptions !== "object") {
       return requests;
@@ -260,7 +259,7 @@ export default class CiscoRoomOS<
 
   private async request(
     operation: RoomOS.WriteOperation,
-  ): Promise<RoomOS.Result<unknown>> {
+  ): Promise<unknown> {
     this.tel.info("REQUEST", {
       op: operation,
       id: this.state.internal.highestId + 1,
@@ -274,26 +273,20 @@ export default class CiscoRoomOS<
     this.tel.info("REQUEST_RESOLVED", rx);
 
     if (!rx.ok) {
-      return {
-        ok: false,
-        error: {
-          code: RoomOS.ErrorCodes.INVALID_WRITE_OPERATION,
-          data: rx,
-          message: JSON.stringify(operation),
-        },
-      };
+      throw {
+        code: RoomOS.ErrorCodes.INVALID_WRITE_OPERATION,
+        data: rx,
+        message: JSON.stringify(operation),
+      } satisfies RoomOS.Error;
     }
 
     const err = Proto.JsonRpc.Error.is(rx.data);
     if (err) {
-      return {
-        ok: false,
-        error: {
-          code: err.error.code,
-          message: err.error.message,
-          data: operation,
-        },
-      };
+      throw {
+        code: err.error.code,
+        message: err.error.message,
+        data: operation,
+      } satisfies RoomOS.Error;
     }
 
     const resp = Proto.JsonRpc.Response.is(rx.data);
@@ -303,14 +296,11 @@ export default class CiscoRoomOS<
       );
     }
 
-    return {
-      ok: false,
-      error: {
-        code: RoomOS.ErrorCodes.INVALID_RESPONSE,
-        message: JSON.stringify(rx),
-        data: operation,
-      },
-    };
+    throw {
+      code: RoomOS.ErrorCodes.INVALID_RESPONSE,
+      message: JSON.stringify(rx),
+      data: operation,
+    } satisfies RoomOS.Error;
   }
 
   // TSAS:
