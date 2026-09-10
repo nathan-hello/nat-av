@@ -1,5 +1,5 @@
 import type { Natav } from "../../client.js";
-import { TypedEventTarget } from "../../client.js";
+import { Telemetry, TypedEventTarget } from "../../client.js";
 import { Rpc } from "../types.js";
 import type { RpcClient } from "./index.js";
 
@@ -12,12 +12,36 @@ export class ClientRpcDriver<
   private pendingCounts = new Map<string, number>();
   private eventState = new Map<string, Rpc.Client.Events.State>();
   private proxyCallId = 0;
+  private tel : Telemetry;
 
   readonly event: Rpc.Client.Events.Handle<Entries, Name> = {
     on: async (event, callback) => {
-      await this.subscribeToEvent(event, callback);
-      return async () => {
-        await this.unsubscribeFromEvent(event, callback);
+      const subscribed = await this.tel.task(
+        "event_subscribe",
+        async () => this.subscribeToEvent(event, callback),
+      );
+      if (!subscribed.ok) {
+        return {
+          data: {
+            off: async () => ({ data: undefined, error: undefined }),
+          },
+          error: new Rpc.Error(subscribed.error),
+        };
+      }
+
+      return {
+        data: {
+          off: async () => {
+            const unsubscribed = await this.tel.task(
+              "event_unsubscribe",
+              async () => this.unsubscribeFromEvent(event, callback),
+            );
+            return unsubscribed.ok ?
+                { data: undefined, error: undefined }
+              : { data: undefined, error: new Rpc.Error(unsubscribed.error) };
+          },
+        },
+        error: undefined,
       };
     },
   };
@@ -28,17 +52,18 @@ export class ClientRpcDriver<
   ) {
     super();
     this.apiProxy = this.createApiProxy();
+    this.tel = new Telemetry(`Rpc::Proxy::${name}`);
     this.on("change", () => this.client.emitChange(this.name));
   }
 
-  get api() {
+  get api(): Rpc.Client.Api<Entries, Name> {
     return this.apiProxy;
   }
 
-  public state: Natav.State<Entries, Name> =
+  public state: Rpc.Client.State<Entries, Name> =
     // TSAS: this assertion depends on client getting
     // accurate state before this class is used for rendering.
-    {} as unknown as Natav.State<Entries, Name>;
+    {} as unknown as Rpc.Client.State<Entries, Name>;
 
   dep<DepName extends Natav.ManagedDepNames<Entries, Name>>(depName: DepName) {
     return this.client.driver(depName);
@@ -60,7 +85,13 @@ export class ClientRpcDriver<
         // TSAS: proxy method path and args are always valid per the driver's API type
         this.dispatch("before:request", { id, method, args } as any);
 
-        const promise = this.call(method, args);
+        const promise = this.tel
+          .task("api_call", async () => this.call(method, args))
+          .then((result) =>
+            result.ok ?
+                { data: result.data, error: undefined }
+              : { data: undefined, error: new Rpc.Error(result.error) },
+          );
 
         promise.then(
           // TSAS: proxy method/data match the resolved API type at runtime
@@ -99,12 +130,8 @@ export class ClientRpcDriver<
   }
 
   handleStateUpdate(patch: Partial<Rpc.Client.State<Entries, Name>>) {
-    const currentState = this.state;
     // TSAS: Partial patches are reconciled into the driver's cached state.
-    this.state =
-      currentState && typeof currentState === "object" ?
-        { ...currentState, ...patch }
-      : patch;
+    this.state = { ...this.state, ...patch };
 
     this.dispatchChange();
   }

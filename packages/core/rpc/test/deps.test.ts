@@ -3,6 +3,7 @@ import { TypedEventTarget } from "../../lib/eventtarget.js";
 import { Test } from "../../test/data.test.js";
 import { RpcClient } from "../client/index.js";
 import { RpcServer } from "../server/index.js";
+import { Rpc } from "../types.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -131,17 +132,17 @@ describe("rpc deps", () => {
     const clientLevel3 = clientLevel2.dep("level-3");
     const clientLeaf = clientLevel3.dep("leaf");
 
-    assert.equal(await clientRoot.api.ping(), "root-pong");
+    assert.equal((await clientRoot.api.ping()).data, "root-pong");
     type RootResult = Awaited<ReturnType<typeof clientRoot.api.ping>>;
-    type _rootResult = RootResult extends string ? true : false;
+     type _rootResult = RootResult extends Rpc.Box<string> ? true : false;
     if (false) {
       // @ts-expect-error RPC API results must preserve the driver's return type.
-      const wrongRootResult: Promise<number> = clientRoot.api.ping();
+      const wrongRootResult: Promise<Rpc.Box<number>> = clientRoot.api.ping();
       void wrongRootResult;
     }
-    assert.equal(await clientLevel2.api.ping(), "level-2-pong");
-    assert.equal(await clientLevel3.api.ping(), "level-3-pong");
-    assert.equal(await clientLeaf.api.ping(), "leaf-pong");
+    assert.equal((await clientLevel2.api.ping()).data, "level-2-pong");
+    assert.equal((await clientLevel3.api.ping()).data, "level-3-pong");
+    assert.equal((await clientLeaf.api.ping()).data, "leaf-pong");
 
     const received: Array<{ count: number }> = [];
     const off = await clientLeaf.event.on("tick", (payload) => {
@@ -151,7 +152,7 @@ describe("rpc deps", () => {
     leaf.emitTick(2);
     assert.deepEqual(received, [{ count: 2 }]);
 
-    await off();
+    await off.data.off();
     leaf.emitTick(3);
     assert.deepEqual(received, [{ count: 2 }]);
 

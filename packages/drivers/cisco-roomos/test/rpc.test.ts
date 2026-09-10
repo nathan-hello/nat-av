@@ -139,7 +139,7 @@ describe("rpc roomos driver", () => {
     );
 
     const status = await driver.api.xStatus.get();
-    assert.deepEqual(status, {
+    assert.deepEqual(status.data, {
       ok: true,
       data: {
         Cameras: {
@@ -205,12 +205,12 @@ describe("rpc roomos driver", () => {
       });
     });
 
-    assert.equal(status.data.Cameras.Camera.length, 2);
+    assert.equal(status.data.data.Cameras.Camera.length, 2);
 
     const booking = await driver.api.xCommand.Bookings.Get({
       Id: "booking-123",
     });
-    assert.deepEqual(booking, {
+    assert.deepEqual(booking.data, {
       ok: true,
       data: { Id: "booking-123", Title: "Design Review" },
     });
@@ -218,14 +218,14 @@ describe("rpc roomos driver", () => {
     const roomType = await driver.api.xCommand.Provisioning.RoomType.Activate({
       Name: "Standard",
     });
-    assert.deepEqual(roomType, {
+    assert.deepEqual(roomType.data, {
       ok: true,
       data: { Activated: true },
     });
 
     const subscription =
       await driver.api.xFeedback.Bluetooth.Streaming.PlaybackPosition.subscribe();
-    assert.deepEqual(subscription, {
+    assert.deepEqual(subscription.data, {
       ok: true,
       data: {
         id: 1,
@@ -252,7 +252,7 @@ describe("rpc roomos driver", () => {
 
     assert.deepEqual(received, [{ Position: 6 }]);
 
-    await off();
+    await off.data.off();
 
     const sent = () => transport.sent.map((message) => JSON.parse(message));
 

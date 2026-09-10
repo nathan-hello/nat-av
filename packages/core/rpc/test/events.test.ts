@@ -84,7 +84,7 @@ describe("rpc driver events", () => {
     ]);
 
     // Verify that off() works
-    await off1();
+    await off1.data.off();
     eventDriver.emitTick(2);
     assert.deepEqual(received, [{ count: 1 }]);
 
@@ -94,7 +94,7 @@ describe("rpc driver events", () => {
     });
     eventDriver.emitTick(3);
     assert.deepEqual(received, [{ count: 1 }, { count: 3 }]);
-    await off2();
+    await off2.data.off();
 
     assert.deepEqual(sent().slice(1), [
       {

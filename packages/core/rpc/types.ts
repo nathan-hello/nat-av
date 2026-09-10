@@ -46,8 +46,8 @@ export namespace Rpc {
       return globalThis.JSON.stringify(value, replacer);
     }
 
-    export function parse(value: string | unknown): Value {
-      return globalThis.JSON.parse(value as any, reviver);
+    export function parse(value: string): Value {
+      return globalThis.JSON.parse(value, reviver);
     }
 
     function replacer(this: unknown, _key: string, value: unknown): unknown {
@@ -110,7 +110,48 @@ export namespace Rpc {
       : false;
   }
 
-  export type Api<S extends Natav.Shape> = Natav.PromisifyApi<S["api"]>;
+  export type Never = {
+    readonly __rpc_never__: "This value cannot cross the RPC boundary";
+  };
+
+  export type Void = undefined;
+
+  export type Box<T> = {
+    data: T;
+    error: Rpc.Error | undefined;
+  };
+
+  type Value<T> =
+    [T] extends [Json.Value] ? T
+    : T extends Map<infer Key, infer Entry> ? Map<Value<Key>, Value<Entry>>
+    : T extends readonly unknown[] ? { [K in keyof T]: Value<T[K]> }
+    : T extends (...args: any[]) => any ? Never
+    : T extends Record<string, unknown> ? { [K in keyof T]: Value<T[K]> }
+    : Never;
+
+  type ReturnValue<T> = [T] extends [void] ? Void : Value<Awaited<T>>;
+
+  type StateRecord<T extends Record<string, unknown>> = {
+    [K in keyof T]: Value<T[K]>;
+  };
+
+  type ApiRecord<T> = {
+    [K in keyof T]: T[K] extends (...args: infer Args) => infer Result ?
+      (...args: { [I in keyof Args]: Value<Args[I]> }) =>
+        Promise<Box<ReturnValue<Result>>>
+    : T[K] extends Record<string, unknown> ? ApiRecord<T[K]>
+    : Never;
+  };
+
+  export type Api<S extends Natav.Shape> = ApiRecord<S["api"]>;
+
+  export type State<S extends Natav.Shape> = StateRecord<S["state"]>;
+
+  export type Subscription = {
+    off(): Promise<Box<Void>>;
+  };
+
+  export type EventSubscription = Box<Subscription>;
 
   /** The client-side projection of one managed driver or plugin. */
   export type Proxy<S extends Natav.Shape> = {
@@ -121,7 +162,7 @@ export namespace Rpc {
     };
     readonly name: S["name"];
     readonly api: Api<S>;
-    readonly state: S["state"];
+    readonly state: State<S>;
     readonly events: S["events"];
     readonly on: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["on"];
     readonly once: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["once"];
@@ -150,7 +191,7 @@ export namespace Rpc {
         on<K extends keyof Natav.Events<N, Name> & string>(
           event: K,
           callback: Callback<N, Name, K>,
-        ): Promise<() => Promise<void>>;
+        ): Promise<Rpc.EventSubscription>;
       };
       export type State = {
         callbacks: Set<(payload: any) => void>;
@@ -162,12 +203,12 @@ export namespace Rpc {
     export type State<
       N extends Natav.Array,
       Name extends Natav.Names<N>,
-    > = Natav.State<N, Name>;
+    > = Rpc.State<Natav.FromName<N, Name>>;
 
     export type Api<
       N extends Natav.Array = Natav.Array,
       Name extends string = Natav.Names<N>,
-    > = Natav.PromisifyApi<Natav.Api<N, Name>>;
+    > = Rpc.Api<Natav.FromName<N, Name>>;
 
     export type Handle<N extends Natav.Runtime> = Pick<
       RpcClient<N>,
@@ -508,6 +549,18 @@ export namespace Rpc {
         this.error = error;
       }
       this.id = typeof id !== "undefined" ? id : null;
+    }
+
+    get code(): number {
+      return this.error.code;
+    }
+
+    get message(): string {
+      return this.error.message;
+    }
+
+    get data(): unknown {
+      return this.error.data;
     }
 
     toString(): string {

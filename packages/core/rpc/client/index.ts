@@ -266,7 +266,8 @@ export class RpcClient<
       const driver = this.getDriver(name as Natav.Names<N["drivers"]>);
       driver.handleStateUpdate(
         // TSAS: The init response state belongs to this catalog entry.
-        state as Natav.State<N["drivers"], Natav.Names<N["drivers"]>>,
+        // TSAS: Init state is validated against the registered RPC driver shape.
+        state as Rpc.Client.State<N["drivers"], Natav.Names<N["drivers"]>>,
       );
     }
 
@@ -274,7 +275,8 @@ export class RpcClient<
       const plugin = this.getPlugin(name as Natav.Names<N["plugins"]>);
       plugin.handleStateUpdate(
         // TSAS: plugin names and states come from the server's plugin catalog.
-        state as Natav.State<N["plugins"], Natav.Names<N["plugins"]>>,
+        // TSAS: Init state is validated against the registered RPC plugin shape.
+        state as Rpc.Client.State<N["plugins"], Natav.Names<N["plugins"]>>,
       );
     }
 
@@ -322,7 +324,12 @@ export class RpcClient<
           driver = this.getDriver(
             notification.params.name as Natav.Names<N["drivers"]>,
           );
-          driver.handleStateUpdate(notification.params.data);
+          // TSAS: State notifications are validated by the server before delivery.
+          driver.handleStateUpdate(
+            notification.params.data as Partial<
+              Rpc.Client.State<N["drivers"], Natav.Names<N["drivers"]>>
+            >,
+          );
           break;
         default:
           break;
