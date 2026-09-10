@@ -1,6 +1,6 @@
 import type { Natav, Events as NEvents } from "../index.js";
 import type { RpcClient } from "./client/index.js";
-import type { ClientRpcDriver } from "./client/driver.js";
+import type { TypedEventTarget } from "../lib/eventtarget.js";
 
 export namespace Rpc {
   export namespace Json {
@@ -110,6 +110,29 @@ export namespace Rpc {
       : false;
   }
 
+  export type Api<S extends Natav.Shape> = Natav.PromisifyApi<S["api"]>;
+
+  /** The client-side projection of one managed driver or plugin. */
+  export type Proxy<S extends Natav.Shape> = {
+    readonly deps: {
+      readonly [K in keyof S["deps"]]: S["deps"][K] extends Natav.Shape ?
+        Proxy<S["deps"][K]>
+      : never;
+    };
+    readonly name: S["name"];
+    readonly api: Api<S>;
+    readonly state: S["state"];
+    readonly events: S["events"];
+    readonly on: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["on"];
+    readonly once: TypedEventTarget<Events.DriverMap<readonly [S], S["name"]>>["once"];
+    readonly event: Client.Events.Handle<readonly [S], S["name"]>;
+    readonly isPending: (method: string) => boolean;
+    readonly pendingCount: (method: string) => number;
+    dep<Name extends Natav.ManagedDepNames<readonly [S], S["name"]>>(
+      name: Name,
+    ): Proxy<Natav.FromName<readonly [S["deps"][number]], Name>>;
+  };
+
   export namespace Client {
     export type PendingRequest = {
       resolve: (result: any) => void;
@@ -150,36 +173,36 @@ export namespace Rpc {
       RpcClient<N>,
       "isOnline"
     > & {
-      driver<Path extends DriverPath<N>>(path: Path): DriverResult<N, Path>;
+      driver<Route extends Path<N>>(path: Route): Result<N, Route>;
       plugin<Name extends Natav.Names<N["plugins"]>>(
         name: Name,
-      ): PluginHandle<N, Name>;
-      find: FindAccessor<N>;
-      drivers(): GroupHandle<N, "">;
-      plugins(): GroupHandle<N, "">;
+      ): Rpc.Proxy<Natav.FromName<N["plugins"], Name>>;
+      find: Find<N>;
+      drivers(): Group<N, "">;
+      plugins(): Group<N, "">;
     };
 
-    export type DriverPath<N extends Natav.Runtime> =
+    export type Path<N extends Natav.Runtime> =
       | Natav.Names<N["drivers"]>
       | Natav.GroupPaths<N["input"]>;
 
-    export type DriverResult<
+    export type Result<
       N extends Natav.Runtime,
-      Path extends DriverPath<N>,
+      Route extends Path<N>,
     > =
-       string extends Path ? DriverProxy<N, N["drivers"][number]>
-      : Path extends Natav.GroupPaths<N["input"]> ?
-        GroupHandle<N, GroupInputAtPath<N["input"], Path>>
-       : Path extends Natav.Names<N["drivers"]> ?
-         DriverProxy<N, Natav.FromName<N["drivers"], Path>>
-      : never;
+       string extends Route ? Rpc.Proxy<N["drivers"][number]>
+      : Route extends Natav.GroupPaths<N["input"]> ?
+         Group<N, GroupInputAtPath<N["input"], Route>>
+        : Route extends Natav.Names<N["drivers"]> ?
+          Rpc.Proxy<Natav.FromName<N["drivers"], Route>>
+       : never;
 
-    export type FindAccessor<N extends Natav.Runtime> = {
+    export type Find<N extends Natav.Runtime> = {
       driver<Cast = never, Path extends string = string>(
         path: Path,
       ): [Cast] extends [never] ?
         Path extends `/${string}` ?
-          DynamicGroupHandle<N>
+          DynamicGroup<N>
         : Natav.Shape
       : Cast;
       plugin<Cast = Natav.Shape>(path: string): Cast;
@@ -197,29 +220,21 @@ export namespace Rpc {
         : never
       : never;
 
-    export interface DriverProxy<
-      N extends Natav.Runtime,
-      Driver extends Natav.Shape,
-    > extends ManagedHandle<
-        N,
-        Driver["name"] & Natav.Names<N["drivers"]>
-      > {}
-
     export type GroupLeaf<
       N extends Natav.Runtime,
       Input extends readonly Natav.Shape[],
     > =
       Input extends readonly [infer Only extends Natav.Shape] ?
-        DriverProxy<N, Only>
-      : DriverProxy<N, Input[number]>[];
+        Rpc.Proxy<Only>
+      : Rpc.Proxy<Input[number]>[];
 
-    export type GroupHandle<
+    export type Group<
       N extends Natav.Runtime,
       Input = Natav.GroupInput,
     > = {
       array(): Input extends "" ?
-        DriverProxy<N, N["drivers"][number]>[]
-      : DriverProxy<N, Natav.InputDrivers<Input>>[];
+        Rpc.Proxy<N["drivers"][number]>[]
+      : Rpc.Proxy<Natav.InputDrivers<Input>>[];
     } & (Input extends Record<string, unknown> ?
       {
         [Name in keyof Input & string]: Input[Name] extends (
@@ -227,75 +242,31 @@ export namespace Rpc {
         ) ?
           GroupLeaf<N, Input[Name]>
         : Input[Name] extends Record<string, unknown> ?
-          GroupHandle<N, Input[Name]>
+          Group<N, Input[Name]>
         : never;
       }
     : {});
 
-    export type DynamicGroupHandle<N extends Natav.Runtime> = {
-      array(): Promise<DriverProxy<N, N["drivers"][number]>[]>;
+    export type DynamicGroup<N extends Natav.Runtime> = {
+      array(): Promise<Rpc.Proxy<N["drivers"][number]>[]>;
     };
 
-    export type ManagedHandle<
-      N extends Natav.Runtime = Natav,
-      Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
-    > = Pick<
-      Natav.ManagedHandle<Natav.FromName<N["drivers"], Name>>,
-      "name" | "api" | "state"
-    > &
-      Pick<
-        ClientRpcDriver<N, N["drivers"], Name>,
-        "on" | "event" | "once" | "pendingCount"
-      > & {
-        dep: <DepName extends Natav.ManagedDepNames<N["drivers"], Name>>(
-          depName: DepName,
-        ) => ManagedHandle<N, DepName>;
-      };
-
-    /** Compatibility alias; managed drivers and plugins share this shape. */
-    export type DriverHandle<
-      N extends Natav.Runtime = Natav,
-      Name extends Natav.Names<N["drivers"]> = Natav.Names<N["drivers"]>,
-    > = ManagedHandle<N, Name>;
-
-    export type DriverAccessor<N extends Natav.Runtime> = {
-      <Path extends DriverPath<N>>(path: Path): DriverResult<N, Path>;
+    export type Drivers<N extends Natav.Runtime> = {
+      <Route extends Path<N>>(path: Route): Result<N, Route>;
     } & {
-      [Name in Natav.Names<N["drivers"]>]: ManagedHandle<N, Name>;
+      [Name in Natav.Names<N["drivers"]>]: Rpc.Proxy<
+        Natav.FromName<N["drivers"], Name>
+      >;
     };
 
-    export type PluginHandle<
-      N extends Natav.Runtime,
-      Name extends Natav.Names<N["plugins"]>,
-    > = ManagedHandleFor<N, N["plugins"], Name>;
-
-    export type ManagedHandleFor<
-      N extends Natav.Runtime,
-      Entries extends Natav.Array,
-      Name extends Natav.Names<Entries>,
-    > = Pick<
-      Natav.ManagedHandle<Natav.FromName<Entries, Name>>,
-      "name" | "api" | "state"
-    > &
-      Pick<
-        ClientRpcDriver<N, Entries, Name>,
-        "on" | "event" | "once" | "pendingCount"
-      > & {
-        dep: <DepName extends Natav.ManagedDepNames<Entries, Name>>(
-          depName: DepName,
-        ) => ManagedHandleFor<
-          N,
-          N["drivers"],
-          DepName & Natav.Names<N["drivers"]>
-        >;
-      };
-
-    export type PluginAccessor<N extends Natav.Runtime> = {
+    export type Plugins<N extends Natav.Runtime> = {
       <Name extends Natav.Names<N["plugins"]>>(
         name: Name,
-      ): PluginHandle<N, Name>;
+      ): Rpc.Proxy<Natav.FromName<N["plugins"], Name>>;
     } & {
-      [Name in Natav.Names<N["plugins"]>]: PluginHandle<N, Name>;
+      [Name in Natav.Names<N["plugins"]>]: Rpc.Proxy<
+        Natav.FromName<N["plugins"], Name>
+      >;
     };
   }
 

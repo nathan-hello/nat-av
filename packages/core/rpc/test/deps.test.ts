@@ -284,7 +284,7 @@ describe("rpc deps", () => {
     ]);
     assert.equal(client.find.plugin("rpc-server").name, "rpc-server");
 
-    const roomGroup = client.driver("/rooms/a");
+    const roomGroup = client.driver("/rooms");
     const roomDriver = client.driver("leaf");
     const roomArray = roomGroup.array();
     const asdf = roomArray[0];

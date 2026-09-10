@@ -11,7 +11,7 @@ export function DebugPage(handle: Handle) {
   const debug = rpc.plugin("debugger");
 
   let selectedDriverName: string | null = null;
-  let selectedNode: Rpc.Client.DriverHandle | null = null;
+  let selectedNode: Rpc.Proxy<Natav.Shape> | null = null;
 
   return () => {
     console.log("debug.state", debug.state);
