@@ -1,5 +1,5 @@
 import { RequestManager } from "../lib/requests.js";
-import { Delimiters } from "../sockets/delimiters.js";
+import { Delimiters } from "../sockets/delimiters/index.js";
 import { Telemetry } from "../telemetry/index.js";
 import { Test } from "./data.test.js";
 import assert from "node:assert/strict";

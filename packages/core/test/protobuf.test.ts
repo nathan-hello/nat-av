@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { Protobuf } from "../protocol/index.js";
+import { Delimiters } from "../sockets/delimiters/index.js";
 
 type Message = { value: string };
 
@@ -13,7 +13,8 @@ const textCodec = {
 
 describe("protobuf framing", () => {
   it("buffers partial frames and decodes combined frames", () => {
-    const { delimiter, formatter } = Protobuf.lengthPrefixed32BE(textCodec);
+    const { delimiter, formatter } =
+      Delimiters.protobuf.lengthPrefixed32BE(textCodec);
     const first = formatter({ value: "first" });
     const second = formatter({ value: "second" });
 
@@ -25,7 +26,8 @@ describe("protobuf framing", () => {
   });
 
   it("resets partial data", () => {
-    const { delimiter, formatter } = Protobuf.lengthPrefixed32BE(textCodec);
+    const { delimiter, formatter } =
+      Delimiters.protobuf.lengthPrefixed32BE(textCodec);
     const stale = formatter({ value: "stale" });
     const fresh = formatter({ value: "fresh" });
 
@@ -35,7 +37,7 @@ describe("protobuf framing", () => {
   });
 
   it("rejects inbound and outbound payloads above the limit", () => {
-    const { delimiter, formatter } = Protobuf.lengthPrefixed32BE({
+    const { delimiter, formatter } = Delimiters.protobuf.lengthPrefixed32BE({
       ...textCodec,
       maxPayloadBytes: 4,
     });
@@ -48,13 +50,13 @@ describe("protobuf framing", () => {
   });
 
   it("allows empty protobuf payloads unless the protocol forbids them", () => {
-    const { formatter } = Protobuf.lengthPrefixed32BE({
+    const { formatter } = Delimiters.protobuf.lengthPrefixed32BE({
       encode: () => new Uint8Array(),
       decode: () => ({}),
     });
     assert.equal(formatter({}).readUInt32BE(0), 0);
 
-    const nonEmpty = Protobuf.lengthPrefixed32BE({
+    const nonEmpty = Delimiters.protobuf.lengthPrefixed32BE({
       encode: () => new Uint8Array(),
       decode: () => ({}),
       minPayloadBytes: 1,

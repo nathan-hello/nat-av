@@ -1,17 +1,17 @@
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
-import { Proto, Test } from "@nat-av/core";
+import { Delimiters, Test } from "@nat-av/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import ScreenMedia, { ScreenMediaError } from "../index.js";
+import NatScreen, { NatScreenError } from "../index.js";
 import {
   ControlRequestSchema,
   ControlResponseSchema,
   Status_Code,
   type ControlRequest,
   type ControlResponse,
-} from "../src/generated/media_control_pb.js";
+} from "../proto/generated/media_control_pb.js";
 
-const responseFrames = Proto.Protobuf.lengthPrefixed32BE<
+const responseFrames = Delimiters.protobuf.lengthPrefixed32BE<
   ControlResponse,
   ControlRequest
 >({
@@ -31,10 +31,10 @@ function frameResponse(response: ControlResponse): Buffer {
   return responseFrames.formatter(response);
 }
 
-describe("screen media driver", () => {
+describe("nat screen driver", () => {
   it("sends framed protobuf requests and projects status into state", async () => {
     const socket = new Test.Socket();
-    const driver = new ScreenMedia({ name: "screen", kind: "sender", socket });
+    const driver = new NatScreen({ name: "screen", kind: "sender", socket });
 
     const pending = driver.api.getStatus();
     const request = decodeRequest(socket.writes[0]);
@@ -78,7 +78,7 @@ describe("screen media driver", () => {
 
   it("uses the observed revision for configuration mutations", async () => {
     const socket = new Test.Socket();
-    const driver = new ScreenMedia({ name: "screen", kind: "sender", socket });
+    const driver = new NatScreen({ name: "screen", kind: "sender", socket });
 
     const status = driver.api.getStatus();
     const statusRequest = decodeRequest(socket.writes[0]);
@@ -117,7 +117,7 @@ describe("screen media driver", () => {
 
   it("dispatches unsolicited errors without consuming a pending response", async () => {
     const socket = new Test.Socket();
-    const driver = new ScreenMedia({
+    const driver = new NatScreen({
       name: "screen",
       kind: "receiver",
       socket,
@@ -157,7 +157,7 @@ describe("screen media driver", () => {
 
   it("turns device status failures into typed errors", async () => {
     const socket = new Test.Socket();
-    const driver = new ScreenMedia({ name: "screen", kind: "sender", socket });
+    const driver = new NatScreen({ name: "screen", kind: "sender", socket });
 
     const pending = driver.api.getStatus();
     const request = decodeRequest(socket.writes[0]);
@@ -176,7 +176,7 @@ describe("screen media driver", () => {
     );
 
     await assert.rejects(pending, (error: unknown) => {
-      assert.ok(error instanceof ScreenMediaError);
+      assert.ok(error instanceof NatScreenError);
       assert.equal(error.code, Status_Code.CONFLICT);
       assert.equal(error.revision, 4n);
       return true;
@@ -185,7 +185,7 @@ describe("screen media driver", () => {
 
   it("rejects role-incompatible operations before writing", async () => {
     const socket = new Test.Socket();
-    const driver = new ScreenMedia({ name: "screen", kind: "sender", socket });
+    const driver = new NatScreen({ name: "screen", kind: "sender", socket });
 
     await assert.rejects(
       driver.api.applyReceiverConfig({ formatVersion: 2 }),

@@ -1,22 +1,22 @@
 import { fromJson, type JsonValue } from "@bufbuild/protobuf";
 import { Repl, Tcp } from "@nat-av/core";
-import ScreenMedia, {
+import NatScreen, {
   DiscoverRequest_Kind,
   ReceiverConfigSchema,
   SceneSchema,
   SenderConfigSchema,
-  type ScreenMediaKind,
+  type NatScreenKind,
 } from "../index.js";
 
-export interface ScreenMediaReplOptions {
-  driver: ScreenMedia;
+export interface NatScreenReplOptions {
+  driver: NatScreen;
   prompt?: string;
 }
 
-export interface RunScreenMediaReplOptions {
+export interface RunNatScreenReplOptions {
   address: string;
   port: number;
-  kind?: ScreenMediaKind;
+  kind?: NatScreenKind;
 }
 
 const format = (value: unknown): string => {
@@ -61,7 +61,7 @@ const parseJson = (args: string[], usage: string): JsonValue => {
 };
 
 const discover = async (
-  driver: ScreenMedia,
+  driver: NatScreen,
   kind: DiscoverRequest_Kind,
   args: string[],
 ) => {
@@ -107,8 +107,8 @@ const help = `Commands:
 
 export const createRepl = ({
   driver,
-  prompt = "screen> ",
-}: ScreenMediaReplOptions): Repl.Repl => {
+  prompt = "nat-screen> ",
+}: NatScreenReplOptions): Repl.Repl => {
   return Repl.createRepl({
     prompt,
     commands: {
@@ -146,7 +146,7 @@ export const runRepl = async ({
   address,
   port,
   kind = port === 7000 ? "sender" : "receiver",
-}: RunScreenMediaReplOptions): Promise<void> => {
+}: RunNatScreenReplOptions): Promise<void> => {
   if (!address) {
     throw new Error("address is required");
   }
@@ -154,7 +154,7 @@ export const runRepl = async ({
     throw new RangeError("port must be an integer from 1 through 65535");
   }
 
-  const driver = new ScreenMedia({
+  const driver = new NatScreen({
     name: `screen-${kind}`,
     kind,
     socket: new Tcp({ addr: address, port }),

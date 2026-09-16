@@ -1,6 +1,9 @@
 import { Err } from "../client.js";
 import { TypedEventTarget } from "./eventtarget.js";
-import type { DataDelimiter, DataFormatter } from "../sockets/delimiters.js";
+import type {
+  DataDelimiter,
+  DataFormatter,
+} from "../sockets/delimiters/index.js";
 import { Telemetry, type TaskResult } from "../telemetry/index.js";
 import { type Events, type Sockets } from "../types/index.js";
 

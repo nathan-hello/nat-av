@@ -14,7 +14,7 @@ export type { Natav } from "./drivers/index.js";
 export { Err } from "./lib/errors.js";
 export { TypedEventTarget } from "./lib/eventtarget.js";
 export type { RequestManager } from "./lib/requests.js";
-export type { Delimiters } from "./sockets/delimiters.js";
+export type { Delimiters } from "./sockets/delimiters/index.js";
 export type { Test } from "./test/data.test.js";
 export type { Events, Sockets } from "./types/index.js";
 

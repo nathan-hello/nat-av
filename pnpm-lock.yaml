@@ -96,12 +96,12 @@ importers:
       '@nat-av/driver-nat-decoder-wall':
         specifier: workspace:*
         version: link:nat-decoder-wall
+      '@nat-av/driver-nat-screen':
+        specifier: workspace:*
+        version: link:nat-screen
       '@nat-av/driver-paint':
         specifier: workspace:*
         version: link:paint
-      '@nat-av/driver-screen-media':
-        specifier: workspace:*
-        version: link:screen-media
       '@nat-av/driver-turtle':
         specifier: workspace:*
         version: link:turtle
@@ -158,13 +158,7 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
-  packages/drivers/paint:
-    devDependencies:
-      '@nat-av/core':
-        specifier: workspace:*
-        version: link:../../core
-
-  packages/drivers/screen-media:
+  packages/drivers/nat-screen:
     dependencies:
       '@bufbuild/protobuf':
         specifier: ^2.15.0
@@ -182,6 +176,12 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+
+  packages/drivers/paint:
+    devDependencies:
+      '@nat-av/core':
+        specifier: workspace:*
+        version: link:../../core
 
   packages/drivers/turtle:
     devDependencies:

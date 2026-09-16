@@ -1,4 +1,4 @@
-import type { DataDelimiter, DataFormatter } from "../../sockets/delimiters.js";
+import type { DataDelimiter, DataFormatter } from "./index.js";
 
 export type BinaryEncoder<T> = (value: T) => Uint8Array;
 export type BinaryDecoder<T> = (payload: Uint8Array) => T;

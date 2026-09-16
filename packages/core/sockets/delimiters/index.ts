@@ -1,4 +1,5 @@
-import type { Telemetry } from "../telemetry/index.js";
+import type { Telemetry } from "../../telemetry/index.js";
+import * as Protobuf from "./protobuf.js";
 
 export type DataDelimiter<T = any> = ((buffer: Buffer) => T[] | null) & {
   reset?: () => void;
@@ -9,6 +10,7 @@ export type DataDelimited<T extends DataDelimiter<any>> = NonNullable<
 export type DataFormatter<T> = (value: T) => Buffer;
 
 export const Delimiters = {
+  protobuf: Protobuf,
   byteDelimtied: (delimiter: number): DataDelimiter<Buffer> => {
     return (buffer: Buffer) => {
       const results: Buffer[] = [];

@@ -6,7 +6,7 @@ import {
 } from "@bufbuild/protobuf";
 import {
   Natav,
-  Proto,
+  Delimiters,
   RequestManager,
   TypedEventTarget,
   type Sockets,
@@ -34,16 +34,16 @@ import {
   type RuntimeStatus,
   type SenderConfig,
   type Status,
-} from "./src/generated/media_control_pb.js";
+} from "../proto/generated/media_control_pb.js";
 
-export * from "./src/generated/media_control_pb.js";
+export * from "../proto/generated/media_control_pb.js";
 
 const PROTOCOL_VERSION = 2;
 const MAX_PAYLOAD_BYTES = 65_536;
 
-export type ScreenMediaKind = "sender" | "receiver";
+export type NatScreenKind = "sender" | "receiver";
 
-export type ScreenRuntimeStatus = {
+export type NatScreenRuntimeStatus = {
   running: boolean;
   videoFrames: string;
   audioFrames: string;
@@ -52,16 +52,16 @@ export type ScreenRuntimeStatus = {
   bytesReceived: string;
 };
 
-export type ScreenMediaState = {
+export type NatScreenState = {
   connected: boolean;
   revision: string;
-  runtimeStatus?: ScreenRuntimeStatus;
+  runtimeStatus?: NatScreenRuntimeStatus;
   senderConfig?: SenderConfig;
   receiverConfig?: ReceiverConfig;
   lastError?: string;
 };
 
-export class ScreenMediaError extends Error {
+export class NatScreenError extends Error {
   readonly code: Status_Code;
   readonly revision: bigint;
 
@@ -70,7 +70,7 @@ export class ScreenMediaError extends Error {
       status.message ||
         `screen media request failed with status ${status.code}`,
     );
-    this.name = "ScreenMediaError";
+    this.name = "NatScreenError";
     this.code = status.code;
     this.revision = revision;
   }
@@ -78,14 +78,14 @@ export class ScreenMediaError extends Error {
 
 type RequestPayload = Exclude<ControlRequest["request"], { case: undefined }>;
 
-export default class ScreenMedia<
+export default class NatScreen<
   const N extends string = string,
-> extends Natav.Driver<N, ScreenMediaState> {
-  readonly kind: ScreenMediaKind;
+> extends Natav.Driver<N, NatScreenState> {
+  readonly kind: NatScreenKind;
   readonly socket: Sockets.Client;
   readonly events = new TypedEventTarget<{ error: ErrorEvent }>();
 
-  state: ScreenMediaState = {
+  state: NatScreenState = {
     connected: false,
     revision: "0",
   };
@@ -100,14 +100,14 @@ export default class ScreenMedia<
     socket,
   }: {
     name: N;
-    kind: ScreenMediaKind;
+    kind: NatScreenKind;
     socket: Sockets.Client;
   }) {
     super({ name });
     this.kind = kind;
     this.socket = socket;
 
-    const { delimiter, formatter } = Proto.Protobuf.lengthPrefixed32BE({
+    const { delimiter, formatter } = Delimiters.protobuf.lengthPrefixed32BE({
       encode: (request: ControlRequest) =>
         toBinary(ControlRequestSchema, request),
       decode: (payload) => fromBinary(ControlResponseSchema, payload),
@@ -152,7 +152,7 @@ export default class ScreenMedia<
   }
 
   api = {
-    getStatus: async (): Promise<ScreenRuntimeStatus> => {
+    getStatus: async (): Promise<NatScreenRuntimeStatus> => {
       const response = await this.request({
         case: "getStatus",
         value: create(GetStatusRequestSchema),
@@ -262,7 +262,7 @@ export default class ScreenMedia<
     }
     this.observe(response);
     if (!response.status || response.status.code !== Status_Code.OK) {
-      throw new ScreenMediaError(
+      throw new NatScreenError(
         response.status ?? createStatusUnspecified(),
         response.revision,
       );
@@ -284,7 +284,7 @@ export default class ScreenMedia<
 
     this.revision = response.revision;
     this.state.revision = response.revision.toString();
-    const update: Partial<ScreenMediaState> = {
+    const update: Partial<NatScreenState> = {
       revision: this.state.revision,
     };
 
@@ -306,7 +306,7 @@ export default class ScreenMedia<
     this.dispatch("driver:state-updated", { data: update });
   }
 
-  private requireKind(expected: ScreenMediaKind): void {
+  private requireKind(expected: NatScreenKind): void {
     if (this.kind !== expected) {
       throw new Error(
         `screen media ${this.kind} does not support ${expected} configuration`,
@@ -324,7 +324,7 @@ export default class ScreenMedia<
   }
 }
 
-function runtimeStatus(status: RuntimeStatus): ScreenRuntimeStatus {
+function runtimeStatus(status: RuntimeStatus): NatScreenRuntimeStatus {
   return {
     running: status.running,
     videoFrames: status.videoFrames.toString(),
