@@ -1,0 +1,246 @@
+syntax = "proto3";
+
+package screen.media.v1;
+
+message MulticastEndpoint {
+  string address = 1;
+  // Protobuf has no 16-bit integer scalar; implementations require 1..65535.
+  uint32 port = 2;
+  uint32 interface = 3;
+  uint32 ttl = 4;
+  bool loopback = 5;
+}
+
+message CameraInput {
+  enum Codec {
+    CODEC_UNSPECIFIED = 0;
+    CODEC_H264 = 1;
+    CODEC_MJPEG = 2;
+  }
+  string device = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  uint32 frame_rate_numerator = 4;
+  uint32 frame_rate_denominator = 5;
+  Codec codec = 6;
+}
+
+message AudioInput {
+  bool enabled = 1;
+  string device = 2;
+  uint32 sample_rate = 3;
+  uint32 channels = 4;
+  uint32 bitrate = 5;
+}
+
+message VideoEncoder {
+  uint32 bitrate = 1;
+  uint32 quality = 2;
+  uint32 idr_period = 3;
+}
+
+message SenderConfig {
+  uint32 format_version = 1;
+  CameraInput camera = 2;
+  AudioInput audio_input = 3;
+  VideoEncoder video_encoder = 4;
+  MulticastEndpoint output = 5;
+}
+
+message MediaRoute {
+  string id = 1;
+  MulticastEndpoint input = 2;
+}
+
+message SceneLayer {
+  string route_id = 1;
+  float x = 2;
+  float y = 3;
+  float width = 4;
+  float height = 5;
+  float opacity = 6;
+  int32 z_index = 7;
+}
+
+message Scene {
+  string name = 1;
+  repeated SceneLayer layers = 2;
+}
+
+message ReceiverOutput {
+  // Empty selects the first connected monitor and is valid for a single output.
+  string monitor_id = 1;
+  string scene_name = 2;
+}
+
+message ReceiverConfig {
+  uint32 format_version = 1;
+  reserved 2; // ReceiverConfig v1 used this field for one MulticastEndpoint.
+  string audio_output_device = 3;
+  uint32 jitter_buffer_ms = 4;
+  repeated MediaRoute routes = 5;
+  repeated ReceiverOutput outputs = 6;
+  repeated Scene scenes = 7;
+}
+
+message Status {
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_OK = 1;
+    CODE_INVALID_ARGUMENT = 2;
+    CODE_FAILED_PRECONDITION = 3;
+    CODE_CONFLICT = 4;
+    CODE_UNAVAILABLE = 5;
+    CODE_INTERNAL = 6;
+  }
+  Code code = 1;
+  string message = 2;
+}
+
+message GetStatusRequest {}
+
+message GetConfigRequest {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_SENDER = 1;
+    KIND_RECEIVER = 2;
+  }
+  Kind kind = 1;
+}
+
+message ApplySenderConfigRequest {
+  uint64 expected_revision = 1;
+  SenderConfig config = 2;
+}
+
+message ApplyReceiverConfigRequest {
+  uint64 expected_revision = 1;
+  ReceiverConfig config = 2;
+}
+
+message UpdateSceneRequest {
+  uint64 expected_revision = 1;
+  Scene scene = 2;
+}
+
+message DiscoverRequest {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_CAMERAS = 1;
+    KIND_CAMERA_MODES = 2;
+    KIND_AUDIO_INPUTS = 3;
+    KIND_AUDIO_OUTPUTS = 4;
+    KIND_MONITORS = 5;
+  }
+  Kind kind = 1;
+  string camera_selector = 2;
+  uint32 offset = 3;
+  uint32 page_size = 4;
+}
+
+message ControlRequest {
+  uint32 protocol_version = 1;
+  uint64 request_id = 2;
+  oneof request {
+    GetStatusRequest get_status = 3;
+    GetConfigRequest get_config = 4;
+    ApplySenderConfigRequest apply_sender_config = 5;
+    ApplyReceiverConfigRequest apply_receiver_config = 6;
+    UpdateSceneRequest update_scene = 7;
+    DiscoverRequest discover = 8;
+  }
+}
+
+message RuntimeStatus {
+  bool running = 1;
+  uint64 video_frames = 2;
+  uint64 audio_frames = 3;
+  uint64 dropped_packets = 4;
+  uint64 bytes_sent = 5;
+  uint64 bytes_received = 6;
+}
+
+enum SelectorKind {
+  SELECTOR_KIND_UNSPECIFIED = 0;
+  SELECTOR_KIND_PATH = 1;
+  SELECTOR_KIND_PLATFORM_ID = 2;
+  SELECTOR_KIND_NAME = 3;
+}
+
+message DiscoveryIdentity {
+  string selector = 1;
+  string display_name = 2;
+  SelectorKind selector_kind = 3;
+}
+
+message DiscoveryCameraMode {
+  uint64 native_format_id = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  uint32 frame_interval_numerator = 4;
+  uint32 frame_interval_denominator = 5;
+  CameraInput.Codec codec = 6;
+  string description = 7;
+}
+
+message DiscoveryMonitorMode {
+  uint32 width = 1;
+  uint32 height = 2;
+  uint32 refresh_millihz = 3;
+}
+
+message DiscoveryMonitor {
+  string selector = 1;
+  string display_name = 2;
+  SelectorKind selector_kind = 3;
+  DiscoveryMonitorMode preferred_mode = 4;
+  DiscoveryMonitorMode current_mode = 5;
+  bool has_preferred_mode = 6;
+  bool has_current_mode = 7;
+}
+
+message DiscoveryItem {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_CAMERA = 1;
+    KIND_CAMERA_MODE = 2;
+    KIND_AUDIO_INPUT = 3;
+    KIND_AUDIO_OUTPUT = 4;
+    KIND_MONITOR = 5;
+  }
+  Kind kind = 1;
+  oneof value {
+    DiscoveryIdentity identity = 2;
+    DiscoveryCameraMode camera_mode = 3;
+    DiscoveryMonitor monitor = 4;
+  }
+}
+
+message DiscoveryResponse {
+  repeated DiscoveryItem items = 1;
+  uint32 next_offset = 2;
+  bool source_truncated = 3;
+}
+
+message ErrorEvent {
+  string error = 1;
+}
+
+message ControlResponse {
+  uint32 protocol_version = 1;
+  uint64 request_id = 2;
+  Status status = 3;
+  uint64 revision = 4;
+  oneof payload {
+    RuntimeStatus runtime_status = 5;
+    SenderConfig sender_config = 6;
+    ReceiverConfig receiver_config = 7;
+    DiscoveryResponse discovery = 8;
+    // Unsolicited runtime diagnostic; request_id is zero.
+    ErrorEvent error = 9;
+  }
+}
+
+service MediaControl {
+  rpc Control(ControlRequest) returns (ControlResponse);
+}

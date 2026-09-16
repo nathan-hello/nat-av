@@ -12,4 +12,5 @@ packages:
 onlyBuiltDependencies:
   - esbuild
 allowBuilds:
+  "@bufbuild/buf": true
   esbuild: true

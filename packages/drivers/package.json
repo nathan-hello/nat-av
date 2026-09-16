@@ -30,6 +30,7 @@
     "@nat-av/driver-linux-network-manager": "workspace:*",
     "@nat-av/driver-mediasite": "workspace:*",
     "@nat-av/driver-paint": "workspace:*",
+    "@nat-av/driver-screen-media": "workspace:*",
     "@nat-av/driver-turtle": "workspace:*"
   }
 }

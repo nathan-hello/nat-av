@@ -1,0 +1,40 @@
+{
+  "name": "@nat-av/driver-screen-media",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    ".dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./.dist/index.d.ts",
+      "import": "./.dist/index.js"
+    },
+    "./proto": {
+      "types": "./.dist/src/generated/media_control_pb.d.ts",
+      "import": "./.dist/src/generated/media_control_pb.js"
+    },
+    "./repl": {
+      "types": "./.dist/repl/index.d.ts",
+      "import": "./.dist/repl/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
+    "generate": "buf generate",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test .dist/test/*.test.js"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.15.0"
+  },
+  "peerDependencies": {
+    "@nat-av/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
+    "@bufbuild/protoc-gen-es": "^2.15.0",
+    "@nat-av/core": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

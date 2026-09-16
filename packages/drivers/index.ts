@@ -5,4 +5,5 @@ export * as Mediasite from "@nat-av/driver-mediasite";
 export * as NatDecoder from "@nat-av/driver-nat-decoder";
 export * as NatDecoderWall from "@nat-av/driver-nat-decoder-wall";
 export * as Paint from "@nat-av/driver-paint";
+export * as ScreenMedia from "@nat-av/driver-screen-media";
 export * as Turtle from "@nat-av/driver-turtle";

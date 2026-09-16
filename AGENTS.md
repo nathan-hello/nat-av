@@ -66,3 +66,11 @@ source is identical. Packed-package tests must cover this boundary.
 
 Drivers and plugins may use core capabilities, but must not import concrete
 drivers or plugins from one another. Put shared contracts in core.
+
+### Formatting
+
+Generate decently formatted code. Don't make edits to code only for the sake of
+formatting. The formatting is done by running `pnpm run prettier` in the same
+directory as this file. It is defined in `./package.json`. Do not run `prettier`
+from `node_modules` of any folder or from PATH. Only format code by running
+`pnpm run prettier`.
