@@ -282,7 +282,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
 
     const req = Rpc.Request.is(message.data);
     if (!req) {
-      const requestId =
+      const requestId: Rpc.Id | null =
         (
           message.data &&
           typeof message.data === "object" &&
@@ -291,8 +291,8 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
           (typeof message.data.id === "string" ||
             typeof message.data.id === "number")
         ) ?
-          message.data.id.toString()
-        : "UNKNOWN_REQUEST_ID";
+           message.data.id
+        : null;
 
       peer.send(
         Rpc.Json.stringify(

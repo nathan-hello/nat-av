@@ -307,9 +307,31 @@ describe("rpc deps", () => {
         .map((driver) => driver.name),
       ["leaf", "level-3"],
     );
+    assert.deepEqual(
+      await client.find.driver("/rooms").array(),
+      (["leaf", "level-3"] as const).map((name) => client.driver(name)),
+    );
+    assert.deepEqual(
+      (await client.find.driver("/rooms").array()).map((driver) => driver.name),
+      ["leaf", "level-3"],
+    );
+    assert.deepEqual(await client.find.driver("/rooms/unknown").array(), []);
     assert.equal(client.find.driver("leaf").name, "leaf");
     assert.equal(client.find.driver("missing").name, "missing");
     await assert.rejects(client.call("missing", "ping"));
+    await assert.rejects(
+      client.request(
+        Rpc.Request.driverCall(0, {
+          driver: "missing",
+          method: "ping",
+          args: [],
+        }),
+      ),
+      (error: unknown) =>
+        error instanceof Rpc.Error &&
+        error.id === 0 &&
+        error.origin.scope === "natav",
+    );
     class RuntimeDriver extends Natav.Driver<"runtime"> {
       state = { ready: true };
       api = { ping: async () => "runtime-pong" };

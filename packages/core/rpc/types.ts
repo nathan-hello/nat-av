@@ -311,7 +311,7 @@ export namespace Rpc {
     };
   }
 
-  type Id = string | number;
+  export type Id = string | number;
 
   const REQUEST_METHOD = {
     DriverCall: "driver.call",

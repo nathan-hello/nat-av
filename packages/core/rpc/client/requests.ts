@@ -35,9 +35,12 @@ export class ClientRpcRequests {
   }
 
   rejectAll(error: Rpc.Error) {
-    for (const _ of this.pendingRequests.keys()) {
-      this.rejectPendingRequest(error);
+    for (const [id, pending] of this.pendingRequests) {
+      clearTimeout(pending.timeout);
+      this.pendingRequests.delete(id);
+      pending.reject(error);
     }
+    this.emitChange();
   }
 
   async request<Request extends Rpc.Request>(
