@@ -184,12 +184,17 @@ export default class NatScreen<
       config: MessageInitShape<typeof SenderConfigSchema>,
     ): Promise<string> => {
       this.requireKind("sender");
+      const nextConfig = create(SenderConfigSchema, config);
       const response = await this.request({
         case: "applySenderConfig",
         value: create(ApplySenderConfigRequestSchema, {
           expectedRevision: this.revision,
-          config: create(SenderConfigSchema, config),
+          config: nextConfig,
         }),
+      });
+      this.state.senderConfig = nextConfig;
+      this.dispatch("driver:state-updated", {
+        data: { senderConfig: nextConfig },
       });
       return response.revision.toString();
     },
@@ -198,12 +203,17 @@ export default class NatScreen<
       config: MessageInitShape<typeof ReceiverConfigSchema>,
     ): Promise<string> => {
       this.requireKind("receiver");
+      const nextConfig = create(ReceiverConfigSchema, config);
       const response = await this.request({
         case: "applyReceiverConfig",
         value: create(ApplyReceiverConfigRequestSchema, {
           expectedRevision: this.revision,
-          config: create(ReceiverConfigSchema, config),
+          config: nextConfig,
         }),
+      });
+      this.state.receiverConfig = nextConfig;
+      this.dispatch("driver:state-updated", {
+        data: { receiverConfig: nextConfig },
       });
       return response.revision.toString();
     },
@@ -212,13 +222,26 @@ export default class NatScreen<
       scene: MessageInitShape<typeof SceneSchema>,
     ): Promise<string> => {
       this.requireKind("receiver");
+      const nextScene = create(SceneSchema, scene);
       const response = await this.request({
         case: "updateScene",
         value: create(UpdateSceneRequestSchema, {
           expectedRevision: this.revision,
-          scene: create(SceneSchema, scene),
+          scene: nextScene,
         }),
       });
+      const currentConfig = this.state.receiverConfig;
+      if (currentConfig) {
+        const index = currentConfig.scenes.findIndex(
+          (current) => current.name === nextScene.name,
+        );
+        if (index !== -1) {
+          currentConfig.scenes[index] = nextScene;
+          this.dispatch("driver:state-updated", {
+            data: { receiverConfig: currentConfig },
+          });
+        }
+      }
       return response.revision.toString();
     },
 

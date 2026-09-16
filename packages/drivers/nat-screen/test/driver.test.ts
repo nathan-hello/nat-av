@@ -113,6 +113,7 @@ describe("nat screen driver", () => {
       ),
     );
     assert.equal(await apply, "10");
+    assert.equal(driver.state.senderConfig?.formatVersion, 1);
   });
 
   it("dispatches unsolicited errors without consuming a pending response", async () => {

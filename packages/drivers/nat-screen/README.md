@@ -40,3 +40,30 @@ pnpm --filter @nat-av/driver-nat-screen run repl 127.0.0.1 7000
 
 Port 7000 selects sender commands; other ports select receiver commands. For a
 sender on a nonstandard port, call `runRepl` with `kind: "sender"`.
+
+Receiver configuration uses repeatable flags instead of JSON. Route IDs are
+optional and default to `route1`, `route2`, and so on:
+
+```text
+apply -r 239.1.2.3:5000 -r 239.1.2.4:5000 --layout side-by-side
+layout fullscreen route1
+layout side-by-side
+layout quad
+clear
+```
+
+Use `id=address:port` to choose stable route names:
+
+```text
+apply -r main=239.1.2.3:5000 -r backup=239.1.2.4:5000
+```
+
+Sender configuration requires only an output. Camera and encoder settings use
+the documented defaults and can be overridden with flags:
+
+```text
+apply -o 239.1.2.3:5000
+apply -o 239.1.2.3:5000 -c /dev/video2 --size 1280x720 -f 60 --codec mjpeg
+```
+
+Run `help` in the REPL for every option and discovery command.
