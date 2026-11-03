@@ -29,17 +29,21 @@ export namespace Natav {
   export type Array = readonly Shape[];
 
   export type GroupInput<T extends Shape = Shape> =
-    readonly T[] | { readonly [name: string]: GroupInput<T> };
+    | readonly T[]
+    | { readonly [name: string]: GroupInput<T> };
 
   export type RootInput<T extends Shape = Shape> = readonly (
-    T | GroupInput<T>
+    | T
+    | GroupInput<T>
   )[];
 
   export type PluginGroupInput<T extends AnyPlugin = AnyPlugin> =
-    readonly T[] | { readonly [name: string]: PluginGroupInput<T> };
+    | readonly T[]
+    | { readonly [name: string]: PluginGroupInput<T> };
 
   export type PluginInput<T extends AnyPlugin = AnyPlugin> = readonly (
-    T | PluginGroupInput<T>
+    | T
+    | PluginGroupInput<T>
   )[];
 
   export type PluginGroupPaths<Input> =
@@ -88,7 +92,8 @@ export namespace Natav {
     : never;
 
   export type PartialArray<T extends readonly unknown[]> =
-    T | readonly T[number][];
+    | T
+    | readonly T[number][];
 
   export type ApiMethod = (...args: any[]) => any;
   export type ApiRecord = { [key: string]: ApiMethod | ApiRecord };
@@ -172,7 +177,8 @@ export namespace Natav {
   };
 
   export type AnyPlugin<T extends Shape = Shape> =
-    PluginFunction<T> | PluginConstructor<T>;
+    | PluginFunction<T>
+    | PluginConstructor<T>;
 
   type PluginReturn<T> =
     T extends new (...args: any[]) => infer R ? R

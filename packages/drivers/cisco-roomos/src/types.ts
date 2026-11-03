@@ -134,9 +134,8 @@ type StateFromSubscriptions<
   Product extends ProductTargetOf<Schema>,
   Subscriptions,
 > = {
-  [
-    K in keyof Subscriptions & keyof RootState<Schema, Product>
-  ]: PruneBySubscriptions<
+  [K in keyof Subscriptions &
+    keyof RootState<Schema, Product>]: PruneBySubscriptions<
     RootState<Schema, Product>[K],
     NonNullable<Subscriptions[K]>
   >;

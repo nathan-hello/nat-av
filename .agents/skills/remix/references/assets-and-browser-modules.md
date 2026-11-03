@@ -20,40 +20,45 @@ Use `staticFiles()` for files that already exist on disk exactly as they should 
 ## Default Pattern
 
 ```typescript
-import { createAssetServer } from 'remix/assets'
-import { createController } from 'remix/router'
-import { get, route } from 'remix/routes'
+import { createAssetServer } from "remix/assets";
+import { createController } from "remix/router";
+import { get, route } from "remix/routes";
 
 export const routes = route({
-  assets: get('/assets/*path'),
-})
+  assets: get("/assets/*path"),
+});
 
 let assetServer = createAssetServer({
-  basePath: '/assets',
+  basePath: "/assets",
   rootDir: process.cwd(),
   fileMap: {
-    'app/*path': 'app/*path',
-    'node_modules/*path': 'node_modules/*path',
+    "app/*path": "app/*path",
+    "node_modules/*path": "node_modules/*path",
   },
-  allow: ['app/assets/**', 'node_modules/**'],
-  deny: ['app/**/*.server.*'],
-  target: { es: '2020', chrome: '109', safari: '16.4' },
-  sourceMaps: process.env.NODE_ENV === 'development' ? 'external' : undefined,
-  minify: process.env.NODE_ENV === 'production',
+  allow: ["app/assets/**", "node_modules/**"],
+  deny: ["app/**/*.server.*"],
+  target: { es: "2020", chrome: "109", safari: "16.4" },
+  sourceMaps: process.env.NODE_ENV === "development" ? "external" : undefined,
+  minify: process.env.NODE_ENV === "production",
   scripts: {
     define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'development'),
+      "process.env.NODE_ENV": JSON.stringify(
+        process.env.NODE_ENV ?? "development",
+      ),
     },
   },
-})
+});
 
 export default createController(routes, {
   actions: {
     async assets({ request }) {
-      return (await assetServer.fetch(request)) ?? new Response('Not Found', { status: 404 })
+      return (
+        (await assetServer.fetch(request)) ??
+        new Response("Not Found", { status: 404 })
+      );
     },
   },
-})
+});
 ```
 
 ## Rules
@@ -71,8 +76,8 @@ export default createController(routes, {
 Use `getHref()` when you need the public URL for one module, and `getPreloads()` when you want `<link rel="modulepreload">` tags or `Link` headers for one or more entrypoints and their dependencies.
 
 ```typescript
-let entryHref = await assetServer.getHref('app/assets/entry.ts')
-let preloads = await assetServer.getPreloads(['app/assets/entry.ts'])
+let entryHref = await assetServer.getHref("app/assets/entry.ts");
+let preloads = await assetServer.getPreloads(["app/assets/entry.ts"]);
 ```
 
 Use this when rendering documents or layouts that boot browser behavior with a known client entry.

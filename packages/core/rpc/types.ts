@@ -234,7 +234,8 @@ export namespace Rpc {
     };
 
     export type Path<N extends Natav.Runtime> =
-      Natav.Names<N["drivers"]> | Natav.GroupPaths<N["input"]>;
+      | Natav.Names<N["drivers"]>
+      | Natav.GroupPaths<N["input"]>;
 
     export type Result<N extends Natav.Runtime, Route extends Path<N>> =
       string extends Route ? Rpc.Proxy<N["drivers"][number]>

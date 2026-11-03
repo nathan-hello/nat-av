@@ -16,9 +16,7 @@ The reusable helper should be named `createRepl` and should accept a mapping
 from command names to textual callbacks:
 
 ```ts
-type ReplCommand = (
-  args: string[],
-) => string | void | Promise<string | void>;
+type ReplCommand = (args: string[]) => string | void | Promise<string | void>;
 
 type ReplCommands = Record<string, ReplCommand>;
 ```
@@ -42,7 +40,9 @@ const repl = createRepl({
 Use arrow-function properties in command maps:
 
 ```ts
-commands: { list: () => {} }
+commands: {
+  list: () => {};
+}
 ```
 
 Do not use method shorthand:

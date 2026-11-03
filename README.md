@@ -18,7 +18,7 @@ If you are just curious and don't feel like doing a full `pnpm install`, just
 look at the test files to learn how the library is used. You can run `pnpm test`
 to verify that all the tests pass, but read
 `./packages/drivers/cisco-roomos/README.md` first before running test because if
-you don't have that set up then it won't pass. 
+you don't have that set up then it won't pass.
 
 I haven't done much on the UI side other than testing the client-side RPC
 bindings. This repo isn't about creating an [Abstract Program
@@ -57,4 +57,4 @@ licensed
 [network-audio-controller](https://github.com/chris-ritsen/network-audio-controller)
 project.
 
-That said, they are there for the chatbots. Use them! 
+That said, they are there for the chatbots. Use them!
