@@ -21,10 +21,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
-    "generate": "buf generate proto --template proto/buf.gen.yaml",
     "repl": "node --input-type=module -e 'import { runRepl } from \"./.dist/repl/index.js\"; const [address, port] = process.argv.slice(1); await runRepl({ address, port: Number(port) });'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test .dist/test/*.test.js"
+    "test": "node --test .dist/test/*.test.js",
+    "postinstall": "buf generate proto --template proto/buf.gen.yaml"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.15.0"

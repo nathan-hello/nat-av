@@ -28,7 +28,8 @@
     "generate": "tsx scripts/index.ts",
     "build": "pnpm run generate && tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
-    "test": "node --test .dist/test/**/*.test.js"
+    "test": "node --test .dist/test/**/*.test.js",
+    "postinstall": "pnpm run download-schemas -- assets/schemas/schemas.json"
   },
   "peerDependencies": {
     "@nat-av/core": "^0.1.0"

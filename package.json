@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@11.8.0",
   "scripts": {
-    "fetch": "pnpm -r --if-present run fetch",
+    "postinstall": "pnpm -r --if-present run postinstall",
     "build": "pnpm -r --if-present run build",
     "cloc": "for package in packages/* packages/*/*; do if [ -f \"$package/package.json\" ]; then printf '\\n%s\\n' \"$package\"; git ls-files -co --exclude-standard -- \"$package\" | cloc --list-file=-; fi; done",
     "cloc-packages": "git ls-files -co --exclude-standard -- packages | cloc --list-file=-",

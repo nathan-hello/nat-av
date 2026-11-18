@@ -22,10 +22,11 @@ strings so the state remains safe to send over JSON RPC.
 ## Regenerating protobuf code
 
 `proto/media_control.proto` is copied from the screen repository.
-After updating it, regenerate the checked-in TypeScript descriptors and types:
+The TypeScript descriptors and types in `proto/generated/` are gitignored.
+Generate them after a fresh clone and after updating the `.proto`:
 
 ```sh
-pnpm --filter @nat-av/driver-nat-screen generate
+pnpm --filter @nat-av/driver-nat-screen run postinstall   # or `pnpm run postinstall` from the root
 ```
 
 Consumers do not need Buf or `protoc` at runtime.

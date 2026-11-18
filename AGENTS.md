@@ -2,7 +2,14 @@
 
 ## Commands
 
-`pnpm install` `pnpm run dev` `pnpm run test` `pnpm run typecheck`
+`pnpm install` `pnpm run postinstall` `pnpm run dev` `pnpm run test` `pnpm run typecheck`
+
+`pnpm run postinstall` is run manually after `pnpm install`. It runs each
+package's `postinstall` script, which downloads external inputs (schemas,
+SDKs) and runs code generators whose output is not committed. It is the only
+step that may use the network. Do not add workspace packages or the root to
+`allowBuilds`, or pnpm will start running these automatically. `pnpm run build`
+must work offline.
 
 ## Building Remix Features
 
