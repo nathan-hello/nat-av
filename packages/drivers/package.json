@@ -21,6 +21,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@nat-av/driver-crestron-nvx": "workspace:*",
     "@nat-av/driver-bewinner-relay-board": "workspace:*",
     "@nat-av/driver-cisco-roomos": "workspace:*",
     "@nat-av/driver-dante-router": "workspace:*",

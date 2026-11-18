@@ -1,5 +1,6 @@
 export * as BewinnerRelayBoard from "@nat-av/driver-bewinner-relay-board";
 export * as CiscoRoomOS from "@nat-av/driver-cisco-roomos";
+export * as CrestronNvx from "@nat-av/driver-crestron-nvx";
 export * as DanteRouter from "@nat-av/driver-dante-router";
 export * as Mediasite from "@nat-av/driver-mediasite";
 export * as NatDecoder from "@nat-av/driver-nat-decoder";
