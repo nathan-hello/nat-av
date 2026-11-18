@@ -26,8 +26,41 @@ export const nvxObjects = [
   "CertificateStore",
   "Authentication",
   "ParentDevice",
+  "MultiViewLayout",
+  "AutoPowerConfig",
+  "AutoUpdateMaster",
+  "CloudSettings",
+  "ControlPorts",
+  "DiscoveredStreams",
+  "DiscoveryConfig",
+  "FanControl",
+  "FilePaths",
+  "Ieee8021x",
+  "IpTableV2",
+  "NetworkConnectionType",
+  "PortSelection",
+  "Security",
+  "SystemClock",
+  "SystemVersions",
+  "UserInterfaceConfig",
 ] as const;
 export type NvxObject = (typeof nvxObjects)[number];
+import type { NvxDiscovery } from "./discovery.js";
+export {
+  nvxDiscovery,
+  nvxFeatureObjects,
+  nvxProbeObjects,
+  nvxProfile,
+  nvxProfileAllows,
+  type NvxDiscovery,
+  type NvxModel,
+  type NvxProfile,
+} from "./discovery.js";
+/** Objects that accept commands but need not report readable state. */
+export const nvxWriteOnlyObjects: readonly NvxObject[] = [
+  "DeviceOperations",
+  "Authentication",
+];
 export {
   nvxAdministration,
   nvxAdministrationChange,
@@ -70,7 +103,12 @@ export type NvxSnapshot = {
   objects: Partial<Record<NvxObject, JsonObject>>;
   readAt: string;
 };
-export type NvxState = { connected: boolean; snapshot: NvxSnapshot };
+export type NvxState = {
+  connected: boolean;
+  snapshot: NvxSnapshot;
+  /** Result of the last explicit discover(); cleared on every login. */
+  discovery?: NvxDiscovery;
+};
 
 export function assertJsonObject(value: unknown): asserts value is JsonObject {
   const active = new Set<object>();
@@ -109,22 +147,51 @@ export const nvxReadOnlyObjects: readonly NvxObject[] = [
   "DeviceInfo",
   "DeviceCapabilities",
   "ParentDevice",
+  "DiscoveredStreams",
+  "FilePaths",
+  "SystemVersions",
 ];
 
 export type NvxChange = { object: NvxObject; patch: Record<string, unknown> };
-type Control = {
+export type NvxControl = {
   id: string;
   label: string;
   object: NvxObject;
   path: readonly (string | number)[];
   values?: readonly string[];
+  /** Sibling property whose reported string array lists the valid values. */
+  valuesFrom?: string;
   boolean?: boolean;
   trigger?: boolean;
   minimum?: number;
   maximum?: number;
-  format?: "multicast" | "rtsp" | "uuid";
+  format?: "multicast" | "rtsp" | "uuid" | "hex";
   optionsGroup?: { name: string; version?: string };
 };
+type Control = NvxControl;
+/** Device-reported context that narrows control values after discovery. */
+export type NvxControlContext = {
+  audioSources?: readonly string[];
+  inputs?: number;
+};
+const windows = ["WindowA", "WindowB", "WindowC", "WindowD", "WindowE", "WindowF"];
+const transitions = [
+  "None",
+  "Fade",
+  ...["Stretch", "Zoom", "Wipe"].flatMap((kind) =>
+    [
+      "Top",
+      "TopRight",
+      "Right",
+      "BottomRight",
+      "Bottom",
+      "BottomLeft",
+      "Left",
+      "TopLeft",
+      "Center",
+    ].map((edge) => kind + edge),
+  ),
+];
 // Protocol shapes verified against DM NVX Tool 4.3.2.737 and the Crestron REST
 // reference. These are device commands, not room workflows or UI-side writes.
 export const nvxControls: readonly Control[] = [
@@ -378,22 +445,141 @@ export const nvxControls: readonly Control[] = [
       "Frequency Adjust",
     ],
   },
+  // MultiViewLayout (DM-NVX-38x): names and validation from Crestron's REST reference.
+  {
+    id: "mv-enabled",
+    label: "Multiview",
+    object: "MultiViewLayout",
+    path: ["IsMultiviewEnabled"],
+    boolean: true,
+  },
+  {
+    id: "mv-layout",
+    label: "Multiview layout",
+    object: "MultiViewLayout",
+    path: ["ActiveLayout"],
+    valuesFrom: "MultiViewLayoutsSupported",
+  },
+  {
+    id: "mv-audio",
+    label: "Multiview audio window",
+    object: "MultiViewLayout",
+    path: ["AudioSource"],
+    values: ["None", ...windows],
+  },
+  {
+    id: "mv-borders",
+    label: "Multiview window borders",
+    object: "MultiViewLayout",
+    path: ["IsWindowBorderEnabled"],
+    boolean: true,
+  },
+  {
+    id: "mv-border-selection",
+    label: "Multiview highlighted border",
+    object: "MultiViewLayout",
+    path: ["WindowBorderSelection"],
+    values: ["None", "CurrentAudioSource", "BlackSeperatorBorder", ...windows],
+  },
+  {
+    id: "mv-border-color",
+    label: "Multiview border color (hex)",
+    object: "MultiViewLayout",
+    path: ["WindowBorderColor"],
+    format: "hex",
+  },
+  {
+    id: "mv-osd",
+    label: "Multiview text overlay",
+    object: "MultiViewLayout",
+    path: ["MvOsd", "IsEnabled"],
+    boolean: true,
+  },
+  {
+    id: "mv-osd-location",
+    label: "Multiview text position",
+    object: "MultiViewLayout",
+    path: ["MvOsd", "Location"],
+    values: [
+      "UpperLeft",
+      "CenterLeft",
+      "LowerLeft",
+      "UpperCenter",
+      "MiddleCenter",
+      "LowerCenter",
+      "UpperRight",
+      "CenterRight",
+      "LowerRight",
+    ],
+  },
+  {
+    id: "mv-osd-font-color",
+    label: "Multiview text color (hex)",
+    object: "MultiViewLayout",
+    path: ["MvOsd", "FontColor"],
+    format: "hex",
+  },
+  {
+    id: "mv-osd-background",
+    label: "Multiview text background (hex)",
+    object: "MultiViewLayout",
+    path: ["MvOsd", "BackgroundColor"],
+    format: "hex",
+  },
+  {
+    id: "mv-osd-transparency",
+    label: "Multiview text background transparency (%)",
+    object: "MultiViewLayout",
+    path: ["MvOsd", "BackgroundTransparency"],
+    minimum: 0,
+    maximum: 100,
+  },
 ];
+
+/** Controls whose valid values or keys exist only in the device's response. */
+export function nvxDynamicControlObject(id: string): NvxObject | undefined {
+  if (id.startsWith("dante.")) return "Dante";
+  if (id === "nax-source") return "DeviceSpecific";
+  if (id.startsWith("mv")) return "MultiViewLayout";
+  return undefined;
+}
+
+function reportedAt(data: JsonObject, path: readonly (string | number)[]) {
+  let current: JsonValue = data;
+  for (const key of path) {
+    if (
+      !current ||
+      typeof current !== "object" ||
+      !Object.hasOwn(current, key)
+    )
+      return undefined;
+    current = Array.isArray(current) ? current[Number(key)] : current[key];
+  }
+  return current;
+}
 
 /** Readable control paths actually present in this endpoint's response. */
 /** Choices verified for a particular device-reported options group and version. */
 export type NvxOptionGroups = Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
 
-export function reportedControls(name: NvxObject, data: JsonObject, groups: NvxOptionGroups = {}) {
-  const controls: Control[] = nvxControls.filter(control => {
-    if (control.object !== name) return false;
-    let current: JsonValue = data;
-    for (const key of control.path) {
-      if (!current || typeof current !== "object" || !Object.hasOwn(current, key)) return false;
-      current = Array.isArray(current) ? current[Number(key)] : current[key];
-    }
-    return true;
-  });
+export function reportedControls(
+  name: NvxObject,
+  data: JsonObject,
+  groups: NvxOptionGroups = {},
+  context: NvxControlContext = {},
+) {
+  const controls: Control[] = [];
+  for (const control of nvxControls) {
+    if (control.object !== name) continue;
+    // Write-only triggers are not echoed back; their parent must be reported.
+    const path = control.trigger ? control.path.slice(0, -1) : control.path;
+    if (
+      reportedAt(data, path) === undefined &&
+      !nvxWriteOnlyObjects.includes(name)
+    )
+      continue;
+    controls.push(refine(control, data, context));
+  }
   function source(id: string, label: string, parent: JsonObject, prefix: string[], property: string) {
     if (typeof parent[property] !== "string") return;
     const group = parent[`${property}OptionsName`];
@@ -420,7 +606,55 @@ export function reportedControls(name: NvxObject, data: JsonObject, groups: NvxO
       });
     }
   }
-  return controls;
+  if (name === "MultiViewLayout") {
+    for (const [group, label, values] of [
+      ["WindowOverlayText", "overlay text", undefined],
+      ["WindowTransition", "transition", transitions],
+    ] as const) {
+      const entries = data[group];
+      if (!entries || typeof entries !== "object" || Array.isArray(entries))
+        continue;
+      for (const window of Object.keys(entries).filter((key) =>
+        windows.includes(key),
+      ))
+        controls.push({
+          id: `mv.${window}.${group === "WindowOverlayText" ? "text" : "transition"}`,
+          label: `${window.replace("Window", "Window ")} ${label}`,
+          object: name,
+          path: [group, window],
+          ...(values ? { values } : {}),
+        });
+    }
+  }
+  // A list-valued control without a reported list cannot be validated.
+  return controls.filter(
+    (control) => !control.valuesFrom || control.values?.length,
+  );
+}
+
+function refine(
+  control: Control,
+  data: JsonObject,
+  context: NvxControlContext,
+): Control {
+  let values = control.values;
+  if (control.valuesFrom) {
+    const list = reportedAt(data, [
+      ...control.path.slice(0, -1),
+      control.valuesFrom,
+    ]);
+    values = Array.isArray(list)
+      ? list.filter((value) => typeof value === "string")
+      : undefined;
+  }
+  if (control.id === "audio" && context.audioSources)
+    values = values?.filter((value) => context.audioSources!.includes(value));
+  if (context.inputs !== undefined)
+    values = values?.filter((value) => {
+      const input = /^Input(\d+)$/.exec(value);
+      return !input || Number(input[1]) <= context.inputs!;
+    });
+  return values === control.values ? control : { ...control, values };
 }
 
 export function nvxControlChange(id: string, input: unknown): NvxChange {
@@ -431,6 +665,8 @@ export function nvxControlChange(id: string, input: unknown): NvxChange {
 
 export function controlChange(control: Control, input: unknown): NvxChange {
   let value: unknown = input;
+  if (control.valuesFrom && !control.values?.length)
+    throw new Error("Read the device first; its supported values are unknown.");
   if (control.trigger) value = true;
   else if (control.boolean) {
     if (typeof value !== "boolean")
@@ -473,6 +709,8 @@ export function controlChange(control: Control, input: unknown): NvxChange {
     if (control.path.at(-1) === "DanteDeviceName" &&
         !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,29}[A-Za-z0-9])?$/.test(value))
       throw new Error("Use a Dante name of 1–31 letters, digits or internal hyphens.");
+    if (control.format === "hex" && !/^[0-9a-f]{6}$/i.test(value))
+      throw new Error("Enter a six-digit hex color such as 004A80.");
     if (
       control.format === "uuid" &&
       !/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(value)

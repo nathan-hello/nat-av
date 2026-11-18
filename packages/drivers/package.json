@@ -21,17 +21,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@nat-av/driver-crestron-nvx": "workspace:*",
     "@nat-av/driver-bewinner-relay-board": "workspace:*",
     "@nat-av/driver-cisco-roomos": "workspace:*",
+    "@nat-av/driver-crestron-cp4n": "workspace:*",
+    "@nat-av/driver-crestron-nvx": "workspace:*",
     "@nat-av/driver-dante-router": "workspace:*",
+    "@nat-av/driver-linux-network-manager": "workspace:*",
+    "@nat-av/driver-linux-pipewire": "workspace:*",
+    "@nat-av/driver-mediasite": "workspace:*",
     "@nat-av/driver-nat-decoder": "workspace:*",
     "@nat-av/driver-nat-decoder-wall": "workspace:*",
-    "@nat-av/driver-linux-pipewire": "workspace:*",
-    "@nat-av/driver-linux-network-manager": "workspace:*",
-    "@nat-av/driver-mediasite": "workspace:*",
-    "@nat-av/driver-paint": "workspace:*",
     "@nat-av/driver-nat-screen": "workspace:*",
+    "@nat-av/driver-paint": "workspace:*",
     "@nat-av/driver-turtle": "workspace:*"
   }
 }

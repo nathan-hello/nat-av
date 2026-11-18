@@ -2,7 +2,7 @@ import { Repl } from "@nat-av/core";
 import { nvxObjects, type NvxObject, type JsonValue } from "../catalog.js";
 import type NvxDriver from "../index.js";
 
-const help = `info | caps | objects | read <object> | controls <object>
+const help = `info | caps | discover | objects | read <object> | controls <object>
 streams                         Read TX, RX and discovered SDP streams
 control <id> <value>            Set a catalog control (e.g. control leds true)
 nax <Tx|Rx> <key> <action> [value]
@@ -32,6 +32,7 @@ export function createRepl({ driver }: { driver: NvxDriver }) {
       connect: () => api.connect(),
       info: () => read("DeviceInfo"),
       caps: () => read("DeviceCapabilities"),
+      discover: async () => print(await api.discover()),
       objects: () => nvxObjects.join(", "),
       read: ([name]) => read(objectName(name)),
       controls: async ([name]) => print(await api.controls(objectName(name))),

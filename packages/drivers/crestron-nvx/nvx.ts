@@ -8,13 +8,26 @@ import {
 } from "./http.js";
 import { Err } from "@nat-av/core";
 import { Agent } from "undici";
-import { controlChange, reportedControls, type NvxOptionGroups } from "./catalog.js";
+import {
+  controlChange,
+  nvxControls,
+  nvxDynamicControlObject,
+  reportedControls,
+  type NvxControl,
+  type NvxOptionGroups,
+} from "./catalog.js";
+import {
+  nvxDiscovery,
+  nvxProbeObjects,
+  nvxProfile,
+  nvxProfileAllows,
+  type NvxDiscovery,
+} from "./discovery.js";
 
 import {
   assertJsonObject,
   nvxObjects,
   nvxReadOnlyObjects,
-  nvxControlChange,
   nvxEdidChange,
   nvxHdcpChange,
   nvxScalerChange,
@@ -61,6 +74,98 @@ export class NvxDriver<
     };
   }, private readonly optionGroups: NvxOptionGroups = {}) {
     super(name, endpoint, factory, false);
+  }
+  /** Drops the previous device's discovery before authenticating again. */
+  override async login(
+    credentials?: () => Promise<Pick<DeviceEndpoint, "username" | "password">>,
+  ): Promise<void> {
+    if (this.state.discovery) {
+      const { discovery: _, ...state } = this.state;
+      this.state = state;
+      this.dispatch("driver:state-updated", { data: this.state });
+    }
+    return super.login(credentials);
+  }
+  /**
+   * Read DeviceInfo, match its model against the SDK-derived profile, then
+   * read every other catalog object the profile allows. The result lists the
+   * objects and controls this device actually reported. GET requests only.
+   */
+  async discover(): Promise<NvxDiscovery> {
+    return this.exclusive(async () => {
+      this.requireConnected();
+      const info = (await this.readSnapshot("DeviceInfo")).objects.DeviceInfo;
+      const profile = nvxProfile(info?.Model);
+      const unsupported: NvxObject[] = [];
+      for (const name of nvxProbeObjects()) {
+        if (!nvxProfileAllows(profile, name)) continue;
+        try {
+          await this.readSnapshot(name);
+        } catch (error) {
+          // Authentication or transport failures end discovery; absence does not.
+          if (!this.authenticated) throw error;
+          const objects = { ...this.snapshot.objects };
+          delete objects[name];
+          this.state = { ...this.state, snapshot: { ...this.snapshot, objects } };
+          unsupported.push(name);
+        }
+      }
+      const discovery = nvxDiscovery(this.snapshot, unsupported, this.optionGroups);
+      this.state = { ...this.state, discovery };
+      this.dispatch("driver:state-updated", { data: this.state });
+      return structuredClone(discovery);
+    });
+  }
+  /** Caller holds the request lock. Dynamic controls re-read their object. */
+  private async controlFor(id: string): Promise<NvxControl> {
+    const discovery = this.state.discovery;
+    const dynamic = nvxDynamicControlObject(id);
+    if (dynamic) {
+      const snapshot = await this.readSnapshot(dynamic);
+      const control = reportedControls(
+        dynamic,
+        snapshot.objects[dynamic] ?? {},
+        this.optionGroups,
+        discovery
+          ? {
+              ...(discovery.profile
+                ? { audioSources: discovery.profile.audioSources }
+                : {}),
+              inputs: discovery.inputs.hdmi + discovery.inputs.usbC,
+            }
+          : {},
+      ).find((entry) => entry.id === id);
+      if (!control) throw new Error(`This device did not report control ${id}.`);
+      return control;
+    }
+    const control = discovery
+      ? discovery.controls.find((entry) => entry.id === id)
+      : nvxControls.find((entry) => entry.id === id);
+    if (!control)
+      throw new Error(
+        discovery
+          ? `This device did not report control ${id}.`
+          : "Choose a supported NVX control.",
+        { cause: Err.Codes.RpcInvalidParams },
+      );
+    return control;
+  }
+  /** Validate a control against this device without writing it. */
+  async change(id: string, value: unknown): Promise<NvxChange> {
+    return this.exclusive(async () => {
+      const control = await this.controlFor(id);
+      return this.validated(() => controlChange(control, value));
+    });
+  }
+  private validated(build: () => NvxChange): NvxChange {
+    try {
+      return build();
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Invalid NVX control parameters.",
+        { cause: Err.Codes.RpcInvalidParams },
+      );
+    }
   }
   private validate(name: string): asserts name is NvxObject {
     if (!nvxObjects.some((entry) => entry === name))
@@ -115,6 +220,12 @@ export class NvxDriver<
       );
     }
     this.requireConnected();
+    const profile = this.state.discovery?.profile;
+    if (!nvxProfileAllows(profile, name))
+      throw new Error(
+        `${profile?.model} does not support ${name} according to its SDK profile.`,
+        { cause: Err.Codes.RpcInvalidParams },
+      );
     const streams = this.snapshot.objects[name]?.Streams;
     if (
       Array.isArray(payload.Streams) &&
@@ -135,15 +246,11 @@ export class NvxDriver<
     await this.writeDeviceObject(name, payload);
   }
   control(id: string, value: unknown): Promise<void> {
-    const name = id.startsWith("dante.") ? "Dante" : id === "nax-source" ? "DeviceSpecific" : undefined;
-    if (name) return this.exclusive(async () => {
-      const snapshot = await this.readSnapshot(name);
-      const control = reportedControls(name, snapshot.objects[name] ?? {}, this.optionGroups).find(c => c.id === id);
-      if (!control) throw new Error(`This device did not report control ${id}.`);
-      const change = controlChange(control, value);
-      await this.writeSnapshot(name, change.patch);
+    return this.exclusive(async () => {
+      const control = await this.controlFor(id);
+      const change = this.validated(() => controlChange(control, value));
+      await this.writeSnapshot(change.object, change.patch);
     });
-    return this.configure(() => nvxControlChange(id, value));
   }
   async refreshEdids(): Promise<NvxSnapshot> {
     return this.exclusive(() => this.readEdids());
@@ -405,6 +512,8 @@ export class NvxDriver<
       const snapshot = await this.refresh(name);
       return reportedControls(name, snapshot.objects[name] ?? {}, this.optionGroups);
     },
+    discover: () => this.discover(),
+    change: (id: string, value: JsonValue) => this.change(id, value),
     capabilities: async () => (await this.refresh("DeviceCapabilities")).objects.DeviceCapabilities,
     restore: () => this.administer("restore", {}),
     setNetwork: (settings: JsonObject) => this.administer("network", settings),
