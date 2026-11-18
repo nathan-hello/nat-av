@@ -63,7 +63,8 @@ export class TypedEventTarget<
   once<K extends keyof Events>(
     type: K & string,
     handlerOrOptions?:
-      ((payload: Events[K]) => void) | { signal?: AbortSignal },
+      | ((payload: Events[K]) => void)
+      | { signal?: AbortSignal },
     options?: boolean | AddEventListenerOptions,
   ): (() => void) | Promise<Events[K]> {
     if (typeof handlerOrOptions === "function") {

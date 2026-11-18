@@ -63,16 +63,25 @@ export class NvxDriver<
   get snapshot() {
     return this.state.snapshot;
   }
-  constructor(name: Name, endpoint: DeviceEndpoint, factory: () => Transport = () => {
-    const dispatcher = new Agent({ connect: { rejectUnauthorized: !endpoint.allowSelfSigned } });
-    return {
-      fetch: (url, init) => {
-        const options = { ...init, dispatcher };
-        return fetch(url, options);
-      },
-      close: () => { void dispatcher.destroy(); },
-    };
-  }, private readonly optionGroups: NvxOptionGroups = {}) {
+  constructor(
+    name: Name,
+    endpoint: DeviceEndpoint,
+    factory: () => Transport = () => {
+      const dispatcher = new Agent({
+        connect: { rejectUnauthorized: !endpoint.allowSelfSigned },
+      });
+      return {
+        fetch: (url, init) => {
+          const options = { ...init, dispatcher };
+          return fetch(url, options);
+        },
+        close: () => {
+          void dispatcher.destroy();
+        },
+      };
+    },
+    private readonly optionGroups: NvxOptionGroups = {},
+  ) {
     super(name, endpoint, factory, false);
   }
   /** Drops the previous device's discovery before authenticating again. */
@@ -106,11 +115,18 @@ export class NvxDriver<
           if (!this.authenticated) throw error;
           const objects = { ...this.snapshot.objects };
           delete objects[name];
-          this.state = { ...this.state, snapshot: { ...this.snapshot, objects } };
+          this.state = {
+            ...this.state,
+            snapshot: { ...this.snapshot, objects },
+          };
           unsupported.push(name);
         }
       }
-      const discovery = nvxDiscovery(this.snapshot, unsupported, this.optionGroups);
+      const discovery = nvxDiscovery(
+        this.snapshot,
+        unsupported,
+        this.optionGroups,
+      );
       this.state = { ...this.state, discovery };
       this.dispatch("driver:state-updated", { data: this.state });
       return structuredClone(discovery);
@@ -126,26 +142,28 @@ export class NvxDriver<
         dynamic,
         snapshot.objects[dynamic] ?? {},
         this.optionGroups,
-        discovery
-          ? {
-              ...(discovery.profile
-                ? { audioSources: discovery.profile.audioSources }
-                : {}),
-              inputs: discovery.inputs.hdmi + discovery.inputs.usbC,
-            }
-          : {},
+        discovery ?
+          {
+            ...(discovery.profile ?
+              { audioSources: discovery.profile.audioSources }
+            : {}),
+            inputs: discovery.inputs.hdmi + discovery.inputs.usbC,
+          }
+        : {},
       ).find((entry) => entry.id === id);
-      if (!control) throw new Error(`This device did not report control ${id}.`);
+      if (!control)
+        throw new Error(`This device did not report control ${id}.`);
       return control;
     }
-    const control = discovery
-      ? discovery.controls.find((entry) => entry.id === id)
+    const control =
+      discovery ?
+        discovery.controls.find((entry) => entry.id === id)
       : nvxControls.find((entry) => entry.id === id);
     if (!control)
       throw new Error(
-        discovery
-          ? `This device did not report control ${id}.`
-          : "Choose a supported NVX control.",
+        discovery ?
+          `This device did not report control ${id}.`
+        : "Choose a supported NVX control.",
         { cause: Err.Codes.RpcInvalidParams },
       );
     return control;
@@ -162,7 +180,9 @@ export class NvxDriver<
       return build();
     } catch (error) {
       throw new Error(
-        error instanceof Error ? error.message : "Invalid NVX control parameters.",
+        error instanceof Error ?
+          error.message
+        : "Invalid NVX control parameters.",
         { cause: Err.Codes.RpcInvalidParams },
       );
     }
@@ -371,9 +391,9 @@ export class NvxDriver<
       change = build();
     } catch (error) {
       throw new Error(
-        error instanceof Error
-          ? error.message
-          : "Invalid NVX control parameters.",
+        error instanceof Error ?
+          error.message
+        : "Invalid NVX control parameters.",
         { cause: Err.Codes.RpcInvalidParams },
       );
     }
@@ -510,11 +530,16 @@ export class NvxDriver<
   override api = {
     controls: async (name: NvxObject) => {
       const snapshot = await this.refresh(name);
-      return reportedControls(name, snapshot.objects[name] ?? {}, this.optionGroups);
+      return reportedControls(
+        name,
+        snapshot.objects[name] ?? {},
+        this.optionGroups,
+      );
     },
     discover: () => this.discover(),
     change: (id: string, value: JsonValue) => this.change(id, value),
-    capabilities: async () => (await this.refresh("DeviceCapabilities")).objects.DeviceCapabilities,
+    capabilities: async () =>
+      (await this.refresh("DeviceCapabilities")).objects.DeviceCapabilities,
     restore: () => this.administer("restore", {}),
     setNetwork: (settings: JsonObject) => this.administer("network", settings),
     setIgmpVersion: (version: "v2" | "v3") =>
@@ -602,20 +627,24 @@ export class NvxDriver<
       streamId: string,
       action: "start" | "stop" | "auto" | "address" | "port" | "name",
       value: JsonValue,
-    ) => this.exclusive(async () => {
-      const change = nvxNaxChange(direction, streamId, action, value);
-      const audio = (await this.readSnapshot("NaxAudio")).objects.NaxAudio;
-      const section = object(audio?.[`Nax${direction}`]);
-      // Firmware documentation uses both NaxTxStreams and TxStreams.
-      const key = [`Nax${direction}Streams`, `${direction}Streams`].find(
-        (candidate) => Object.hasOwn(object(section[candidate]), streamId),
-      );
-      if (!key) throw new Error(`Device did not report ${direction} stream ${streamId}.`);
-      const patch = object(change.patch[`Nax${direction}`]);
-      await this.writeSnapshot("NaxAudio", {
-        [`Nax${direction}`]: { [key]: patch[`Nax${direction}Streams`] },
-      });
-    }),
+    ) =>
+      this.exclusive(async () => {
+        const change = nvxNaxChange(direction, streamId, action, value);
+        const audio = (await this.readSnapshot("NaxAudio")).objects.NaxAudio;
+        const section = object(audio?.[`Nax${direction}`]);
+        // Firmware documentation uses both NaxTxStreams and TxStreams.
+        const key = [`Nax${direction}Streams`, `${direction}Streams`].find(
+          (candidate) => Object.hasOwn(object(section[candidate]), streamId),
+        );
+        if (!key)
+          throw new Error(
+            `Device did not report ${direction} stream ${streamId}.`,
+          );
+        const patch = object(change.patch[`Nax${direction}`]);
+        await this.writeSnapshot("NaxAudio", {
+          [`Nax${direction}`]: { [key]: patch[`Nax${direction}Streams`] },
+        });
+      }),
   };
 }
 

@@ -291,7 +291,7 @@ export class RpcServer extends Natav.Plugin<"rpc-server"> {
           (typeof message.data.id === "string" ||
             typeof message.data.id === "number")
         ) ?
-           message.data.id
+          message.data.id
         : null;
 
       peer.send(

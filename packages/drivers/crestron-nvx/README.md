@@ -53,12 +53,12 @@ What an NVX can do is decided in two steps.
 Some REST objects depend on a model feature, because NVX firmware is shared
 across families and may answer for hardware the model lacks:
 
-| Object | Shown only when the profile has |
-| --- | --- |
-| `Dante` | Dante (352/352C, 363/363C) |
-| `MultiViewLayout` | `MultiviewControlsSetup` (38x) |
-| `Preview` | `PreviewImage` (360/360C, 363/363C) |
-| `TestPatternConfig` | `TestPatternGenerator` (36x) |
+| Object              | Shown only when the profile has     |
+| ------------------- | ----------------------------------- |
+| `Dante`             | Dante (352/352C, 363/363C)          |
+| `MultiViewLayout`   | `MultiviewControlsSetup` (38x)      |
+| `Preview`           | `PreviewImage` (360/360C, 363/363C) |
+| `TestPatternConfig` | `TestPatternGenerator` (36x)        |
 
 Discovery does not probe these objects on other models; they are listed in
 `discovery.withheld`, and writes to them are refused. A model the SDK does not
@@ -96,7 +96,11 @@ source selection is validated by the endpoint.
 import NvxDriver from "@nat-av/driver-crestron-nvx";
 
 const nvx = new NvxDriver("receiver", {
-  host, httpsPort: 443, username, password, allowSelfSigned: false,
+  host,
+  httpsPort: 443,
+  username,
+  password,
+  allowSelfSigned: false,
 });
 await nvx.api.connect();
 try {

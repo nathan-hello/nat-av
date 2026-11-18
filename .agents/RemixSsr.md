@@ -140,7 +140,11 @@ return () => {
   const before = room.state;
   void room.api.setVolume(50);
   const after = room.state;
-  return <p>{before.volume} / {after.volume}</p>;
+  return (
+    <p>
+      {before.volume} / {after.volume}
+    </p>
+  );
 };
 ```
 

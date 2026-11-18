@@ -52,9 +52,9 @@ export async function limitedText(
 }
 
 export function object(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    // TSAS: The guard excludes null, arrays and primitives before indexing JSON.
-    ? (value as Record<string, unknown>)
+  return value !== null && typeof value === "object" && !Array.isArray(value) ?
+      // TSAS: The guard excludes null, arrays and primitives before indexing JSON.
+      (value as Record<string, unknown>)
     : {};
 }
 
@@ -191,7 +191,9 @@ export abstract class CrestronHttpDriver<
     }
     return response;
   }
-  async login(credentials?: () => Promise<Pick<DeviceEndpoint, "username" | "password">>): Promise<void> {
+  async login(
+    credentials?: () => Promise<Pick<DeviceEndpoint, "username" | "password">>,
+  ): Promise<void> {
     return this.exclusive(async () => {
       this.close();
       this.abort = new AbortController();
@@ -200,7 +202,8 @@ export abstract class CrestronHttpDriver<
         await initial.body?.cancel();
         if (![200, 302, 303].includes(initial.status))
           throw new Error(`Login page returned HTTP ${initial.status}.`);
-        const { username, password } = credentials ? await credentials() : this.endpoint;
+        const { username, password } =
+          credentials ? await credentials() : this.endpoint;
         const response = await this.request("/userlogin.html", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },

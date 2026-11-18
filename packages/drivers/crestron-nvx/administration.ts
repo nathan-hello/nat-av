@@ -203,9 +203,9 @@ const host = (value: unknown) => {
   return s;
 };
 const bool = (value: unknown) =>
-  typeof value === "boolean"
-    ? value
-    : choice(value, ["true", "false"]) === "true";
+  typeof value === "boolean" ? value : (
+    choice(value, ["true", "false"]) === "true"
+  );
 const store = (value: unknown) =>
   choice(value, ["Root", "Intermediate", "Machine", "WebServer"]);
 const slot = (value: unknown) =>
@@ -254,9 +254,9 @@ export function nvxAdministrationChange(
             {
               Address: host(v.address),
               IpId: ipId,
-              ...(v.program
-                ? { ProgramInstanceId: String(integer(v.program, 1, 10)) }
-                : {}),
+              ...(v.program ?
+                { ProgramInstanceId: String(integer(v.program, 1, 10)) }
+              : {}),
             },
           ],
         },
@@ -376,11 +376,13 @@ export function nvxUploadRequest(
       field: "Name",
       name,
       base64,
-      mime: /\.(pfx|p12)$/i.test(name)
-        ? "application/x-pkcs12"
+      mime:
+        /\.(pfx|p12)$/i.test(name) ?
+          "application/x-pkcs12"
         : "application/x-x509-ca-cert",
-      fields: ["Machine", "WebServer"].includes(kind)
-        ? { Password: text(v.password ?? "", "certificate password", true) }
+      fields:
+        ["Machine", "WebServer"].includes(kind) ?
+          { Password: text(v.password ?? "", "certificate password", true) }
         : {},
     };
   }
@@ -398,7 +400,9 @@ function textBase64(value: unknown): string {
     throw new Error("Choose a file no larger than 4 MiB.");
   const size =
     (value.length / 4) * 3 -
-    (value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0);
+    (value.endsWith("==") ? 2
+    : value.endsWith("=") ? 1
+    : 0);
   if (size > 4 * 1024 * 1024) throw new Error("File exceeds 4 MiB.");
   return value;
 }
@@ -408,9 +412,9 @@ export function redactNvxSecrets(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value).map(([key, child]) => [
         key,
-        /password|passwd|secret|token|privatekey|base64/i.test(key)
-          ? "[redacted]"
-          : redactNvxSecrets(child),
+        /password|passwd|secret|token|privatekey|base64/i.test(key) ?
+          "[redacted]"
+        : redactNvxSecrets(child),
       ]),
     );
   return value;

@@ -18,9 +18,21 @@ async function main() {
   if (values.help) return console.log(usage);
   const [host] = positionals;
   const httpsPort = Number(values.port);
-  if (positionals.length !== 1 || !/^[\w.-]+$/.test(host) || !Number.isInteger(httpsPort) ||
-      httpsPort < 1 || httpsPort > 65535) throw new Error(usage);
-  const endpoint = { host, httpsPort, username: "", password: "", allowSelfSigned: !values["verify-tls"] };
+  if (
+    positionals.length !== 1 ||
+    !/^[\w.-]+$/.test(host) ||
+    !Number.isInteger(httpsPort) ||
+    httpsPort < 1 ||
+    httpsPort > 65535
+  )
+    throw new Error(usage);
+  const endpoint = {
+    host,
+    httpsPort,
+    username: "",
+    password: "",
+    allowSelfSigned: !values["verify-tls"],
+  };
   const driver = new NvxDriver("nvx", endpoint);
   try {
     await driver.login(async () => {
@@ -33,12 +45,19 @@ async function main() {
             done();
           },
         });
-        const rl = createInterface({ input: process.stdin, output, terminal: true, historySize: 0 });
+        const rl = createInterface({
+          input: process.stdin,
+          output,
+          terminal: true,
+          historySize: 0,
+        });
         const cancel = new AbortController();
         rl.once("close", () => cancel.abort());
         rl.once("SIGINT", () => rl.close());
         try {
-          endpoint.username = await rl.question("Username: ", { signal: cancel.signal });
+          endpoint.username = await rl.question("Username: ", {
+            signal: cancel.signal,
+          });
           hidden = true;
           process.stdout.write("Password: ");
           endpoint.password = await rl.question("", { signal: cancel.signal });
@@ -50,17 +69,24 @@ async function main() {
         endpoint.username = process.env.NVX_USERNAME ?? "";
         endpoint.password = process.env.NVX_PASSWORD ?? "";
       }
-      if (!endpoint.username || !endpoint.password) throw new Error("Supply a username and password (NVX_USERNAME and NVX_PASSWORD for noninteractive input).");
+      if (!endpoint.username || !endpoint.password)
+        throw new Error(
+          "Supply a username and password (NVX_USERNAME and NVX_PASSWORD for noninteractive input).",
+        );
       return endpoint;
     });
     console.log("Authenticated. Type 'help' for commands.");
     await createRepl({ driver }).run();
   } finally {
-    try { await driver.api.disconnect(); } finally { driver.end(); }
+    try {
+      await driver.api.disconnect();
+    } finally {
+      driver.end();
+    }
   }
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

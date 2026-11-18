@@ -9,10 +9,10 @@ export type EdidEntry = {
   appliedPortsMask?: number;
 };
 const object = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value)
+  value && typeof value === "object" && !Array.isArray(value) ?
     // TSAS: The guard excludes null, arrays and primitives before indexing JSON.
-    ? (value as Record<string, unknown>)
-    : {};
+    (value as Record<string, unknown>)
+  : {};
 export function nvxEdidLibrary(snapshot: NvxSnapshot, input = 0): EdidEntry[] {
   const management = snapshot.objects.EdidMgmnt;
   if (management)
@@ -25,18 +25,18 @@ export function nvxEdidLibrary(snapshot: NvxSnapshot, input = 0): EdidEntry[] {
     ).flatMap(([collection, type]) =>
       Object.entries(object(management[collection])).flatMap(([key, value]) => {
         const entry = object(value);
-        return typeof entry.Name === "string"
-          ? [
+        return typeof entry.Name === "string" ?
+            [
               {
                 key,
                 type,
                 name: entry.Name,
-                ...(typeof entry.FileName === "string"
-                  ? { fileName: entry.FileName }
-                  : {}),
-                ...(typeof entry.AppliedPortsMask === "number"
-                  ? { appliedPortsMask: entry.AppliedPortsMask }
-                  : {}),
+                ...(typeof entry.FileName === "string" ?
+                  { fileName: entry.FileName }
+                : {}),
+                ...(typeof entry.AppliedPortsMask === "number" ?
+                  { appliedPortsMask: entry.AppliedPortsMask }
+                : {}),
               },
             ]
           : [];
@@ -47,12 +47,16 @@ export function nvxEdidLibrary(snapshot: NvxSnapshot, input = 0): EdidEntry[] {
   const list = object(
     object(Array.isArray(ports) ? ports[0] : undefined).Edid,
   ).EdidList;
-  return Array.isArray(list)
-    ? list.flatMap((value) => {
+  return Array.isArray(list) ?
+      list.flatMap((value) => {
         const entry = object(value);
-        return typeof entry.Name === "string" &&
-          (entry.Type === "System" || entry.Type === "Custom" || entry.Type === "Auto")
-          ? [
+        return (
+            typeof entry.Name === "string" &&
+              (entry.Type === "System" ||
+                entry.Type === "Custom" ||
+                entry.Type === "Auto")
+          ) ?
+            [
               {
                 key: entry.Name,
                 name: entry.Name,
@@ -78,9 +82,9 @@ export function nvxCurrentEdid(snapshot: NvxSnapshot, input: number): string {
   const current = object(
     object(Array.isArray(ports) ? ports[0] : undefined).Edid,
   ).CurrentEdid;
-  return typeof current === "string"
-    ? current
-    : String(object(current).Name ?? "Not reported");
+  return typeof current === "string" ? current : (
+      String(object(current).Name ?? "Not reported")
+    );
 }
 export function nvxDeleteEdidChange(key: string, legacy: boolean): NvxChange {
   if (
@@ -90,8 +94,8 @@ export function nvxDeleteEdidChange(key: string, legacy: boolean): NvxChange {
     ["__proto__", "constructor", "prototype"].includes(key)
   )
     throw new Error("Choose a custom EDID from the device library.");
-  return legacy
-    ? {
+  return legacy ?
+      {
         object: "AudioVideoInputOutput",
         patch: {
           Inputs: [0, 1].map(() => ({
@@ -113,13 +117,15 @@ export function validateEdidUpload(name: string, base64: string) {
     throw new Error("Choose a .cedid file no larger than 32 KiB.");
   const bytes =
     (base64.length / 4) * 3 -
-    (base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0);
+    (base64.endsWith("==") ? 2
+    : base64.endsWith("=") ? 1
+    : 0);
   if (bytes > 32768) throw new Error("EDID exceeds 32 KiB.");
   return bytes;
 }
 export function nvxEdidUploadRequest(name: string, legacy: boolean) {
-  return legacy
-    ? {
+  return legacy ?
+      {
         path: "/Device/AudioVideoInputOutput/Inputs/0/Ports/Edid/",
         // TSAS: The legacy form has no fields but shares the upload descriptor type.
         fields: {} as Record<string, string>,

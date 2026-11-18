@@ -76,8 +76,8 @@ export function nvxProfileAllows(
   if (!profile || !Object.hasOwn(nvxFeatureObjects, object)) return true;
   // TSAS: hasOwn above proves object is one of nvxFeatureObjects' keys.
   const gate = nvxFeatureObjects[object as keyof typeof nvxFeatureObjects];
-  return gate.feature === "Dante"
-    ? profile.dante
+  return gate.feature === "Dante" ?
+      profile.dante
     : profile.features.includes(gate.feature);
 }
 
@@ -89,8 +89,8 @@ export function nvxProbeObjects(): NvxObject[] {
 }
 
 function count(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0
-    ? value
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ?
+      value
     : undefined;
 }
 
@@ -104,8 +104,8 @@ export function nvxDiscovery(
   const profile = nvxProfile(info.Model);
   const ports: JsonObject = (() => {
     const config = snapshot.objects.DeviceCapabilities?.PortConfig;
-    return config && typeof config === "object" && !Array.isArray(config)
-      ? config
+    return config && typeof config === "object" && !Array.isArray(config) ?
+        config
       : {};
   })();
   const inputs = {
@@ -132,11 +132,9 @@ export function nvxDiscovery(
   return {
     model: typeof info.Model === "string" ? info.Model : "",
     firmware:
-      typeof info.DeviceVersion === "string"
-        ? info.DeviceVersion
-        : typeof info.PufVersion === "string"
-          ? info.PufVersion
-          : "",
+      typeof info.DeviceVersion === "string" ? info.DeviceVersion
+      : typeof info.PufVersion === "string" ? info.PufVersion
+      : "",
     ...(profile ? { profile } : {}),
     objects,
     unsupported,

@@ -13,21 +13,30 @@ type ModelApi<M extends NvxModel> = {
 
 /** Bind a typed control surface only after verifying the authenticated endpoint. */
 export async function forNvxModel<const M extends NvxModel>(
-  driver: NvxDriver, model: M,
+  driver: NvxDriver,
+  model: M,
 ): Promise<ModelApi<M>> {
   const info = (await driver.api.refresh("DeviceInfo")).objects.DeviceInfo;
-  if (info?.Model !== model) throw new Error(`Expected ${model}, received ${info?.Model}.`);
+  if (info?.Model !== model)
+    throw new Error(`Expected ${model}, received ${info?.Model}.`);
   const profile = profiles[model];
   const sources: readonly string[] = profile.audioSources;
   const api = {
     setAudioSource(source: string) {
-      if (!sources.includes(source)) throw new Error(`Unsupported audio source for ${model}.`);
+      if (!sources.includes(source))
+        throw new Error(`Unsupported audio source for ${model}.`);
       return driver.api.control("audio", source);
     },
-    ...(profile.dante ? { dante: {
-      setName: (port: string, name: string) => driver.api.control(`dante.${port}.name`, name),
-      setSource: (port: string, source: string) => driver.api.control(`dante.${port}.source`, source),
-    } } : {}),
+    ...(profile.dante ?
+      {
+        dante: {
+          setName: (port: string, name: string) =>
+            driver.api.control(`dante.${port}.name`, name),
+          setSource: (port: string, source: string) =>
+            driver.api.control(`dante.${port}.source`, source),
+        },
+      }
+    : {}),
   };
   // TSAS: The same generated model profile controls the runtime branch and conditional return type.
   return api as ModelApi<M>;

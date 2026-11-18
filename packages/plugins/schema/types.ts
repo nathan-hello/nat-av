@@ -199,7 +199,12 @@ export namespace Schema {
       readonly label?: string;
       readonly placeholder?: string;
       readonly widget?:
-        "textarea" | "password" | "text" | "slider" | "radio" | "dropdown";
+        | "textarea"
+        | "password"
+        | "text"
+        | "slider"
+        | "radio"
+        | "dropdown";
       readonly options?: readonly T[];
       readonly defaultValue?: T;
     };

@@ -174,7 +174,14 @@ export type NvxControlContext = {
   audioSources?: readonly string[];
   inputs?: number;
 };
-const windows = ["WindowA", "WindowB", "WindowC", "WindowD", "WindowE", "WindowF"];
+const windows = [
+  "WindowA",
+  "WindowB",
+  "WindowC",
+  "WindowD",
+  "WindowE",
+  "WindowF",
+];
 const transitions = [
   "None",
   "Fade",
@@ -547,11 +554,7 @@ export function nvxDynamicControlObject(id: string): NvxObject | undefined {
 function reportedAt(data: JsonObject, path: readonly (string | number)[]) {
   let current: JsonValue = data;
   for (const key of path) {
-    if (
-      !current ||
-      typeof current !== "object" ||
-      !Object.hasOwn(current, key)
-    )
+    if (!current || typeof current !== "object" || !Object.hasOwn(current, key))
       return undefined;
     current = Array.isArray(current) ? current[Number(key)] : current[key];
   }
@@ -560,7 +563,9 @@ function reportedAt(data: JsonObject, path: readonly (string | number)[]) {
 
 /** Readable control paths actually present in this endpoint's response. */
 /** Choices verified for a particular device-reported options group and version. */
-export type NvxOptionGroups = Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
+export type NvxOptionGroups = Readonly<
+  Record<string, Readonly<Record<string, readonly string[]>>>
+>;
 
 export function reportedControls(
   name: NvxObject,
@@ -580,30 +585,65 @@ export function reportedControls(
       continue;
     controls.push(refine(control, data, context));
   }
-  function source(id: string, label: string, parent: JsonObject, prefix: string[], property: string) {
+  function source(
+    id: string,
+    label: string,
+    parent: JsonObject,
+    prefix: string[],
+    property: string,
+  ) {
     if (typeof parent[property] !== "string") return;
     const group = parent[`${property}OptionsName`];
     const version = parent[`${property}OptionsVersion`];
     controls.push({
-      id, label, object: name, path: [...prefix, property],
-      ...(typeof group === "string" && typeof version === "string" && Object.hasOwn(groups, group) &&
-          Object.hasOwn(groups[group], version) ? { values: groups[group][version] } : {}),
-      ...(typeof group === "string" ? { optionsGroup: {
-        name: group, ...(typeof version === "string" ? { version } : {}),
-      } } : {}),
+      id,
+      label,
+      object: name,
+      path: [...prefix, property],
+      ...((
+        typeof group === "string" &&
+        typeof version === "string" &&
+        Object.hasOwn(groups, group) &&
+        Object.hasOwn(groups[group], version)
+      ) ?
+        { values: groups[group][version] }
+      : {}),
+      ...(typeof group === "string" ?
+        {
+          optionsGroup: {
+            name: group,
+            ...(typeof version === "string" ? { version } : {}),
+          },
+        }
+      : {}),
     });
   }
-  if (name === "DeviceSpecific") source("nax-source", "NAX audio source", data, [], "NaxAudioSource");
+  if (name === "DeviceSpecific")
+    source("nax-source", "NAX audio source", data, [], "NaxAudioSource");
   const ports = data.DantePorts;
-  if (name === "Dante" && ports && typeof ports === "object" && !Array.isArray(ports)) {
+  if (
+    name === "Dante" &&
+    ports &&
+    typeof ports === "object" &&
+    !Array.isArray(ports)
+  ) {
     for (const [key, port] of Object.entries(ports)) {
       if (!port || typeof port !== "object" || Array.isArray(port)) continue;
       const path = ["DantePorts", key];
-      source(`dante.${key}.source`, "Dante audio source", port, path, "DanteAudioSource");
-      if (typeof port.DanteDeviceName === "string") controls.push({
-        id: `dante.${key}.name`, label: "Dante device name", object: name,
-        path: [...path, "DanteDeviceName"],
-      });
+      source(
+        `dante.${key}.source`,
+        "Dante audio source",
+        port,
+        path,
+        "DanteAudioSource",
+      );
+      if (typeof port.DanteDeviceName === "string")
+        controls.push({
+          id: `dante.${key}.name`,
+          label: "Dante device name",
+          object: name,
+          path: [...path, "DanteDeviceName"],
+        });
     }
   }
   if (name === "MultiViewLayout") {
@@ -643,8 +683,9 @@ function refine(
       ...control.path.slice(0, -1),
       control.valuesFrom,
     ]);
-    values = Array.isArray(list)
-      ? list.filter((value) => typeof value === "string")
+    values =
+      Array.isArray(list) ?
+        list.filter((value) => typeof value === "string")
       : undefined;
   }
   if (control.id === "audio" && context.audioSources)
@@ -706,9 +747,13 @@ export function controlChange(control: Control, input: unknown): NvxChange {
           "Enter a multicast IPv4 address (224.0.0.0–239.255.255.255).",
         );
     }
-    if (control.path.at(-1) === "DanteDeviceName" &&
-        !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,29}[A-Za-z0-9])?$/.test(value))
-      throw new Error("Use a Dante name of 1–31 letters, digits or internal hyphens.");
+    if (
+      control.path.at(-1) === "DanteDeviceName" &&
+      !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,29}[A-Za-z0-9])?$/.test(value)
+    )
+      throw new Error(
+        "Use a Dante name of 1–31 letters, digits or internal hyphens.",
+      );
     if (control.format === "hex" && !/^[0-9a-f]{6}$/i.test(value))
       throw new Error("Enter a six-digit hex color such as 004A80.");
     if (
@@ -840,8 +885,8 @@ export function nvxScalerChange(index: unknown, avioV2: boolean): NvxChange {
     (entry) => entry.index === index,
   );
   if (!resolution) throw new Error("Choose a supported scaler resolution.");
-  return avioV2
-    ? {
+  return avioV2 ?
+      {
         object: "AvioV2",
         patch: {
           Outputs: {
@@ -876,7 +921,12 @@ export function nvxNaxChange(
       throw new Error("Choose automatic initiation explicitly.");
     property = "IsAutomaticInitiationEnabled";
   } else if (action === "port") {
-    if (typeof value !== "number" || !Number.isInteger(value) || value < 1025 || value > 65535)
+    if (
+      typeof value !== "number" ||
+      !Number.isInteger(value) ||
+      value < 1025 ||
+      value > 65535
+    )
       throw new Error("Use a UDP port between 1025 and 65535.");
     property = "PortRequested";
   } else if (action === "address") {

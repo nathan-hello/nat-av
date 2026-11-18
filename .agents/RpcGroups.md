@@ -32,8 +32,9 @@ their state/API/event/handle shape:
 
 ```ts
 type DriverFactory<D extends ManagedContract> = () => D;
-type PluginFactory<P extends ManagedContract> =
-  (manager: ManagerRuntimeView) => P;
+type PluginFactory<P extends ManagedContract> = (
+  manager: ManagerRuntimeView,
+) => P;
 ```
 
 The concrete `Driver` base class may continue to implement this contract. A
@@ -56,7 +57,8 @@ Use one unified closure and catalog foundation:
 ```ts
 type ManagedClosure<Entry, Seen = never> =
   Entry extends ManagedContract ?
-    Entry extends Seen ? never
+    Entry extends Seen ?
+      never
     : Entry | ManagedClosure<Entry["deps"][number], Seen | Entry>
   : never;
 
@@ -116,8 +118,9 @@ type RemoteHandle<Entry extends ManagedContract> = {
 type RemoteManagedHandle<Entry extends ManagedContract> =
   RemoteHandle<Entry> & {
     readonly deps: {
-      readonly [K in keyof Entry["deps"]]:
-        RemoteManagedHandle<Entry["deps"][K]>;
+      readonly [K in keyof Entry["deps"]]: RemoteManagedHandle<
+        Entry["deps"][K]
+      >;
     };
     dep<Name extends ManagedNames<Entry["deps"][number]>>(
       name: Name,
@@ -177,9 +180,7 @@ const natav = new Manager({
           new Decoder({ name: "DEC-A-01", socket: decoderA1 }),
           new Decoder({ name: "DEC-A-02", socket: decoderA2 }),
         ],
-        roomB: [
-          new Decoder({ name: "DEC-B-01", socket: decoderB1 }),
-        ],
+        roomB: [new Decoder({ name: "DEC-B-01", socket: decoderB1 })],
       },
     },
     new Paint({
@@ -187,9 +188,7 @@ const natav = new Manager({
       paints: { main: { width: 1920, height: 1080 } },
     }),
   ],
-  plugin: [
-    (manager) => new SchemaPlugin(manager),
-  ],
+  plugin: [(manager) => new SchemaPlugin(manager)],
 });
 ```
 
@@ -453,8 +452,9 @@ Every managed entry uses the same dependency model. A driver or plugin can
 declare direct dependencies, while the catalog derives the transitive closure:
 
 ```ts
-type DependencyNames<Entry extends ManagedContract> =
-  ManagedNames<Entry["deps"][number]>;
+type DependencyNames<Entry extends ManagedContract> = ManagedNames<
+  Entry["deps"][number]
+>;
 ```
 
 `RemoteManagedHandle` is the common handle projection defined above; it applies
@@ -468,15 +468,14 @@ identity. The same rule applies to plugins through `rpc.plugin` and
 
 Manager construction should be explicit about the two channels:
 
-1. Construct ordinary drivers without manager access.
-    2. Construct plugin entries with the manager runtime view.
-3. Build the initial driver catalog.
-4. Create the manager runtime view.
-5. Construct plugins with that manager view.
-6. Resolve plugin dependencies and the unified managed closure.
-7. Reject duplicate names across drivers and plugins.
-8. Build driver and plugin catalog views over the unified catalog.
-9. Start all managed entries in declared dependency order.
+1. Construct ordinary drivers without manager access. 2. Construct plugin entries with the manager runtime view.
+2. Build the initial driver catalog.
+3. Create the manager runtime view.
+4. Construct plugins with that manager view.
+5. Resolve plugin dependencies and the unified managed closure.
+6. Reject duplicate names across drivers and plugins.
+7. Build driver and plugin catalog views over the unified catalog.
+8. Start all managed entries in declared dependency order.
 
 Manager lookup during plugin construction is access, not dependency declaration.
 If lifecycle ordering depends on an entry, it must appear in `deps`.

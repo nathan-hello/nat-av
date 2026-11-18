@@ -5,7 +5,7 @@ Natav is the reusable library in the `packages/core` package.
 Its primary goal is to provide a high quality programming environment for
 communicating directly with other devices on a local area network. Programs
 using this library are typically not connected to the internet and have a
-single digit, constant number of clients connecting to the server. 
+single digit, constant number of clients connecting to the server.
 
 # Folders
 
@@ -13,7 +13,7 @@ single digit, constant number of clients connecting to the server.
 
 The Driver is an abstract base class used mostly for typing any implementations.
 Inheriters of Driver only require four things: a `name`, `driverName`, `api`,
-and `state`. 
+and `state`.
 
 This is the simplest possible Driver
 
@@ -31,20 +31,20 @@ export class Controller extends Driver<"ui"> {
 
 `Manager` is repsonsible for collecting all of the drivers together, dispatching
 events, and giving the appropiate API to `RpcServer` when requested, as well
-as injecting context if a `Driver` requests it. 
+as injecting context if a `Driver` requests it.
 
 A `Driver` can either be precreated and given to the constructor of `Manager`,
 or `Manager` can be given a `(natav: Manager) => Driver` function that will
 be called during the construction phase of `Manager`.
 
 There may be multiple Plugins that take this manager-aware construction path. For this reason
-it is important to *never use the Manager object during the constructor of the
-Driver*. This is because the Manager might not have called the Driver you are
+it is important to _never use the Manager object during the constructor of the
+Driver_. This is because the Manager might not have called the Driver you are
 looking for, or otherwise set up the context for the system, during that
 construction phase. If you want to run some startup code that requires the
 `Manager` use `public override start(): Promise<void> | void` in the Driver.
 This is after `Manager.Start()` is called, which means all drivers originally
-given to `Manager` are correctly available and constructed. 
+given to `Manager` are correctly available and constructed.
 
 Alternatively, if a Driver extremely depends on another driver, you can simply
 put it in the constructor.
@@ -55,7 +55,7 @@ import { Driver } from "@av/drivers";
 class Leaf<const N extends string> extends Driver<N> {
   state = { ready: true };
   api = {
-    setOnline
+    setOnline,
   };
 
   constructor(name: N) {
@@ -90,8 +90,8 @@ Then you can access the dependency using either:
 const client = new RpcClient<(typeof graph)["drivers"]>({
   transport: transport,
 });
-client.device("parent-1").deps.get("child-1").name  // "child-1"
-client.device("parent-1").deps.get("child-1").state // { online: true }
+client.device("parent-1").deps.get("child-1").name; // "child-1"
+client.device("parent-1").deps.get("child-1").state; // { online: true }
 ```
 
 Or you can query the `child-1` directly. Dependencies are lifted up to a single
@@ -99,8 +99,8 @@ flat array in Manager. This so it is more obvious what names are available and
 accessing the drivers easier.
 
 ```typescript
-client.device("child-1").state // { online: true }
-client.device("child-1").name  // "child-1"
+client.device("child-1").state; // { online: true }
+client.device("child-1").name; // "child-1"
 ```
 
 # ./packages/core/src/lib/eventtarget.ts
@@ -115,7 +115,7 @@ calling a Driver implementation, we serialize the request into a JSONRPC
 request that gets sent to the server, and then the server responds with an
 `RpcResponse` or `RPCError`. This re-routing, serializing, dispatching, and
 responding are all responsibilities of either `av/rpc/server/` or
-`av/rpc/client`. 
+`av/rpc/client`.
 
 The actual interface with `ClientRpc` inside `av/rpc/client/index.ts` should be
 minimal but complete. We should be able to manipulate any part of the system
