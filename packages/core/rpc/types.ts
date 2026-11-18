@@ -540,9 +540,7 @@ export namespace Rpc {
     readonly id: Id | null;
 
     constructor(cause: unknown, origin: Rpc.Error.Origin, id: Id | null) {
-      super(cause instanceof globalThis.Error ? cause.message : "RPC error", {
-        cause,
-      });
+      super(messageOf(cause), { cause });
       this.cause = cause;
       this.origin = origin;
       this.id = id;
@@ -787,6 +785,16 @@ export namespace Rpc {
       reconnect?: boolean;
       retryDelay?: number;
     };
+  }
+
+  // Errors thrown on the server arrive as JSON-RPC error objects, not Error
+  // instances; keep their message so clients can show it.
+  function messageOf(cause: unknown): string {
+    if (cause instanceof globalThis.Error) return cause.message;
+    if (isObject(cause) && typeof cause.message === "string") {
+      return cause.message;
+    }
+    return "RPC error";
   }
 
   function isObject(value: unknown): value is Record<string, unknown> {

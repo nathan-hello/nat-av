@@ -1,4 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { DEFAULT_ARC_PORT } from "./constants.js";
 import type {
   DiscoveredService,
   DiscoveryBackend,
@@ -48,6 +49,36 @@ function parseAvahiLine(line: string): DiscoveredService | null {
   };
 }
 
+// "+" and "-" lines only carry interface, protocol, name, type and domain.
+// Address fields stay empty until a "=" (resolved) line arrives.
+function parseAvahiBrowseLine(line: string): DiscoveredService | null {
+  const parts = line.split(";");
+  if (parts.length < 6 || parts[2] !== "IPv4") return null;
+  return {
+    serverName: "",
+    name: unescapeAvahiName(parts[3]),
+    ipv4: "",
+    port: 0,
+    properties: {},
+  };
+}
+
+function parseAvahiOutput(stdout: string): DiscoveredService[] {
+  return stdout
+    .split("\n")
+    .map(parseAvahiLine)
+    .filter((s): s is DiscoveredService => s !== null);
+}
+
+// A device is reported once per interface it is seen on.
+function dedupeServices(services: DiscoveredService[]): DiscoveredService[] {
+  const byKey = new Map<string, DiscoveredService>();
+  for (const service of services) {
+    byKey.set(`${service.ipv4}:${service.port}`, service);
+  }
+  return [...byKey.values()];
+}
+
 function avahiServiceType(serviceType: string): string {
   return (
     serviceType.endsWith(".local.") ? serviceType.slice(0, -7)
@@ -66,16 +97,12 @@ export class AvahiDiscovery implements DiscoveryBackend {
         "avahi-browse",
         ["-rtp", avahiServiceType(serviceType), "-t"],
         { timeout: timeoutMs, killSignal: "SIGKILL" },
-        (error: Error | null, stdout: string, stderr: string) => {
-          if (error || stderr) {
-            resolve([]);
-            return;
-          }
-          const services = stdout
-            .split("\n")
-            .map(parseAvahiLine)
-            .filter((s): s is DiscoveredService => s !== null);
-          resolve(services);
+        (_error: Error | null, stdout: string) => {
+          // avahi-browse writes a "Failed to resolve" line to stderr for every
+          // service it cannot resolve, and is killed when the timeout expires.
+          // Neither invalidates the services it did resolve, so always parse
+          // whatever reached stdout. A missing binary yields empty stdout.
+          resolve(dedupeServices(parseAvahiOutput(stdout)));
         },
       );
     });
@@ -104,11 +131,12 @@ export class AvahiDiscovery implements DiscoveryBackend {
           if (!line) continue;
           const firstChar = line[0];
           if (firstChar === "+" || firstChar === "-") {
-            const type: "added" | "removed" =
-              firstChar === "+" ? "added" : "removed";
-            const service = parseAvahiLine("=" + line.slice(1));
+            const service = parseAvahiBrowseLine(line);
             if (service) {
-              callback({ type, service });
+              callback({
+                type: firstChar === "+" ? "added" : "removed",
+                service,
+              });
             }
           } else if (firstChar === "=") {
             const service = parseAvahiLine(line);
@@ -134,5 +162,37 @@ export class AvahiDiscovery implements DiscoveryBackend {
         proc.kill();
       }
     };
+  }
+}
+
+export type StaticDeviceAddress = {
+  /** IPv4 address of the Dante device. */
+  ipv4: string;
+  /** ARC port. Defaults to 4440. */
+  port?: number;
+  /** Key used for the device in state. Defaults to `ipv4:port`. */
+  serverName?: string;
+};
+
+/**
+ * Discovery backend for a fixed list of devices. Use it when mDNS cannot
+ * resolve the devices, for example when they sit on another subnet behind an
+ * mDNS reflector, or to point the router at simulated devices.
+ */
+export class StaticDiscovery implements DiscoveryBackend {
+  constructor(private readonly devices: readonly StaticDeviceAddress[]) {}
+
+  async discover(): Promise<DiscoveredService[]> {
+    return this.devices.map((device) => {
+      const port = device.port ?? DEFAULT_ARC_PORT;
+      const serverName = device.serverName ?? `${device.ipv4}:${port}`;
+      return {
+        serverName,
+        name: serverName,
+        ipv4: device.ipv4,
+        port,
+        properties: {},
+      };
+    });
   }
 }

@@ -132,6 +132,16 @@ describe("rpc json codecs", () => {
     });
   });
 
+  it("uses the message of a JSON-RPC error object", () => {
+    const cause = { code: -32000, message: "device not found", data: null };
+    const error = new Rpc.Error(cause, { scope: "driver", name: "dante" }, 4);
+    const wrapped = new Rpc.Error(error, { scope: "client" }, null);
+
+    assert.equal(error.message, "device not found");
+    assert.equal(wrapped.message, "device not found");
+    assert.equal(error.cause, cause);
+  });
+
   it("preserves arbitrary thrown values as the cause", () => {
     const cause = { reason: "test", retryable: true };
     const error = new Rpc.Error(cause, { scope: "driver", name: "camera" }, 4);

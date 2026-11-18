@@ -12,14 +12,18 @@ participate in audio multicast groups.
 ## Scope — what this driver does
 
 - Discover Dante devices via mDNS (system `avahi-browse`), returning IP and
-  ARC port for each device.
+  ARC port for each device. Discovery is pluggable through the `discovery`
+  constructor option; `StaticDiscovery` queries a fixed address list.
+- Simulate devices with the `simulate` constructor option, which routes
+  between virtual devices on localhost and ignores `discovery`.
 - Query each device over unicast UDP on its ARC port for device name, channel
   counts, TX channel names (raw and friendly), and RX channel subscription
   state.
 - Build a readable matrix snapshot: `{ rxServerName: { rxChannelNumber: { txDevice, txChannelName } } }`.
 - Add and remove subscriptions (the Dante term for "route").
 - Support bulk subscription add (up to 16 per packet) and bulk remove.
-- Support live mDNS watching with a constructor param and API toggle.
+- Support live mDNS watching with a constructor param and API toggle. Every
+  mDNS event (added, resolved, removed) triggers a debounced rescan.
 - Bind unicast transport to a specific interface when `interfaceIp` is
   provided.
 
@@ -65,26 +69,44 @@ participate in audio multicast groups.
   via callback, sends to specific group addresses. Accepts optional
   `interfaceIp` for interface binding.
 
-- `discovery.ts` — Device discovery backend. The `DiscoveryBackend` interface
+- `discovery.ts` — Device discovery backends. The `DiscoveryBackend` interface
   defines `discover()` and optional `watch()`. `AvahiDiscovery` shells out to
   system `avahi-browse -rtp` for one-shot scans and `avahi-browse -rp` for
   live watching. Output is parsed into `DiscoveredService` records with name,
-  IP, port, and TXT properties. The `avahiServiceType()` helper strips the
+  IP, port, and TXT properties, deduplicated by address. One-shot scans keep
+  every resolved service even when avahi reports resolution failures on
+  stderr or is killed at the timeout. `StaticDiscovery` returns a fixed list
+  of addresses for networks where mDNS cannot resolve devices. The `avahiServiceType()` helper strips the
   `.local.` suffix from service types before passing them to `avahi-browse`,
   which rejects the full DNS-SD service type format.
 
 - `index.ts` — Main `DanteRouter extends Driver<"dante">` class. Owns an
   internal `ArcTransport` for unicast ARC protocol requests with
-  transaction-ID matching and per-request timeouts. Constructor accepts
-  `name`, `liveMdns`, and `interfaceIp`. Exposes the API: `refresh`,
-  `getDevices`, `getDevice`, `getMatrix`, `route`, `unroute`, `clearRoutes`,
-  `setLiveMdns`. The matrix is built exclusively by `refresh()` from real
-  device subscription data; `route`/`unroute`/`clearRoutes` send ARC
-  commands and validate the result code but do not mutate the matrix.
+  transaction-ID matching, per-attempt timeouts, and up to three attempts
+  per request. Constructor accepts
+  `name`, `liveMdns`, `interfaceIp`, `discovery`, and `simulate`. With
+  `simulate`, `start()` starts a `DanteSimulator` and swaps in its discovery;
+  `end()` stops it. Exposes the API:
+  `refresh`, `getDevices`, `getDevice`, `getMatrix`, `route`, `unroute`,
+  `clearRoutes`, `setLiveMdns`. The matrix is built only from subscription
+  data read from devices. `refresh()` rescans every device;
+  `route`/`unroute`/`clearRoutes` send ARC commands, validate the result
+  code, then re-read the affected receiver's RX channels and rebuild the
+  matrix. They never write assumed routes into the matrix.
   Emits `driver:state-updated` on scan progress and matrix rebuilds.
   `socket` is set to `undefined` because transport is managed internally.
 
-- `scripts/index.ts` — Exported interactive CLI shell for live Dante routing.
+- `simulator/index.ts` — `DanteSimulator`, used internally for the `simulate`
+  option. Answers the ARC requests this driver sends for a set of virtual
+  devices on local UDP sockets and keeps subscription state. `discovery()`
+  returns a `StaticDiscovery` for them. `SimulatedDeviceConfig` is exported
+  from the package entry. It mirrors the layouts in `parser.ts`; change both
+  together.
+
+- `test/router.test.ts` — Scans, routes, unroutes and clears against the
+  simulator.
+
+- `repl/index.ts` — Exported interactive CLI shell for live Dante routing.
   Import `createRepl` from `@nat-av/driver-dante-router/repl` and inject a
   configured `DanteRouter`. Supports commands: `list`, `matrix`, `route`,
   `unroute`, `clear`, `refresh`, `help`, `exit`. Resolves device names

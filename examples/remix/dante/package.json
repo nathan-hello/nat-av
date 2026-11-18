@@ -1,0 +1,21 @@
+{
+  "name": "@nat-av/example-remix-dante",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch ./server.ts",
+    "start": "tsx ./server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nat-av/core": "workspace:*",
+    "@nat-av/driver-dante-router": "workspace:*",
+    "@nat-av/framework-remix": "workspace:*",
+    "@nat-av/rpc-ws": "workspace:*",
+    "remix": "3.0.0-beta.5",
+    "tsx": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

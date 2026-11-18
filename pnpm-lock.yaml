@@ -37,6 +37,31 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  examples/remix/dante:
+    dependencies:
+      '@nat-av/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@nat-av/driver-dante-router':
+        specifier: workspace:*
+        version: link:../../../packages/drivers/dante-router
+      '@nat-av/framework-remix':
+        specifier: workspace:*
+        version: link:../../../packages/framework-remix
+      '@nat-av/rpc-ws':
+        specifier: workspace:*
+        version: link:../../../packages/rpc-ws
+      remix:
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+      tsx:
+        specifier: latest
+        version: 4.23.13
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   examples/remix/spa:
     dependencies:
       '@nat-av/core':

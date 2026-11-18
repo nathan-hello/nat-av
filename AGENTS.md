@@ -76,6 +76,15 @@ source is identical. Packed-package tests must cover this boundary.
 Drivers and plugins may use core capabilities, but must not import concrete
 drivers or plugins from one another. Put shared contracts in core.
 
+### No environment variables for configuration
+
+Do not configure drivers, plugins, or examples through environment variables
+(for example `DANTE_SIMULATE`, `DANTE_DEVICES`, or `PORT`). Expose options as
+constructor arguments, and set them in code where the driver or server is
+created. A mode such as device simulation is a driver option, not a process
+flag. Standard tooling variables that libraries read themselves, such as
+`NODE_ENV`, are exempt.
+
 ### Formatting
 
 Generate decently formatted code. Don't make edits to code only for the sake of

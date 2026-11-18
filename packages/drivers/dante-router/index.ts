@@ -1,6 +1,10 @@
 import { Natav } from "@nat-av/core";
 import * as dgram from "node:dgram";
 import { RESULT_CODE_SUCCESS, SERVICE_ARC } from "./src/constants.js";
+import {
+  DanteSimulator,
+  type SimulatedDeviceConfig,
+} from "./simulator/index.js";
 import { AvahiDiscovery } from "./src/discovery.js";
 import {
   buildAddSubscriptions,
@@ -25,18 +29,31 @@ import type {
   DiscoveryBackend,
 } from "./src/types.js";
 
+export { AvahiDiscovery, StaticDiscovery } from "./src/discovery.js";
+export type { SimulatedDeviceConfig } from "./simulator/index.js";
+export type { StaticDeviceAddress } from "./src/discovery.js";
 export type {
   DanteChannel,
   DanteDeviceRecord,
   DanteRouterMatrix,
+  DanteRouterState,
+  DanteSubscription,
+  DiscoveredService,
+  DiscoveryBackend,
+  DiscoveryEvent,
 } from "./src/types.js";
 
-const ARC_TIMEOUT_MS = 3000;
+// Devices answer within a few milliseconds, but UDP can drop a request or
+// reply, so each request is sent up to ARC_ATTEMPTS times.
+const ARC_ATTEMPT_TIMEOUT_MS = 1000;
+const ARC_ATTEMPTS = 3;
+const DISCOVERY_TIMEOUT_MS = 5000;
+const LIVE_MDNS_DEBOUNCE_MS = 1500;
 
 interface PendingRequest {
   resolve: (data: Buffer) => void;
   reject: (error: Error) => void;
-  timer: ReturnType<typeof setTimeout>;
+  timer: ReturnType<typeof setTimeout> | undefined;
 }
 
 class ArcTransport {
@@ -47,7 +64,8 @@ class ArcTransport {
 
   constructor(
     private readonly interfaceIp: string | undefined,
-    private timeoutMs: number = ARC_TIMEOUT_MS,
+    private attemptTimeoutMs: number = ARC_ATTEMPT_TIMEOUT_MS,
+    private attempts: number = ARC_ATTEMPTS,
   ) {}
 
   start(): void {
@@ -95,17 +113,37 @@ class ArcTransport {
       this.nextId = (this.nextId + 1) & 0xffff;
       const key = `${deviceIp}:${txId}`;
 
-      const timer = setTimeout(() => {
-        this.pending.delete(key);
-        reject(new Error(`Timeout: ${deviceIp}:${port}`));
-      }, this.timeoutMs);
-
-      this.pending.set(key, { resolve, reject, timer });
-
       const buf = Buffer.from(packet);
       buf.writeUInt16BE(txId, 4);
 
-      this.socket.send(buf, port, deviceIp);
+      // Retries reuse the transaction ID, so a late reply to any attempt
+      // resolves the request. Every ARC request this driver sends is safe to
+      // repeat: queries read state, and subscription add/remove set it.
+      let attempt = 0;
+      const send = () => {
+        attempt++;
+        pending.timer = setTimeout(() => {
+          if (attempt < this.attempts) {
+            send();
+            return;
+          }
+          this.pending.delete(key);
+          reject(
+            new Error(
+              `Timeout after ${this.attempts} attempts: ${deviceIp}:${port}`,
+            ),
+          );
+        }, this.attemptTimeoutMs);
+        this.socket?.send(buf, port, deviceIp);
+      };
+
+      const pending: PendingRequest = {
+        resolve,
+        reject,
+        timer: undefined,
+      };
+      this.pending.set(key, pending);
+      send();
     });
   }
 }
@@ -131,9 +169,10 @@ function makeDeviceRecord(
   };
 }
 
-export default class DanteRouter<
-  const N extends string,
-> extends Natav.Driver<N> {
+export default class DanteRouter<const N extends string> extends Natav.Driver<
+  N,
+  DanteRouterState
+> {
   socket = undefined;
 
   state: DanteRouterState = {
@@ -145,35 +184,54 @@ export default class DanteRouter<
   };
 
   private transport: ArcTransport;
-  private discovery: DiscoveryBackend = new AvahiDiscovery();
+  private discovery: DiscoveryBackend;
+  private simulator: DanteSimulator | null = null;
   private liveWatchCleanup: (() => void) | null = null;
+  private liveRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   private scanning = false;
 
   constructor({
     name,
     liveMdns = false,
     interfaceIp,
+    discovery = new AvahiDiscovery(),
+    simulate,
   }: {
     name: N;
     liveMdns?: boolean;
     interfaceIp?: string;
+    /** Defaults to mDNS discovery through `avahi-browse`. */
+    discovery?: DiscoveryBackend;
+    /**
+     * Route between these virtual devices instead of the network. The driver
+     * answers its own ARC requests on localhost, and `discovery` is ignored.
+     */
+    simulate?: readonly SimulatedDeviceConfig[];
   }) {
     super({ name });
     this.state.liveMdns = liveMdns;
     this.transport = new ArcTransport(interfaceIp);
+    this.discovery = discovery;
+    if (simulate) {
+      this.simulator = new DanteSimulator(simulate);
+    }
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
+    if (this.simulator) {
+      await this.simulator.start();
+      this.discovery = this.simulator.discovery();
+    }
     this.transport.start();
     if (this.state.liveMdns) {
       this.startLiveWatch();
     }
   }
 
-  public end(): void {
-    this.liveWatchCleanup?.();
-    this.liveWatchCleanup = null;
+  public async end(): Promise<void> {
+    this.stopLiveWatch();
     this.transport.stop();
+    await this.simulator?.stop();
   }
 
   api = {
@@ -186,7 +244,10 @@ export default class DanteRouter<
       });
 
       try {
-        const services = await this.discovery.discover(SERVICE_ARC, 5000);
+        const services = await this.discovery.discover(
+          SERVICE_ARC,
+          DISCOVERY_TIMEOUT_MS,
+        );
         await this.populateDevices(services);
         this.buildMatrix();
         this.state.scanStatus = "ready";
@@ -256,6 +317,8 @@ export default class DanteRouter<
           `Subscription add failed for ${device.name}:${rxChannel}: result code 0x${getResultCode(routeResponse).toString(16)}`,
         );
       }
+
+      await this.reloadRxDevice(rxDevice);
     },
 
     unroute: async (rxDevice: string, rxChannel: number): Promise<void> => {
@@ -275,6 +338,8 @@ export default class DanteRouter<
           `Subscription remove failed for ${device.name}:${rxChannel}: result code 0x${getResultCode(unrouteResponse).toString(16)}`,
         );
       }
+
+      await this.reloadRxDevice(rxDevice);
     },
 
     clearRoutes: async (rxDevice: string): Promise<void> => {
@@ -298,6 +363,8 @@ export default class DanteRouter<
           `Subscription clear failed for ${device.name}: result code 0x${getResultCode(clearResponse).toString(16)}`,
         );
       }
+
+      await this.reloadRxDevice(rxDevice);
     },
 
     setLiveMdns: async (enabled: boolean): Promise<void> => {
@@ -322,6 +389,10 @@ export default class DanteRouter<
       this.liveWatchCleanup =
         this.discovery.watch?.(SERVICE_ARC, (event) => {
           this.tel.info("mdns-event", { event });
+          // Rescan on every event. "added" events carry no address, but the
+          // rescan resolves devices itself, and avahi may never emit a
+          // "resolved" event for a device it cannot resolve yet.
+          this.scheduleLiveRefresh();
         }) ?? null;
     } catch {
       this.tel.warn("live-mdns-unavailable");
@@ -331,6 +402,43 @@ export default class DanteRouter<
   private stopLiveWatch(): void {
     this.liveWatchCleanup?.();
     this.liveWatchCleanup = null;
+    if (this.liveRefreshTimer) {
+      clearTimeout(this.liveRefreshTimer);
+      this.liveRefreshTimer = null;
+    }
+  }
+
+  // avahi reports every device on its own line, so a burst of events
+  // collapses into one rescan.
+  private scheduleLiveRefresh(): void {
+    if (this.liveRefreshTimer) clearTimeout(this.liveRefreshTimer);
+    this.liveRefreshTimer = setTimeout(() => {
+      this.liveRefreshTimer = null;
+      // refresh() ignores calls during a scan, which may already have missed
+      // this device, so wait for it to finish and try again.
+      if (this.scanning) {
+        this.scheduleLiveRefresh();
+        return;
+      }
+      void this.api.refresh();
+    }, LIVE_MDNS_DEBOUNCE_MS);
+  }
+
+  // Re-reads one receiver's channels and subscriptions after a routing change
+  // so the matrix reflects what the device reports, without a full rescan.
+  private async reloadRxDevice(serverName: string): Promise<void> {
+    const current = this.state.devices[serverName];
+    if (!current) return;
+
+    const next: DanteDeviceRecord = {
+      ...current,
+      rxChannels: new Map(),
+      subscriptions: [],
+    };
+    await this.queryRxChannels(next);
+
+    this.state.devices = { ...this.state.devices, [serverName]: next };
+    this.buildMatrix();
   }
 
   private buildMatrix(): void {
