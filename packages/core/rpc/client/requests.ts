@@ -111,7 +111,8 @@ export class ClientRpcRequests {
   }
 
   private rejectPendingRequest(error: Rpc.Error) {
-    if (!error.id) {
+    // JSON-RPC ids may be 0; only a null id has no pending request.
+    if (error.id === null) {
       return;
     }
 
