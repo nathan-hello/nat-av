@@ -26,7 +26,7 @@ The TypeScript descriptors and types in `proto/generated/` are gitignored.
 Generate them after a fresh clone and after updating the `.proto`:
 
 ```sh
-pnpm --filter @nat-av/driver-nat-screen run postinstall   # or `pnpm run postinstall` from the root
+pnpm --filter @nat-av/driver-nat-screen run setup   # or `pnpm run setup` from the root
 ```
 
 Consumers do not need Buf or `protoc` at runtime.

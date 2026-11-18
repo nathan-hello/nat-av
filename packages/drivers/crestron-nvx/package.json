@@ -24,7 +24,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test test/*.test.mjs",
     "repl": "node .dist/repl/cli.js",
-    "postinstall": "if command -v dotnet >/dev/null; then dotnet restore sdk/CrestronSdk.csproj && python3 scripts/generate.py; else echo \"crestron-nvx: dotnet not found; keeping committed generated.ts\"; fi"
+    "setup": "if command -v dotnet >/dev/null; then dotnet restore sdk/CrestronSdk.csproj && python3 scripts/generate.py; else echo \"crestron-nvx: dotnet not found; keeping committed generated.ts\"; fi"
   },
   "dependencies": {
     "fast-xml-parser": "^5.12.0",

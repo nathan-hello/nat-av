@@ -2,14 +2,16 @@
 
 ## Commands
 
-`pnpm install` `pnpm run postinstall` `pnpm run dev` `pnpm run test` `pnpm run typecheck`
+`pnpm install` `pnpm run setup` `pnpm run dev` `pnpm run test` `pnpm run typecheck`
 
-`pnpm run postinstall` is run manually after `pnpm install`. It runs each
-package's `postinstall` script, which downloads external inputs (schemas,
-SDKs) and runs code generators whose output is not committed. It is the only
-step that may use the network. Do not add workspace packages or the root to
-`allowBuilds`, or pnpm will start running these automatically. `pnpm run build`
-must work offline.
+`pnpm run setup` is run manually after `pnpm install`. It runs each package's
+`setup` script, which downloads external inputs (schemas, SDKs) and runs code
+generators whose output is not committed. It is the only step that may use the
+network. `pnpm run build` must work offline.
+
+Never name these scripts `postinstall` (or any other lifecycle name): pnpm
+runs lifecycle scripts of workspace packages automatically during installs,
+and npm/pnpm run them for consumers of published packages.
 
 ## Building Remix Features
 

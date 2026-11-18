@@ -7,14 +7,14 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 package = "Crestron.SimplSharp.SDK.ProgramLibrary"
 # The restore-only project pins the SDK version; the explicit root
-# `pnpm run postinstall` restores it into sdk/packages (NuGet lowercases folder names).
+# `pnpm run setup` restores it into sdk/packages (NuGet lowercases folder names).
 # This script itself never touches the network.
 reference = next(r for r in ET.parse(root / "sdk/CrestronSdk.csproj").iter("PackageReference")
                  if r.get("Include") == package)
 version = reference.get("Version")
 lib = root / "sdk/packages" / package.lower() / version / "lib/net6.0"
 if not lib.is_dir():
-    sys.exit(f"Missing {lib}. Run `pnpm run postinstall` from the workspace root first.")
+    sys.exit(f"Missing {lib}. Run `pnpm run setup` from the workspace root first.")
 prefix = "Crestron.SimplSharpPro.DM.Streaming."
 
 

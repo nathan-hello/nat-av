@@ -38,12 +38,12 @@ checked against the endpoint.
 To regenerate the profiles (requires the .NET SDK and Python 3):
 
 ```sh
-pnpm run postinstall   # workspace root, run manually; restores the SDK, then generates
+pnpm run setup   # workspace root, run manually; restores the SDK, then generates
 ```
 
 The restore-only project `sdk/CrestronSdk.csproj` pins the
 [Crestron NuGet SDK](https://www.nuget.org/packages/Crestron.SimplSharp.SDK.ProgramLibrary/2.21.274);
-this package's `postinstall` script runs `dotnet restore` into the ignored
+this package's `setup` script runs `dotnet restore` into the ignored
 `sdk/packages/` directory, and the generator reads `SimplSharpPro.xml` and
 `Crestron.SimplSharpPro.DM.xml` from there. To move to a newer SDK, change the `Version` in the csproj and regenerate.
 The generated file is included so consumers need neither .NET nor the SDK.
