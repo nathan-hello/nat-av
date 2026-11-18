@@ -1,5 +1,5 @@
 import type { NvxDriver } from "./nvx.js";
-import { profiles } from "./generated.js";
+import { profiles } from "./client/generated.js";
 
 export type NvxModel = keyof typeof profiles;
 type Profile<M extends NvxModel> = (typeof profiles)[M];

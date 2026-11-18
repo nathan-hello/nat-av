@@ -9,20 +9,26 @@
     ".": {
       "types": "./.dist/index.d.ts",
       "import": "./.dist/index.js"
+    },
+    "./client": {
+      "types": "./.dist/client.d.ts",
+      "import": "./.dist/client.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --outDir .dist --rootDir .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs .dist/test/*.test.js"
   },
   "dependencies": {
-    "undici": "^7.16.0"
+    "undici": "^7.16.0",
+    "ssh2": "^1.17.0"
   },
   "peerDependencies": {
     "@nat-av/core": "^0.1.0"
   },
   "devDependencies": {
-    "@nat-av/core": "workspace:*"
+    "@nat-av/core": "workspace:*",
+    "@types/ssh2": "^1.15.5"
   }
 }

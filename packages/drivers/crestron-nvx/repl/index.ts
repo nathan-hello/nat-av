@@ -1,5 +1,5 @@
 import { Repl } from "@nat-av/core";
-import { nvxObjects, type NvxObject, type JsonValue } from "../catalog.js";
+import { nvxObjects, type NvxObject, type JsonValue } from "../client.js";
 import type NvxDriver from "../index.js";
 
 const help = `info | caps | discover | objects | read <object> | controls <object>

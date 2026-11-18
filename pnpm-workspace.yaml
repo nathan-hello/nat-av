@@ -12,5 +12,7 @@ packages:
 onlyBuiltDependencies:
   - esbuild
 allowBuilds:
+  cpu-features: false
+  ssh2: false
   "@bufbuild/buf": true
   esbuild: true

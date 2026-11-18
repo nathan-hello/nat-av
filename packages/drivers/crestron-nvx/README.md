@@ -35,7 +35,7 @@ What an NVX can do is decided in two steps.
    [Crestron NuGet SDK](https://www.nuget.org/packages/Crestron.SimplSharp.SDK.ProgramLibrary/2.21.274)
    into the ignored `sdk/packages/` directory, and `scripts/generate.py` reads its
    compiler XML (`SimplSharpPro.xml`, `Crestron.SimplSharpPro.DM.xml`) into the
-   committed `generated.ts`. For every documented DM-NVX-3xx model it records
+   committed `client/generated.ts`. For every documented DM-NVX-3xx model it records
    the SDK families (`DmNvx36x`, `DmNvx38x`, `DmNvx38xDsp`, ...), HDMI and USB-C
    input counts, `DeviceSpecific.AudioSource` values, Dante support, and
    `features`: the SDK members whose support differs between models, decided by
@@ -112,3 +112,9 @@ try {
 ```
 
 The optional third constructor argument supplies a transport factory for testing or custom network access. Device-specific features depend on model, firmware and account permissions. See [Crestron’s NVX API reference](https://sdkcon78221.crestron.com/sdk/DM_NVX_REST_API/Content/Topics/API-Reference.htm).
+
+## Client-safe code
+
+`@nat-av/driver-crestron-nvx/client` exports the catalog, command builders,
+model profiles and `nvxDiscovery()` from `client/*.ts` for browser use. They
+import no Node or network code; the driver re-exports them from `.`.

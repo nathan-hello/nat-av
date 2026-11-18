@@ -15,14 +15,14 @@ import {
   reportedControls,
   type NvxControl,
   type NvxOptionGroups,
-} from "./catalog.js";
+} from "./client/catalog.js";
 import {
   nvxDiscovery,
   nvxProbeObjects,
   nvxProfile,
   nvxProfileAllows,
   type NvxDiscovery,
-} from "./discovery.js";
+} from "./client/discovery.js";
 
 import {
   assertJsonObject,
@@ -49,8 +49,11 @@ import {
   type NvxObject,
   type NvxSnapshot,
   type NvxState,
-} from "./catalog.js";
-export { nvxObjects, type NvxObject, type NvxSnapshot } from "./catalog.js";
+} from "./client/catalog.js";
+export { nvxObjects, type NvxObject, type NvxSnapshot } from "./client/catalog.js";
+
+/** Concurrent GETs per endpoint during discover(); browsers use six per host. */
+const discoveryConcurrency = 6;
 
 /** NVX HTTPS control. Device feedback determines the available stream slots. */
 export class NvxDriver<
@@ -105,23 +108,35 @@ export class NvxDriver<
       this.requireConnected();
       const info = (await this.readSnapshot("DeviceInfo")).objects.DeviceInfo;
       const profile = nvxProfile(info?.Model);
-      const unsupported: NvxObject[] = [];
-      for (const name of nvxProbeObjects()) {
-        if (!nvxProfileAllows(profile, name)) continue;
-        try {
-          await this.readSnapshot(name);
-        } catch (error) {
-          // Authentication or transport failures end discovery; absence does not.
-          if (!this.authenticated) throw error;
-          const objects = { ...this.snapshot.objects };
-          delete objects[name];
-          this.state = {
-            ...this.state,
-            snapshot: { ...this.snapshot, objects },
-          };
-          unsupported.push(name);
+      const names = nvxProbeObjects().filter((name) =>
+        nvxProfileAllows(profile, name),
+      );
+      const missing = new Set<NvxObject>();
+      // Probe concurrently, but at most as many requests as a browser would
+      // open to one host, so the endpoint's web server is not flooded.
+      let next = 0;
+      const probe = async () => {
+        while (next < names.length) {
+          const name = names[next++];
+          try {
+            await this.readSnapshot(name);
+          } catch (error) {
+            // Authentication or transport failures end discovery; absence does not.
+            if (!this.authenticated) throw error;
+            const objects = { ...this.snapshot.objects };
+            delete objects[name];
+            this.state = {
+              ...this.state,
+              snapshot: { ...this.snapshot, objects },
+            };
+            missing.add(name);
+          }
         }
-      }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(discoveryConcurrency, names.length) }, probe),
+      );
+      const unsupported = names.filter((name) => missing.has(name));
       const discovery = nvxDiscovery(
         this.snapshot,
         unsupported,

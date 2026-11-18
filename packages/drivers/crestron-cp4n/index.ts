@@ -13,3 +13,16 @@ export {
   type Transport,
   type TransportFactory,
 } from "./http.js";
+export {
+  CrestronSsh,
+  FirmwareNotDispatchedError,
+  hostFingerprint,
+  type ConsolePortMap,
+  type FirmwareSshOperations,
+  type RouterSshOperations,
+  type SshEndpoint,
+  type SshOperations,
+} from "./ssh.js";
+export { CrestronSshDriver } from "./ssh-driver.js";
+export type { RemoteFile } from "./sftp.js";
+export * from "./client.js";

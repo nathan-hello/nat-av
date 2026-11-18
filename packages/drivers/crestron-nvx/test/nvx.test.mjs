@@ -285,3 +285,37 @@ test("an undocumented model is not gated, and login clears discovery", async () 
     driver.end();
   }
 });
+
+test("discovery probes concurrently, at most six requests at a time", async () => {
+  let active = 0, peak = 0;
+  const driver = new NvxDriver("nvx", {
+    host: "nvx.test", httpsPort: 443, username: "operator", password: "test", allowSelfSigned: false,
+  }, () => ({
+    close() {},
+    async fetch(url, init = {}) {
+      const path = new URL(url).pathname;
+      if (path === "/userlogin.html") {
+        const headers = new Headers();
+        if (init.method === "POST") {
+          headers.append("set-cookie", "userid=1");
+          headers.append("set-cookie", "userstr=test");
+        }
+        return new Response(null, { headers });
+      }
+      active++;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      active--;
+      const name = path.split("/")[2];
+      return name === "DeviceInfo"
+        ? Response.json({ Device: { DeviceInfo: { Model: "DM-NVX-360" } } })
+        : new Response("Not Found", { status: 404 });
+    },
+  }));
+  try {
+    await driver.api.connect();
+    const found = await driver.api.discover();
+    assert.equal(peak, 6);
+    assert.ok(found.unsupported.length > 20);
+  } finally { driver.end(); }
+});

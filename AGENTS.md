@@ -76,6 +76,23 @@ source is identical. Packed-package tests must cover this boundary.
 Drivers and plugins may use core capabilities, but must not import concrete
 drivers or plugins from one another. Put shared contracts in core.
 
+### Client-safe driver code
+
+Driver packages are server code. There is no expectation that a browser can
+import a driver, except for the code under `packages/drivers/<driver>/client/`.
+
+- Put every browser-safe module (types, command builders, parsers, validators,
+  generated data) in `packages/drivers/<driver>/client/*.ts`. These files must
+  not import Node built-ins, network/transport libraries (`undici`, `ssh2`, ...)
+  or the driver's server modules. They may import each other.
+- `packages/drivers/<driver>/client.ts` is the barrel: it only re-exports from
+  `./client/*.js`. Publish it as the package's `./client` export
+  (`"./client": { "types": "./.dist/client.d.ts", "import": "./.dist/client.js" }`).
+- The driver's server code imports its client modules (`./client/*.js`), and its
+  `index.ts` re-exports `./client.js`, so server consumers need only `.`.
+- Applications import client-safe code from `@nat-av/driver-<driver>/client`,
+  never from other driver subpaths.
+
 ### No environment variables for configuration
 
 Do not configure drivers, plugins, or examples through environment variables
