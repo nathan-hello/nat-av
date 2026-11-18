@@ -35,10 +35,18 @@ After authentication, `await forNvxModel(driver, "DM-NVX-360")` checks
 families in the current profiles. Dante port keys and option groups are still
 checked against the endpoint.
 
-To regenerate the profiles, run `python3 packages/drivers/crestron-nvx/scripts/generate.py`
-from the workspace root. It reads `SimplSharpPro.xml` and `Crestron.SimplSharpPro.DM.xml`
-from the local [Crestron NuGet SDK 2.21.274](https://www.nuget.org/packages/Crestron.SimplSharp.SDK.ProgramLibrary/2.21.274)
-cache; alternatively pass the extracted package's `lib/net6.0` directory.
+To regenerate the profiles (requires the .NET SDK and Python 3):
+
+```sh
+pnpm run fetch                                         # workspace root; the only step that uses the network
+pnpm --filter @nat-av/driver-crestron-nvx run generate # offline
+```
+
+The restore-only project `sdk/CrestronSdk.csproj` pins the
+[Crestron NuGet SDK](https://www.nuget.org/packages/Crestron.SimplSharp.SDK.ProgramLibrary/2.21.274);
+this package's `fetch` script runs `dotnet restore` into the ignored
+`sdk/packages/` directory, and the generator reads `SimplSharpPro.xml` and
+`Crestron.SimplSharpPro.DM.xml` from there. To move to a newer SDK, change the `Version` in the csproj and regenerate.
 The generated file is included so consumers need neither .NET nor the SDK.
 The SDK describes C# members, not HTTPS paths. The generator uses reviewed REST
 enum mappings and a [documented hardware capability map](https://docs.crestron.com/en-us/9062/Content/Topics/WorksWith/DM-NVX.htm)
